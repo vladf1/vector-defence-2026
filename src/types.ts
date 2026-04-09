@@ -1,4 +1,4 @@
-export type MonsterCode = "ball" | "square" | "triangle";
+export type MonsterCode = "ball" | "square" | "triangle" | "tank";
 export type GameState = "menu" | "playing" | "paused" | "won" | "lost";
 
 export enum TowerKind {

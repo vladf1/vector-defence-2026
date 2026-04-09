@@ -3,7 +3,7 @@
     "name": "Bellingham",
     "monsterCount": 80,
     "allowEscape": 10,
-    "monsterSequence": ["ball", "ball", "ball", "square", "square", "square", "triangle", "triangle", "triangle"],
+    "monsterSequence": ["ball", "ball", "ball", "square", "square", "square", "triangle", "triangle", "triangle", "tank"],
     "points": [
       { "x": 100, "y": 0 },
       { "x": 100, "y": 250 },
@@ -31,7 +31,7 @@
     "name": "Seattle",
     "monsterCount": 60,
     "allowEscape": 10,
-    "monsterSequence": ["ball", "square"],
+    "monsterSequence": ["ball", "square", "tank"],
     "points": [
       { "x": 100, "y": 0 },
       { "x": 100, "y": 100 },
@@ -43,7 +43,7 @@
     "name": "Tacoma",
     "monsterCount": 50,
     "allowEscape": 10,
-    "monsterSequence": ["triangle", "triangle", "ball"],
+    "monsterSequence": ["triangle", "triangle", "ball", "tank"],
     "points": [
       { "x": 200, "y": 0 },
       { "x": 200, "y": 300 },
@@ -65,7 +65,7 @@
     "name": "Spokane",
     "monsterCount": 72,
     "allowEscape": 8,
-    "monsterSequence": ["ball", "square", "triangle", "square", "ball", "triangle"],
+    "monsterSequence": ["ball", "square", "triangle", "square", "tank", "ball", "triangle"],
     "points": [
       { "x": 80, "y": 0 },
       { "x": 80, "y": 120 },

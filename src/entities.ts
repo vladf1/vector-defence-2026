@@ -236,7 +236,7 @@ export class Monster {
       context.rotate(this.rotation);
       context.fillRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
       context.strokeRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
-    } else {
+    } else if (this.kind === "triangle") {
       context.rotate(this.angle);
       context.beginPath();
       context.moveTo(6, 0);
@@ -245,15 +245,27 @@ export class Monster {
       context.closePath();
       context.fill();
       context.stroke();
+    } else {
+      context.rotate(this.angle);
+      context.fillRect(-this.radius, -this.radius * 0.72, this.radius * 2.1, this.radius * 1.44);
+      context.strokeRect(-this.radius, -this.radius * 0.72, this.radius * 2.1, this.radius * 1.44);
+      context.beginPath();
+      context.arc(this.radius * 0.1, 0, this.radius * 0.48, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+      context.beginPath();
+      context.moveTo(this.radius * 0.3, 0);
+      context.lineTo(this.radius * 1.35, 0);
+      context.stroke();
     }
     context.restore();
 
-    const barWidth = 16;
+    const barWidth = Math.max(16, this.radius * 2);
     const fillWidth = barWidth * (this.hp / this.maxHp);
     context.fillStyle = "rgba(5, 10, 8, 0.85)";
-    context.fillRect(this.x - 8, this.y - this.radius - 7, barWidth, 3);
+    context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, barWidth, 3);
     context.fillStyle = "#4cff90";
-    context.fillRect(this.x - 8, this.y - this.radius - 7, fillWidth, 3);
+    context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, fillWidth, 3);
   }
 }
 

@@ -44,6 +44,7 @@ const MONSTER_PRESETS: Record<MonsterCode, MonsterPreset> = {
   ball: { color: "#5df2ef", speed: 1.5, hp: 200, bounty: 20, radius: 7.5 },
   square: { color: "#ff6f62", speed: 1.25, hp: 150, bounty: 25, radius: 6.5 },
   triangle: { color: "#ffba4f", speed: 1.75, hp: 100, bounty: 30, radius: 7 },
+  tank: { color: "#9fb6ff", speed: 0.75, hp: 420, bounty: 55, radius: 10.5 },
 };
 
 const root = document.querySelector<HTMLDivElement>("#app");
@@ -141,7 +142,7 @@ const cancelButton = must(document.querySelector<HTMLButtonElement>("#cancel-but
 const ctx = must(canvas.getContext("2d"), "Canvas 2D context unavailable.");
 
 function isMonsterCode(value: string): value is MonsterCode {
-  return value === "ball" || value === "square" || value === "triangle";
+  return value === "ball" || value === "square" || value === "triangle" || value === "tank";
 }
 
 function normalizeLevels(data: LevelJsonData[]): LevelData[] {
@@ -410,7 +411,7 @@ class Monster {
       context.rotate(this.rotation);
       context.fillRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
       context.strokeRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
-    } else {
+    } else if (this.kind === "triangle") {
       context.rotate(this.angle);
       context.beginPath();
       context.moveTo(6, 0);
@@ -419,15 +420,27 @@ class Monster {
       context.closePath();
       context.fill();
       context.stroke();
+    } else {
+      context.rotate(this.angle);
+      context.fillRect(-this.radius, -this.radius * 0.72, this.radius * 2.1, this.radius * 1.44);
+      context.strokeRect(-this.radius, -this.radius * 0.72, this.radius * 2.1, this.radius * 1.44);
+      context.beginPath();
+      context.arc(this.radius * 0.1, 0, this.radius * 0.48, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+      context.beginPath();
+      context.moveTo(this.radius * 0.3, 0);
+      context.lineTo(this.radius * 1.35, 0);
+      context.stroke();
     }
     context.restore();
 
-    const barWidth = 16;
+    const barWidth = Math.max(16, this.radius * 2);
     const fillWidth = barWidth * (this.hp / this.maxHp);
     context.fillStyle = "rgba(5, 10, 8, 0.85)";
-    context.fillRect(this.x - 8, this.y - this.radius - 7, barWidth, 3);
+    context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, barWidth, 3);
     context.fillStyle = "#4cff90";
-    context.fillRect(this.x - 8, this.y - this.radius - 7, fillWidth, 3);
+    context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, fillWidth, 3);
   }
 }
 
