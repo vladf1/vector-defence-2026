@@ -83,10 +83,6 @@ root.innerHTML = `
         <span>Wave</span>
         <strong id="wave-value">Idle</strong>
       </div>
-      <div class="stat-card">
-        <span>Status</span>
-        <strong id="status-value">Select a map</strong>
-      </div>
     </section>
 
     <section class="board-card">
@@ -133,7 +129,6 @@ const levelNameValue = must(document.querySelector<HTMLElement>("#level-name"), 
 const moneyValue = must(document.querySelector<HTMLElement>("#money-value"), "Missing money value.");
 const escapesValue = must(document.querySelector<HTMLElement>("#escapes-value"), "Missing escapes value.");
 const waveValue = must(document.querySelector<HTMLElement>("#wave-value"), "Missing wave value.");
-const statusValue = must(document.querySelector<HTMLElement>("#status-value"), "Missing status value.");
 const selectionTitle = must(document.querySelector<HTMLElement>("#selection-title"), "Missing selection title.");
 const selectionBody = must(document.querySelector<HTMLElement>("#selection-body"), "Missing selection body.");
 const pauseButton = must(document.querySelector<HTMLButtonElement>("#pause-button"), "Missing pause button.");
@@ -1008,7 +1003,7 @@ class Game {
   setState(next: GameState): void {
     this.state = next;
     if (next === "playing") {
-      this.statusText = this.currentLevel ? `Defending ${this.currentLevel.name}` : "Playing";
+      this.statusText = "Playing";
     } else if (next === "paused") {
       this.statusText = "Paused";
     } else if (next === "won") {
@@ -1452,9 +1447,6 @@ function syncHud(): void {
         ? `Starts in ${Math.ceil(game.spawnDelay)}s`
         : `${Math.min(game.spawnedMonsters, game.currentLevel.monsterCount)} / ${game.currentLevel.monsterCount}`)
     : "Idle";
-  const status = game.state === "playing" && game.spawnDelay > 0 && game.spawnedMonsters === 0
-    ? "Build phase"
-    : game.statusText;
   const bannerText = game.state === "playing" && game.spawnDelay > 0 && game.spawnedMonsters === 0
     ? `Wave starts in ${Math.ceil(game.spawnDelay)}`
     : (game.bannerTimer > 0 ? game.bannerText : (game.state === "menu" ? "Awaiting orders" : game.statusText));
@@ -1478,7 +1470,6 @@ function syncHud(): void {
     money: formatMoney(game.money),
     escapes: String(Math.max(0, game.escapesLeft)),
     wave,
-    status,
     banner: bannerText,
     pauseLabel: game.state === "paused" ? "Resume" : "Pause",
     pauseDisabled: !(game.state === "playing" || game.state === "paused"),
@@ -1505,9 +1496,6 @@ function syncHud(): void {
   }
   if (!previous || previous.wave !== snapshot.wave) {
     waveValue.textContent = snapshot.wave;
-  }
-  if (!previous || previous.status !== snapshot.status) {
-    statusValue.textContent = snapshot.status;
   }
   if (!previous || previous.banner !== snapshot.banner) {
     banner.textContent = snapshot.banner;

@@ -49,7 +49,6 @@ export interface HudSnapshot {
   money: string;
   escapes: string;
   wave: string;
-  status: string;
   banner: string;
   pauseLabel: string;
   pauseDisabled: boolean;

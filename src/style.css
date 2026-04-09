@@ -114,7 +114,7 @@ button {
 
 .hud {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -124,6 +124,10 @@ button {
   border-radius: 6px;
   padding: 7px 9px;
   backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
 }
 
 .control-card {
@@ -135,17 +139,25 @@ button {
 }
 
 .stat-card span {
-  display: block;
   color: var(--muted);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.stat-card span::after {
+  content: ":";
 }
 
 .stat-card strong {
-  display: block;
-  margin-top: 2px;
   font-size: clamp(0.88rem, 1.6vw, 1.06rem);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .board-card {
