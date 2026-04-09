@@ -1,0 +1,81 @@
+[
+  {
+    "name": "Bellingham",
+    "monsterCount": 80,
+    "allowEscape": 10,
+    "monsterSequence": ["b", "b", "b", "s", "s", "s", "t", "t", "t"],
+    "points": [
+      { "x": 100, "y": 0 },
+      { "x": 100, "y": 250 },
+      { "x": 350, "y": 250 },
+      { "x": 200, "y": 100 },
+      { "x": 350, "y": 100 },
+      { "x": 600, "y": 350 },
+      { "x": 100, "y": 350 }
+    ]
+  },
+  {
+    "name": "Everett",
+    "monsterCount": 65,
+    "allowEscape": 10,
+    "monsterSequence": ["b", "s", "t"],
+    "points": [
+      { "x": 100, "y": 0 },
+      { "x": 100, "y": 300 },
+      { "x": 300, "y": 300 },
+      { "x": 300, "y": 150 },
+      { "x": 600, "y": 150 }
+    ]
+  },
+  {
+    "name": "Seattle",
+    "monsterCount": 60,
+    "allowEscape": 10,
+    "monsterSequence": ["b", "s"],
+    "points": [
+      { "x": 100, "y": 0 },
+      { "x": 100, "y": 100 },
+      { "x": 600, "y": 200 },
+      { "x": 150, "y": 350 }
+    ]
+  },
+  {
+    "name": "Tacoma",
+    "monsterCount": 50,
+    "allowEscape": 10,
+    "monsterSequence": ["t", "t", "b"],
+    "points": [
+      { "x": 200, "y": 0 },
+      { "x": 200, "y": 300 },
+      { "x": 500, "y": 300 },
+      { "x": 500, "y": 100 }
+    ]
+  },
+  {
+    "name": "Olympia",
+    "monsterCount": 11,
+    "allowEscape": 3,
+    "monsterSequence": ["b", "s", "t"],
+    "points": [
+      { "x": 350, "y": 0 },
+      { "x": 350, "y": 350 }
+    ]
+  },
+  {
+    "name": "Spokane",
+    "monsterCount": 72,
+    "allowEscape": 8,
+    "monsterSequence": ["b", "s", "t", "s", "b", "t"],
+    "points": [
+      { "x": 80, "y": 0 },
+      { "x": 80, "y": 120 },
+      { "x": 250, "y": 120 },
+      { "x": 250, "y": 320 },
+      { "x": 470, "y": 320 },
+      { "x": 470, "y": 90 },
+      { "x": 620, "y": 90 },
+      { "x": 620, "y": 390 },
+      { "x": 180, "y": 390 }
+    ]
+  }
+]
