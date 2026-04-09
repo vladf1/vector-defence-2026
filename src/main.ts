@@ -45,6 +45,7 @@ const MONSTER_PRESETS: Record<MonsterCode, MonsterPreset> = {
   square: { color: "#ff6f62", speed: 1.25, hp: 150, bounty: 25, radius: 6.5 },
   triangle: { color: "#ffba4f", speed: 1.75, hp: 100, bounty: 30, radius: 7 },
   tank: { color: "#9fb6ff", speed: 0.75, hp: 420, bounty: 55, radius: 10.5 },
+  runner: { color: "#91ff63", speed: 2.45, hp: 75, bounty: 18, radius: 5.5 },
 };
 
 const root = document.querySelector<HTMLDivElement>("#app");
@@ -142,7 +143,7 @@ const cancelButton = must(document.querySelector<HTMLButtonElement>("#cancel-but
 const ctx = must(canvas.getContext("2d"), "Canvas 2D context unavailable.");
 
 function isMonsterCode(value: string): value is MonsterCode {
-  return value === "ball" || value === "square" || value === "triangle" || value === "tank";
+  return value === "ball" || value === "square" || value === "triangle" || value === "tank" || value === "runner";
 }
 
 function normalizeLevels(data: LevelJsonData[]): LevelData[] {
@@ -168,6 +169,18 @@ function distanceXY(x1: number, y1: number, x2: number, y2: number): number {
 
 function angleBetween(source: Point, target: Point): number {
   return Math.atan2(target.y - source.y, target.x - source.x);
+}
+
+function normalizeAngle(angle: number): number {
+  return Math.atan2(Math.sin(angle), Math.cos(angle));
+}
+
+function turnAngleTowards(current: number, target: number, maxStep: number): number {
+  const delta = normalizeAngle(target - current);
+  if (Math.abs(delta) <= maxStep) {
+    return target;
+  }
+  return normalizeAngle(current + (Math.sign(delta) * maxStep));
 }
 
 function pointToSegmentDistanceSquaredXY(pointX: number, pointY: number, startX: number, startY: number, endX: number, endY: number): number {
@@ -420,17 +433,35 @@ class Monster {
       context.closePath();
       context.fill();
       context.stroke();
+    } else if (this.kind === "runner") {
+      context.rotate(this.angle);
+      context.beginPath();
+      context.moveTo(this.radius * 1.7, 0);
+      context.lineTo(-this.radius * 0.1, -this.radius * 0.82);
+      context.lineTo(-this.radius * 1.35, 0);
+      context.lineTo(-this.radius * 0.1, this.radius * 0.82);
+      context.closePath();
+      context.fill();
+      context.stroke();
+      context.beginPath();
+      context.moveTo(-this.radius * 0.95, 0);
+      context.lineTo(-this.radius * 1.5, -this.radius * 0.55);
+      context.moveTo(-this.radius * 0.95, 0);
+      context.lineTo(-this.radius * 1.5, this.radius * 0.55);
+      context.stroke();
     } else {
       context.rotate(this.angle);
       context.fillRect(-this.radius, -this.radius * 0.72, this.radius * 2.1, this.radius * 1.44);
       context.strokeRect(-this.radius, -this.radius * 0.72, this.radius * 2.1, this.radius * 1.44);
+      const turretCenterX = this.radius * 0.08;
+      const turretRadius = this.radius * 0.42;
       context.beginPath();
-      context.arc(this.radius * 0.1, 0, this.radius * 0.48, 0, Math.PI * 2);
+      context.arc(turretCenterX, 0, turretRadius, 0, Math.PI * 2);
       context.fill();
       context.stroke();
       context.beginPath();
-      context.moveTo(this.radius * 0.3, 0);
-      context.lineTo(this.radius * 1.35, 0);
+      context.moveTo(turretCenterX + (turretRadius * 0.92), 0);
+      context.lineTo(this.radius * 1.52, 0);
       context.stroke();
     }
     context.restore();
@@ -674,12 +705,13 @@ abstract class Tower {
 
 class GunTower extends Tower {
   angle = randomRange(-Math.PI, Math.PI);
+  turnSpeed = 0.16;
 
   constructor(x: number, y: number) {
     super(TowerKind.Gun, x, y);
   }
 
-  protected onUpdate(game: Game): void {
+  protected onUpdate(game: Game, multiplier: number): void {
     const tracked = this.getClosestMonster(game);
     if (!tracked) {
       return;
@@ -690,7 +722,8 @@ class GunTower extends Tower {
       y: this.y + (Math.sin(this.angle) * 16),
     };
     const target = this.calculateIntercept(tracked, 7, source);
-    this.angle = angleBetween({ x: this.x, y: this.y }, target);
+    const targetAngle = angleBetween({ x: this.x, y: this.y }, target);
+    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * multiplier);
 
     if (this.ready()) {
       const actualSource = {
@@ -735,6 +768,7 @@ class LaserTower extends Tower {
   beamAlpha = 0;
   beamTarget = { x: 0, y: 0 };
   damagePerHit = 1;
+  turnSpeed = 0.08;
 
   constructor(x: number, y: number) {
     super(TowerKind.Laser, x, y);
@@ -748,7 +782,8 @@ class LaserTower extends Tower {
     }
 
     const target = { x: tracked.x, y: tracked.y };
-    this.angle = angleBetween({ x: this.x, y: this.y }, target);
+    const targetAngle = angleBetween({ x: this.x, y: this.y }, target);
+    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * multiplier);
     this.beamTarget = {
       x: this.x + (Math.cos(this.angle) * 1000),
       y: this.y + (Math.sin(this.angle) * 1000),
@@ -827,6 +862,7 @@ class MissileTower extends Tower {
   angle = Math.PI / 4;
   rotationSpeed = 0.5;
   missileDamage = 50;
+  turnSpeed = 0.06;
 
   constructor(x: number, y: number) {
     super(TowerKind.Missile, x, y);
@@ -834,12 +870,21 @@ class MissileTower extends Tower {
   }
 
   protected onUpdate(game: Game, multiplier: number): void {
-    this.angle += this.rotationSpeed * multiplier * 0.06;
     const tracked = this.getClosestMonster(game);
+    if (tracked) {
+      const targetAngle = angleBetween({ x: this.x, y: this.y }, { x: tracked.x, y: tracked.y });
+      this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * multiplier);
+    } else {
+      this.angle += this.rotationSpeed * multiplier * 0.025;
+    }
     if (tracked && this.ready()) {
       const damageRadius = 60 + (5 * this.level);
       const missileSpeed = 1.8 + (this.level / 2);
-      game.missiles.push(new Missile({ x: this.x, y: this.y }, tracked, this.missileDamage, damageRadius, missileSpeed));
+      const source = {
+        x: this.x + (Math.cos(this.angle) * 14),
+        y: this.y + (Math.sin(this.angle) * 14),
+      };
+      game.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeed));
       this.resetCooldown(1000 * (2 - (0.2 * this.level)));
     }
   }
@@ -856,17 +901,41 @@ class MissileTower extends Tower {
   draw(context: CanvasRenderingContext2D, active: boolean): void {
     context.save();
     context.translate(this.x, this.y);
-    context.rotate(this.angle);
-    context.fillStyle = "#050908";
-    context.strokeStyle = "#ffffff";
+    context.fillStyle = "#08100d";
+    context.strokeStyle = "#d7e2ea";
     context.lineWidth = 1.5;
-    context.fillRect(-TOWER_RADIUS, -TOWER_RADIUS, TOWER_RADIUS * 2, TOWER_RADIUS * 2);
-    context.strokeRect(-TOWER_RADIUS, -TOWER_RADIUS, TOWER_RADIUS * 2, TOWER_RADIUS * 2);
-    context.strokeStyle = "#ffd95b";
     context.beginPath();
-    context.moveTo(-8, 0);
-    context.lineTo(8, 0);
+    context.arc(0, 0, 14, 0, Math.PI * 2);
+    context.fill();
     context.stroke();
+
+    context.save();
+    context.rotate(this.angle);
+    context.fillStyle = "#202b35";
+    context.strokeStyle = "#ffffff";
+    context.fillRect(-9.5, -4.5, 9, 9);
+    context.strokeRect(-9.5, -4.5, 9, 9);
+    context.fillStyle = this.ready() ? "#ffe27a" : "#78838b";
+    context.fillRect(-7.5, -8, 11, 3.5);
+    context.strokeRect(-7.5, -8, 11, 3.5);
+    context.fillRect(-7.5, 4.5, 11, 3.5);
+    context.strokeRect(-7.5, 4.5, 11, 3.5);
+    context.beginPath();
+    context.moveTo(3.5, -8);
+    context.lineTo(8, -6.25);
+    context.lineTo(3.5, -4.5);
+    context.closePath();
+    context.fill();
+    context.stroke();
+    context.beginPath();
+    context.moveTo(3.5, 4.5);
+    context.lineTo(8, 6.25);
+    context.lineTo(3.5, 8);
+    context.closePath();
+    context.fill();
+    context.stroke();
+    context.restore();
+
     if (active) {
       drawTowerSelection(context, this.range);
     }
@@ -1086,7 +1155,11 @@ class Game {
 
   onMonsterKilled(monster: Monster): void {
     this.money += monster.bounty;
-    this.createExplosion(monster.x, monster.y, 30, randomRange(1.5, 4), monster.color, 1 / 24);
+    if (monster.kind === "tank") {
+      this.createTankExplosion(monster.x, monster.y, monster.color);
+    } else {
+      this.createExplosion(monster.x, monster.y, 30, randomRange(1.5, 4), monster.color, 1 / 24);
+    }
     this.requestHudSync();
   }
 
@@ -1109,6 +1182,26 @@ class Game {
     const particleCount = Math.min(count, Math.max(0, MAX_PARTICLES - this.particles.length));
     for (let index = 0; index < particleCount; index += 1) {
       this.addParticle(new Particle(x, y, size, color, burnRate));
+    }
+  }
+
+  createTankExplosion(x: number, y: number, color: string): void {
+    this.createExplosion(x, y, 32, randomRange(3, 6), "#fff1a6", 1 / 28);
+    this.createExplosion(x, y, 34, randomRange(2.5, 5), color, 1 / 24);
+    this.createExplosion(x, y, 26, randomRange(2, 4.5), "#7e858c", 1 / 36);
+
+    const debrisCount = Math.min(22, Math.max(0, MAX_PARTICLES - this.particles.length));
+    for (let index = 0; index < debrisCount; index += 1) {
+      const debrisColor = index % 3 === 0 ? "#ffffff" : (index % 2 === 0 ? "#b0bdc8" : "#5b6470");
+      this.addParticle(new Particle(
+        x,
+        y,
+        randomRange(2.5, 5.5),
+        debrisColor,
+        1 / 42,
+        randomRange(5, 10),
+        randomRange(2, 10),
+      ));
     }
   }
 

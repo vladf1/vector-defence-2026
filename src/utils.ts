@@ -8,7 +8,7 @@ export function must<T>(value: T | null, message: string): T {
 }
 
 export function isMonsterCode(value: string): value is MonsterCode {
-  return value === "ball" || value === "square" || value === "triangle";
+  return value === "ball" || value === "square" || value === "triangle" || value === "tank" || value === "runner";
 }
 
 export function normalizeLevels(data: LevelJsonData[]): LevelData[] {
@@ -34,6 +34,18 @@ export function distanceXY(x1: number, y1: number, x2: number, y2: number): numb
 
 export function angleBetween(source: Point, target: Point): number {
   return Math.atan2(target.y - source.y, target.x - source.x);
+}
+
+export function normalizeAngle(angle: number): number {
+  return Math.atan2(Math.sin(angle), Math.cos(angle));
+}
+
+export function turnAngleTowards(current: number, target: number, maxStep: number): number {
+  const delta = normalizeAngle(target - current);
+  if (Math.abs(delta) <= maxStep) {
+    return target;
+  }
+  return normalizeAngle(current + (Math.sign(delta) * maxStep));
 }
 
 export function pointToSegmentDistanceSquaredXY(pointX: number, pointY: number, startX: number, startY: number, endX: number, endY: number): number {

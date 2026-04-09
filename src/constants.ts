@@ -24,4 +24,5 @@ export const MONSTER_PRESETS: Record<MonsterCode, MonsterPreset> = {
   square: { color: "#ff6f62", speed: 1.25, hp: 150, bounty: 25, radius: 6.5 },
   triangle: { color: "#ffba4f", speed: 1.75, hp: 100, bounty: 30, radius: 7 },
   tank: { color: "#9fb6ff", speed: 0.75, hp: 420, bounty: 55, radius: 10.5 },
+  runner: { color: "#91ff63", speed: 2.45, hp: 75, bounty: 18, radius: 5.5 },
 };

@@ -1,71 +1,92 @@
 [
   {
     "name": "Bellingham",
-    "monsterCount": 80,
+    "monsterCount": 96,
     "allowEscape": 10,
-    "monsterSequence": ["ball", "ball", "ball", "square", "square", "square", "triangle", "triangle", "triangle", "tank"],
+    "monsterSequence": ["ball", "runner", "ball", "square", "triangle", "runner", "square", "tank", "triangle", "runner"],
     "points": [
-      { "x": 100, "y": 0 },
-      { "x": 100, "y": 250 },
-      { "x": 350, "y": 250 },
-      { "x": 200, "y": 100 },
-      { "x": 350, "y": 100 },
-      { "x": 600, "y": 350 },
-      { "x": 100, "y": 350 }
+      { "x": 90, "y": 0 },
+      { "x": 90, "y": 240 },
+      { "x": 310, "y": 240 },
+      { "x": 310, "y": 80 },
+      { "x": 540, "y": 80 },
+      { "x": 540, "y": 330 },
+      { "x": 180, "y": 330 },
+      { "x": 180, "y": 410 },
+      { "x": 640, "y": 410 }
     ]
   },
   {
     "name": "Everett",
-    "monsterCount": 65,
+    "monsterCount": 84,
     "allowEscape": 10,
-    "monsterSequence": ["ball", "square", "triangle"],
+    "monsterSequence": ["ball", "runner", "square", "runner", "triangle", "square", "tank"],
     "points": [
-      { "x": 100, "y": 0 },
-      { "x": 100, "y": 300 },
-      { "x": 300, "y": 300 },
-      { "x": 300, "y": 150 },
-      { "x": 600, "y": 150 }
+      { "x": 120, "y": 0 },
+      { "x": 120, "y": 320 },
+      { "x": 280, "y": 320 },
+      { "x": 280, "y": 110 },
+      { "x": 520, "y": 110 },
+      { "x": 520, "y": 370 },
+      { "x": 180, "y": 370 },
+      { "x": 180, "y": 220 },
+      { "x": 640, "y": 220 }
     ]
   },
   {
     "name": "Seattle",
-    "monsterCount": 60,
+    "monsterCount": 88,
     "allowEscape": 10,
-    "monsterSequence": ["ball", "square", "tank"],
+    "monsterSequence": ["runner", "ball", "square", "runner", "triangle", "tank", "square"],
     "points": [
-      { "x": 100, "y": 0 },
-      { "x": 100, "y": 100 },
-      { "x": 600, "y": 200 },
-      { "x": 150, "y": 350 }
+      { "x": 90, "y": 0 },
+      { "x": 90, "y": 90 },
+      { "x": 560, "y": 90 },
+      { "x": 560, "y": 250 },
+      { "x": 220, "y": 250 },
+      { "x": 220, "y": 390 },
+      { "x": 640, "y": 390 }
     ]
   },
   {
     "name": "Tacoma",
-    "monsterCount": 50,
+    "monsterCount": 78,
     "allowEscape": 10,
-    "monsterSequence": ["triangle", "triangle", "ball", "tank"],
+    "monsterSequence": ["runner", "triangle", "ball", "runner", "triangle", "square", "tank"],
     "points": [
-      { "x": 200, "y": 0 },
-      { "x": 200, "y": 300 },
-      { "x": 500, "y": 300 },
-      { "x": 500, "y": 100 }
+      { "x": 220, "y": 0 },
+      { "x": 220, "y": 170 },
+      { "x": 470, "y": 170 },
+      { "x": 470, "y": 60 },
+      { "x": 620, "y": 60 },
+      { "x": 620, "y": 330 },
+      { "x": 140, "y": 330 },
+      { "x": 140, "y": 220 },
+      { "x": 520, "y": 220 }
     ]
   },
   {
     "name": "Olympia",
-    "monsterCount": 11,
+    "monsterCount": 54,
     "allowEscape": 3,
-    "monsterSequence": ["ball", "square", "triangle"],
+    "monsterSequence": ["ball", "runner", "square", "triangle", "runner", "ball", "square", "tank"],
     "points": [
       { "x": 350, "y": 0 },
-      { "x": 350, "y": 350 }
+      { "x": 350, "y": 110 },
+      { "x": 140, "y": 110 },
+      { "x": 140, "y": 300 },
+      { "x": 560, "y": 300 },
+      { "x": 560, "y": 180 },
+      { "x": 280, "y": 180 },
+      { "x": 280, "y": 420 },
+      { "x": 620, "y": 420 }
     ]
   },
   {
     "name": "Spokane",
-    "monsterCount": 72,
+    "monsterCount": 108,
     "allowEscape": 8,
-    "monsterSequence": ["ball", "square", "triangle", "square", "tank", "ball", "triangle"],
+    "monsterSequence": ["ball", "runner", "square", "triangle", "runner", "square", "tank", "ball", "runner", "triangle", "square"],
     "points": [
       { "x": 80, "y": 0 },
       { "x": 80, "y": 120 },

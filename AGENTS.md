@@ -28,6 +28,7 @@ Data / naming conventions:
   - `square`
   - `triangle`
   - `tank`
+  - `runner`
 - `TowerKind` is a string enum in `src/types.ts`.
 - `GameState` is currently a string union type in `src/types.ts`.
 
