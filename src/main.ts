@@ -200,24 +200,10 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function lerp(from: number, to: number, amount: number): number {
-  return from + (to - from) * amount;
-}
-
-function distanceSquared(a: Point, b: Point): number {
-  const dx = a.x - b.x;
-  const dy = a.y - b.y;
-  return (dx * dx) + (dy * dy);
-}
-
 function distanceSquaredXY(x1: number, y1: number, x2: number, y2: number): number {
   const dx = x1 - x2;
   const dy = y1 - y2;
   return (dx * dx) + (dy * dy);
-}
-
-function distance(a: Point, b: Point): number {
-  return Math.sqrt(distanceSquared(a, b));
 }
 
 function distanceXY(x1: number, y1: number, x2: number, y2: number): number {
@@ -226,20 +212,6 @@ function distanceXY(x1: number, y1: number, x2: number, y2: number): number {
 
 function angleBetween(source: Point, target: Point): number {
   return Math.atan2(target.y - source.y, target.x - source.x);
-}
-
-function pointToSegmentDistanceSquared(point: Point, start: Point, end: Point): number {
-  const px = end.x - start.x;
-  const py = end.y - start.y;
-  const denom = (px * px) + (py * py);
-  if (denom === 0) {
-    return distanceSquared(point, start);
-  }
-  let t = (((point.x - start.x) * px) + ((point.y - start.y) * py)) / denom;
-  t = clamp(t, 0, 1);
-  const x = start.x + (t * px);
-  const y = start.y + (t * py);
-  return ((point.x - x) ** 2) + ((point.y - y) ** 2);
 }
 
 function pointToSegmentDistanceSquaredXY(pointX: number, pointY: number, startX: number, startY: number, endX: number, endY: number): number {
