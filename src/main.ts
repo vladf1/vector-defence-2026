@@ -1,65 +1,16 @@
 import "./style.css";
 import levelsJson from "../Levels.json";
-
-type MonsterCode = "b" | "s" | "t";
-type TowerKind = "gun" | "laser" | "missile" | "slow";
-type GameState = "menu" | "playing" | "paused" | "won" | "lost";
-
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface LevelData {
-  name: string;
-  monsterCount: number;
-  allowEscape: number;
-  monsterSequence: MonsterCode[];
-  points: Point[];
-}
-
-interface MonsterPreset {
-  color: string;
-  speed: number;
-  hp: number;
-  bounty: number;
-  radius: number;
-}
-
-interface TowerSpec {
-  label: string;
-  cost: number;
-  range: number;
-  summary: string;
-}
-
-interface LevelJsonData {
-  name: string;
-  monsterCount: number;
-  allowEscape: number;
-  monsterSequence: string[];
-  points: Point[];
-}
-
-interface HudSnapshot {
-  levelName: string;
-  money: string;
-  escapes: string;
-  wave: string;
-  status: string;
-  banner: string;
-  pauseLabel: string;
-  pauseDisabled: boolean;
-  selectionTitle: string;
-  selectionBody: string;
-  upgradeDisabled: boolean;
-  sellDisabled: boolean;
-  cancelDisabled: boolean;
-  selectedTowerKind?: TowerKind;
-  selectedTowerLevel?: number;
-  placingTower?: TowerKind;
-  towerButtonsDisabled: boolean;
-}
+import {
+  TowerKind,
+  type GameState,
+  type HudSnapshot,
+  type LevelData,
+  type LevelJsonData,
+  type MonsterCode,
+  type MonsterPreset,
+  type Point,
+  type TowerSpec,
+} from "./types";
 
 const FIELD_WIDTH = 700;
 const FIELD_HEIGHT = 450;
@@ -73,17 +24,26 @@ const PRE_WAVE_DELAY = 5;
 const MAX_PARTICLES = 320;
 const MAX_LINKS = 120;
 
+const TOWER_KINDS = [TowerKind.Gun, TowerKind.Laser, TowerKind.Missile, TowerKind.Slow] as const;
+
 const TOWER_SPECS: Record<TowerKind, TowerSpec> = {
-  gun: { label: "Gun", cost: 20, range: 60, summary: "Fast, cheap, accurate lead shots." },
-  laser: { label: "Laser", cost: 30, range: 100, summary: "Piercing beam that melts lines of enemies." },
-  missile: { label: "Missile", cost: 50, range: 150, summary: "Slow launcher with splash damage." },
-  slow: { label: "Slow", cost: 30, range: 70, summary: "Freezes clusters so the rest can clean up." },
+  [TowerKind.Gun]: { label: "Gun", cost: 20, range: 60, summary: "Fast, cheap, accurate lead shots." },
+  [TowerKind.Laser]: { label: "Laser", cost: 30, range: 100, summary: "Piercing beam that melts lines of enemies." },
+  [TowerKind.Missile]: { label: "Missile", cost: 50, range: 150, summary: "Slow launcher with splash damage." },
+  [TowerKind.Slow]: { label: "Slow", cost: 30, range: 70, summary: "Freezes clusters so the rest can clean up." },
+};
+
+const TOWER_SHORTCUTS: Record<TowerKind, string[]> = {
+  [TowerKind.Gun]: ["1", "g"],
+  [TowerKind.Laser]: ["2", "l"],
+  [TowerKind.Missile]: ["3", "m"],
+  [TowerKind.Slow]: ["4", "s"],
 };
 
 const MONSTER_PRESETS: Record<MonsterCode, MonsterPreset> = {
-  b: { color: "#5df2ef", speed: 1.5, hp: 200, bounty: 20, radius: 7.5 },
-  s: { color: "#ff6f62", speed: 1.25, hp: 150, bounty: 25, radius: 6.5 },
-  t: { color: "#ffba4f", speed: 1.75, hp: 100, bounty: 30, radius: 7 },
+  ball: { color: "#5df2ef", speed: 1.5, hp: 200, bounty: 20, radius: 7.5 },
+  square: { color: "#ff6f62", speed: 1.25, hp: 150, bounty: 25, radius: 6.5 },
+  triangle: { color: "#ffba4f", speed: 1.75, hp: 100, bounty: 30, radius: 7 },
 };
 
 const root = document.querySelector<HTMLDivElement>("#app");
@@ -97,7 +57,7 @@ root.innerHTML = `
     <header class="topbar">
       <div class="title-block">
         <h1>Vector Defence</h1>
-        <p>A browser rebuild of the Silverlight prototype. Pick a tower, place it off the path, and hold the line.</p>
+        <p>Pick a tower, place it off the path, and hold the line.</p>
       </div>
       <div class="actions">
         <button class="chrome-button" id="pause-button">Pause</button>
@@ -154,7 +114,7 @@ root.innerHTML = `
       </div>
     </section>
 
-    <p class="footnote">Tip: press <strong>Esc</strong> to cancel build mode and <strong>Space</strong> to pause or resume.</p>
+    <p class="footnote">Tip: press <strong>1-4</strong> or <strong>G/L/M/S</strong> for towers, <strong>U</strong> to upgrade, <strong>Esc</strong> to cancel build mode, and <strong>Space</strong> to pause or resume.</p>
   </div>
 `;
 
@@ -186,7 +146,7 @@ const cancelButton = must(document.querySelector<HTMLButtonElement>("#cancel-but
 const ctx = must(canvas.getContext("2d"), "Canvas 2D context unavailable.");
 
 function isMonsterCode(value: string): value is MonsterCode {
-  return value === "b" || value === "s" || value === "t";
+  return value === "ball" || value === "square" || value === "triangle";
 }
 
 function normalizeLevels(data: LevelJsonData[]): LevelData[] {
@@ -432,7 +392,7 @@ class Monster {
       }
     }
 
-    if (this.kind === "s") {
+    if (this.kind === "square") {
       this.rotation += 0.07 * multiplier;
     }
     this.damageFlash = Math.max(0, this.damageFlash - (0.03 * multiplier));
@@ -446,12 +406,12 @@ class Monster {
     context.fillStyle = damageMix > 0 ? `rgba(153, 79, 255, ${0.25 + (damageMix * 0.55)})` : "#050908";
     context.lineWidth = 1.5;
 
-    if (this.kind === "b") {
+    if (this.kind === "ball") {
       context.beginPath();
       context.arc(0, 0, this.radius, 0, Math.PI * 2);
       context.fill();
       context.stroke();
-    } else if (this.kind === "s") {
+    } else if (this.kind === "square") {
       context.rotate(this.rotation);
       context.fillRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
       context.strokeRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
@@ -708,7 +668,7 @@ class GunTower extends Tower {
   angle = randomRange(-Math.PI, Math.PI);
 
   constructor(x: number, y: number) {
-    super("gun", x, y);
+    super(TowerKind.Gun, x, y);
   }
 
   protected onUpdate(game: Game): void {
@@ -769,7 +729,7 @@ class LaserTower extends Tower {
   damagePerHit = 1;
 
   constructor(x: number, y: number) {
-    super("laser", x, y);
+    super(TowerKind.Laser, x, y);
   }
 
   protected onUpdate(game: Game, multiplier: number): void {
@@ -861,7 +821,7 @@ class MissileTower extends Tower {
   missileDamage = 50;
 
   constructor(x: number, y: number) {
-    super("missile", x, y);
+    super(TowerKind.Missile, x, y);
     this.applyLevelStats();
   }
 
@@ -910,7 +870,7 @@ class SlowTower extends Tower {
   pulse = 0;
 
   constructor(x: number, y: number) {
-    super("slow", x, y);
+    super(TowerKind.Slow, x, y);
   }
 
   protected onUpdate(game: Game, multiplier: number): void {
@@ -979,11 +939,11 @@ function drawTowerSelection(context: CanvasRenderingContext2D, range: number): v
 
 function createTower(kind: TowerKind, x: number, y: number): Tower {
   switch (kind) {
-    case "gun":
+    case TowerKind.Gun:
       return new GunTower(x, y);
-    case "laser":
+    case TowerKind.Laser:
       return new LaserTower(x, y);
-    case "missile":
+    case TowerKind.Missile:
       return new MissileTower(x, y);
     default:
       return new SlowTower(x, y);
@@ -1110,7 +1070,7 @@ class Game {
     if (!this.currentLevel) {
       return;
     }
-    const code = this.currentLevel.monsterSequence[this.spawnIndex] ?? "b";
+    const code = this.currentLevel.monsterSequence[this.spawnIndex] ?? "ball";
     this.spawnIndex = (this.spawnIndex + 1) % this.currentLevel.monsterSequence.length;
     this.spawnedMonsters += 1;
     this.monsters.push(new Monster(code, this.currentLevel));
@@ -1459,17 +1419,26 @@ if (import.meta.env.DEV) {
 
 const towerButtons = new Map<TowerKind, HTMLButtonElement>();
 
+function toggleTowerPlacement(kind: TowerKind): void {
+  if (game.state === "menu" || game.state === "won" || game.state === "lost") {
+    return;
+  }
+  game.placingTower = game.placingTower === kind ? undefined : kind;
+  game.selectedTower = undefined;
+  syncHud();
+}
+
 function setupTowerButtons(): void {
   towerStrip.innerHTML = "";
-  (Object.keys(TOWER_SPECS) as TowerKind[]).forEach((kind) => {
+  TOWER_KINDS.forEach((kind) => {
     const spec = TOWER_SPECS[kind];
+    const shortcuts = TOWER_SHORTCUTS[kind].map((shortcut) => shortcut.toUpperCase()).join("/");
     const button = document.createElement("button");
     button.className = "tower-button";
-    button.innerHTML = `<strong>${spec.label}</strong><span>${formatMoney(spec.cost)} · ${spec.summary}</span>`;
+    button.innerHTML = `<strong>${spec.label} <span class="shortcut-chip">${shortcuts}</span></strong><span>${formatMoney(spec.cost)} · ${spec.summary}</span>`;
+    button.title = `${spec.label} tower (${shortcuts})`;
     button.addEventListener("click", () => {
-      game.placingTower = game.placingTower === kind ? undefined : kind;
-      game.selectedTower = undefined;
-      syncHud();
+      toggleTowerPlacement(kind);
     });
     towerButtons.set(kind, button);
     towerStrip.append(button);
@@ -1716,6 +1685,25 @@ cancelButton.addEventListener("click", () => {
 });
 
 window.addEventListener("keydown", (event) => {
+  if (event.repeat) {
+    return;
+  }
+
+  const shortcutTower = (Object.entries(TOWER_SHORTCUTS) as [TowerKind, string[]][])
+    .find(([, shortcuts]) => shortcuts.includes(event.key.toLowerCase()))?.[0];
+
+  if (shortcutTower) {
+    event.preventDefault();
+    toggleTowerPlacement(shortcutTower);
+    return;
+  }
+
+  if (event.key.toLowerCase() === "u") {
+    event.preventDefault();
+    game.upgradeSelectedTower();
+    return;
+  }
+
   if (event.key === "Escape") {
     game.placingTower = undefined;
     syncHud();

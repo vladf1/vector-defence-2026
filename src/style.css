@@ -44,21 +44,31 @@ button {
 .topbar {
   display: flex;
   justify-content: space-between;
-  align-items: end;
+  align-items: start;
   gap: 12px;
+}
+
+.title-block {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
 }
 
 .title-block h1 {
   margin: 0;
-  font-size: clamp(1.6rem, 3vw, 2.9rem);
+  font-size: clamp(1.2rem, 2vw, 2rem);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  flex: 0 0 auto;
 }
 
 .title-block p {
-  margin: 4px 0 0;
+  margin: 0;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  max-width: 29rem;
 }
 
 .actions {
@@ -105,10 +115,17 @@ button {
 .hud {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
-.stat-card,
+.stat-card {
+  background: rgba(10, 21, 18, 0.56);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 9px;
+  backdrop-filter: blur(10px);
+}
+
 .control-card {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -120,15 +137,15 @@ button {
 .stat-card span {
   display: block;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .stat-card strong {
   display: block;
-  margin-top: 4px;
-  font-size: clamp(0.95rem, 1.8vw, 1.18rem);
+  margin-top: 2px;
+  font-size: clamp(0.88rem, 1.6vw, 1.06rem);
 }
 
 .board-card {
@@ -237,6 +254,18 @@ button {
   margin-bottom: 4px;
 }
 
+.shortcut-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border: 1px solid rgba(255, 227, 111, 0.28);
+  border-radius: 999px;
+  color: #ffe9a0;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+}
+
 .level-card span,
 .tower-button span,
 .selection-copy span {
@@ -314,6 +343,12 @@ button {
   .topbar {
     align-items: start;
     flex-direction: column;
+  }
+
+  .title-block {
+    align-items: start;
+    flex-direction: column;
+    gap: 4px;
   }
 
   #game {
