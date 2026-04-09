@@ -41,6 +41,26 @@ interface LevelJsonData {
   points: Point[];
 }
 
+interface HudSnapshot {
+  levelName: string;
+  money: string;
+  escapes: string;
+  wave: string;
+  status: string;
+  banner: string;
+  pauseLabel: string;
+  pauseDisabled: boolean;
+  selectionTitle: string;
+  selectionBody: string;
+  upgradeDisabled: boolean;
+  sellDisabled: boolean;
+  cancelDisabled: boolean;
+  selectedTowerKind?: TowerKind;
+  selectedTowerLevel?: number;
+  placingTower?: TowerKind;
+  towerButtonsDisabled: boolean;
+}
+
 const FIELD_WIDTH = 700;
 const FIELD_HEIGHT = 450;
 const TOWER_RADIUS = 10;
@@ -50,6 +70,8 @@ const UPGRADE_COST = 50;
 const MIN_DISTANCE_TO_ROAD = 20;
 const MIN_DISTANCE_TO_OTHER_TOWERS = 32;
 const PRE_WAVE_DELAY = 5;
+const MAX_PARTICLES = 320;
+const MAX_LINKS = 120;
 
 const TOWER_SPECS: Record<TowerKind, TowerSpec> = {
   gun: { label: "Gun", cost: 20, range: 60, summary: "Fast, cheap, accurate lead shots." },
@@ -188,8 +210,18 @@ function distanceSquared(a: Point, b: Point): number {
   return (dx * dx) + (dy * dy);
 }
 
+function distanceSquaredXY(x1: number, y1: number, x2: number, y2: number): number {
+  const dx = x1 - x2;
+  const dy = y1 - y2;
+  return (dx * dx) + (dy * dy);
+}
+
 function distance(a: Point, b: Point): number {
   return Math.sqrt(distanceSquared(a, b));
+}
+
+function distanceXY(x1: number, y1: number, x2: number, y2: number): number {
+  return Math.sqrt(distanceSquaredXY(x1, y1, x2, y2));
 }
 
 function angleBetween(source: Point, target: Point): number {
@@ -210,6 +242,20 @@ function pointToSegmentDistanceSquared(point: Point, start: Point, end: Point): 
   return ((point.x - x) ** 2) + ((point.y - y) ** 2);
 }
 
+function pointToSegmentDistanceSquaredXY(pointX: number, pointY: number, startX: number, startY: number, endX: number, endY: number): number {
+  const px = endX - startX;
+  const py = endY - startY;
+  const denom = (px * px) + (py * py);
+  if (denom === 0) {
+    return distanceSquaredXY(pointX, pointY, startX, startY);
+  }
+  let t = (((pointX - startX) * px) + ((pointY - startY) * py)) / denom;
+  t = clamp(t, 0, 1);
+  const x = startX + (t * px);
+  const y = startY + (t * py);
+  return ((pointX - x) ** 2) + ((pointY - y) ** 2);
+}
+
 function randomRange(min: number, max: number): number {
   return min + (Math.random() * (max - min));
 }
@@ -221,6 +267,18 @@ function hexWithAlpha(hex: string, alpha: number): string {
 
 function formatMoney(value: number): string {
   return `$${Math.round(value).toLocaleString()}`;
+}
+
+function compactInPlace<T extends { removed: boolean }>(items: T[]): void {
+  let writeIndex = 0;
+  for (let readIndex = 0; readIndex < items.length; readIndex += 1) {
+    const item = items[readIndex];
+    if (!item.removed) {
+      items[writeIndex] = item;
+      writeIndex += 1;
+    }
+  }
+  items.length = writeIndex;
 }
 
 class Particle {
@@ -348,10 +406,6 @@ class Monster {
     this.dy = Math.sin(this.angle) * this.speed;
   }
 
-  get point(): Point {
-    return { x: this.x, y: this.y };
-  }
-
   takeDamage(amount: number): void {
     this.hp = Math.max(0, this.hp - amount);
     this.damageFlash = 1;
@@ -381,7 +435,7 @@ class Monster {
         return;
       }
 
-      const toTarget = distance(this.point, destination);
+      const toTarget = distanceXY(this.x, this.y, destination.x, destination.y);
       if (toTarget <= remainingStep) {
         this.x = destination.x;
         this.y = destination.y;
@@ -392,12 +446,12 @@ class Monster {
           game.onMonsterEscaped(this);
           return;
         }
-        this.angle = angleBetween(this.point, nextDestination);
+        this.angle = angleBetween({ x: this.x, y: this.y }, nextDestination);
         this.dx = Math.cos(this.angle) * this.speed;
         this.dy = Math.sin(this.angle) * this.speed;
         remainingStep -= toTarget;
       } else {
-        this.angle = angleBetween(this.point, destination);
+        this.angle = angleBetween({ x: this.x, y: this.y }, destination);
         this.dx = Math.cos(this.angle) * this.speed;
         this.dy = Math.sin(this.angle) * this.speed;
         this.x += this.dx * (remainingStep / this.speed);
@@ -482,7 +536,7 @@ class Projectile {
         continue;
       }
       const hitDistance = monster.radius + this.radius;
-      if (distanceSquared({ x: this.x, y: this.y }, monster.point) <= hitDistance * hitDistance) {
+      if (distanceSquaredXY(this.x, this.y, monster.x, monster.y) <= hitDistance * hitDistance) {
         monster.takeDamage(this.damage);
         this.removed = true;
         return;
@@ -516,7 +570,7 @@ class Missile {
     this.damage = damage;
     this.effectRadius = effectRadius;
     this.speed = speed;
-    this.angle = angleBetween(source, trackedMonster.point);
+    this.angle = angleBetween(source, { x: trackedMonster.x, y: trackedMonster.y });
   }
 
   update(game: Game, multiplier: number, dt: number): void {
@@ -525,7 +579,7 @@ class Missile {
       this.trackedMonster = undefined;
     }
     if (this.trackedMonster) {
-      this.angle = angleBetween({ x: this.x, y: this.y }, this.trackedMonster.point);
+      this.angle = angleBetween({ x: this.x, y: this.y }, { x: this.trackedMonster.x, y: this.trackedMonster.y });
     }
 
     this.x += Math.cos(this.angle) * this.speed * multiplier;
@@ -536,7 +590,7 @@ class Missile {
       this.trailTimer = 0;
       const trailX = this.x + randomRange(-3, 3) - (Math.cos(this.angle) * 9);
       const trailY = this.y + randomRange(-3, 3) - (Math.sin(this.angle) * 9);
-      game.particles.push(new Particle(trailX, trailY, 1, "#7e858c", 1 / 60));
+      game.addParticle(new Particle(trailX, trailY, 1, "#7e858c", 1 / 60));
     }
 
     if (this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
@@ -549,14 +603,14 @@ class Missile {
         continue;
       }
       const hitDistance = monster.radius + 6;
-      if (distanceSquared({ x: this.x, y: this.y }, monster.point) <= hitDistance * hitDistance) {
+      if (distanceSquaredXY(this.x, this.y, monster.x, monster.y) <= hitDistance * hitDistance) {
         this.removed = true;
         game.createExplosion(this.x, this.y, 20, 3, "#ffd34e", 1 / 30);
         for (const nearby of game.monsters) {
           if (nearby.removed) {
             continue;
           }
-          const dist = distance({ x: this.x, y: this.y }, nearby.point);
+          const dist = distanceXY(this.x, this.y, nearby.x, nearby.y);
           if (dist <= this.effectRadius) {
             const ratio = (this.effectRadius - dist) / this.effectRadius;
             nearby.takeDamage(this.damage * ratio);
@@ -634,7 +688,7 @@ abstract class Tower {
       if (monster.removed) {
         continue;
       }
-      const distSq = distanceSquared({ x: this.x, y: this.y }, monster.point);
+      const distSq = distanceSquaredXY(this.x, this.y, monster.x, monster.y);
       if (distSq > this.range * this.range) {
         continue;
       }
@@ -753,7 +807,7 @@ class LaserTower extends Tower {
       return;
     }
 
-    const target = tracked.point;
+    const target = { x: tracked.x, y: tracked.y };
     this.angle = angleBetween({ x: this.x, y: this.y }, target);
     this.beamTarget = {
       x: this.x + (Math.cos(this.angle) * 1000),
@@ -778,7 +832,7 @@ class LaserTower extends Tower {
       if (monster.removed) {
         continue;
       }
-      const distSq = pointToSegmentDistanceSquared(monster.point, source, this.beamTarget);
+      const distSq = pointToSegmentDistanceSquaredXY(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
       if (distSq <= monster.radius * monster.radius) {
         monster.takeDamage(this.damagePerHit * multiplier * this.beamAlpha);
       }
@@ -893,17 +947,25 @@ class SlowTower extends Tower {
       return;
     }
 
-    const inRange = game.monsters
-      .filter((monster) => !monster.removed && distanceSquared({ x: this.x, y: this.y }, monster.point) <= this.range * this.range)
-      .slice(0, this.level + 2);
-
-    if (inRange.length === 0) {
-      return;
+    let affected = 0;
+    const maxTargets = this.level + 2;
+    for (const monster of game.monsters) {
+      if (monster.removed) {
+        continue;
+      }
+      if (distanceSquaredXY(this.x, this.y, monster.x, monster.y) > this.range * this.range) {
+        continue;
+      }
+      monster.slowDown(0.5);
+      game.addLink(new LinkEffect(monster, "#d8ff4f", 1 / 60, { x: this.x, y: this.y }));
+      affected += 1;
+      if (affected === maxTargets) {
+        break;
+      }
     }
 
-    for (const monster of inRange) {
-      monster.slowDown(0.5);
-      game.links.push(new LinkEffect(monster, "#d8ff4f", 1 / 60, { x: this.x, y: this.y }));
+    if (affected === 0) {
+      return;
     }
 
     this.resetCooldown(1000);
@@ -980,14 +1042,35 @@ class Game {
   bannerTimer = 0;
   currentDpr = window.devicePixelRatio || 1;
   winDelay = 0;
+  hudDirty = true;
+  lastHudSnapshot?: HudSnapshot;
+  backgroundCanvas = document.createElement("canvas");
+  backgroundCtx = must(this.backgroundCanvas.getContext("2d"), "Background canvas unavailable.");
 
   constructor(levels: LevelData[]) {
     this.levels = levels;
   }
 
+  addParticle(particle: Particle): void {
+    if (this.particles.length < MAX_PARTICLES) {
+      this.particles.push(particle);
+    }
+  }
+
+  addLink(link: LinkEffect): void {
+    if (this.links.length < MAX_LINKS) {
+      this.links.push(link);
+    }
+  }
+
+  requestHudSync(): void {
+    this.hudDirty = true;
+  }
+
   setBanner(text: string, duration = 1.6): void {
     this.bannerText = text;
     this.bannerTimer = duration;
+    this.requestHudSync();
   }
 
   setState(next: GameState): void {
@@ -1003,7 +1086,7 @@ class Game {
     } else {
       this.statusText = "Select a map";
     }
-    syncHud();
+    this.requestHudSync();
   }
 
   resetField(): void {
@@ -1016,6 +1099,7 @@ class Game {
     this.selectedTower = undefined;
     this.placingTower = undefined;
     this.winDelay = 0;
+    this.requestHudSync();
   }
 
   startLevel(level: LevelData): void {
@@ -1029,8 +1113,8 @@ class Game {
     this.resetField();
     this.setBanner(level.name, 2.1);
     this.setState("playing");
+    this.rebuildBackgroundCache();
     renderModal();
-    syncHud();
   }
 
   restart(): void {
@@ -1063,6 +1147,7 @@ class Game {
   onMonsterKilled(monster: Monster): void {
     this.money += monster.bounty;
     this.createExplosion(monster.x, monster.y, 30, randomRange(1.5, 4), monster.color, 1 / 24);
+    this.requestHudSync();
   }
 
   onMonsterEscaped(monster: Monster): void {
@@ -1077,18 +1162,21 @@ class Game {
       this.setBanner("Defeat", 5);
       renderModal();
     }
+    this.requestHudSync();
   }
 
   createExplosion(x: number, y: number, count: number, size: number, color: string, burnRate: number): void {
-    for (let index = 0; index < count; index += 1) {
-      this.particles.push(new Particle(x, y, size, color, burnRate));
+    const particleCount = Math.min(count, Math.max(0, MAX_PARTICLES - this.particles.length));
+    for (let index = 0; index < particleCount; index += 1) {
+      this.addParticle(new Particle(x, y, size, color, burnRate));
     }
   }
 
   createEscapeBurst(x: number, y: number): void {
-    for (let index = 0; index < 90; index += 1) {
+    const particleCount = Math.min(90, Math.max(0, MAX_PARTICLES - this.particles.length));
+    for (let index = 0; index < particleCount; index += 1) {
       const color = `#${Math.floor(randomRange(0x555555, 0xffffff)).toString(16).padStart(6, "0")}`;
-      this.particles.push(new Particle(x, y, randomRange(1, 4), color, 1 / 40));
+      this.addParticle(new Particle(x, y, randomRange(1, 4), color, 1 / 40));
     }
   }
 
@@ -1108,7 +1196,7 @@ class Game {
     }
 
     for (const tower of this.towers) {
-      if (distanceSquared(point, { x: tower.x, y: tower.y }) <= MIN_DISTANCE_TO_OTHER_TOWERS ** 2) {
+      if (distanceSquaredXY(point.x, point.y, tower.x, tower.y) <= MIN_DISTANCE_TO_OTHER_TOWERS ** 2) {
         return false;
       }
     }
@@ -1116,7 +1204,7 @@ class Game {
     for (let index = 0; index < this.currentLevel.points.length - 1; index += 1) {
       const start = this.currentLevel.points[index];
       const end = this.currentLevel.points[index + 1];
-      if (pointToSegmentDistanceSquared(point, start, end) <= MIN_DISTANCE_TO_ROAD ** 2) {
+      if (pointToSegmentDistanceSquaredXY(point.x, point.y, start.x, start.y, end.x, end.y) <= MIN_DISTANCE_TO_ROAD ** 2) {
         return false;
       }
     }
@@ -1133,20 +1221,20 @@ class Game {
     this.towers.push(tower);
     this.selectedTower = tower;
     this.placingTower = undefined;
-    syncHud();
+    this.requestHudSync();
   }
 
   selectTowerAt(point: Point): void {
     let hit: Tower | undefined;
     for (let index = this.towers.length - 1; index >= 0; index -= 1) {
       const tower = this.towers[index];
-      if (distanceSquared(point, { x: tower.x, y: tower.y }) <= (TOWER_RADIUS + 6) ** 2) {
+      if (distanceSquaredXY(point.x, point.y, tower.x, tower.y) <= (TOWER_RADIUS + 6) ** 2) {
         hit = tower;
         break;
       }
     }
     this.selectedTower = hit;
-    syncHud();
+    this.requestHudSync();
   }
 
   sellSelectedTower(): void {
@@ -1157,7 +1245,7 @@ class Game {
     this.selectedTower.removed = true;
     this.towers = this.towers.filter((tower) => tower !== this.selectedTower);
     this.selectedTower = undefined;
-    syncHud();
+    this.requestHudSync();
   }
 
   upgradeSelectedTower(): void {
@@ -1166,7 +1254,7 @@ class Game {
     }
     this.money -= this.selectedTower.upgradeCost;
     this.selectedTower.upgrade();
-    syncHud();
+    this.requestHudSync();
   }
 
   chooseRandomLevel(): void {
@@ -1184,26 +1272,49 @@ class Game {
     canvas.width = Math.round(FIELD_WIDTH * this.currentDpr);
     canvas.height = Math.round(FIELD_HEIGHT * this.currentDpr);
     ctx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
+    this.rebuildBackgroundCache();
+  }
+
+  rebuildBackgroundCache(): void {
+    this.backgroundCanvas.width = Math.round(FIELD_WIDTH * this.currentDpr);
+    this.backgroundCanvas.height = Math.round(FIELD_HEIGHT * this.currentDpr);
+    this.backgroundCtx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
+    this.drawBackground(this.backgroundCtx);
   }
 
   update(dt: number): void {
     const multiplier = dt * 60;
+    const previousBannerActive = this.bannerTimer > 0;
+    const previousPreWaveSecond = this.state === "playing" && this.spawnDelay > 0 && this.spawnedMonsters === 0
+      ? Math.ceil(this.spawnDelay)
+      : -1;
     if (this.bannerTimer > 0) {
       this.bannerTimer = Math.max(0, this.bannerTimer - dt);
+      if (previousBannerActive && this.bannerTimer === 0) {
+        this.requestHudSync();
+      }
     }
 
     if (this.state !== "playing") {
+      if (this.hudDirty) {
+        syncHud();
+      }
       this.draw();
       return;
     }
 
     if (this.spawnDelay > 0) {
       this.spawnDelay = Math.max(0, this.spawnDelay - dt);
+      const nextPreWaveSecond = this.spawnDelay > 0 && this.spawnedMonsters === 0 ? Math.ceil(this.spawnDelay) : -1;
+      if (previousPreWaveSecond !== nextPreWaveSecond) {
+        this.requestHudSync();
+      }
     } else if (this.currentLevel && this.spawnedMonsters < this.currentLevel.monsterCount) {
       this.spawnCooldown -= dt;
       if (this.spawnCooldown <= 0) {
         this.spawnMonster();
         this.spawnCooldown = randomRange(0.5, 1.25);
+        this.requestHudSync();
       }
     }
 
@@ -1231,11 +1342,11 @@ class Game {
       tower.update(this, dt, multiplier);
     }
 
-    this.monsters = this.monsters.filter((monster) => !monster.removed);
-    this.projectiles = this.projectiles.filter((projectile) => !projectile.removed);
-    this.missiles = this.missiles.filter((missile) => !missile.removed);
-    this.particles = this.particles.filter((particle) => !particle.removed);
-    this.links = this.links.filter((link) => !link.removed);
+    compactInPlace(this.monsters);
+    compactInPlace(this.projectiles);
+    compactInPlace(this.missiles);
+    compactInPlace(this.particles);
+    compactInPlace(this.links);
 
     if (this.currentLevel && this.spawnedMonsters >= this.currentLevel.monsterCount && this.monsters.length === 0) {
       this.winDelay += dt;
@@ -1248,7 +1359,9 @@ class Game {
       this.winDelay = 0;
     }
 
-    syncHud();
+    if (this.hudDirty) {
+      syncHud();
+    }
     this.draw();
   }
 
@@ -1285,7 +1398,8 @@ class Game {
       context.lineWidth = 24;
       context.beginPath();
       context.moveTo(first.x, first.y);
-      for (const point of this.currentLevel.points.slice(1)) {
+      for (let index = 1; index < this.currentLevel.points.length; index += 1) {
+        const point = this.currentLevel.points[index];
         context.lineTo(point.x, point.y);
       }
       context.stroke();
@@ -1330,8 +1444,7 @@ class Game {
 
   draw(): void {
     ctx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
-    this.drawBackground(ctx);
-    this.drawPreview(ctx);
+    ctx.drawImage(this.backgroundCanvas, 0, 0, FIELD_WIDTH, FIELD_HEIGHT);
 
     for (const link of this.links) {
       link.draw(ctx);
@@ -1356,6 +1469,8 @@ class Game {
     for (const particle of this.particles) {
       particle.draw(ctx);
     }
+
+    this.drawPreview(ctx);
   }
 }
 
@@ -1390,57 +1505,113 @@ function setupTowerButtons(): void {
 }
 
 function syncHud(): void {
-  levelNameValue.textContent = game.currentLevel?.name ?? "Choose a level";
-  moneyValue.textContent = formatMoney(game.money);
-  escapesValue.textContent = String(Math.max(0, game.escapesLeft));
-
-  if (game.currentLevel) {
-    if (game.state === "playing" && game.spawnDelay > 0 && game.spawnedMonsters === 0) {
-      waveValue.textContent = `Starts in ${Math.ceil(game.spawnDelay)}s`;
-    } else {
-      waveValue.textContent = `${Math.min(game.spawnedMonsters, game.currentLevel.monsterCount)} / ${game.currentLevel.monsterCount}`;
-    }
-  } else {
-    waveValue.textContent = "Idle";
-  }
-
-  statusValue.textContent = game.state === "playing" && game.spawnDelay > 0 && game.spawnedMonsters === 0
+  const selected = game.selectedTower;
+  const wave = game.currentLevel
+    ? (game.state === "playing" && game.spawnDelay > 0 && game.spawnedMonsters === 0
+        ? `Starts in ${Math.ceil(game.spawnDelay)}s`
+        : `${Math.min(game.spawnedMonsters, game.currentLevel.monsterCount)} / ${game.currentLevel.monsterCount}`)
+    : "Idle";
+  const status = game.state === "playing" && game.spawnDelay > 0 && game.spawnedMonsters === 0
     ? "Build phase"
     : game.statusText;
-  banner.textContent = game.state === "playing" && game.spawnDelay > 0 && game.spawnedMonsters === 0
+  const bannerText = game.state === "playing" && game.spawnDelay > 0 && game.spawnedMonsters === 0
     ? `Wave starts in ${Math.ceil(game.spawnDelay)}`
     : (game.bannerTimer > 0 ? game.bannerText : (game.state === "menu" ? "Awaiting orders" : game.statusText));
-  pauseButton.textContent = game.state === "paused" ? "Resume" : "Pause";
-  pauseButton.disabled = !(game.state === "playing" || game.state === "paused");
 
-  const selected = game.selectedTower;
+  let selectionTitleText: string;
+  let selectionBodyText: string;
   if (selected) {
-    selectionTitle.textContent = `${TOWER_SPECS[selected.kind].label} Tower · Lv ${selected.level + 1}`;
-    selectionBody.textContent = `Range ${Math.round(selected.range)} · Upgrade ${formatMoney(selected.upgradeCost)} · Sell ${formatMoney(selected.resaleValue)}`;
+    selectionTitleText = `${TOWER_SPECS[selected.kind].label} Tower · Lv ${selected.level + 1}`;
+    selectionBodyText = `Range ${Math.round(selected.range)} · Upgrade ${formatMoney(selected.upgradeCost)} · Sell ${formatMoney(selected.resaleValue)}`;
   } else if (game.placingTower) {
     const spec = TOWER_SPECS[game.placingTower];
-    selectionTitle.textContent = `Placing ${spec.label}`;
-    selectionBody.textContent = `${spec.summary} Cost ${formatMoney(spec.cost)}. Click the field to place it.`;
+    selectionTitleText = `Placing ${spec.label}`;
+    selectionBodyText = `${spec.summary} Cost ${formatMoney(spec.cost)}. Click the field to place it.`;
   } else {
-    selectionTitle.textContent = "No tower selected";
-    selectionBody.textContent = "Choose a build from the toolbar, then click the field to place it.";
+    selectionTitleText = "No tower selected";
+    selectionBodyText = "Choose a build from the toolbar, then click the field to place it.";
   }
 
-  upgradeButton.disabled = !selected || !selected.canUpgrade() || game.money < selected.upgradeCost || game.state === "menu";
-  sellButton.disabled = !selected || game.state === "menu";
-  cancelButton.disabled = !game.placingTower;
+  const snapshot: HudSnapshot = {
+    levelName: game.currentLevel?.name ?? "Choose a level",
+    money: formatMoney(game.money),
+    escapes: String(Math.max(0, game.escapesLeft)),
+    wave,
+    status,
+    banner: bannerText,
+    pauseLabel: game.state === "paused" ? "Resume" : "Pause",
+    pauseDisabled: !(game.state === "playing" || game.state === "paused"),
+    selectionTitle: selectionTitleText,
+    selectionBody: selectionBodyText,
+    upgradeDisabled: !selected || !selected.canUpgrade() || game.money < selected.upgradeCost || game.state === "menu",
+    sellDisabled: !selected || game.state === "menu",
+    cancelDisabled: !game.placingTower,
+    selectedTowerKind: selected?.kind,
+    selectedTowerLevel: selected?.level,
+    placingTower: game.placingTower,
+    towerButtonsDisabled: game.state === "menu" || game.state === "won" || game.state === "lost",
+  };
+
+  const previous = game.lastHudSnapshot;
+  if (!previous || previous.levelName !== snapshot.levelName) {
+    levelNameValue.textContent = snapshot.levelName;
+  }
+  if (!previous || previous.money !== snapshot.money) {
+    moneyValue.textContent = snapshot.money;
+  }
+  if (!previous || previous.escapes !== snapshot.escapes) {
+    escapesValue.textContent = snapshot.escapes;
+  }
+  if (!previous || previous.wave !== snapshot.wave) {
+    waveValue.textContent = snapshot.wave;
+  }
+  if (!previous || previous.status !== snapshot.status) {
+    statusValue.textContent = snapshot.status;
+  }
+  if (!previous || previous.banner !== snapshot.banner) {
+    banner.textContent = snapshot.banner;
+  }
+  if (!previous || previous.pauseLabel !== snapshot.pauseLabel) {
+    pauseButton.textContent = snapshot.pauseLabel;
+  }
+  if (!previous || previous.pauseDisabled !== snapshot.pauseDisabled) {
+    pauseButton.disabled = snapshot.pauseDisabled;
+  }
+  if (!previous || previous.selectionTitle !== snapshot.selectionTitle) {
+    selectionTitle.textContent = snapshot.selectionTitle;
+  }
+  if (!previous || previous.selectionBody !== snapshot.selectionBody) {
+    selectionBody.textContent = snapshot.selectionBody;
+  }
+  if (!previous || previous.upgradeDisabled !== snapshot.upgradeDisabled) {
+    upgradeButton.disabled = snapshot.upgradeDisabled;
+  }
+  if (!previous || previous.sellDisabled !== snapshot.sellDisabled) {
+    sellButton.disabled = snapshot.sellDisabled;
+  }
+  if (!previous || previous.cancelDisabled !== snapshot.cancelDisabled) {
+    cancelButton.disabled = snapshot.cancelDisabled;
+  }
 
   for (const [kind, button] of towerButtons.entries()) {
-    button.className = `tower-button${game.placingTower === kind ? " active" : ""}`;
-    button.disabled = game.state === "menu" || game.state === "won" || game.state === "lost";
+    const isActive = snapshot.placingTower === kind;
+    if (!previous || previous.placingTower !== snapshot.placingTower) {
+      button.className = `tower-button${isActive ? " active" : ""}`;
+    }
+    if (!previous || previous.towerButtonsDisabled !== snapshot.towerButtonsDisabled) {
+      button.disabled = snapshot.towerButtonsDisabled;
+    }
   }
+
+  game.lastHudSnapshot = snapshot;
+  game.hudDirty = false;
 }
 
 function modalLevelCards(): string {
   return levels
-    .map((level) => {
+    .map((level, index) => {
       return `
-        <button class="level-card" data-level="${level.name}">
+        <button class="level-card" data-level-index="${index}">
           <strong>${level.name}</strong>
           <span>${level.monsterCount} enemies · ${level.allowEscape} leaks allowed</span>
         </button>
@@ -1489,10 +1660,10 @@ function renderModal(): void {
     modal.innerHTML = "";
   }
 
-  modal.querySelectorAll<HTMLElement>("[data-level]").forEach((button) => {
+  modal.querySelectorAll<HTMLElement>("[data-level-index]").forEach((button) => {
     button.addEventListener("click", () => {
-      const name = button.dataset.level;
-      const level = levels.find((item) => item.name === name);
+      const levelIndex = Number(button.dataset.levelIndex);
+      const level = levels[levelIndex];
       if (level) {
         game.startLevel(level);
       }
