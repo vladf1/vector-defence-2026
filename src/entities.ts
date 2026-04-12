@@ -21,7 +21,7 @@ import {
 import { TowerKind } from "./types";
 import type { LevelData, MonsterCode, Point } from "./types";
 
-export interface GameAccess {
+interface GameAccess {
   monsters: Monster[];
   projectiles: Projectile[];
   missiles: Missile[];
@@ -516,7 +516,7 @@ export abstract class Tower {
   abstract draw(context: CanvasRenderingContext2D, active: boolean): void;
 }
 
-export class GunTower extends Tower {
+class GunTower extends Tower {
   angle = randomRange(-Math.PI, Math.PI);
   turnSpeed = 0.16;
 
@@ -576,7 +576,7 @@ export class GunTower extends Tower {
   }
 }
 
-export class LaserTower extends Tower {
+class LaserTower extends Tower {
   angle = randomRange(-Math.PI, Math.PI);
   beamAlpha = 0;
   beamTarget = { x: 0, y: 0 };
@@ -671,7 +671,7 @@ export class LaserTower extends Tower {
   }
 }
 
-export class MissileTower extends Tower {
+class MissileTower extends Tower {
   angle = Math.PI / 4;
   rotationSpeed = 0.5;
   missileDamage = 50;
@@ -756,7 +756,7 @@ export class MissileTower extends Tower {
   }
 }
 
-export class SlowTower extends Tower {
+class SlowTower extends Tower {
   pulse = 0;
 
   constructor(x: number, y: number) {
@@ -816,7 +816,7 @@ export class SlowTower extends Tower {
   }
 }
 
-export function drawTowerSelection(context: CanvasRenderingContext2D, range: number): void {
+function drawTowerSelection(context: CanvasRenderingContext2D, range: number): void {
   context.save();
   context.strokeStyle = "rgba(92, 255, 158, 0.25)";
   context.fillStyle = "rgba(92, 255, 158, 0.05)";

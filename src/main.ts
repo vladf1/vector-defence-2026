@@ -1,51 +1,56 @@
 import "./style.css";
 import levelsJson from "../Levels.json";
 import {
+  FIELD_HEIGHT,
+  FIELD_WIDTH,
+  MAX_LINKS,
+  MAX_PARTICLES,
+  MIN_DISTANCE_TO_OTHER_TOWERS,
+  MIN_DISTANCE_TO_ROAD,
+  PRE_WAVE_DELAY,
+  STARTING_MONEY,
+  TOWER_RADIUS,
+  TOWER_SPECS,
+} from "./constants";
+import {
+  LinkEffect,
+  Missile,
+  Monster,
+  Particle,
+  Projectile,
+  Tower,
+  createTower,
+} from "./entities";
+import {
+  compactInPlace,
+  distanceSquaredXY,
+  formatMoney,
+  must,
+  normalizeLevels,
+  pointToSegmentDistanceSquaredXY,
+  randomRange,
+} from "./utils";
+import {
+  RANDOM_ROUTE_MENU_COPY,
+  renderRandomRouteCard,
+  resolveRandomRoute,
+} from "./random-route";
+import {
   TowerKind,
   type GameState,
   type HudSnapshot,
   type LevelData,
   type LevelJsonData,
-  type MonsterCode,
-  type MonsterPreset,
   type Point,
-  type TowerSpec,
 } from "./types";
 
-const FIELD_WIDTH = 700;
-const FIELD_HEIGHT = 450;
-const TOWER_RADIUS = 10;
-const MAX_TOWER_LEVEL = 6;
-const STARTING_MONEY = 260;
-const UPGRADE_COST = 50;
-const MIN_DISTANCE_TO_ROAD = 20;
-const MIN_DISTANCE_TO_OTHER_TOWERS = 32;
-const PRE_WAVE_DELAY = 5;
-const MAX_PARTICLES = 320;
-const MAX_LINKS = 120;
-
 const TOWER_KINDS = [TowerKind.Gun, TowerKind.Laser, TowerKind.Missile, TowerKind.Slow] as const;
-
-const TOWER_SPECS: Record<TowerKind, TowerSpec> = {
-  [TowerKind.Gun]: { label: "Gun", cost: 20, range: 60, summary: "Fast, cheap, accurate lead shots." },
-  [TowerKind.Laser]: { label: "Laser", cost: 30, range: 100, summary: "Piercing beam that melts lines of enemies." },
-  [TowerKind.Missile]: { label: "Missile", cost: 50, range: 150, summary: "Slow launcher with splash damage." },
-  [TowerKind.Slow]: { label: "Slow", cost: 30, range: 70, summary: "Freezes clusters so the rest can clean up." },
-};
 
 const TOWER_SHORTCUTS: Record<TowerKind, string[]> = {
   [TowerKind.Gun]: ["1", "g"],
   [TowerKind.Laser]: ["2", "l"],
   [TowerKind.Missile]: ["3", "m"],
   [TowerKind.Slow]: ["4", "s"],
-};
-
-const MONSTER_PRESETS: Record<MonsterCode, MonsterPreset> = {
-  ball: { color: "#5df2ef", speed: 1.5, hp: 200, bounty: 20, radius: 7.5 },
-  square: { color: "#ff6f62", speed: 1.25, hp: 150, bounty: 25, radius: 6.5 },
-  triangle: { color: "#ffba4f", speed: 1.75, hp: 100, bounty: 30, radius: 7 },
-  tank: { color: "#9fb6ff", speed: 0.75, hp: 420, bounty: 55, radius: 10.5 },
-  runner: { color: "#91ff63", speed: 2.45, hp: 75, bounty: 18, radius: 5.5 },
 };
 
 const root = document.querySelector<HTMLDivElement>("#app");
@@ -116,13 +121,6 @@ root.innerHTML = `
   </div>
 `;
 
-function must<T>(value: T | null, message: string): T {
-  if (value === null) {
-    throw new Error(message);
-  }
-  return value;
-}
-
 const canvas = must(document.querySelector<HTMLCanvasElement>("#game"), "Missing canvas.");
 const modal = must(document.querySelector<HTMLDivElement>("#modal"), "Missing modal.");
 const towerStrip = must(document.querySelector<HTMLDivElement>("#tower-strip"), "Missing tower strip.");
@@ -141,891 +139,6 @@ const sellButton = must(document.querySelector<HTMLButtonElement>("#sell-button"
 const cancelButton = must(document.querySelector<HTMLButtonElement>("#cancel-button"), "Missing cancel button.");
 
 const ctx = must(canvas.getContext("2d"), "Canvas 2D context unavailable.");
-
-function isMonsterCode(value: string): value is MonsterCode {
-  return value === "ball" || value === "square" || value === "triangle" || value === "tank" || value === "runner";
-}
-
-function normalizeLevels(data: LevelJsonData[]): LevelData[] {
-  return data.map((level) => ({
-    ...level,
-    monsterSequence: level.monsterSequence.filter(isMonsterCode),
-  }));
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function distanceSquaredXY(x1: number, y1: number, x2: number, y2: number): number {
-  const dx = x1 - x2;
-  const dy = y1 - y2;
-  return (dx * dx) + (dy * dy);
-}
-
-function distanceXY(x1: number, y1: number, x2: number, y2: number): number {
-  return Math.sqrt(distanceSquaredXY(x1, y1, x2, y2));
-}
-
-function angleBetween(source: Point, target: Point): number {
-  return Math.atan2(target.y - source.y, target.x - source.x);
-}
-
-function normalizeAngle(angle: number): number {
-  return Math.atan2(Math.sin(angle), Math.cos(angle));
-}
-
-function turnAngleTowards(current: number, target: number, maxStep: number): number {
-  const delta = normalizeAngle(target - current);
-  if (Math.abs(delta) <= maxStep) {
-    return target;
-  }
-  return normalizeAngle(current + (Math.sign(delta) * maxStep));
-}
-
-function pointToSegmentDistanceSquaredXY(pointX: number, pointY: number, startX: number, startY: number, endX: number, endY: number): number {
-  const px = endX - startX;
-  const py = endY - startY;
-  const denom = (px * px) + (py * py);
-  if (denom === 0) {
-    return distanceSquaredXY(pointX, pointY, startX, startY);
-  }
-  let t = (((pointX - startX) * px) + ((pointY - startY) * py)) / denom;
-  t = clamp(t, 0, 1);
-  const x = startX + (t * px);
-  const y = startY + (t * py);
-  return ((pointX - x) ** 2) + ((pointY - y) ** 2);
-}
-
-function randomRange(min: number, max: number): number {
-  return min + (Math.random() * (max - min));
-}
-
-function hexWithAlpha(hex: string, alpha: number): string {
-  const value = clamp(Math.round(alpha * 255), 0, 255).toString(16).padStart(2, "0");
-  return `${hex}${value}`;
-}
-
-function formatMoney(value: number): string {
-  return `$${Math.round(value).toLocaleString()}`;
-}
-
-function compactInPlace<T extends { removed: boolean }>(items: T[]): void {
-  let writeIndex = 0;
-  for (let readIndex = 0; readIndex < items.length; readIndex += 1) {
-    const item = items[readIndex];
-    if (!item.removed) {
-      items[writeIndex] = item;
-      writeIndex += 1;
-    }
-  }
-  items.length = writeIndex;
-}
-
-class Particle {
-  x: number;
-  y: number;
-  dx: number;
-  dy: number;
-  size: number;
-  color: string;
-  alpha = 1;
-  burnRate: number;
-  removed = false;
-
-  constructor(x: number, y: number, size: number, color: string, burnRate: number, speed = randomRange(2, 7), offset = randomRange(4, 6)) {
-    const angle = randomRange(-Math.PI, Math.PI);
-    this.dx = Math.cos(angle) * speed;
-    this.dy = Math.sin(angle) * speed;
-    this.x = x + (Math.cos(angle) * offset);
-    this.y = y + (Math.sin(angle) * offset);
-    this.size = size;
-    this.color = color;
-    this.burnRate = burnRate;
-  }
-
-  update(multiplier: number): void {
-    const slowDownFactor = 1 - (0.04 * multiplier);
-    this.dx *= slowDownFactor;
-    this.dy *= slowDownFactor;
-    this.x += this.dx * multiplier;
-    this.y += this.dy * multiplier;
-    this.alpha -= this.burnRate * multiplier;
-    if (this.alpha <= 0 || this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
-      this.removed = true;
-    }
-  }
-
-  draw(context: CanvasRenderingContext2D): void {
-    context.fillStyle = hexWithAlpha(this.color, this.alpha);
-    context.fillRect(this.x - (this.size / 2), this.y - (this.size / 2), this.size, this.size);
-  }
-}
-
-class LinkEffect {
-  from?: Point;
-  fromTower?: Tower;
-  target: Monster;
-  color: string;
-  alpha: number;
-  fadeBy: number;
-  removed = false;
-
-  constructor(target: Monster, color: string, fadeBy: number, from?: Point, fromTower?: Tower) {
-    this.target = target;
-    this.color = color;
-    this.fadeBy = fadeBy;
-    this.from = from;
-    this.fromTower = fromTower;
-    this.alpha = color === "#d8ff4f" ? 0.8 : 0.7;
-  }
-
-  update(multiplier: number): void {
-    if (this.target.removed || (this.fromTower && this.fromTower.removed)) {
-      this.alpha = 0;
-    } else {
-      this.alpha -= this.fadeBy * multiplier;
-    }
-    if (this.alpha <= 0) {
-      this.removed = true;
-    }
-  }
-
-  draw(context: CanvasRenderingContext2D): void {
-    const from = this.fromTower ? { x: this.fromTower.x, y: this.fromTower.y } : this.from;
-    if (!from) {
-      return;
-    }
-    context.save();
-    context.strokeStyle = hexWithAlpha(this.color, this.alpha);
-    context.lineWidth = 1.2;
-    context.beginPath();
-    context.moveTo(from.x, from.y);
-    context.lineTo(this.target.x, this.target.y);
-    context.stroke();
-    context.restore();
-  }
-}
-
-class Monster {
-  kind: MonsterCode;
-  x: number;
-  y: number;
-  dx = 0;
-  dy = 0;
-  speed: number;
-  maxSpeed: number;
-  hp: number;
-  maxHp: number;
-  bounty: number;
-  radius: number;
-  color: string;
-  path: Point[];
-  targetIndex = 1;
-  rotation = randomRange(0, Math.PI * 2);
-  angle = 0;
-  damageFlash = 0;
-  removed = false;
-
-  constructor(kind: MonsterCode, level: LevelData) {
-    const preset = MONSTER_PRESETS[kind];
-    const start = level.points[0];
-    this.kind = kind;
-    this.x = start.x;
-    this.y = start.y;
-    this.maxSpeed = preset.speed;
-    this.speed = preset.speed;
-    this.hp = preset.hp;
-    this.maxHp = preset.hp;
-    this.bounty = preset.bounty;
-    this.radius = preset.radius;
-    this.color = preset.color;
-    this.path = level.points;
-    const initialTarget = level.points[1] ?? level.points[0];
-    this.angle = angleBetween(start, initialTarget);
-    this.dx = Math.cos(this.angle) * this.speed;
-    this.dy = Math.sin(this.angle) * this.speed;
-  }
-
-  takeDamage(amount: number): void {
-    this.hp = Math.max(0, this.hp - amount);
-    this.damageFlash = 1;
-  }
-
-  slowDown(factor: number): void {
-    this.speed = Math.min(this.speed, this.maxSpeed * factor);
-  }
-
-  update(game: Game, multiplier: number): void {
-    if (this.hp <= 0) {
-      this.removed = true;
-      game.onMonsterKilled(this);
-      return;
-    }
-
-    if (this.speed < this.maxSpeed) {
-      this.speed = Math.min(this.maxSpeed, this.speed + (0.01 * multiplier));
-    }
-
-    let remainingStep = this.speed * multiplier;
-    while (remainingStep > 0 && !this.removed) {
-      const destination = this.path[this.targetIndex];
-      if (!destination) {
-        this.removed = true;
-        game.onMonsterEscaped(this);
-        return;
-      }
-
-      const toTarget = distanceXY(this.x, this.y, destination.x, destination.y);
-      if (toTarget <= remainingStep) {
-        this.x = destination.x;
-        this.y = destination.y;
-        this.targetIndex += 1;
-        const nextDestination = this.path[this.targetIndex];
-        if (!nextDestination) {
-          this.removed = true;
-          game.onMonsterEscaped(this);
-          return;
-        }
-        this.angle = angleBetween({ x: this.x, y: this.y }, nextDestination);
-        this.dx = Math.cos(this.angle) * this.speed;
-        this.dy = Math.sin(this.angle) * this.speed;
-        remainingStep -= toTarget;
-      } else {
-        this.angle = angleBetween({ x: this.x, y: this.y }, destination);
-        this.dx = Math.cos(this.angle) * this.speed;
-        this.dy = Math.sin(this.angle) * this.speed;
-        this.x += this.dx * (remainingStep / this.speed);
-        this.y += this.dy * (remainingStep / this.speed);
-        remainingStep = 0;
-      }
-    }
-
-    if (this.kind === "square") {
-      this.rotation += 0.07 * multiplier;
-    }
-    this.damageFlash = Math.max(0, this.damageFlash - (0.03 * multiplier));
-  }
-
-  draw(context: CanvasRenderingContext2D): void {
-    const damageMix = this.damageFlash;
-    context.save();
-    context.translate(this.x, this.y);
-    context.strokeStyle = this.color;
-    context.fillStyle = damageMix > 0 ? `rgba(153, 79, 255, ${0.25 + (damageMix * 0.55)})` : "#050908";
-    context.lineWidth = 1.5;
-
-    if (this.kind === "ball") {
-      context.beginPath();
-      context.arc(0, 0, this.radius, 0, Math.PI * 2);
-      context.fill();
-      context.stroke();
-    } else if (this.kind === "square") {
-      context.rotate(this.rotation);
-      context.fillRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
-      context.strokeRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
-    } else if (this.kind === "triangle") {
-      context.rotate(this.angle);
-      context.beginPath();
-      context.moveTo(6, 0);
-      context.lineTo(-6, -6);
-      context.lineTo(-6, 6);
-      context.closePath();
-      context.fill();
-      context.stroke();
-    } else if (this.kind === "runner") {
-      context.rotate(this.angle);
-      context.beginPath();
-      context.moveTo(this.radius * 1.7, 0);
-      context.lineTo(-this.radius * 0.1, -this.radius * 0.82);
-      context.lineTo(-this.radius * 1.35, 0);
-      context.lineTo(-this.radius * 0.1, this.radius * 0.82);
-      context.closePath();
-      context.fill();
-      context.stroke();
-      context.beginPath();
-      context.moveTo(-this.radius * 0.95, 0);
-      context.lineTo(-this.radius * 1.5, -this.radius * 0.55);
-      context.moveTo(-this.radius * 0.95, 0);
-      context.lineTo(-this.radius * 1.5, this.radius * 0.55);
-      context.stroke();
-    } else {
-      context.rotate(this.angle);
-      context.fillRect(-this.radius, -this.radius * 0.72, this.radius * 2.1, this.radius * 1.44);
-      context.strokeRect(-this.radius, -this.radius * 0.72, this.radius * 2.1, this.radius * 1.44);
-      const turretCenterX = this.radius * 0.08;
-      const turretRadius = this.radius * 0.42;
-      context.beginPath();
-      context.arc(turretCenterX, 0, turretRadius, 0, Math.PI * 2);
-      context.fill();
-      context.stroke();
-      context.beginPath();
-      context.moveTo(turretCenterX + (turretRadius * 0.92), 0);
-      context.lineTo(this.radius * 1.52, 0);
-      context.stroke();
-    }
-    context.restore();
-
-    const barWidth = Math.max(16, this.radius * 2);
-    const fillWidth = barWidth * (this.hp / this.maxHp);
-    context.fillStyle = "rgba(5, 10, 8, 0.85)";
-    context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, barWidth, 3);
-    context.fillStyle = "#4cff90";
-    context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, fillWidth, 3);
-  }
-}
-
-class Projectile {
-  x: number;
-  y: number;
-  dx: number;
-  dy: number;
-  damage: number;
-  radius: number;
-  removed = false;
-
-  constructor(source: Point, target: Point, damage: number, size: number) {
-    const angle = angleBetween(source, target);
-    this.x = source.x;
-    this.y = source.y;
-    this.dx = Math.cos(angle) * 7;
-    this.dy = Math.sin(angle) * 7;
-    this.damage = damage;
-    this.radius = size / 2;
-  }
-
-  update(game: Game, multiplier: number): void {
-    this.x += this.dx * multiplier;
-    this.y += this.dy * multiplier;
-    if (this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
-      this.removed = true;
-      return;
-    }
-
-    for (const monster of game.monsters) {
-      if (monster.removed) {
-        continue;
-      }
-      const hitDistance = monster.radius + this.radius;
-      if (distanceSquaredXY(this.x, this.y, monster.x, monster.y) <= hitDistance * hitDistance) {
-        monster.takeDamage(this.damage);
-        this.removed = true;
-        return;
-      }
-    }
-  }
-
-  draw(context: CanvasRenderingContext2D): void {
-    context.fillStyle = "#9fffe4";
-    context.beginPath();
-    context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    context.fill();
-  }
-}
-
-class Missile {
-  x: number;
-  y: number;
-  angle: number;
-  speed: number;
-  damage: number;
-  effectRadius: number;
-  trackedMonster?: Monster;
-  removed = false;
-  trailTimer = 0;
-
-  constructor(source: Point, trackedMonster: Monster, damage: number, effectRadius: number, speed: number) {
-    this.x = source.x;
-    this.y = source.y;
-    this.trackedMonster = trackedMonster;
-    this.damage = damage;
-    this.effectRadius = effectRadius;
-    this.speed = speed;
-    this.angle = angleBetween(source, { x: trackedMonster.x, y: trackedMonster.y });
-  }
-
-  update(game: Game, multiplier: number, dt: number): void {
-    this.speed += 0.05 * multiplier;
-    if (this.trackedMonster && this.trackedMonster.removed) {
-      this.trackedMonster = undefined;
-    }
-    if (this.trackedMonster) {
-      this.angle = angleBetween({ x: this.x, y: this.y }, { x: this.trackedMonster.x, y: this.trackedMonster.y });
-    }
-
-    this.x += Math.cos(this.angle) * this.speed * multiplier;
-    this.y += Math.sin(this.angle) * this.speed * multiplier;
-
-    this.trailTimer += dt;
-    if (this.trailTimer >= 0.02) {
-      this.trailTimer = 0;
-      const trailX = this.x + randomRange(-3, 3) - (Math.cos(this.angle) * 9);
-      const trailY = this.y + randomRange(-3, 3) - (Math.sin(this.angle) * 9);
-      game.addParticle(new Particle(trailX, trailY, 1, "#7e858c", 1 / 60));
-    }
-
-    if (this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
-      this.removed = true;
-      return;
-    }
-
-    for (const monster of game.monsters) {
-      if (monster.removed) {
-        continue;
-      }
-      const hitDistance = monster.radius + 6;
-      if (distanceSquaredXY(this.x, this.y, monster.x, monster.y) <= hitDistance * hitDistance) {
-        this.removed = true;
-        game.createExplosion(this.x, this.y, 20, 3, "#ffd34e", 1 / 30);
-        for (const nearby of game.monsters) {
-          if (nearby.removed) {
-            continue;
-          }
-          const dist = distanceXY(this.x, this.y, nearby.x, nearby.y);
-          if (dist <= this.effectRadius) {
-            const ratio = (this.effectRadius - dist) / this.effectRadius;
-            nearby.takeDamage(this.damage * ratio);
-          }
-        }
-        return;
-      }
-    }
-  }
-
-  draw(context: CanvasRenderingContext2D): void {
-    context.save();
-    context.translate(this.x, this.y);
-    context.rotate(this.angle);
-    context.strokeStyle = "#ffe77c";
-    context.lineWidth = 3;
-    context.lineCap = "round";
-    context.beginPath();
-    context.moveTo(-6, 0);
-    context.lineTo(6, 0);
-    context.stroke();
-    context.restore();
-  }
-}
-
-abstract class Tower {
-  kind: TowerKind;
-  x: number;
-  y: number;
-  range: number;
-  cost: number;
-  level = 0;
-  cooldownMs = 0;
-  removed = false;
-
-  constructor(kind: TowerKind, x: number, y: number) {
-    this.kind = kind;
-    this.x = x;
-    this.y = y;
-    this.range = TOWER_SPECS[kind].range;
-    this.cost = TOWER_SPECS[kind].cost;
-  }
-
-  get upgradeCost(): number {
-    return UPGRADE_COST;
-  }
-
-  get resaleValue(): number {
-    return Math.round(this.cost * 0.75);
-  }
-
-  canUpgrade(): boolean {
-    return this.level < MAX_TOWER_LEVEL;
-  }
-
-  update(game: Game, dt: number, multiplier: number): void {
-    this.cooldownMs = Math.max(0, this.cooldownMs - (dt * 1000));
-    this.onUpdate(game, multiplier);
-  }
-
-  upgrade(): void {
-    if (!this.canUpgrade()) {
-      return;
-    }
-    this.level += 1;
-    this.cost += UPGRADE_COST;
-    this.range += this.level * 4;
-    this.onUpgrade();
-  }
-
-  protected getClosestMonster(game: Game): Monster | undefined {
-    let closest: Monster | undefined;
-    let smallestDistance = Number.POSITIVE_INFINITY;
-    for (const monster of game.monsters) {
-      if (monster.removed) {
-        continue;
-      }
-      const distSq = distanceSquaredXY(this.x, this.y, monster.x, monster.y);
-      if (distSq > this.range * this.range) {
-        continue;
-      }
-      if (distSq < smallestDistance) {
-        smallestDistance = distSq;
-        closest = monster;
-      }
-    }
-    return closest;
-  }
-
-  protected calculateIntercept(monster: Monster, projectileSpeed: number, from: Point): Point {
-    const target = { x: monster.x - from.x, y: monster.y - from.y };
-    const a = (projectileSpeed * projectileSpeed) - ((monster.dx * monster.dx) + (monster.dy * monster.dy));
-    const b = (target.x * monster.dx) + (target.y * monster.dy);
-    const c = (target.x * target.x) + (target.y * target.y);
-    const d = (b * b) + (a * c);
-    let t = 0;
-    if (d >= 0 && a !== 0) {
-      t = (b + Math.sqrt(d)) / a;
-      if (t < 0) {
-        t = 0;
-      }
-    }
-    return {
-      x: monster.x + (monster.dx * t),
-      y: monster.y + (monster.dy * t),
-    };
-  }
-
-  protected resetCooldown(milliseconds: number): void {
-    this.cooldownMs = milliseconds;
-  }
-
-  protected ready(): boolean {
-    return this.cooldownMs <= 0;
-  }
-
-  protected abstract onUpdate(game: Game, multiplier: number): void;
-  protected abstract onUpgrade(): void;
-  abstract draw(context: CanvasRenderingContext2D, active: boolean): void;
-}
-
-class GunTower extends Tower {
-  angle = randomRange(-Math.PI, Math.PI);
-  turnSpeed = 0.16;
-
-  constructor(x: number, y: number) {
-    super(TowerKind.Gun, x, y);
-  }
-
-  protected onUpdate(game: Game, multiplier: number): void {
-    const tracked = this.getClosestMonster(game);
-    if (!tracked) {
-      return;
-    }
-
-    const source = {
-      x: this.x + (Math.cos(this.angle) * 16),
-      y: this.y + (Math.sin(this.angle) * 16),
-    };
-    const target = this.calculateIntercept(tracked, 7, source);
-    const targetAngle = angleBetween({ x: this.x, y: this.y }, target);
-    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * multiplier);
-
-    if (this.ready()) {
-      const actualSource = {
-        x: this.x + (Math.cos(this.angle) * 16),
-        y: this.y + (Math.sin(this.angle) * 16),
-      };
-      game.projectiles.push(new Projectile(actualSource, target, 10 + this.level, 3 + (this.level / 2)));
-      this.resetCooldown(200);
-    }
-  }
-
-  protected onUpgrade(): void {
-  }
-
-  draw(context: CanvasRenderingContext2D, active: boolean): void {
-    context.save();
-    context.translate(this.x, this.y);
-    context.strokeStyle = "#ffffff";
-    context.fillStyle = "#050908";
-    context.lineWidth = 1.5;
-    context.beginPath();
-    context.arc(0, 0, TOWER_RADIUS, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
-
-    context.strokeStyle = "#ffffff";
-    context.lineWidth = 2 + (this.level / 2);
-    context.lineCap = "round";
-    context.beginPath();
-    context.moveTo(0, 0);
-    context.lineTo(Math.cos(this.angle) * 16, Math.sin(this.angle) * 16);
-    context.stroke();
-    if (active) {
-      drawTowerSelection(context, this.range);
-    }
-    context.restore();
-  }
-}
-
-class LaserTower extends Tower {
-  angle = randomRange(-Math.PI, Math.PI);
-  beamAlpha = 0;
-  beamTarget = { x: 0, y: 0 };
-  damagePerHit = 1;
-  turnSpeed = 0.08;
-
-  constructor(x: number, y: number) {
-    super(TowerKind.Laser, x, y);
-  }
-
-  protected onUpdate(game: Game, multiplier: number): void {
-    this.beamAlpha = Math.max(0, this.beamAlpha - (0.015 * multiplier));
-    const tracked = this.getClosestMonster(game);
-    if (!tracked) {
-      return;
-    }
-
-    const target = { x: tracked.x, y: tracked.y };
-    const targetAngle = angleBetween({ x: this.x, y: this.y }, target);
-    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * multiplier);
-    this.beamTarget = {
-      x: this.x + (Math.cos(this.angle) * 1000),
-      y: this.y + (Math.sin(this.angle) * 1000),
-    };
-
-    if (this.ready()) {
-      this.beamAlpha = 1;
-      this.resetCooldown(1500);
-    }
-
-    if (this.beamAlpha <= 0) {
-      return;
-    }
-
-    const source = {
-      x: this.x + (Math.cos(this.angle) * 9),
-      y: this.y + (Math.sin(this.angle) * 9),
-    };
-
-    for (const monster of game.monsters) {
-      if (monster.removed) {
-        continue;
-      }
-      const distSq = pointToSegmentDistanceSquaredXY(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
-      if (distSq <= monster.radius * monster.radius) {
-        monster.takeDamage(this.damagePerHit * multiplier * this.beamAlpha);
-      }
-    }
-  }
-
-  protected onUpgrade(): void {
-    this.damagePerHit = 1 + (this.level / 4);
-  }
-
-  draw(context: CanvasRenderingContext2D, active: boolean): void {
-    context.save();
-    context.translate(this.x, this.y);
-    context.fillStyle = "#050908";
-    context.strokeStyle = "#ffffff";
-    context.lineWidth = 1.5;
-    context.beginPath();
-    context.arc(0, 0, 12.5, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
-
-    context.rotate(this.angle);
-    context.fillStyle = "#5bf4ff";
-    context.beginPath();
-    context.moveTo(-10, 5);
-    context.lineTo(-2, 4);
-    context.lineTo(10, 0);
-    context.lineTo(-2, -4);
-    context.lineTo(-10, -5);
-    context.closePath();
-    context.fill();
-    context.stroke();
-    if (active) {
-      drawTowerSelection(context, this.range);
-    }
-    context.restore();
-
-    if (this.beamAlpha > 0) {
-      context.save();
-      context.strokeStyle = `rgba(110, 255, 152, ${0.85 * this.beamAlpha})`;
-      context.lineWidth = 1.5 + (this.level / 3);
-      context.beginPath();
-      context.moveTo(this.x + (Math.cos(this.angle) * 9), this.y + (Math.sin(this.angle) * 9));
-      context.lineTo(this.beamTarget.x, this.beamTarget.y);
-      context.stroke();
-      context.restore();
-    }
-  }
-}
-
-class MissileTower extends Tower {
-  angle = Math.PI / 4;
-  rotationSpeed = 0.5;
-  missileDamage = 50;
-  turnSpeed = 0.06;
-
-  constructor(x: number, y: number) {
-    super(TowerKind.Missile, x, y);
-    this.applyLevelStats();
-  }
-
-  protected onUpdate(game: Game, multiplier: number): void {
-    const tracked = this.getClosestMonster(game);
-    if (tracked) {
-      const targetAngle = angleBetween({ x: this.x, y: this.y }, { x: tracked.x, y: tracked.y });
-      this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * multiplier);
-    } else {
-      this.angle += this.rotationSpeed * multiplier * 0.025;
-    }
-    if (tracked && this.ready()) {
-      const damageRadius = 60 + (5 * this.level);
-      const missileSpeed = 1.8 + (this.level / 2);
-      const source = {
-        x: this.x + (Math.cos(this.angle) * 14),
-        y: this.y + (Math.sin(this.angle) * 14),
-      };
-      game.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeed));
-      this.resetCooldown(1000 * (2 - (0.2 * this.level)));
-    }
-  }
-
-  protected onUpgrade(): void {
-    this.applyLevelStats();
-  }
-
-  private applyLevelStats(): void {
-    this.rotationSpeed = 0.5 + (this.level / 3);
-    this.missileDamage = 50 + (4 * this.level);
-  }
-
-  draw(context: CanvasRenderingContext2D, active: boolean): void {
-    context.save();
-    context.translate(this.x, this.y);
-    context.fillStyle = "#08100d";
-    context.strokeStyle = "#d7e2ea";
-    context.lineWidth = 1.5;
-    context.beginPath();
-    context.arc(0, 0, 14, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
-
-    context.save();
-    context.rotate(this.angle);
-    context.fillStyle = "#202b35";
-    context.strokeStyle = "#ffffff";
-    context.fillRect(-9.5, -4.5, 9, 9);
-    context.strokeRect(-9.5, -4.5, 9, 9);
-    context.fillStyle = this.ready() ? "#ffe27a" : "#78838b";
-    context.fillRect(-7.5, -8, 11, 3.5);
-    context.strokeRect(-7.5, -8, 11, 3.5);
-    context.fillRect(-7.5, 4.5, 11, 3.5);
-    context.strokeRect(-7.5, 4.5, 11, 3.5);
-    context.beginPath();
-    context.moveTo(3.5, -8);
-    context.lineTo(8, -6.25);
-    context.lineTo(3.5, -4.5);
-    context.closePath();
-    context.fill();
-    context.stroke();
-    context.beginPath();
-    context.moveTo(3.5, 4.5);
-    context.lineTo(8, 6.25);
-    context.lineTo(3.5, 8);
-    context.closePath();
-    context.fill();
-    context.stroke();
-    context.restore();
-
-    if (active) {
-      drawTowerSelection(context, this.range);
-    }
-    context.restore();
-  }
-}
-
-class SlowTower extends Tower {
-  pulse = 0;
-
-  constructor(x: number, y: number) {
-    super(TowerKind.Slow, x, y);
-  }
-
-  protected onUpdate(game: Game, multiplier: number): void {
-    this.pulse += 0.08 * multiplier;
-    if (!this.ready()) {
-      return;
-    }
-
-    let affected = 0;
-    const maxTargets = this.level + 2;
-    for (const monster of game.monsters) {
-      if (monster.removed) {
-        continue;
-      }
-      if (distanceSquaredXY(this.x, this.y, monster.x, monster.y) > this.range * this.range) {
-        continue;
-      }
-      monster.slowDown(0.5);
-      game.addLink(new LinkEffect(monster, "#d8ff4f", 1 / 60, { x: this.x, y: this.y }));
-      affected += 1;
-      if (affected === maxTargets) {
-        break;
-      }
-    }
-
-    if (affected === 0) {
-      return;
-    }
-
-    this.resetCooldown(1000);
-  }
-
-  protected onUpgrade(): void {
-  }
-
-  draw(context: CanvasRenderingContext2D, active: boolean): void {
-    context.save();
-    context.translate(this.x, this.y);
-    const gradient = context.createRadialGradient(0, 0, 0, 0, 0, TOWER_RADIUS);
-    gradient.addColorStop(0, "#050908");
-    gradient.addColorStop(1, `rgba(255, 220, 92, ${0.6 + (Math.sin(this.pulse) * 0.2)})`);
-    context.fillStyle = gradient;
-    context.strokeStyle = "#ffffff";
-    context.lineWidth = 1.5;
-    context.beginPath();
-    context.arc(0, 0, TOWER_RADIUS, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
-    if (active) {
-      drawTowerSelection(context, this.range);
-    }
-    context.restore();
-  }
-}
-
-function drawTowerSelection(context: CanvasRenderingContext2D, range: number): void {
-  context.save();
-  context.strokeStyle = "rgba(92, 255, 158, 0.25)";
-  context.fillStyle = "rgba(92, 255, 158, 0.05)";
-  context.beginPath();
-  context.arc(0, 0, range, 0, Math.PI * 2);
-  context.fill();
-  context.stroke();
-  context.restore();
-}
-
-function createTower(kind: TowerKind, x: number, y: number): Tower {
-  switch (kind) {
-    case TowerKind.Gun:
-      return new GunTower(x, y);
-    case TowerKind.Laser:
-      return new LaserTower(x, y);
-    case TowerKind.Missile:
-      return new MissileTower(x, y);
-    default:
-      return new SlowTower(x, y);
-  }
-}
 
 class Game {
   levels: LevelData[];
@@ -1643,7 +756,7 @@ function syncHud(): void {
 }
 
 function modalLevelCards(): string {
-  return levels
+  const fixedCards = levels
     .map((level, index) => {
       return `
         <button class="level-card" data-level-index="${index}">
@@ -1653,6 +766,11 @@ function modalLevelCards(): string {
       `;
     })
     .join("");
+
+  return `
+    ${renderRandomRouteCard()}
+    ${fixedCards}
+  `;
 }
 
 function renderModal(): void {
@@ -1661,7 +779,7 @@ function renderModal(): void {
     modal.innerHTML = `
       <div class="modal-panel">
         <h2>Choose Your Route</h2>
-        <p>The levels come straight from the old Silverlight XML. Start anywhere and the game will keep rolling from there.</p>
+        <p>${RANDOM_ROUTE_MENU_COPY}</p>
         <div class="level-grid">${modalLevelCards()}</div>
       </div>
     `;
@@ -1708,7 +826,10 @@ function renderModal(): void {
   modal.querySelectorAll<HTMLElement>("[data-action]").forEach((button) => {
     button.addEventListener("click", () => {
       const action = button.dataset.action;
-      if (action === "next") {
+      const randomRoute = resolveRandomRoute(action);
+      if (randomRoute) {
+        game.startLevel(randomRoute);
+      } else if (action === "next") {
         game.chooseRandomLevel();
       } else if (action === "replay") {
         game.restart();

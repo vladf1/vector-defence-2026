@@ -7,7 +7,7 @@ export function must<T>(value: T | null, message: string): T {
   return value;
 }
 
-export function isMonsterCode(value: string): value is MonsterCode {
+function isMonsterCode(value: string): value is MonsterCode {
   return value === "ball" || value === "square" || value === "triangle" || value === "tank" || value === "runner";
 }
 
