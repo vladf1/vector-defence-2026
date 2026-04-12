@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:single": "tsc && node scripts/build-single-html.mjs",
     "preview": "vite preview"
   },
   "devDependencies": {
