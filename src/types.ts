@@ -1,5 +1,5 @@
 export type MonsterCode = "ball" | "square" | "triangle" | "tank" | "runner";
-export type GameState = "menu" | "playing" | "paused" | "won" | "lost";
+export type GameState = "menu" | "playing" | "paused" | "won" | "lost" | "campaign-won";
 
 export enum TowerKind {
   Gun = "gun",
@@ -13,12 +13,27 @@ export interface Point {
   y: number;
 }
 
+export interface WaveData {
+  count: number;
+  monsterSequence: MonsterCode[];
+  spawnIntervalMin: number;
+  spawnIntervalMax: number;
+  buildTime: number;
+  reward: number;
+  label: string;
+}
+
 export interface LevelData {
   name: string;
   monsterCount: number;
   allowEscape: number;
   monsterSequence: MonsterCode[];
   points: Point[];
+  id?: string;
+  levelNumber?: number;
+  subtitle?: string;
+  startingMoney?: number;
+  waves?: WaveData[];
 }
 
 export interface MonsterPreset {

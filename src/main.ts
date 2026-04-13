@@ -1,5 +1,6 @@
 import "./style.css";
 import levelsJson from "../Levels.json";
+import { createCampaignLevels } from "./campaign";
 import {
   FIELD_HEIGHT,
   FIELD_WIDTH,
@@ -7,7 +8,6 @@ import {
   MAX_PARTICLES,
   MIN_DISTANCE_TO_OTHER_TOWERS,
   MIN_DISTANCE_TO_ROAD,
-  PRE_WAVE_DELAY,
   STARTING_MONEY,
   TOWER_RADIUS,
   TOWER_SPECS,
@@ -31,17 +31,13 @@ import {
   randomRange,
 } from "./utils";
 import {
-  RANDOM_ROUTE_MENU_COPY,
-  renderRandomRouteCard,
-  resolveRandomRoute,
-} from "./random-route";
-import {
   TowerKind,
   type GameState,
   type HudSnapshot,
   type LevelData,
   type LevelJsonData,
   type Point,
+  type WaveData,
 } from "./types";
 
 const TOWER_KINDS = [TowerKind.Gun, TowerKind.Laser, TowerKind.Missile, TowerKind.Slow] as const;
@@ -64,11 +60,11 @@ root.innerHTML = `
     <header class="topbar">
       <div class="title-block">
         <h1>Vector Defence</h1>
-        <p>Pick a tower, place it off the path, and hold the line.</p>
+        <p>Push through a full ten-level campaign, survive every wave, and secure the frontier.</p>
       </div>
       <div class="actions">
         <button class="chrome-button" id="pause-button">Pause</button>
-        <button class="chrome-button" id="level-button">Levels</button>
+        <button class="chrome-button" id="level-button">Campaign</button>
         <button class="chrome-button" id="restart-button">Restart</button>
       </div>
     </header>
@@ -76,14 +72,14 @@ root.innerHTML = `
     <section class="hud">
       <div class="stat-card">
         <span>Level</span>
-        <strong id="level-name">Choose a level</strong>
+        <strong id="level-name">Campaign Map</strong>
       </div>
       <div class="stat-card">
         <span>Money</span>
         <strong id="money-value">$0</strong>
       </div>
       <div class="stat-card">
-        <span>Escapes Left</span>
+        <span>Leaks Left</span>
         <strong id="escapes-value">0</strong>
       </div>
       <div class="stat-card">
@@ -132,7 +128,7 @@ const waveValue = must(document.querySelector<HTMLElement>("#wave-value"), "Miss
 const selectionTitle = must(document.querySelector<HTMLElement>("#selection-title"), "Missing selection title.");
 const selectionBody = must(document.querySelector<HTMLElement>("#selection-body"), "Missing selection body.");
 const pauseButton = must(document.querySelector<HTMLButtonElement>("#pause-button"), "Missing pause button.");
-const levelButton = must(document.querySelector<HTMLButtonElement>("#level-button"), "Missing level button.");
+const levelButton = must(document.querySelector<HTMLButtonElement>("#level-button"), "Missing campaign button.");
 const restartButton = must(document.querySelector<HTMLButtonElement>("#restart-button"), "Missing restart button.");
 const upgradeButton = must(document.querySelector<HTMLButtonElement>("#upgrade-button"), "Missing upgrade button.");
 const sellButton = must(document.querySelector<HTMLButtonElement>("#sell-button"), "Missing sell button.");
@@ -143,6 +139,10 @@ const ctx = must(canvas.getContext("2d"), "Canvas 2D context unavailable.");
 class Game {
   levels: LevelData[];
   currentLevel?: LevelData;
+  currentLevelIndex = -1;
+  highestUnlockedLevelIndex = 0;
+  campaignCleared = false;
+  menuReturnState?: "playing" | "paused";
   state: GameState = "menu";
   money = STARTING_MONEY;
   escapesLeft = 0;
@@ -150,6 +150,8 @@ class Game {
   spawnCooldown = 0;
   spawnIndex = 0;
   spawnedMonsters = 0;
+  currentWaveIndex = 0;
+  waveSpawnedMonsters = 0;
   towers: Tower[] = [];
   monsters: Monster[] = [];
   projectiles: Projectile[] = [];
@@ -171,6 +173,14 @@ class Game {
 
   constructor(levels: LevelData[]) {
     this.levels = levels;
+  }
+
+  get activeWave(): WaveData | undefined {
+    return this.currentLevel?.waves?.[this.currentWaveIndex];
+  }
+
+  get waveTotal(): number {
+    return this.currentLevel?.waves?.length ?? 1;
   }
 
   addParticle(particle: Particle): void {
@@ -203,6 +213,8 @@ class Game {
       this.statusText = "Paused";
     } else if (next === "won") {
       this.statusText = "Level secured";
+    } else if (next === "campaign-won") {
+      this.statusText = "Campaign complete";
     } else if (next === "lost") {
       this.statusText = "Base overrun";
     } else {
@@ -226,17 +238,33 @@ class Game {
 
   startLevel(level: LevelData): void {
     this.currentLevel = level;
-    this.money = STARTING_MONEY;
+    this.currentLevelIndex = this.levels.findIndex((candidate) => candidate.id === level.id || candidate === level);
+    this.money = level.startingMoney ?? STARTING_MONEY;
     this.escapesLeft = level.allowEscape;
-    this.spawnDelay = PRE_WAVE_DELAY;
+    this.spawnDelay = level.waves?.[0]?.buildTime ?? 8;
     this.spawnCooldown = 0.2;
     this.spawnIndex = 0;
     this.spawnedMonsters = 0;
+    this.currentWaveIndex = 0;
+    this.waveSpawnedMonsters = 0;
+    this.menuReturnState = undefined;
+    this.lastHudSnapshot = undefined;
     this.resetField();
-    this.setBanner(level.name, 2.1);
+    this.setBanner(`Level ${level.levelNumber ?? "?"}: ${level.name}`, 2.4);
     this.setState("playing");
     this.rebuildBackgroundCache();
     renderModal();
+  }
+
+  startLevelByIndex(index: number): void {
+    const level = this.levels[index];
+    if (!level) {
+      return;
+    }
+    if (!this.campaignCleared && index > this.highestUnlockedLevelIndex) {
+      return;
+    }
+    this.startLevel(level);
   }
 
   restart(): void {
@@ -245,6 +273,36 @@ class Game {
     } else {
       renderModal();
     }
+  }
+
+  restartCampaign(): void {
+    this.highestUnlockedLevelIndex = 0;
+    this.campaignCleared = false;
+    this.startLevelByIndex(0);
+  }
+
+  startNextLevel(): void {
+    if (this.currentLevelIndex < 0) {
+      this.startLevelByIndex(0);
+      return;
+    }
+    const nextIndex = Math.min(this.currentLevelIndex + 1, this.levels.length - 1);
+    this.startLevelByIndex(nextIndex);
+  }
+
+  openMenu(): void {
+    this.menuReturnState = this.state === "playing" || this.state === "paused" ? this.state : undefined;
+    this.setState("menu");
+    renderModal();
+  }
+
+  resumeBattle(): void {
+    if (!this.currentLevel || !this.menuReturnState) {
+      return;
+    }
+    this.setState(this.menuReturnState);
+    this.menuReturnState = undefined;
+    renderModal();
   }
 
   togglePause(): void {
@@ -260,9 +318,11 @@ class Game {
     if (!this.currentLevel) {
       return;
     }
-    const code = this.currentLevel.monsterSequence[this.spawnIndex] ?? "ball";
-    this.spawnIndex = (this.spawnIndex + 1) % this.currentLevel.monsterSequence.length;
+    const sequence = this.activeWave?.monsterSequence ?? this.currentLevel.monsterSequence;
+    const code = sequence[this.spawnIndex] ?? "ball";
+    this.spawnIndex = (this.spawnIndex + 1) % sequence.length;
     this.spawnedMonsters += 1;
+    this.waveSpawnedMonsters += 1;
     this.monsters.push(new Monster(code, this.currentLevel));
   }
 
@@ -278,13 +338,13 @@ class Game {
 
   onMonsterEscaped(monster: Monster): void {
     this.createEscapeBurst(monster.x, monster.y);
-    this.escapesLeft -= 1;
-    if (this.escapesLeft < 0) {
-      this.escapesLeft = 0;
+    this.escapesLeft = Math.max(0, this.escapesLeft - 1);
+    if (this.escapesLeft === 0) {
       this.monsters.forEach((item) => {
         item.removed = true;
       });
       this.setState("lost");
+      this.menuReturnState = undefined;
       this.setBanner("Defeat", 5);
       renderModal();
     }
@@ -403,14 +463,48 @@ class Game {
     this.requestHudSync();
   }
 
-  chooseRandomLevel(): void {
-    if (this.levels.length === 0) {
+  completeCurrentWave(): void {
+    const wave = this.activeWave;
+    if (!wave) {
       return;
     }
-    const pool = this.currentLevel ? this.levels.filter((level) => level.name !== this.currentLevel?.name) : this.levels;
-    const source = pool.length === 0 ? this.levels : pool;
-    const next = source[Math.floor(Math.random() * source.length)];
-    this.startLevel(next);
+
+    this.money += wave.reward;
+    this.currentWaveIndex += 1;
+    this.waveSpawnedMonsters = 0;
+    this.spawnIndex = 0;
+    this.spawnCooldown = 0.2;
+    this.requestHudSync();
+
+    const nextWave = this.activeWave;
+    if (nextWave) {
+      this.spawnDelay = nextWave.buildTime;
+      this.setBanner(`Wave ${this.currentWaveIndex} cleared · +${formatMoney(wave.reward)}`, 2.3);
+    } else {
+      this.spawnDelay = 0;
+      this.setBanner(`Final wave cleared · +${formatMoney(wave.reward)}`, 2.6);
+    }
+  }
+
+  finishLevel(): void {
+    if (!this.currentLevel) {
+      return;
+    }
+
+    const isFinalLevel = this.currentLevelIndex >= this.levels.length - 1;
+    this.menuReturnState = undefined;
+
+    if (isFinalLevel) {
+      this.campaignCleared = true;
+      this.highestUnlockedLevelIndex = this.levels.length - 1;
+      this.setState("campaign-won");
+      this.setBanner("Campaign Complete", 5.5);
+    } else {
+      this.highestUnlockedLevelIndex = Math.max(this.highestUnlockedLevelIndex, this.currentLevelIndex + 1);
+      this.setState("won");
+      this.setBanner("Level Clear", 5);
+    }
+    renderModal();
   }
 
   resize(): void {
@@ -431,9 +525,10 @@ class Game {
   update(dt: number): void {
     const multiplier = dt * 60;
     const previousBannerActive = this.bannerTimer > 0;
-    const previousPreWaveSecond = this.state === "playing" && this.spawnDelay > 0 && this.spawnedMonsters === 0
+    const previousPreWaveSecond = this.state === "playing" && this.activeWave && this.spawnDelay > 0
       ? Math.ceil(this.spawnDelay)
       : -1;
+
     if (this.bannerTimer > 0) {
       this.bannerTimer = Math.max(0, this.bannerTimer - dt);
       if (previousBannerActive && this.bannerTimer === 0) {
@@ -449,17 +544,18 @@ class Game {
       return;
     }
 
-    if (this.spawnDelay > 0) {
+    const wave = this.activeWave;
+    if (wave && this.spawnDelay > 0) {
       this.spawnDelay = Math.max(0, this.spawnDelay - dt);
-      const nextPreWaveSecond = this.spawnDelay > 0 && this.spawnedMonsters === 0 ? Math.ceil(this.spawnDelay) : -1;
+      const nextPreWaveSecond = this.activeWave && this.spawnDelay > 0 ? Math.ceil(this.spawnDelay) : -1;
       if (previousPreWaveSecond !== nextPreWaveSecond) {
         this.requestHudSync();
       }
-    } else if (this.currentLevel && this.spawnedMonsters < this.currentLevel.monsterCount) {
+    } else if (wave && this.waveSpawnedMonsters < wave.count) {
       this.spawnCooldown -= dt;
       if (this.spawnCooldown <= 0) {
         this.spawnMonster();
-        this.spawnCooldown = randomRange(0.5, 1.25);
+        this.spawnCooldown = randomRange(wave.spawnIntervalMin, wave.spawnIntervalMax);
         this.requestHudSync();
       }
     }
@@ -494,12 +590,14 @@ class Game {
     compactInPlace(this.particles);
     compactInPlace(this.links);
 
-    if (this.currentLevel && this.spawnedMonsters >= this.currentLevel.monsterCount && this.monsters.length === 0) {
+    if (wave && this.waveSpawnedMonsters >= wave.count && this.monsters.length === 0) {
+      this.completeCurrentWave();
+    }
+
+    if (!this.activeWave && this.currentLevel && this.spawnedMonsters >= this.currentLevel.monsterCount && this.monsters.length === 0) {
       this.winDelay += dt;
       if (this.winDelay >= 0.6 && this.state === "playing") {
-        this.setState("won");
-        this.setBanner("Level Clear", 5);
-        renderModal();
+        this.finishLevel();
       }
     } else {
       this.winDelay = 0;
@@ -620,7 +718,8 @@ class Game {
   }
 }
 
-const levels = normalizeLevels(levelsJson as LevelJsonData[]);
+const baseRoutes = normalizeLevels(levelsJson as LevelJsonData[]);
+const levels = createCampaignLevels(baseRoutes);
 
 const game = new Game(levels);
 game.resize();
@@ -634,7 +733,7 @@ if (import.meta.env.DEV) {
 const towerButtons = new Map<TowerKind, HTMLButtonElement>();
 
 function toggleTowerPlacement(kind: TowerKind): void {
-  if (game.state === "menu" || game.state === "won" || game.state === "lost") {
+  if (game.state === "menu" || game.state === "won" || game.state === "lost" || game.state === "campaign-won") {
     return;
   }
   game.placingTower = game.placingTower === kind ? undefined : kind;
@@ -661,13 +760,19 @@ function setupTowerButtons(): void {
 
 function syncHud(): void {
   const selected = game.selectedTower;
+  const activeWave = game.activeWave;
+  const levelName = game.currentLevel
+    ? `Level ${game.currentLevel.levelNumber ?? "?"} · ${game.currentLevel.name}`
+    : "Campaign Map";
   const wave = game.currentLevel
-    ? (game.state === "playing" && game.spawnDelay > 0 && game.spawnedMonsters === 0
-        ? `Starts in ${Math.ceil(game.spawnDelay)}s`
-        : `${Math.min(game.spawnedMonsters, game.currentLevel.monsterCount)} / ${game.currentLevel.monsterCount}`)
+    ? (activeWave && game.state === "playing" && game.spawnDelay > 0
+        ? `Wave ${game.currentWaveIndex + 1}/${game.waveTotal} in ${Math.ceil(game.spawnDelay)}s`
+        : activeWave
+          ? `Wave ${game.currentWaveIndex + 1}/${game.waveTotal} · ${Math.min(game.waveSpawnedMonsters, activeWave.count)} / ${activeWave.count}`
+          : `All ${game.waveTotal} waves cleared`)
     : "Idle";
-  const bannerText = game.state === "playing" && game.spawnDelay > 0 && game.spawnedMonsters === 0
-    ? `Wave starts in ${Math.ceil(game.spawnDelay)}`
+  const bannerText = game.state === "playing" && activeWave && game.spawnDelay > 0
+    ? `Wave ${game.currentWaveIndex + 1} ${activeWave.label} in ${Math.ceil(game.spawnDelay)}`
     : (game.bannerTimer > 0 ? game.bannerText : (game.state === "menu" ? "Awaiting orders" : game.statusText));
 
   let selectionTitleText: string;
@@ -679,13 +784,16 @@ function syncHud(): void {
     const spec = TOWER_SPECS[game.placingTower];
     selectionTitleText = `Placing ${spec.label}`;
     selectionBodyText = `${spec.summary} Cost ${formatMoney(spec.cost)}. Click the field to place it.`;
+  } else if (game.currentLevel) {
+    selectionTitleText = `${game.currentLevel.name}`;
+    selectionBodyText = game.currentLevel.subtitle ?? "Hold the route and keep your towers overlapping.";
   } else {
     selectionTitleText = "No tower selected";
     selectionBodyText = "Choose a build from the toolbar, then click the field to place it.";
   }
 
   const snapshot: HudSnapshot = {
-    levelName: game.currentLevel?.name ?? "Choose a level",
+    levelName,
     money: formatMoney(game.money),
     escapes: String(Math.max(0, game.escapesLeft)),
     wave,
@@ -700,7 +808,7 @@ function syncHud(): void {
     selectedTowerKind: selected?.kind,
     selectedTowerLevel: selected?.level,
     placingTower: game.placingTower,
-    towerButtonsDisabled: game.state === "menu" || game.state === "won" || game.state === "lost",
+    towerButtonsDisabled: game.state === "menu" || game.state === "won" || game.state === "lost" || game.state === "campaign-won",
   };
 
   const previous = game.lastHudSnapshot;
@@ -756,30 +864,49 @@ function syncHud(): void {
 }
 
 function modalLevelCards(): string {
-  const fixedCards = levels
+  return levels
     .map((level, index) => {
+      const unlocked = game.campaignCleared || index <= game.highestUnlockedLevelIndex;
+      const cleared = game.campaignCleared || index < game.highestUnlockedLevelIndex;
+      const current = game.currentLevelIndex === index && !!game.currentLevel;
+      const classes = [
+        "level-card",
+        unlocked ? "" : "locked",
+        cleared ? "cleared" : "",
+        current ? "current" : "",
+      ].filter(Boolean).join(" ");
+      const status = !unlocked ? "Locked" : (cleared ? "Cleared" : (index === game.highestUnlockedLevelIndex ? "Next" : "Ready"));
+
       return `
-        <button class="level-card" data-level-index="${index}">
-          <strong>${level.name}</strong>
-          <span>${level.monsterCount} enemies · ${level.allowEscape} leaks allowed</span>
+        <button class="${classes}" data-level-index="${index}" ${unlocked ? "" : "disabled"}>
+          <span class="level-pill">${status}</span>
+          <strong>Level ${level.levelNumber}: ${level.name}</strong>
+          <span>${level.subtitle ?? "Hold the route."}</span>
+          <small>${level.waves?.length ?? 1} waves · ${level.monsterCount} enemies · ${level.allowEscape} leaks</small>
         </button>
       `;
     })
     .join("");
-
-  return `
-    ${renderRandomRouteCard()}
-    ${fixedCards}
-  `;
 }
 
 function renderModal(): void {
   if (game.state === "menu") {
+    const quickAction = game.menuReturnState && game.currentLevel
+      ? `<button class="modal-button" data-action="resume">Resume Battle</button>`
+      : `<button class="modal-button" data-action="play-unlocked">Play Unlocked Level</button>`;
+    const restartAction = game.highestUnlockedLevelIndex > 0 || game.campaignCleared
+      ? `<button class="modal-button" data-action="restart-campaign">Restart Campaign</button>`
+      : "";
+
     modal.classList.remove("hidden");
     modal.innerHTML = `
       <div class="modal-panel">
-        <h2>Choose Your Route</h2>
-        <p>${RANDOM_ROUTE_MENU_COPY}</p>
+        <h2>Campaign Map</h2>
+        <p>Ten routed battles, longer wave trains, and short build breaks between pushes. Clear each level to unlock the next.</p>
+        <div class="selection-actions campaign-actions">
+          ${quickAction}
+          ${restartAction}
+        </div>
         <div class="level-grid">${modalLevelCards()}</div>
       </div>
     `;
@@ -788,11 +915,24 @@ function renderModal(): void {
     modal.innerHTML = `
       <div class="modal-panel">
         <h2>Level Clear</h2>
-        <p>${game.currentLevel?.name ?? "This route"} is secure. Keep your momentum or jump to another map.</p>
+        <p>Level ${game.currentLevel?.levelNumber ?? "?"} is secure. Keep the pressure on and push into the next route.</p>
         <div class="selection-actions">
-          <button class="modal-button" data-action="next">Random Next Level</button>
+          <button class="modal-button" data-action="next-level">Continue to Level ${(game.currentLevel?.levelNumber ?? 0) + 1}</button>
           <button class="modal-button" data-action="replay">Replay This Level</button>
-          <button class="modal-button" data-action="levels">Choose Level</button>
+          <button class="modal-button" data-action="campaign-map">Campaign Map</button>
+        </div>
+      </div>
+    `;
+  } else if (game.state === "campaign-won") {
+    modal.classList.remove("hidden");
+    modal.innerHTML = `
+      <div class="modal-panel">
+        <h2>You Won the Campaign</h2>
+        <p>All ten levels are secured. The prototype is now a full campaign run, and the frontier held.</p>
+        <div class="selection-actions">
+          <button class="modal-button" data-action="restart-campaign">Restart Campaign</button>
+          <button class="modal-button" data-action="replay">Replay Final Level</button>
+          <button class="modal-button" data-action="campaign-map">Campaign Map</button>
         </div>
       </div>
     `;
@@ -801,10 +941,10 @@ function renderModal(): void {
     modal.innerHTML = `
       <div class="modal-panel">
         <h2>Defeat</h2>
-        <p>The path broke through. Try another setup, or switch to a different route.</p>
+        <p>The route broke through. Rework the build, lean on the intermissions, and try again.</p>
         <div class="selection-actions">
           <button class="modal-button" data-action="replay">Try Again</button>
-          <button class="modal-button" data-action="levels">Choose Level</button>
+          <button class="modal-button" data-action="campaign-map">Campaign Map</button>
         </div>
       </div>
     `;
@@ -816,27 +956,25 @@ function renderModal(): void {
   modal.querySelectorAll<HTMLElement>("[data-level-index]").forEach((button) => {
     button.addEventListener("click", () => {
       const levelIndex = Number(button.dataset.levelIndex);
-      const level = levels[levelIndex];
-      if (level) {
-        game.startLevel(level);
-      }
+      game.startLevelByIndex(levelIndex);
     });
   });
 
   modal.querySelectorAll<HTMLElement>("[data-action]").forEach((button) => {
     button.addEventListener("click", () => {
       const action = button.dataset.action;
-      const randomRoute = resolveRandomRoute(action);
-      if (randomRoute) {
-        game.startLevel(randomRoute);
-      } else if (action === "next") {
-        game.chooseRandomLevel();
+      if (action === "resume") {
+        game.resumeBattle();
+      } else if (action === "play-unlocked") {
+        game.startLevelByIndex(game.campaignCleared ? game.levels.length - 1 : game.highestUnlockedLevelIndex);
+      } else if (action === "restart-campaign") {
+        game.restartCampaign();
+      } else if (action === "next-level") {
+        game.startNextLevel();
       } else if (action === "replay") {
         game.restart();
-      } else if (action === "levels") {
-        game.setState("menu");
-        renderModal();
-        syncHud();
+      } else if (action === "campaign-map") {
+        game.openMenu();
       }
     });
   });
@@ -859,7 +997,7 @@ canvas.addEventListener("mouseleave", () => {
 });
 
 canvas.addEventListener("mousedown", (event) => {
-  if (!game.currentLevel || game.state === "won" || game.state === "lost" || game.state === "menu") {
+  if (!game.currentLevel || game.state === "won" || game.state === "lost" || game.state === "menu" || game.state === "campaign-won") {
     return;
   }
 
@@ -877,8 +1015,7 @@ pauseButton.addEventListener("click", () => {
 });
 
 levelButton.addEventListener("click", () => {
-  game.setState("menu");
-  renderModal();
+  game.openMenu();
   syncHud();
 });
 
@@ -923,6 +1060,7 @@ window.addEventListener("keydown", (event) => {
     game.placingTower = undefined;
     syncHud();
   }
+
   if (event.key === " ") {
     event.preventDefault();
     game.togglePause();
