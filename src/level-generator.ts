@@ -1,6 +1,6 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "./constants";
 import type { LevelData, MonsterCode, Point } from "./types";
-import { randomRange } from "./utils";
+import { clamp, randomRange } from "./utils";
 
 type Beat = "far-sweep" | "follow-through" | "snap-back" | "center-cut" | "edge-dive" | "pocket" | "weave" | "settle";
 
@@ -57,10 +57,6 @@ function randomInt(min: number, max: number): number {
 
 function pick<T>(items: readonly T[]): T {
   return items[randomInt(0, items.length - 1)];
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 function lerp(start: number, end: number, t: number): number {

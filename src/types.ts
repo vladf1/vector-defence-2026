@@ -72,8 +72,6 @@ export interface HudSnapshot {
   upgradeDisabled: boolean;
   sellDisabled: boolean;
   cancelDisabled: boolean;
-  selectedTowerKind?: TowerKind;
-  selectedTowerLevel?: number;
   placingTower?: TowerKind;
   towerButtonsDisabled: boolean;
 }

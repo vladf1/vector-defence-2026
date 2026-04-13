@@ -1,6 +1,7 @@
 import { STARTING_MONEY } from "./constants";
 import { createProceduralLevel } from "./level-generator";
 import type { LevelData, MonsterCode, WaveData } from "./types";
+import { clamp } from "./utils";
 
 const CAMPAIGN_NOTES = [
   "Warm up on a forgiving route and learn the shape of the field.",
@@ -19,10 +20,6 @@ const LEVEL_BUILD_TIMES = [10, 10, 11, 11, 12, 12, 13, 13, 14, 14] as const;
 const LEVEL_ESCAPES = [15, 15, 14, 13, 12, 12, 11, 10, 9, 8] as const;
 const LEVEL_STARTING_MONEY = [320, 335, 350, 365, 380, 395, 410, 430, 450, 470] as const;
 const LEVEL_WAVE_TOTALS = [4, 4, 5, 5, 5, 6, 6, 6, 7, 7] as const;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
 function uniqueSequence(sequence: MonsterCode[]): MonsterCode[] {
   const seen = new Set<MonsterCode>();

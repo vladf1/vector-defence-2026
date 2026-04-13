@@ -49,6 +49,14 @@ const TOWER_SHORTCUTS: Record<TowerKind, string[]> = {
   [TowerKind.Slow]: ["4", "s"],
 };
 
+function isBattleState(state: GameState): state is "playing" | "paused" {
+  return state === "playing" || state === "paused";
+}
+
+function isModalState(state: GameState): boolean {
+  return state === "menu" || state === "won" || state === "lost" || state === "campaign-won";
+}
+
 const root = document.querySelector<HTMLDivElement>("#app");
 
 if (!root) {
@@ -291,7 +299,7 @@ class Game {
   }
 
   openMenu(): void {
-    this.menuReturnState = this.state === "playing" || this.state === "paused" ? this.state : undefined;
+    this.menuReturnState = isBattleState(this.state) ? this.state : undefined;
     this.setState("menu");
     renderModal();
   }
@@ -733,7 +741,7 @@ if (import.meta.env.DEV) {
 const towerButtons = new Map<TowerKind, HTMLButtonElement>();
 
 function toggleTowerPlacement(kind: TowerKind): void {
-  if (game.state === "menu" || game.state === "won" || game.state === "lost" || game.state === "campaign-won") {
+  if (isModalState(game.state)) {
     return;
   }
   game.placingTower = game.placingTower === kind ? undefined : kind;
@@ -799,16 +807,14 @@ function syncHud(): void {
     wave,
     banner: bannerText,
     pauseLabel: game.state === "paused" ? "Resume" : "Pause",
-    pauseDisabled: !(game.state === "playing" || game.state === "paused"),
+    pauseDisabled: !isBattleState(game.state),
     selectionTitle: selectionTitleText,
     selectionBody: selectionBodyText,
-    upgradeDisabled: !selected || !selected.canUpgrade() || game.money < selected.upgradeCost || game.state === "menu",
-    sellDisabled: !selected || game.state === "menu",
-    cancelDisabled: !game.placingTower,
-    selectedTowerKind: selected?.kind,
-    selectedTowerLevel: selected?.level,
+    upgradeDisabled: !selected || !selected.canUpgrade() || game.money < selected.upgradeCost || isModalState(game.state),
+    sellDisabled: !selected || isModalState(game.state),
+    cancelDisabled: !game.placingTower || isModalState(game.state),
     placingTower: game.placingTower,
-    towerButtonsDisabled: game.state === "menu" || game.state === "won" || game.state === "lost" || game.state === "campaign-won",
+    towerButtonsDisabled: isModalState(game.state),
   };
 
   const previous = game.lastHudSnapshot;
@@ -997,7 +1003,7 @@ canvas.addEventListener("mouseleave", () => {
 });
 
 canvas.addEventListener("mousedown", (event) => {
-  if (!game.currentLevel || game.state === "won" || game.state === "lost" || game.state === "menu" || game.state === "campaign-won") {
+  if (!game.currentLevel || isModalState(game.state)) {
     return;
   }
 

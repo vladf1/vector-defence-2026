@@ -8,7 +8,6 @@ export const STARTING_MONEY = 260;
 export const UPGRADE_COST = 50;
 export const MIN_DISTANCE_TO_ROAD = 20;
 export const MIN_DISTANCE_TO_OTHER_TOWERS = 32;
-export const PRE_WAVE_DELAY = 5;
 export const MAX_PARTICLES = 320;
 export const MAX_LINKS = 120;
 
