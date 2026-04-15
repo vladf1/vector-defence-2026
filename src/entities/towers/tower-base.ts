@@ -1,0 +1,113 @@
+import { MAX_TOWER_LEVEL, TOWER_SPECS, UPGRADE_COST } from "../../constants";
+import { TowerKind } from "../../types";
+import type { Point } from "../../types";
+import { distanceSquaredXY } from "../../utils";
+import type { Monster } from "../monsters";
+import type { GameAccess } from "../types";
+
+export abstract class Tower {
+  kind: TowerKind;
+  x: number;
+  y: number;
+  range: number;
+  cost: number;
+  level = 0;
+  cooldownMs = 0;
+  removed = false;
+
+  constructor(kind: TowerKind, x: number, y: number) {
+    this.kind = kind;
+    this.x = x;
+    this.y = y;
+    this.range = TOWER_SPECS[kind].range;
+    this.cost = TOWER_SPECS[kind].cost;
+  }
+
+  get upgradeCost(): number {
+    return UPGRADE_COST;
+  }
+
+  get resaleValue(): number {
+    return Math.round(this.cost * 0.75);
+  }
+
+  canUpgrade(): boolean {
+    return this.level < MAX_TOWER_LEVEL;
+  }
+
+  update(game: GameAccess, dt: number, multiplier: number): void {
+    this.cooldownMs = Math.max(0, this.cooldownMs - (dt * 1000));
+    this.onUpdate(game, multiplier);
+  }
+
+  upgrade(): void {
+    if (!this.canUpgrade()) {
+      return;
+    }
+    this.level += 1;
+    this.cost += UPGRADE_COST;
+    this.range += this.level * 4;
+    this.onUpgrade();
+  }
+
+  protected getClosestMonster(game: GameAccess): Monster | undefined {
+    let closest: Monster | undefined;
+    let smallestDistance = Number.POSITIVE_INFINITY;
+    for (const monster of game.monsters) {
+      if (monster.removed) {
+        continue;
+      }
+      const distSq = distanceSquaredXY(this.x, this.y, monster.x, monster.y);
+      if (distSq > this.range * this.range) {
+        continue;
+      }
+      if (distSq < smallestDistance) {
+        smallestDistance = distSq;
+        closest = monster;
+      }
+    }
+    return closest;
+  }
+
+  protected calculateIntercept(monster: Monster, projectileSpeed: number, from: Point): Point {
+    const target = { x: monster.x - from.x, y: monster.y - from.y };
+    const a = (projectileSpeed * projectileSpeed) - ((monster.dx * monster.dx) + (monster.dy * monster.dy));
+    const b = (target.x * monster.dx) + (target.y * monster.dy);
+    const c = (target.x * target.x) + (target.y * target.y);
+    const d = (b * b) + (a * c);
+    let t = 0;
+    if (d >= 0 && a !== 0) {
+      t = (b + Math.sqrt(d)) / a;
+      if (t < 0) {
+        t = 0;
+      }
+    }
+    return {
+      x: monster.x + (monster.dx * t),
+      y: monster.y + (monster.dy * t),
+    };
+  }
+
+  protected resetCooldown(milliseconds: number): void {
+    this.cooldownMs = milliseconds;
+  }
+
+  protected ready(): boolean {
+    return this.cooldownMs <= 0;
+  }
+
+  protected drawSelection(context: CanvasRenderingContext2D): void {
+    context.save();
+    context.strokeStyle = "rgba(92, 255, 158, 0.25)";
+    context.fillStyle = "rgba(92, 255, 158, 0.05)";
+    context.beginPath();
+    context.arc(0, 0, this.range, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.restore();
+  }
+
+  protected abstract onUpdate(game: GameAccess, multiplier: number): void;
+  protected abstract onUpgrade(): void;
+  abstract draw(context: CanvasRenderingContext2D, active: boolean): void;
+}

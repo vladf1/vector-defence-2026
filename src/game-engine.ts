@@ -11,15 +11,14 @@ import {
   STARTING_MONEY,
   TOWER_RADIUS,
 } from "./constants";
-import {
-  LinkEffect,
-  Missile,
-  Monster,
-  Particle,
-  Projectile,
-  Tower,
-  createTower,
-} from "./entities";
+import { LinkEffect, Particle } from "./entities/effects";
+import { Monster } from "./entities/monsters";
+import { Missile, Projectile } from "./entities/projectiles";
+import { GunTower } from "./entities/towers/gun-tower";
+import { LaserTower } from "./entities/towers/laser-tower";
+import { MissileTower } from "./entities/towers/missile-tower";
+import { SlowTower } from "./entities/towers/slow-tower";
+import { Tower } from "./entities/towers/tower-base";
 import {
   compactInPlace,
   distanceSquaredXY,
@@ -348,7 +347,7 @@ export class Game {
   }
 
   placeTower(kind: TowerKind, point: Point): void {
-    const tower = createTower(kind, point.x, point.y);
+    const tower = this.createTower(kind, point);
     if (this.money < tower.cost || !this.canPlaceTower(point)) {
       return;
     }
@@ -357,6 +356,19 @@ export class Game {
     this.selectedTower = tower;
     this.placingTower = undefined;
     this.requestHudSync();
+  }
+
+  createTower(kind: TowerKind, point: Point): Tower {
+    if (kind === TowerKind.Gun) {
+      return new GunTower(point.x, point.y);
+    }
+    if (kind === TowerKind.Laser) {
+      return new LaserTower(point.x, point.y);
+    }
+    if (kind === TowerKind.Missile) {
+      return new MissileTower(point.x, point.y);
+    }
+    return new SlowTower(point.x, point.y);
   }
 
   selectTowerAt(point: Point): void {

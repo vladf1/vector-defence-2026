@@ -5,7 +5,7 @@ Active browser implementation lives in this repo root.
 Key paths:
 
 - Browser app entry: `src/main.ts`
-- Browser gameplay entities: `src/entities.ts`
+- Browser gameplay entities: `src/entities/`
 - Browser campaign builder: `src/campaign.ts`
 - Procedural route generator used by campaign seeding: `src/level-generator.ts`
 - Shared browser types: `src/types.ts`
@@ -22,8 +22,12 @@ Repository notes:
 
 Current code structure:
 
-- `src/main.ts` owns app bootstrapping, DOM wiring, the game loop, HUD syncing, modal flow, and overall game state.
-- `src/entities.ts` owns the active gameplay classes: `Tower`, `Monster`, `Projectile`, `Missile`, `Particle`, `LinkEffect`, and `createTower`.
+- `src/main.ts` owns Svelte app bootstrapping.
+- `src/game-session.ts` bridges Svelte state/events to the imperative game runtime.
+- `src/game-engine.ts` owns gameplay state, campaign progression, placement rules, and simulation.
+- `src/game-renderer.ts` owns canvas sizing, background caching, previews, and drawing.
+- `src/game-view.ts` owns HUD/modal view-model generation for Svelte.
+- `src/entities/` owns active gameplay entities split by concern: towers, monsters, projectiles, effects, and entity-local types.
 - `src/campaign.ts` turns the base route list plus four procedural routes into the 10-level campaign used by the browser game.
 - `src/level-generator.ts` creates the procedural route seeds consumed by `src/campaign.ts`; there is no separate random-route menu path anymore.
 - `src/types.ts` is the source of truth for shared browser types such as `TowerKind`, `MonsterCode`, `GameState`, `Point`, `LevelData`, `WaveData`, and `HudSnapshot`.
