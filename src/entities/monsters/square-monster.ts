@@ -1,4 +1,4 @@
-import { MonsterKind, type Point } from "../../types";
+import type { Point } from "../../types";
 import { MonsterBase } from "./monster-base";
 
 const COLOR = "#ff6f62";
@@ -8,8 +8,6 @@ const BOUNTY = 25;
 const RADIUS = 6.5;
 
 export class SquareMonster extends MonsterBase {
-  readonly kind = MonsterKind.Square;
-
   constructor(path: Point[]) {
     super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS);
   }

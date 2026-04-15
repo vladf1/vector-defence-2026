@@ -1,8 +1,7 @@
-import { MonsterKind, type Point } from "../../types";
+import type { Point } from "../../types";
 import { angleBetween, distanceXY, randomRange } from "../../utils";
 
 export abstract class MonsterBase {
-  abstract readonly kind: MonsterKind;
   onKilled?: () => void;
   onEscaped?: () => void;
   x: number;

@@ -1,4 +1,4 @@
-import { MonsterKind, type Point } from "../../types";
+import type { Point } from "../../types";
 import { MonsterBase } from "./monster-base";
 
 const COLOR = "#ff8bd5";
@@ -8,8 +8,6 @@ const BOUNTY = 28;
 const RADIUS = 8.5;
 
 export class SplitterMonster extends MonsterBase {
-  readonly kind = MonsterKind.Splitter;
-
   constructor(path: Point[]) {
     super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS);
   }

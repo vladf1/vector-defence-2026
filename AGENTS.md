@@ -61,7 +61,6 @@ Data / naming conventions:
 - `GameState`, `MonsterKind`, and `TowerKind` are `as const` value objects with derived union types in `src/types.ts`, not TypeScript enums.
 - Keep `Levels.json` monster identifiers as plain strings. `src/utils.ts` normalizes them to `MonsterKind` values at runtime.
 - `Levels.json` provides the handcrafted base routes. The actual playable campaign data is generated at runtime by `createCampaignLevels(...)`.
-- Monster identity lives in each concrete monster class as `readonly kind = MonsterKind.X`; do not pass monster kind through `MonsterBase`.
 - Monster constructors pass private named constants to `MonsterBase` with `super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS)`.
 - Monster constructor stats use `hitPoints`, not `hp`.
 - `hitPoints` is current monster health. `maxHitPoints` is the full-health denominator used by the health bar.
@@ -69,6 +68,7 @@ Data / naming conventions:
 - For unusual spawn positions, build a new path array that starts at the custom spawn point and continues through the remaining route.
 - Monsters expose lifecycle event handlers such as `onKilled` and `onEscaped`; wire those handlers in `Game.createMonster(...)`.
 - Concrete monster classes should not import `GameAccess` or call game orchestration methods directly.
+- Monster instances do not carry `MonsterKind`; use `MonsterKind` for level/campaign data and `instanceof` for runtime class-specific behavior.
 - Towers use `TowerKind` values as keys into `TOWER_SPECS`; keep tower identifiers readable strings.
 
 Gameplay / UI notes:

@@ -271,9 +271,9 @@ export class Game {
 
   onMonsterKilled(monster: MonsterBase): void {
     this.money += monster.bounty;
-    if (monster.kind === MonsterKind.Tank) {
+    if (monster instanceof TankMonster) {
       this.createTankExplosion(monster.x, monster.y, monster.color);
-    } else if (monster.kind === MonsterKind.Splitter) {
+    } else if (monster instanceof SplitterMonster) {
       this.createExplosion(monster.x, monster.y, 34, randomRange(1.2, 3.3), monster.color, 1 / 30);
     } else {
       this.createExplosion(monster.x, monster.y, 30, randomRange(1.5, 4), monster.color, 1 / 24);
