@@ -7,7 +7,66 @@
     <title>Vector Defence</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app" class="shell">
+      <header class="topbar">
+        <div class="title-block">
+          <h1>Vector Defence</h1>
+        </div>
+        <div class="actions">
+          <button class="chrome-button" id="pause-button" type="button">Pause</button>
+          <button class="chrome-button" id="level-button" type="button">Campaign</button>
+          <button class="chrome-button" id="restart-button" type="button">Restart</button>
+        </div>
+      </header>
+
+      <section class="hud">
+        <div class="stat-card">
+          <span>Level</span>
+          <strong id="level-name">Campaign Map</strong>
+        </div>
+        <div class="stat-card">
+          <span>Money</span>
+          <strong id="money-value">$0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Leaks Left</span>
+          <strong id="escapes-value">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Wave</span>
+          <strong id="wave-value">Idle</strong>
+        </div>
+      </section>
+
+      <section class="board-card">
+        <div class="board-frame">
+          <canvas id="game" width="700" height="450"></canvas>
+          <div class="banner">
+            <div class="banner-chip" id="banner">Awaiting orders</div>
+          </div>
+          <div class="modal" id="modal"></div>
+        </div>
+      </section>
+
+      <section class="controls-grid">
+        <div class="control-card">
+          <div class="tower-strip" id="tower-strip"></div>
+        </div>
+        <div class="control-card selection-card">
+          <div class="selection-copy">
+            <strong id="selection-title">No tower selected</strong>
+            <span id="selection-body">Choose a build from the toolbar, then click the field to place it.</span>
+          </div>
+          <div class="selection-actions">
+            <button class="action-button" id="upgrade-button" type="button">Upgrade</button>
+            <button class="action-button sell" id="sell-button" type="button">Sell</button>
+            <button class="action-button" id="cancel-button" type="button">Cancel Build</button>
+          </div>
+        </div>
+      </section>
+
+      <p class="footnote">Tip: press <strong>1-4</strong> or <strong>G/L/M/S</strong> for towers, <strong>U</strong> to upgrade, <strong>Esc</strong> to cancel build mode, and <strong>Space</strong> to pause or resume.</p>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
   </html>

@@ -39,6 +39,14 @@ import {
   type Point,
   type WaveData,
 } from "./types";
+import {
+  applyHudSnapshot,
+  getAppElements,
+  renderModal as renderModalView,
+  setupTowerButtons,
+  type ModalLevelCardConfig,
+  type ModalViewConfig,
+} from "./ui";
 
 const TOWER_KINDS = [TowerKind.Gun, TowerKind.Laser, TowerKind.Missile, TowerKind.Slow] as const;
 
@@ -57,91 +65,17 @@ function isModalState(state: GameState): boolean {
   return state === "menu" || state === "won" || state === "lost" || state === "campaign-won";
 }
 
-const root = document.querySelector<HTMLDivElement>("#app");
-
-if (!root) {
-  throw new Error("Missing app root.");
-}
-
-root.innerHTML = `
-  <div class="shell">
-    <header class="topbar">
-      <div class="title-block">
-        <h1>Vector Defence</h1>
-        <p>Push through a full ten-level campaign, survive every wave, and secure the frontier.</p>
-      </div>
-      <div class="actions">
-        <button class="chrome-button" id="pause-button">Pause</button>
-        <button class="chrome-button" id="level-button">Campaign</button>
-        <button class="chrome-button" id="restart-button">Restart</button>
-      </div>
-    </header>
-
-    <section class="hud">
-      <div class="stat-card">
-        <span>Level</span>
-        <strong id="level-name">Campaign Map</strong>
-      </div>
-      <div class="stat-card">
-        <span>Money</span>
-        <strong id="money-value">$0</strong>
-      </div>
-      <div class="stat-card">
-        <span>Leaks Left</span>
-        <strong id="escapes-value">0</strong>
-      </div>
-      <div class="stat-card">
-        <span>Wave</span>
-        <strong id="wave-value">Idle</strong>
-      </div>
-    </section>
-
-    <section class="board-card">
-      <div class="board-frame">
-        <canvas id="game" width="${FIELD_WIDTH}" height="${FIELD_HEIGHT}"></canvas>
-        <div class="banner"><div class="banner-chip" id="banner">Awaiting orders</div></div>
-        <div class="modal" id="modal"></div>
-      </div>
-    </section>
-
-    <section class="controls-grid">
-      <div class="control-card">
-        <div class="tower-strip" id="tower-strip"></div>
-      </div>
-      <div class="control-card selection-card">
-        <div class="selection-copy">
-          <strong id="selection-title">No tower selected</strong>
-          <span id="selection-body">Choose a build from the toolbar, then click the field to place it.</span>
-        </div>
-        <div class="selection-actions">
-          <button class="action-button" id="upgrade-button">Upgrade</button>
-          <button class="action-button sell" id="sell-button">Sell</button>
-          <button class="action-button" id="cancel-button">Cancel Build</button>
-        </div>
-      </div>
-    </section>
-
-    <p class="footnote">Tip: press <strong>1-4</strong> or <strong>G/L/M/S</strong> for towers, <strong>U</strong> to upgrade, <strong>Esc</strong> to cancel build mode, and <strong>Space</strong> to pause or resume.</p>
-  </div>
-`;
-
-const canvas = must(document.querySelector<HTMLCanvasElement>("#game"), "Missing canvas.");
-const modal = must(document.querySelector<HTMLDivElement>("#modal"), "Missing modal.");
-const towerStrip = must(document.querySelector<HTMLDivElement>("#tower-strip"), "Missing tower strip.");
-const banner = must(document.querySelector<HTMLDivElement>("#banner"), "Missing banner.");
-const levelNameValue = must(document.querySelector<HTMLElement>("#level-name"), "Missing level name.");
-const moneyValue = must(document.querySelector<HTMLElement>("#money-value"), "Missing money value.");
-const escapesValue = must(document.querySelector<HTMLElement>("#escapes-value"), "Missing escapes value.");
-const waveValue = must(document.querySelector<HTMLElement>("#wave-value"), "Missing wave value.");
-const selectionTitle = must(document.querySelector<HTMLElement>("#selection-title"), "Missing selection title.");
-const selectionBody = must(document.querySelector<HTMLElement>("#selection-body"), "Missing selection body.");
-const pauseButton = must(document.querySelector<HTMLButtonElement>("#pause-button"), "Missing pause button.");
-const levelButton = must(document.querySelector<HTMLButtonElement>("#level-button"), "Missing campaign button.");
-const restartButton = must(document.querySelector<HTMLButtonElement>("#restart-button"), "Missing restart button.");
-const upgradeButton = must(document.querySelector<HTMLButtonElement>("#upgrade-button"), "Missing upgrade button.");
-const sellButton = must(document.querySelector<HTMLButtonElement>("#sell-button"), "Missing sell button.");
-const cancelButton = must(document.querySelector<HTMLButtonElement>("#cancel-button"), "Missing cancel button.");
-
+const root = must(document.querySelector<HTMLDivElement>("#app"), "Missing app root.");
+const ui = getAppElements(root);
+const {
+  canvas,
+  pauseButton,
+  levelButton,
+  restartButton,
+  upgradeButton,
+  sellButton,
+  cancelButton,
+} = ui;
 const ctx = must(canvas.getContext("2d"), "Canvas 2D context unavailable.");
 
 class Game {
@@ -261,7 +195,7 @@ class Game {
     this.setBanner(`Level ${level.levelNumber ?? "?"}: ${level.name}`, 2.4);
     this.setState("playing");
     this.rebuildBackgroundCache();
-    renderModal();
+    updateModal();
   }
 
   startLevelByIndex(index: number): void {
@@ -279,7 +213,7 @@ class Game {
     if (this.currentLevel) {
       this.startLevel(this.currentLevel);
     } else {
-      renderModal();
+      updateModal();
     }
   }
 
@@ -301,7 +235,7 @@ class Game {
   openMenu(): void {
     this.menuReturnState = isBattleState(this.state) ? this.state : undefined;
     this.setState("menu");
-    renderModal();
+    updateModal();
   }
 
   resumeBattle(): void {
@@ -310,7 +244,7 @@ class Game {
     }
     this.setState(this.menuReturnState);
     this.menuReturnState = undefined;
-    renderModal();
+    updateModal();
   }
 
   togglePause(): void {
@@ -319,7 +253,7 @@ class Game {
     } else if (this.state === "paused") {
       this.setState("playing");
     }
-    renderModal();
+    updateModal();
   }
 
   spawnMonster(): void {
@@ -354,7 +288,7 @@ class Game {
       this.setState("lost");
       this.menuReturnState = undefined;
       this.setBanner("Defeat", 5);
-      renderModal();
+      updateModal();
     }
     this.requestHudSync();
   }
@@ -512,7 +446,7 @@ class Game {
       this.setState("won");
       this.setBanner("Level Clear", 5);
     }
-    renderModal();
+    updateModal();
   }
 
   resize(): void {
@@ -738,8 +672,6 @@ if (import.meta.env.DEV) {
   });
 }
 
-const towerButtons = new Map<TowerKind, HTMLButtonElement>();
-
 function toggleTowerPlacement(kind: TowerKind): void {
   if (isModalState(game.state)) {
     return;
@@ -747,23 +679,6 @@ function toggleTowerPlacement(kind: TowerKind): void {
   game.placingTower = game.placingTower === kind ? undefined : kind;
   game.selectedTower = undefined;
   syncHud();
-}
-
-function setupTowerButtons(): void {
-  towerStrip.innerHTML = "";
-  TOWER_KINDS.forEach((kind) => {
-    const spec = TOWER_SPECS[kind];
-    const shortcuts = TOWER_SHORTCUTS[kind].map((shortcut) => shortcut.toUpperCase()).join("/");
-    const button = document.createElement("button");
-    button.className = "tower-button";
-    button.innerHTML = `<strong>${spec.label} <span class="shortcut-chip">${shortcuts}</span></strong><span>${formatMoney(spec.cost)} · ${spec.summary}</span>`;
-    button.title = `${spec.label} tower (${shortcuts})`;
-    button.addEventListener("click", () => {
-      toggleTowerPlacement(kind);
-    });
-    towerButtons.set(kind, button);
-    towerStrip.append(button);
-  });
 }
 
 function syncHud(): void {
@@ -817,172 +732,113 @@ function syncHud(): void {
     towerButtonsDisabled: isModalState(game.state),
   };
 
-  const previous = game.lastHudSnapshot;
-  if (!previous || previous.levelName !== snapshot.levelName) {
-    levelNameValue.textContent = snapshot.levelName;
-  }
-  if (!previous || previous.money !== snapshot.money) {
-    moneyValue.textContent = snapshot.money;
-  }
-  if (!previous || previous.escapes !== snapshot.escapes) {
-    escapesValue.textContent = snapshot.escapes;
-  }
-  if (!previous || previous.wave !== snapshot.wave) {
-    waveValue.textContent = snapshot.wave;
-  }
-  if (!previous || previous.banner !== snapshot.banner) {
-    banner.textContent = snapshot.banner;
-  }
-  if (!previous || previous.pauseLabel !== snapshot.pauseLabel) {
-    pauseButton.textContent = snapshot.pauseLabel;
-  }
-  if (!previous || previous.pauseDisabled !== snapshot.pauseDisabled) {
-    pauseButton.disabled = snapshot.pauseDisabled;
-  }
-  if (!previous || previous.selectionTitle !== snapshot.selectionTitle) {
-    selectionTitle.textContent = snapshot.selectionTitle;
-  }
-  if (!previous || previous.selectionBody !== snapshot.selectionBody) {
-    selectionBody.textContent = snapshot.selectionBody;
-  }
-  if (!previous || previous.upgradeDisabled !== snapshot.upgradeDisabled) {
-    upgradeButton.disabled = snapshot.upgradeDisabled;
-  }
-  if (!previous || previous.sellDisabled !== snapshot.sellDisabled) {
-    sellButton.disabled = snapshot.sellDisabled;
-  }
-  if (!previous || previous.cancelDisabled !== snapshot.cancelDisabled) {
-    cancelButton.disabled = snapshot.cancelDisabled;
-  }
-
-  for (const [kind, button] of towerButtons.entries()) {
-    const isActive = snapshot.placingTower === kind;
-    if (!previous || previous.placingTower !== snapshot.placingTower) {
-      button.className = `tower-button${isActive ? " active" : ""}`;
-    }
-    if (!previous || previous.towerButtonsDisabled !== snapshot.towerButtonsDisabled) {
-      button.disabled = snapshot.towerButtonsDisabled;
-    }
-  }
-
+  applyHudSnapshot(ui, snapshot, game.lastHudSnapshot);
   game.lastHudSnapshot = snapshot;
   game.hudDirty = false;
 }
 
-function modalLevelCards(): string {
-  return levels
-    .map((level, index) => {
-      const unlocked = game.campaignCleared || index <= game.highestUnlockedLevelIndex;
-      const cleared = game.campaignCleared || index < game.highestUnlockedLevelIndex;
-      const current = game.currentLevelIndex === index && !!game.currentLevel;
-      const classes = [
-        "level-card",
-        unlocked ? "" : "locked",
-        cleared ? "cleared" : "",
-        current ? "current" : "",
-      ].filter(Boolean).join(" ");
-      const status = !unlocked ? "Locked" : (cleared ? "Cleared" : (index === game.highestUnlockedLevelIndex ? "Next" : "Ready"));
+function modalLevelCards(): ModalLevelCardConfig[] {
+  return levels.map((level, index) => {
+    const unlocked = game.campaignCleared || index <= game.highestUnlockedLevelIndex;
+    const cleared = game.campaignCleared || index < game.highestUnlockedLevelIndex;
+    const current = game.currentLevelIndex === index && !!game.currentLevel;
 
-      return `
-        <button class="${classes}" data-level-index="${index}" ${unlocked ? "" : "disabled"}>
-          <span class="level-pill">${status}</span>
-          <strong>Level ${level.levelNumber}: ${level.name}</strong>
-          <span>${level.subtitle ?? "Hold the route."}</span>
-          <small>${level.waves?.length ?? 1} waves · ${level.monsterCount} enemies · ${level.allowEscape} leaks</small>
-        </button>
-      `;
-    })
-    .join("");
+    return {
+      index,
+      unlocked,
+      cleared,
+      current,
+      status: !unlocked ? "Locked" : (cleared ? "Cleared" : (index === game.highestUnlockedLevelIndex ? "Next" : "Ready")),
+      level,
+    };
+  });
 }
 
-function renderModal(): void {
+function buildModalView(): ModalViewConfig | null {
   if (game.state === "menu") {
-    const quickAction = game.menuReturnState && game.currentLevel
-      ? `<button class="modal-button" data-action="resume">Resume Battle</button>`
-      : `<button class="modal-button" data-action="play-unlocked">Play Unlocked Level</button>`;
-    const restartAction = game.highestUnlockedLevelIndex > 0 || game.campaignCleared
-      ? `<button class="modal-button" data-action="restart-campaign">Restart Campaign</button>`
-      : "";
+    const actions = [
+      {
+        action: game.menuReturnState && game.currentLevel ? "resume" : "play-unlocked",
+        label: game.menuReturnState && game.currentLevel ? "Resume Battle" : "Play Unlocked Level",
+      },
+    ];
 
-    modal.classList.remove("hidden");
-    modal.innerHTML = `
-      <div class="modal-panel">
-        <h2>Campaign Map</h2>
-        <p>Ten routed battles, longer wave trains, and short build breaks between pushes. Clear each level to unlock the next.</p>
-        <div class="selection-actions campaign-actions">
-          ${quickAction}
-          ${restartAction}
-        </div>
-        <div class="level-grid">${modalLevelCards()}</div>
-      </div>
-    `;
-  } else if (game.state === "won") {
-    modal.classList.remove("hidden");
-    modal.innerHTML = `
-      <div class="modal-panel">
-        <h2>Level Clear</h2>
-        <p>Level ${game.currentLevel?.levelNumber ?? "?"} is secure. Keep the pressure on and push into the next route.</p>
-        <div class="selection-actions">
-          <button class="modal-button" data-action="next-level">Continue to Level ${(game.currentLevel?.levelNumber ?? 0) + 1}</button>
-          <button class="modal-button" data-action="replay">Replay This Level</button>
-          <button class="modal-button" data-action="campaign-map">Campaign Map</button>
-        </div>
-      </div>
-    `;
-  } else if (game.state === "campaign-won") {
-    modal.classList.remove("hidden");
-    modal.innerHTML = `
-      <div class="modal-panel">
-        <h2>You Won the Campaign</h2>
-        <p>All ten levels are secured. The prototype is now a full campaign run, and the frontier held.</p>
-        <div class="selection-actions">
-          <button class="modal-button" data-action="restart-campaign">Restart Campaign</button>
-          <button class="modal-button" data-action="replay">Replay Final Level</button>
-          <button class="modal-button" data-action="campaign-map">Campaign Map</button>
-        </div>
-      </div>
-    `;
-  } else if (game.state === "lost") {
-    modal.classList.remove("hidden");
-    modal.innerHTML = `
-      <div class="modal-panel">
-        <h2>Defeat</h2>
-        <p>The route broke through. Rework the build, lean on the intermissions, and try again.</p>
-        <div class="selection-actions">
-          <button class="modal-button" data-action="replay">Try Again</button>
-          <button class="modal-button" data-action="campaign-map">Campaign Map</button>
-        </div>
-      </div>
-    `;
-  } else {
-    modal.classList.add("hidden");
-    modal.innerHTML = "";
+    if (game.highestUnlockedLevelIndex > 0 || game.campaignCleared) {
+      actions.push({
+        action: "restart-campaign",
+        label: "Restart Campaign",
+      });
+    }
+
+    return {
+      title: "Campaign Map",
+      description: "Ten routed battles, longer wave trains, and short build breaks between pushes. Clear each level to unlock the next.",
+      actions,
+      actionClassName: "campaign-actions",
+      levelCards: modalLevelCards(),
+    };
   }
 
-  modal.querySelectorAll<HTMLElement>("[data-level-index]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const levelIndex = Number(button.dataset.levelIndex);
-      game.startLevelByIndex(levelIndex);
-    });
-  });
+  if (game.state === "won") {
+    return {
+      title: "Level Clear",
+      description: `Level ${game.currentLevel?.levelNumber ?? "?"} is secure. Keep the pressure on and push into the next route.`,
+      actions: [
+        { action: "next-level", label: `Continue to Level ${(game.currentLevel?.levelNumber ?? 0) + 1}` },
+        { action: "replay", label: "Replay This Level" },
+        { action: "campaign-map", label: "Campaign Map" },
+      ],
+    };
+  }
 
-  modal.querySelectorAll<HTMLElement>("[data-action]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const action = button.dataset.action;
-      if (action === "resume") {
-        game.resumeBattle();
-      } else if (action === "play-unlocked") {
-        game.startLevelByIndex(game.campaignCleared ? game.levels.length - 1 : game.highestUnlockedLevelIndex);
-      } else if (action === "restart-campaign") {
-        game.restartCampaign();
-      } else if (action === "next-level") {
-        game.startNextLevel();
-      } else if (action === "replay") {
-        game.restart();
-      } else if (action === "campaign-map") {
-        game.openMenu();
-      }
-    });
+  if (game.state === "campaign-won") {
+    return {
+      title: "You Won the Campaign",
+      description: "All ten levels are secured. The prototype is now a full campaign run, and the frontier held.",
+      actions: [
+        { action: "restart-campaign", label: "Restart Campaign" },
+        { action: "replay", label: "Replay Final Level" },
+        { action: "campaign-map", label: "Campaign Map" },
+      ],
+    };
+  }
+
+  if (game.state === "lost") {
+    return {
+      title: "Defeat",
+      description: "The route broke through. Rework the build, lean on the intermissions, and try again.",
+      actions: [
+        { action: "replay", label: "Try Again" },
+        { action: "campaign-map", label: "Campaign Map" },
+      ],
+    };
+  }
+
+  return null;
+}
+
+function handleModalAction(action: string): void {
+  if (action === "resume") {
+    game.resumeBattle();
+  } else if (action === "play-unlocked") {
+    game.startLevelByIndex(game.campaignCleared ? game.levels.length - 1 : game.highestUnlockedLevelIndex);
+  } else if (action === "restart-campaign") {
+    game.restartCampaign();
+  } else if (action === "next-level") {
+    game.startNextLevel();
+  } else if (action === "replay") {
+    game.restart();
+  } else if (action === "campaign-map") {
+    game.openMenu();
+  }
+}
+
+function updateModal(): void {
+  renderModalView(ui.modal, buildModalView(), {
+    onAction: handleModalAction,
+    onLevelSelect: (levelIndex) => {
+      game.startLevelByIndex(levelIndex);
+    },
   });
 }
 
@@ -1079,8 +935,8 @@ window.addEventListener("resize", () => {
   game.draw();
 });
 
-setupTowerButtons();
-renderModal();
+setupTowerButtons(ui, TOWER_KINDS, TOWER_SHORTCUTS, toggleTowerPlacement);
+updateModal();
 syncHud();
 
 let lastFrame = performance.now();
