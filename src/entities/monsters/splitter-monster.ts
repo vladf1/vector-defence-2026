@@ -1,0 +1,44 @@
+import { MonsterKind, type Point } from "../../types";
+import { MonsterBase } from "./monster-base";
+
+const COLOR = "#ff8bd5";
+const SPEED = 1.35;
+const HIT_POINTS = 230;
+const BOUNTY = 28;
+const RADIUS = 8.5;
+
+export class SplitterMonster extends MonsterBase {
+  readonly kind = MonsterKind.Splitter;
+
+  constructor(path: Point[]) {
+    super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS);
+  }
+
+  protected updateSpecial(multiplier: number): void {
+    this.rotation += 0.045 * multiplier;
+  }
+
+  protected drawBody(context: CanvasRenderingContext2D): void {
+    context.rotate(this.rotation);
+    context.beginPath();
+    for (let index = 0; index < 6; index += 1) {
+      const angle = (Math.PI / 3) * index;
+      const radius = index % 2 === 0 ? this.radius * 1.15 : this.radius * 0.72;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      if (index === 0) {
+        context.moveTo(x, y);
+      } else {
+        context.lineTo(x, y);
+      }
+    }
+    context.closePath();
+    context.fill();
+    context.stroke();
+    context.beginPath();
+    context.moveTo(-this.radius * 0.55, -this.radius * 0.15);
+    context.lineTo(0, this.radius * 0.2);
+    context.lineTo(this.radius * 0.58, -this.radius * 0.18);
+    context.stroke();
+  }
+}

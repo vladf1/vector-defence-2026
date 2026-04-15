@@ -64,16 +64,6 @@ button {
   flex: 0 0 auto;
 }
 
-.title-block p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.85rem;
-  flex: 1 1 20rem;
-  line-height: 1.2;
-  max-width: 29rem;
-  min-width: 0;
-}
-
 .actions {
   display: flex;
   flex: 0 0 auto;
@@ -216,25 +206,22 @@ button {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 20px;
-  background: rgba(3, 7, 6, 0.6);
-}
-
-.modal.hidden {
-  display: none;
+  padding: 0;
+  background: rgba(3, 7, 6, 0.72);
+  overflow: auto;
+  z-index: 2;
 }
 
 .modal-panel {
-  width: min(640px, 100%);
+  width: 100%;
+  min-height: 100%;
   background:
     radial-gradient(circle at top, rgba(87, 175, 140, 0.14), transparent 38%),
     rgba(7, 15, 12, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 18px;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.38);
+  padding: clamp(18px, 3vw, 34px);
+  overflow: visible;
 }
 
 .modal-panel h2 {

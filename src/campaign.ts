@@ -1,6 +1,6 @@
 import { STARTING_MONEY } from "./constants";
 import { createProceduralLevel } from "./level-generator";
-import type { LevelData, MonsterCode, WaveData } from "./types";
+import { MonsterKind, type LevelData, type WaveData } from "./types";
 import { clamp } from "./utils";
 
 const CAMPAIGN_NOTES = [
@@ -21,9 +21,9 @@ const LEVEL_ESCAPES = [15, 15, 14, 13, 12, 12, 11, 10, 9, 8] as const;
 const LEVEL_STARTING_MONEY = [320, 335, 350, 365, 380, 395, 410, 430, 450, 470] as const;
 const LEVEL_WAVE_TOTALS = [4, 4, 5, 5, 5, 6, 6, 6, 7, 7] as const;
 
-function uniqueSequence(sequence: MonsterCode[]): MonsterCode[] {
-  const seen = new Set<MonsterCode>();
-  const result: MonsterCode[] = [];
+function uniqueSequence(sequence: MonsterKind[]): MonsterKind[] {
+  const seen = new Set<MonsterKind>();
+  const result: MonsterKind[] = [];
   for (const code of sequence) {
     if (!seen.has(code)) {
       seen.add(code);
@@ -33,53 +33,60 @@ function uniqueSequence(sequence: MonsterCode[]): MonsterCode[] {
   return result;
 }
 
-function buildWaveSequence(baseSequence: MonsterCode[], levelIndex: number, waveIndex: number): MonsterCode[] {
+function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, waveIndex: number): MonsterKind[] {
   const pressure = (levelIndex * 0.85) + (waveIndex * 0.9);
-  const pool: MonsterCode[] = [...baseSequence];
+  const introduceSplitterEarly = levelIndex === 0 && waveIndex >= 2;
+  const pool: MonsterKind[] = [...baseSequence];
 
   if (pressure >= 1.2) {
-    pool.push("square", "runner");
+    pool.push(MonsterKind.Square, MonsterKind.Runner);
   }
   if (pressure >= 2.2) {
-    pool.push("triangle", "triangle");
+    pool.push(MonsterKind.Triangle, MonsterKind.Triangle);
   }
   if (pressure >= 3.3) {
-    pool.push("tank");
+    pool.push(MonsterKind.Tank);
   }
   if (pressure >= 4.6) {
-    pool.push("runner", "square", "tank");
+    pool.push(MonsterKind.Runner, MonsterKind.Square, MonsterKind.Tank, MonsterKind.Splitter);
   }
   if (pressure >= 6.1) {
-    pool.push("triangle", "runner", "tank");
+    pool.push(MonsterKind.Triangle, MonsterKind.Runner, MonsterKind.Tank, MonsterKind.Splitter);
+  }
+  if (introduceSplitterEarly) {
+    pool.push(MonsterKind.Splitter);
   }
 
   const source = uniqueSequence(pool);
   const length = clamp(5 + waveIndex + Math.floor(levelIndex / 2), 5, 12);
-  const sequence: MonsterCode[] = [];
+  const sequence: MonsterKind[] = [];
 
   for (let index = 0; index < length; index += 1) {
-    sequence.push(source[(index + waveIndex + (levelIndex * 2)) % source.length] ?? "ball");
+    sequence.push(source[(index + waveIndex + (levelIndex * 2)) % source.length] ?? MonsterKind.Ball);
   }
 
   if (pressure < 2.4) {
-    sequence.unshift("ball");
+    sequence.unshift(MonsterKind.Ball);
   } else if (pressure < 4.4) {
-    sequence.unshift("runner");
+    sequence.unshift(MonsterKind.Runner);
   } else {
-    sequence.unshift("square");
+    sequence.unshift(MonsterKind.Square);
   }
 
   if (pressure >= 3.1) {
-    sequence.push(waveIndex % 2 === 0 ? "tank" : "triangle");
+    sequence.push(waveIndex % 2 === 0 ? MonsterKind.Tank : MonsterKind.Triangle);
   }
   if (pressure >= 5.4) {
-    sequence.push("runner");
+    sequence.push(waveIndex % 2 === 0 ? MonsterKind.Splitter : MonsterKind.Runner);
+  }
+  if (introduceSplitterEarly) {
+    sequence.push(MonsterKind.Splitter);
   }
 
   return sequence;
 }
 
-function buildWave(levelIndex: number, waveIndex: number, waveTotal: number, baseSequence: MonsterCode[], initialBuildTime: number): WaveData {
+function buildWave(levelIndex: number, waveIndex: number, waveTotal: number, baseSequence: MonsterKind[], initialBuildTime: number): WaveData {
   const countBase = 13 + (levelIndex * 1.6);
   const countStep = 4 + Math.floor(levelIndex / 3);
   const lastWaveBonus = waveIndex === waveTotal - 1 ? 4 + Math.round(levelIndex * 0.8) : 0;

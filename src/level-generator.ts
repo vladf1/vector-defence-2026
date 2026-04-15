@@ -1,5 +1,5 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "./constants";
-import type { LevelData, MonsterCode, Point } from "./types";
+import { MonsterKind, type LevelData, type Point } from "./types";
 import { clamp, randomRange } from "./utils";
 
 type Beat = "far-sweep" | "follow-through" | "snap-back" | "center-cut" | "edge-dive" | "pocket" | "weave" | "settle";
@@ -79,20 +79,20 @@ function createLevelName(style: RouteStyle): string {
   return `${pick(style.prefixes)} ${pick(style.suffixes)}`;
 }
 
-function buildMonsterSequence(): MonsterCode[] {
-  const rushPool: MonsterCode[] = ["ball", "runner", "runner", "square", "triangle", "triangle"];
-  const bruiserPool: MonsterCode[] = ["square", "triangle", "tank", "runner", "tank"];
+function buildMonsterSequence(): MonsterKind[] {
+  const rushPool: MonsterKind[] = [MonsterKind.Ball, MonsterKind.Runner, MonsterKind.Runner, MonsterKind.Square, MonsterKind.Triangle, MonsterKind.Triangle];
+  const bruiserPool: MonsterKind[] = [MonsterKind.Square, MonsterKind.Triangle, MonsterKind.Tank, MonsterKind.Runner, MonsterKind.Tank];
   const sequenceLength = randomInt(11, 14);
-  const sequence: MonsterCode[] = ["ball", "runner", "triangle"];
+  const sequence: MonsterKind[] = [MonsterKind.Ball, MonsterKind.Runner, MonsterKind.Triangle];
 
   while (sequence.length < sequenceLength - 3) {
     const pool = sequence.length % 4 === 3 ? bruiserPool : rushPool;
     sequence.push(pick(pool));
   }
 
-  sequence.push("square");
-  sequence.push("tank");
-  sequence.push("runner");
+  sequence.push(MonsterKind.Square);
+  sequence.push(MonsterKind.Tank);
+  sequence.push(MonsterKind.Runner);
   return sequence;
 }
 
