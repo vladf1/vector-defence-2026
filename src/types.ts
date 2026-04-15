@@ -75,3 +75,25 @@ export interface HudSnapshot {
   placingTower?: TowerKind;
   towerButtonsDisabled: boolean;
 }
+
+export interface ModalActionView {
+  action: string;
+  label: string;
+}
+
+export interface ModalLevelCardView {
+  index: number;
+  unlocked: boolean;
+  cleared: boolean;
+  current: boolean;
+  status: string;
+  level: LevelData;
+}
+
+export interface ModalView {
+  title: string;
+  description: string;
+  actions: ModalActionView[];
+  actionClassName?: string;
+  levelCards?: ModalLevelCardView[];
+}
