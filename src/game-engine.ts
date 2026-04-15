@@ -11,9 +11,17 @@ import {
   STARTING_MONEY,
   TOWER_RADIUS,
 } from "./constants";
-import { LinkEffect, Particle } from "./entities/effects";
-import { Monster } from "./entities/monsters";
-import { Missile, Projectile } from "./entities/projectiles";
+import { LinkEffect } from "./entities/effects/link-effect";
+import { Particle } from "./entities/effects/particle";
+import { BallMonster } from "./entities/monsters/ball-monster";
+import type { MonsterBase } from "./entities/monsters/monster-base";
+import { RunnerMonster } from "./entities/monsters/runner-monster";
+import { SplitterMonster } from "./entities/monsters/splitter-monster";
+import { SquareMonster } from "./entities/monsters/square-monster";
+import { TankMonster } from "./entities/monsters/tank-monster";
+import { TriangleMonster } from "./entities/monsters/triangle-monster";
+import { Missile } from "./entities/projectiles/missile";
+import { Projectile } from "./entities/projectiles/projectile";
 import { GunTower } from "./entities/towers/gun-tower";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { MissileTower } from "./entities/towers/missile-tower";
@@ -28,8 +36,9 @@ import {
   randomRange,
 } from "./utils";
 import {
+  GameState,
   TowerKind,
-  type GameState,
+  MonsterKind,
   type LevelData,
   type LevelJsonData,
   type Point,
@@ -45,12 +54,14 @@ export const TOWER_SHORTCUTS: Record<TowerKind, string[]> = {
   [TowerKind.Slow]: ["4", "s"],
 };
 
-export function isBattleState(state: GameState): state is "playing" | "paused" {
-  return state === "playing" || state === "paused";
+type BattleState = typeof GameState.Playing | typeof GameState.Paused;
+
+export function isBattleState(state: GameState): state is BattleState {
+  return state === GameState.Playing || state === GameState.Paused;
 }
 
 export function isModalState(state: GameState): boolean {
-  return state === "menu" || state === "won" || state === "lost" || state === "campaign-won";
+  return state === GameState.Menu || state === GameState.Won || state === GameState.Lost || state === GameState.CampaignWon;
 }
 
 export function findTowerShortcut(key: string): TowerKind | undefined {
@@ -68,8 +79,8 @@ export class Game {
   currentLevelIndex = -1;
   highestUnlockedLevelIndex = 0;
   campaignCleared = false;
-  menuReturnState?: "playing" | "paused";
-  state: GameState = "menu";
+  menuReturnState?: BattleState;
+  state: GameState = GameState.Menu;
   money = STARTING_MONEY;
   escapesLeft = 0;
   spawnDelay = 0;
@@ -79,7 +90,7 @@ export class Game {
   currentWaveIndex = 0;
   waveSpawnedMonsters = 0;
   towers: Tower[] = [];
-  monsters: Monster[] = [];
+  monsters: MonsterBase[] = [];
   projectiles: Projectile[] = [];
   missiles: Missile[] = [];
   particles: Particle[] = [];
@@ -105,6 +116,10 @@ export class Game {
 
   get waveTotal(): number {
     return this.currentLevel?.waves?.length ?? 1;
+  }
+
+  get activeMonsters(): Iterable<MonsterBase> {
+    return this.monsters.filter((monster) => !monster.removed);
   }
 
   addParticle(particle: Particle): void {
@@ -135,15 +150,15 @@ export class Game {
 
   setState(next: GameState): void {
     this.state = next;
-    if (next === "playing") {
+    if (next === GameState.Playing) {
       this.statusText = "Playing";
-    } else if (next === "paused") {
+    } else if (next === GameState.Paused) {
       this.statusText = "Paused";
-    } else if (next === "won") {
+    } else if (next === GameState.Won) {
       this.statusText = "Level secured";
-    } else if (next === "campaign-won") {
+    } else if (next === GameState.CampaignWon) {
       this.statusText = "Campaign complete";
-    } else if (next === "lost") {
+    } else if (next === GameState.Lost) {
       this.statusText = "Base overrun";
     } else {
       this.statusText = "Select a map";
@@ -178,7 +193,7 @@ export class Game {
     this.menuReturnState = undefined;
     this.resetField();
     this.setBanner(`Level ${level.levelNumber ?? "?"}: ${level.name}`, 2.4);
-    this.setState("playing");
+    this.setState(GameState.Playing);
     this.rebuildBackgroundCache();
     this.requestModalSync();
   }
@@ -219,7 +234,7 @@ export class Game {
 
   openMenu(): void {
     this.menuReturnState = isBattleState(this.state) ? this.state : undefined;
-    this.setState("menu");
+    this.setState(GameState.Menu);
     this.requestModalSync();
   }
 
@@ -233,10 +248,10 @@ export class Game {
   }
 
   togglePause(): void {
-    if (this.state === "playing") {
-      this.setState("paused");
-    } else if (this.state === "paused") {
-      this.setState("playing");
+    if (this.state === GameState.Playing) {
+      this.setState(GameState.Paused);
+    } else if (this.state === GameState.Paused) {
+      this.setState(GameState.Playing);
     }
     this.requestModalSync();
   }
@@ -247,31 +262,88 @@ export class Game {
     }
 
     const sequence = this.activeWave?.monsterSequence ?? this.currentLevel.monsterSequence;
-    const code = sequence[this.spawnIndex] ?? "ball";
+    const code = sequence[this.spawnIndex] ?? MonsterKind.Ball;
     this.spawnIndex = (this.spawnIndex + 1) % sequence.length;
     this.spawnedMonsters += 1;
     this.waveSpawnedMonsters += 1;
-    this.monsters.push(new Monster(code, this.currentLevel));
+    this.monsters.push(this.createMonster(code, this.currentLevel.points));
   }
 
-  onMonsterKilled(monster: Monster): void {
+  onMonsterKilled(monster: MonsterBase): void {
     this.money += monster.bounty;
-    if (monster.kind === "tank") {
+    if (monster.kind === MonsterKind.Tank) {
       this.createTankExplosion(monster.x, monster.y, monster.color);
+    } else if (monster.kind === MonsterKind.Splitter) {
+      this.createExplosion(monster.x, monster.y, 34, randomRange(1.2, 3.3), monster.color, 1 / 30);
     } else {
       this.createExplosion(monster.x, monster.y, 30, randomRange(1.5, 4), monster.color, 1 / 24);
     }
     this.requestHudSync();
   }
 
-  onMonsterEscaped(monster: Monster): void {
+  spawnSplitters(monster: MonsterBase): void {
+    if (!this.currentLevel) {
+      return;
+    }
+
+    const childCount = 2;
+    for (let index = 0; index < childCount; index += 1) {
+      const spawnPoint = {
+        x: monster.x + randomRange(-7, 7),
+        y: monster.y + randomRange(-7, 7),
+      };
+      const childPath = [spawnPoint, ...this.currentLevel.points.slice(monster.targetIndex)];
+      const child = this.createMonster(MonsterKind.Runner, childPath);
+      child.angle = monster.angle + randomRange(-0.25, 0.25);
+      child.speed = child.maxSpeed * randomRange(0.82, 0.96);
+      child.dx = Math.cos(child.angle) * child.speed;
+      child.dy = Math.sin(child.angle) * child.speed;
+      child.hitPoints = Math.round(child.maxHitPoints * 0.72);
+      child.maxHitPoints = child.hitPoints;
+      child.bounty = Math.max(8, Math.round(child.bounty * 0.55));
+      child.radius *= 0.86;
+      this.monsters.push(child);
+    }
+    this.setBanner("Splitter burst", 1.2);
+  }
+
+  createMonster(kind: MonsterKind, path: Point[]): MonsterBase {
+    let monster: MonsterBase;
+    if (kind === MonsterKind.Ball) {
+      monster = new BallMonster(path);
+    } else if (kind === MonsterKind.Square) {
+      monster = new SquareMonster(path);
+    } else if (kind === MonsterKind.Triangle) {
+      monster = new TriangleMonster(path);
+    } else if (kind === MonsterKind.Tank) {
+      monster = new TankMonster(path);
+    } else if (kind === MonsterKind.Splitter) {
+      monster = new SplitterMonster(path);
+      monster.onKilled = () => {
+        this.onMonsterKilled(monster);
+        this.spawnSplitters(monster);
+      };
+    } else {
+      monster = new RunnerMonster(path);
+    }
+
+    monster.onKilled ??= () => {
+      this.onMonsterKilled(monster);
+    };
+    monster.onEscaped = () => {
+      this.onMonsterEscaped(monster);
+    };
+    return monster;
+  }
+
+  onMonsterEscaped(monster: MonsterBase): void {
     this.createEscapeBurst(monster.x, monster.y);
     this.escapesLeft = Math.max(0, this.escapesLeft - 1);
     if (this.escapesLeft === 0) {
       this.monsters.forEach((item) => {
         item.removed = true;
       });
-      this.setState("lost");
+      this.setState(GameState.Lost);
       this.menuReturnState = undefined;
       this.setBanner("Defeat", 5);
       this.requestModalSync();
@@ -438,11 +510,11 @@ export class Game {
     if (isFinalLevel) {
       this.campaignCleared = true;
       this.highestUnlockedLevelIndex = this.levels.length - 1;
-      this.setState("campaign-won");
+      this.setState(GameState.CampaignWon);
       this.setBanner("Campaign Complete", 5.5);
     } else {
       this.highestUnlockedLevelIndex = Math.max(this.highestUnlockedLevelIndex, this.currentLevelIndex + 1);
-      this.setState("won");
+      this.setState(GameState.Won);
       this.setBanner("Level Clear", 5);
     }
     this.requestModalSync();
@@ -458,7 +530,7 @@ export class Game {
 
   update(dt: number): void {
     const multiplier = dt * 60;
-    const previousPreWaveSecond = this.state === "playing" && this.activeWave && this.spawnDelay > 0
+    const previousPreWaveSecond = this.state === GameState.Playing && this.activeWave && this.spawnDelay > 0
       ? Math.ceil(this.spawnDelay)
       : -1;
 
@@ -470,7 +542,7 @@ export class Game {
       }
     }
 
-    if (this.state !== "playing") {
+    if (this.state !== GameState.Playing) {
       this.draw();
       return;
     }
@@ -492,7 +564,7 @@ export class Game {
     }
 
     for (const monster of this.monsters) {
-      monster.update(this, multiplier);
+      monster.update(multiplier);
     }
 
     for (const projectile of this.projectiles) {
@@ -527,7 +599,7 @@ export class Game {
 
     if (!this.activeWave && this.currentLevel && this.spawnedMonsters >= this.currentLevel.monsterCount && this.monsters.length === 0) {
       this.winDelay += dt;
-      if (this.winDelay >= 0.6 && this.state === "playing") {
+      if (this.winDelay >= 0.6 && this.state === GameState.Playing) {
         this.finishLevel();
       }
     } else {

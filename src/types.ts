@@ -1,12 +1,33 @@
-export type MonsterCode = "ball" | "square" | "triangle" | "tank" | "runner";
-export type GameState = "menu" | "playing" | "paused" | "won" | "lost" | "campaign-won";
+export const GameState = {
+  Menu: "menu",
+  Playing: "playing",
+  Paused: "paused",
+  Won: "won",
+  Lost: "lost",
+  CampaignWon: "campaign-won",
+} as const;
 
-export enum TowerKind {
-  Gun = "gun",
-  Laser = "laser",
-  Missile = "missile",
-  Slow = "slow",
-}
+export type GameState = typeof GameState[keyof typeof GameState];
+
+export const MonsterKind = {
+  Ball: "ball",
+  Square: "square",
+  Triangle: "triangle",
+  Tank: "tank",
+  Runner: "runner",
+  Splitter: "splitter",
+} as const;
+
+export type MonsterKind = typeof MonsterKind[keyof typeof MonsterKind];
+
+export const TowerKind = {
+  Gun: "gun",
+  Laser: "laser",
+  Missile: "missile",
+  Slow: "slow",
+} as const;
+
+export type TowerKind = typeof TowerKind[keyof typeof TowerKind];
 
 export interface Point {
   x: number;
@@ -15,7 +36,7 @@ export interface Point {
 
 export interface WaveData {
   count: number;
-  monsterSequence: MonsterCode[];
+  monsterSequence: MonsterKind[];
   spawnIntervalMin: number;
   spawnIntervalMax: number;
   buildTime: number;
@@ -27,21 +48,13 @@ export interface LevelData {
   name: string;
   monsterCount: number;
   allowEscape: number;
-  monsterSequence: MonsterCode[];
+  monsterSequence: MonsterKind[];
   points: Point[];
   id?: string;
   levelNumber?: number;
   subtitle?: string;
   startingMoney?: number;
   waves?: WaveData[];
-}
-
-export interface MonsterPreset {
-  color: string;
-  speed: number;
-  hp: number;
-  bounty: number;
-  radius: number;
 }
 
 export interface TowerSpec {

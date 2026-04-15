@@ -1,7 +1,7 @@
 import { TowerKind } from "../../types";
 import { angleBetween, turnAngleTowards } from "../../utils";
-import { Missile } from "../projectiles";
-import type { GameAccess } from "../types";
+import { Missile } from "../projectiles/missile";
+import type { GameAccess } from "../game-access";
 import { Tower } from "./tower-base";
 
 export class MissileTower extends Tower {

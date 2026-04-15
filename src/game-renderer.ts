@@ -54,7 +54,7 @@ export class GameRenderer {
       missile.draw(this.ctx);
     }
 
-    for (const monster of this.game.monsters) {
+    for (const monster of this.game.activeMonsters) {
       monster.draw(this.ctx);
     }
 

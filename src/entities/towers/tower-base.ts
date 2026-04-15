@@ -2,8 +2,8 @@ import { MAX_TOWER_LEVEL, TOWER_SPECS, UPGRADE_COST } from "../../constants";
 import { TowerKind } from "../../types";
 import type { Point } from "../../types";
 import { distanceSquaredXY } from "../../utils";
-import type { Monster } from "../monsters";
-import type { GameAccess } from "../types";
+import type { MonsterBase } from "../monsters/monster-base";
+import type { GameAccess } from "../game-access";
 
 export abstract class Tower {
   kind: TowerKind;
@@ -50,13 +50,10 @@ export abstract class Tower {
     this.onUpgrade();
   }
 
-  protected getClosestMonster(game: GameAccess): Monster | undefined {
-    let closest: Monster | undefined;
+  protected getClosestMonster(game: GameAccess): MonsterBase | undefined {
+    let closest: MonsterBase | undefined;
     let smallestDistance = Number.POSITIVE_INFINITY;
-    for (const monster of game.monsters) {
-      if (monster.removed) {
-        continue;
-      }
+    for (const monster of game.activeMonsters) {
       const distSq = distanceSquaredXY(this.x, this.y, monster.x, monster.y);
       if (distSq > this.range * this.range) {
         continue;
@@ -69,7 +66,7 @@ export abstract class Tower {
     return closest;
   }
 
-  protected calculateIntercept(monster: Monster, projectileSpeed: number, from: Point): Point {
+  protected calculateIntercept(monster: MonsterBase, projectileSpeed: number, from: Point): Point {
     const target = { x: monster.x - from.x, y: monster.y - from.y };
     const a = (projectileSpeed * projectileSpeed) - ((monster.dx * monster.dx) + (monster.dy * monster.dy));
     const b = (target.x * monster.dx) + (target.y * monster.dy);

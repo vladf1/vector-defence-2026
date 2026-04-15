@@ -1,4 +1,4 @@
-import type { MonsterCode, LevelData, LevelJsonData, Point } from "./types";
+import { MonsterKind, type LevelData, type LevelJsonData, type Point } from "./types";
 
 export function must<T>(value: T | null, message: string): T {
   if (value === null) {
@@ -7,14 +7,14 @@ export function must<T>(value: T | null, message: string): T {
   return value;
 }
 
-function isMonsterCode(value: string): value is MonsterCode {
-  return value === "ball" || value === "square" || value === "triangle" || value === "tank" || value === "runner";
+function isMonsterKind(value: string): value is MonsterKind {
+  return Object.values(MonsterKind).includes(value as MonsterKind);
 }
 
 export function normalizeLevels(data: LevelJsonData[]): LevelData[] {
   return data.map((level) => ({
     ...level,
-    monsterSequence: level.monsterSequence.filter(isMonsterCode),
+    monsterSequence: level.monsterSequence.filter(isMonsterKind),
   }));
 }
 

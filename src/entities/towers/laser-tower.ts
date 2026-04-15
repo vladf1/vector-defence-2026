@@ -1,6 +1,6 @@
 import { TowerKind } from "../../types";
 import { angleBetween, pointToSegmentDistanceSquaredXY, randomRange, turnAngleTowards } from "../../utils";
-import type { GameAccess } from "../types";
+import type { GameAccess } from "../game-access";
 import { Tower } from "./tower-base";
 
 export class LaserTower extends Tower {
@@ -43,10 +43,7 @@ export class LaserTower extends Tower {
       y: this.y + (Math.sin(this.angle) * 9),
     };
 
-    for (const monster of game.monsters) {
-      if (monster.removed) {
-        continue;
-      }
+    for (const monster of game.activeMonsters) {
       const distSq = pointToSegmentDistanceSquaredXY(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
       if (distSq <= monster.radius * monster.radius) {
         monster.takeDamage(this.damagePerHit * multiplier * this.beamAlpha);

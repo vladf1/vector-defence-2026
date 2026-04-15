@@ -2,7 +2,7 @@ import { STARTING_MONEY, TOWER_SPECS } from "./constants";
 import { isBattleState, isModalState } from "./game-engine";
 import { formatMoney } from "./utils";
 import type { Game } from "./game-engine";
-import type { HudSnapshot, ModalLevelCardView, ModalView } from "./types";
+import { GameState, type HudSnapshot, type ModalLevelCardView, type ModalView } from "./types";
 
 export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   levelName: "Campaign Map",
@@ -27,15 +27,15 @@ export function createHudSnapshot(game: Game): HudSnapshot {
     ? `Level ${game.currentLevel.levelNumber ?? "?"} · ${game.currentLevel.name}`
     : "Campaign Map";
   const wave = game.currentLevel
-    ? (activeWave && game.state === "playing" && game.spawnDelay > 0
+    ? (activeWave && game.state === GameState.Playing && game.spawnDelay > 0
         ? `Wave ${game.currentWaveIndex + 1}/${game.waveTotal} in ${Math.ceil(game.spawnDelay)}s`
         : activeWave
           ? `Wave ${game.currentWaveIndex + 1}/${game.waveTotal} · ${Math.min(game.waveSpawnedMonsters, activeWave.count)} / ${activeWave.count}`
           : `All ${game.waveTotal} waves cleared`)
     : "Idle";
-  const banner = game.state === "playing" && activeWave && game.spawnDelay > 0
+  const banner = game.state === GameState.Playing && activeWave && game.spawnDelay > 0
     ? `Wave ${game.currentWaveIndex + 1} ${activeWave.label} in ${Math.ceil(game.spawnDelay)}`
-    : (game.bannerTimer > 0 ? game.bannerText : (game.state === "menu" ? "Awaiting orders" : game.statusText));
+    : (game.bannerTimer > 0 ? game.bannerText : (game.state === GameState.Menu ? "Awaiting orders" : game.statusText));
 
   let selectionTitle = "No tower selected";
   let selectionBody = "Choose a build from the toolbar, then click the field to place it.";
@@ -60,7 +60,7 @@ export function createHudSnapshot(game: Game): HudSnapshot {
     escapes: String(Math.max(0, game.escapesLeft)),
     wave,
     banner,
-    pauseLabel: game.state === "paused" ? "Resume" : "Pause",
+    pauseLabel: game.state === GameState.Paused ? "Resume" : "Pause",
     pauseDisabled: !isBattleState(game.state),
     selectionTitle,
     selectionBody,
@@ -75,7 +75,7 @@ export function createHudSnapshot(game: Game): HudSnapshot {
 export function createModalView(game: Game): ModalView | null {
   game.modalDirty = false;
 
-  if (game.state === "menu") {
+  if (game.state === GameState.Menu) {
     const actions = [
       {
         action: game.menuReturnState && game.currentLevel ? "resume" : "play-unlocked",
@@ -99,7 +99,7 @@ export function createModalView(game: Game): ModalView | null {
     };
   }
 
-  if (game.state === "won") {
+  if (game.state === GameState.Won) {
     return {
       title: "Level Clear",
       description: `Level ${game.currentLevel?.levelNumber ?? "?"} is secure. Keep the pressure on and push into the next route.`,
@@ -111,7 +111,7 @@ export function createModalView(game: Game): ModalView | null {
     };
   }
 
-  if (game.state === "campaign-won") {
+  if (game.state === GameState.CampaignWon) {
     return {
       title: "You Won the Campaign",
       description: "All ten levels are secured. The prototype is now a full campaign run, and the frontier held.",
@@ -123,7 +123,7 @@ export function createModalView(game: Game): ModalView | null {
     };
   }
 
-  if (game.state === "lost") {
+  if (game.state === GameState.Lost) {
     return {
       title: "Defeat",
       description: "The route broke through. Rework the build, lean on the intermissions, and try again.",

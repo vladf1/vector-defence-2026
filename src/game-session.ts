@@ -97,10 +97,10 @@ export function createGameSession(): GameSession {
       ? 0
       : Math.min((timestamp - previousFrameTime) / 1000, MAX_FRAME_DELTA);
 
-    previousFrameTime = timestamp;
     game.update(dt);
     publish();
     frameId = window.requestAnimationFrame(frame);
+    previousFrameTime = timestamp;
   };
 
   const mount = (nextCanvas: HTMLCanvasElement): void => {

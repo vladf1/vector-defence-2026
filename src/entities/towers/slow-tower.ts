@@ -1,8 +1,8 @@
 import { TOWER_RADIUS } from "../../constants";
 import { TowerKind } from "../../types";
 import { distanceSquaredXY } from "../../utils";
-import { LinkEffect } from "../effects";
-import type { GameAccess } from "../types";
+import { LinkEffect } from "../effects/link-effect";
+import type { GameAccess } from "../game-access";
 import { Tower } from "./tower-base";
 
 export class SlowTower extends Tower {
@@ -20,10 +20,7 @@ export class SlowTower extends Tower {
 
     let affected = 0;
     const maxTargets = this.level + 2;
-    for (const monster of game.monsters) {
-      if (monster.removed) {
-        continue;
-      }
+    for (const monster of game.activeMonsters) {
       if (distanceSquaredXY(this.x, this.y, monster.x, monster.y) > this.range * this.range) {
         continue;
       }
