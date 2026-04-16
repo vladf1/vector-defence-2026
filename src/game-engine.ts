@@ -287,15 +287,29 @@ export class Game {
     }
 
     const childCount = 2;
+    const splitAngle = monster.angle;
+    const forwardX = Math.cos(splitAngle);
+    const forwardY = Math.sin(splitAngle);
+    const segmentStart = monster.path[Math.max(0, monster.targetIndex - 1)] ?? { x: monster.x, y: monster.y };
+    const segmentEnd = monster.path[monster.targetIndex] ?? { x: monster.x, y: monster.y };
+    const distanceFromSegmentStart = calculateDistance(segmentStart.x, segmentStart.y, monster.x, monster.y);
+    const distanceToNextWaypoint = calculateDistance(monster.x, monster.y, segmentEnd.x, segmentEnd.y);
+    const maxOffsetDistance = Math.min(12, distanceFromSegmentStart, distanceToNextWaypoint);
+    const minSpeedMultiplier = 0.89;
+    const maxSpeedMultiplier = 0.97;
+
     for (let index = 0; index < childCount; index += 1) {
+      const forwardOffset = randomRange(-maxOffsetDistance, maxOffsetDistance);
       const spawnPoint = {
-        x: monster.x + randomRange(-7, 7),
-        y: monster.y + randomRange(-7, 7),
+        x: monster.x + (forwardX * forwardOffset),
+        y: monster.y + (forwardY * forwardOffset),
       };
-      const childPath = [spawnPoint, ...this.currentLevel.points.slice(monster.targetIndex)];
+      const childPath = [spawnPoint, ...monster.path.slice(monster.targetIndex)];
       const child = this.createMonster(MonsterKind.Runner, childPath);
-      child.angle = monster.angle + randomRange(-0.25, 0.25);
-      child.speed = child.maxSpeed * randomRange(0.82, 0.96);
+      const speedMultiplier = randomRange(minSpeedMultiplier, maxSpeedMultiplier);
+      child.angle = splitAngle + randomRange(-0.12, 0.12);
+      child.maxSpeed *= speedMultiplier;
+      child.speed = child.maxSpeed;
       child.dx = Math.cos(child.angle) * child.speed;
       child.dy = Math.sin(child.angle) * child.speed;
       child.hitPoints = Math.round(child.maxHitPoints * 0.72);
