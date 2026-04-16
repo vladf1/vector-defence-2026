@@ -37,11 +37,11 @@ Current code structure:
 - `src/game-renderer.ts` owns canvas sizing, background caching, board rendering, placement previews, and orchestration of entity drawing.
 - `src/game-view.ts` owns HUD/modal view-model generation for Svelte.
 - `src/entities/` owns active gameplay entities split by concern: towers, monsters, projectiles, effects, and entity-local game access.
-- `src/entities/monsters/monster-base.ts` owns shared monster movement, damage, slow recovery, lifecycle event emission, and health-bar rendering.
+- `src/entities/monsters/monster.ts` owns shared monster movement, damage, slow recovery, lifecycle event emission, and health-bar rendering.
 - Concrete monster classes live under `src/entities/monsters/` and own monster-specific base stats, body rendering, and special behavior.
 - Projectile classes live under `src/entities/projectiles/`; import the concrete `projectile.ts` or `missile.ts` file directly.
 - Effect classes live under `src/entities/effects/`; import the concrete `particle.ts` or `link-effect.ts` file directly.
-- Tower classes live under `src/entities/towers/`; `Tower` in `tower-base.ts` owns shared targeting/upgrade/selection behavior.
+- Tower classes live under `src/entities/towers/`; `Tower` in `tower.ts` owns shared targeting/upgrade/selection behavior.
 - `src/entities/game-access.ts` contains the entity-local `GameAccess` interface used by towers and projectiles.
 - `src/campaign.ts` turns the base route list plus four procedural routes into the 10-level campaign used by the browser game.
 - `src/level-generator.ts` creates the procedural route seeds consumed by `src/campaign.ts`; there is no separate random-route menu path anymore.
@@ -61,7 +61,7 @@ Data / naming conventions:
 - `GameState`, `MonsterKind`, and `TowerKind` are `as const` value objects with derived union types in `src/types.ts`, not TypeScript enums.
 - Keep `Levels.json` monster identifiers as plain strings. `src/utils.ts` normalizes them to `MonsterKind` values at runtime.
 - `Levels.json` provides the handcrafted base routes. The actual playable campaign data is generated at runtime by `createCampaignLevels(...)`.
-- Monster constructors pass private named constants to `MonsterBase` with `super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS)`.
+- Monster constructors pass private named constants to `Monster` with `super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS)`.
 - Monster constructor stats use `hitPoints`, not `hp`.
 - `hitPoints` is current monster health. `maxHitPoints` is the full-health denominator used by the health bar.
 - Monster constructors take the concrete `Point[]` path they should follow, not `LevelData`.
@@ -79,7 +79,7 @@ Gameplay / UI notes:
 - Level 1 introduces `splitter` monsters in later waves. Splitters burst into weakened runner children when killed.
 - Monster spawning and lifecycle event wiring are centralized in `Game.createMonster(...)`; tower creation is centralized in `Game.createTower(...)`.
 - Combat callers should iterate `game.activeMonsters` instead of `game.monsters` when they only want non-removed monsters.
-- Monster classes should own their own body rendering. Shared monster rendering concerns belong in `MonsterBase`.
+- Monster classes should own their own body rendering. Shared monster rendering concerns belong in `Monster`.
 - Tower classes should own their own drawing and attack behavior. Shared tower rendering/selection concerns belong in `Tower`.
 - Svelte components should consume `HudSnapshot` and `ModalView` data rather than reaching into the `Game` object directly.
 - Keyboard shortcuts:

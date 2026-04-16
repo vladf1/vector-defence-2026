@@ -14,7 +14,7 @@ import {
 import { LinkEffect } from "./entities/effects/link-effect";
 import { Particle } from "./entities/effects/particle";
 import { BallMonster } from "./entities/monsters/ball-monster";
-import type { MonsterBase } from "./entities/monsters/monster-base";
+import type { Monster } from "./entities/monsters/monster";
 import { RunnerMonster } from "./entities/monsters/runner-monster";
 import { SplitterMonster } from "./entities/monsters/splitter-monster";
 import { SquareMonster } from "./entities/monsters/square-monster";
@@ -26,13 +26,13 @@ import { GunTower } from "./entities/towers/gun-tower";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { MissileTower } from "./entities/towers/missile-tower";
 import { SlowTower } from "./entities/towers/slow-tower";
-import { Tower } from "./entities/towers/tower-base";
+import { Tower } from "./entities/towers/tower";
 import {
+  calculateDistance,
   compactInPlace,
-  distanceSquaredXY,
   formatMoney,
   normalizeLevels,
-  pointToSegmentDistanceSquaredXY,
+  calculateDistanceToSegment,
   randomRange,
 } from "./utils";
 import {
@@ -90,7 +90,7 @@ export class Game {
   currentWaveIndex = 0;
   waveSpawnedMonsters = 0;
   towers: Tower[] = [];
-  monsters: MonsterBase[] = [];
+  monsters: Monster[] = [];
   projectiles: Projectile[] = [];
   missiles: Missile[] = [];
   particles: Particle[] = [];
@@ -118,7 +118,7 @@ export class Game {
     return this.currentLevel?.waves?.length ?? 1;
   }
 
-  get activeMonsters(): Iterable<MonsterBase> {
+  get activeMonsters(): Iterable<Monster> {
     return this.monsters.filter((monster) => !monster.removed);
   }
 
@@ -269,7 +269,7 @@ export class Game {
     this.monsters.push(this.createMonster(code, this.currentLevel.points));
   }
 
-  onMonsterKilled(monster: MonsterBase): void {
+  onMonsterKilled(monster: Monster): void {
     this.money += monster.bounty;
     if (monster instanceof TankMonster) {
       this.createTankExplosion(monster.x, monster.y, monster.color);
@@ -281,7 +281,7 @@ export class Game {
     this.requestHudSync();
   }
 
-  spawnSplitters(monster: MonsterBase): void {
+  spawnSplitters(monster: Monster): void {
     if (!this.currentLevel) {
       return;
     }
@@ -307,8 +307,8 @@ export class Game {
     this.setBanner("Splitter burst", 1.2);
   }
 
-  createMonster(kind: MonsterKind, path: Point[]): MonsterBase {
-    let monster: MonsterBase;
+  createMonster(kind: MonsterKind, path: Point[]): Monster {
+    let monster: Monster;
     if (kind === MonsterKind.Ball) {
       monster = new BallMonster(path);
     } else if (kind === MonsterKind.Square) {
@@ -336,7 +336,7 @@ export class Game {
     return monster;
   }
 
-  onMonsterEscaped(monster: MonsterBase): void {
+  onMonsterEscaped(monster: Monster): void {
     this.createEscapeBurst(monster.x, monster.y);
     this.escapesLeft = Math.max(0, this.escapesLeft - 1);
     if (this.escapesLeft === 0) {
@@ -402,7 +402,7 @@ export class Game {
     }
 
     for (const tower of this.towers) {
-      if (distanceSquaredXY(point.x, point.y, tower.x, tower.y) <= MIN_DISTANCE_TO_OTHER_TOWERS ** 2) {
+      if (calculateDistance(point.x, point.y, tower.x, tower.y) <= MIN_DISTANCE_TO_OTHER_TOWERS) {
         return false;
       }
     }
@@ -410,7 +410,7 @@ export class Game {
     for (let index = 0; index < this.currentLevel.points.length - 1; index += 1) {
       const start = this.currentLevel.points[index];
       const end = this.currentLevel.points[index + 1];
-      if (pointToSegmentDistanceSquaredXY(point.x, point.y, start.x, start.y, end.x, end.y) <= MIN_DISTANCE_TO_ROAD ** 2) {
+      if (calculateDistanceToSegment(point.x, point.y, start.x, start.y, end.x, end.y) <= MIN_DISTANCE_TO_ROAD) {
         return false;
       }
     }
@@ -447,7 +447,7 @@ export class Game {
     let hit: Tower | undefined;
     for (let index = this.towers.length - 1; index >= 0; index -= 1) {
       const tower = this.towers[index];
-      if (distanceSquaredXY(point.x, point.y, tower.x, tower.y) <= (TOWER_RADIUS + 6) ** 2) {
+      if (calculateDistance(point.x, point.y, tower.x, tower.y) <= TOWER_RADIUS + 6) {
         hit = tower;
         break;
       }
@@ -528,15 +528,15 @@ export class Game {
     this.renderer.rebuildBackgroundCache();
   }
 
-  update(dt: number): void {
-    const multiplier = dt * 60;
+  update(deltaSeconds: number): void {
+    const multiplier = deltaSeconds * 60;
     const previousPreWaveSecond = this.state === GameState.Playing && this.activeWave && this.spawnDelay > 0
       ? Math.ceil(this.spawnDelay)
       : -1;
 
     if (this.bannerTimer > 0) {
       const previousBannerActive = this.bannerTimer > 0;
-      this.bannerTimer = Math.max(0, this.bannerTimer - dt);
+      this.bannerTimer = Math.max(0, this.bannerTimer - deltaSeconds);
       if (previousBannerActive && this.bannerTimer === 0) {
         this.requestHudSync();
       }
@@ -549,13 +549,13 @@ export class Game {
 
     const wave = this.activeWave;
     if (wave && this.spawnDelay > 0) {
-      this.spawnDelay = Math.max(0, this.spawnDelay - dt);
+      this.spawnDelay = Math.max(0, this.spawnDelay - deltaSeconds);
       const nextPreWaveSecond = this.activeWave && this.spawnDelay > 0 ? Math.ceil(this.spawnDelay) : -1;
       if (previousPreWaveSecond !== nextPreWaveSecond) {
         this.requestHudSync();
       }
     } else if (wave && this.waveSpawnedMonsters < wave.count) {
-      this.spawnCooldown -= dt;
+      this.spawnCooldown -= deltaSeconds;
       if (this.spawnCooldown <= 0) {
         this.spawnMonster();
         this.spawnCooldown = randomRange(wave.spawnIntervalMin, wave.spawnIntervalMax);
@@ -572,7 +572,7 @@ export class Game {
     }
 
     for (const missile of this.missiles) {
-      missile.update(this, multiplier, dt);
+      missile.update(this, multiplier, deltaSeconds);
     }
 
     for (const particle of this.particles) {
@@ -584,7 +584,7 @@ export class Game {
     }
 
     for (const tower of this.towers) {
-      tower.update(this, dt, multiplier);
+      tower.update(this, deltaSeconds, multiplier);
     }
 
     compactInPlace(this.monsters);
@@ -598,7 +598,7 @@ export class Game {
     }
 
     if (!this.activeWave && this.currentLevel && this.spawnedMonsters >= this.currentLevel.monsterCount && this.monsters.length === 0) {
-      this.winDelay += dt;
+      this.winDelay += deltaSeconds;
       if (this.winDelay >= 0.6 && this.state === GameState.Playing) {
         this.finishLevel();
       }

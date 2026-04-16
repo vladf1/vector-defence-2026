@@ -93,11 +93,11 @@ export function createGameSession(): GameSession {
       return;
     }
 
-    const dt = previousFrameTime === 0
+    const deltaSeconds = previousFrameTime === 0
       ? 0
       : Math.min((timestamp - previousFrameTime) / 1000, MAX_FRAME_DELTA);
 
-    game.update(dt);
+    game.update(deltaSeconds);
     publish();
     frameId = window.requestAnimationFrame(frame);
     previousFrameTime = timestamp;

@@ -1,18 +1,18 @@
 import type { Point } from "../../types";
 import { hexWithAlpha } from "../../utils";
-import type { MonsterBase } from "../monsters/monster-base";
-import type { Tower } from "../towers/tower-base";
+import type { Monster } from "../monsters/monster";
+import type { Tower } from "../towers/tower";
 
 export class LinkEffect {
   from?: Point;
   fromTower?: Tower;
-  target: MonsterBase;
+  target: Monster;
   color: string;
   alpha: number;
   fadeBy: number;
   removed = false;
 
-  constructor(target: MonsterBase, color: string, fadeBy: number, from?: Point, fromTower?: Tower) {
+  constructor(target: Monster, color: string, fadeBy: number, from?: Point, fromTower?: Tower) {
     this.target = target;
     this.color = color;
     this.fadeBy = fadeBy;

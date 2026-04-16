@@ -3,7 +3,7 @@ import { TowerKind } from "../../types";
 import { angleBetween, randomRange, turnAngleTowards } from "../../utils";
 import { Projectile } from "../projectiles/projectile";
 import type { GameAccess } from "../game-access";
-import { Tower } from "./tower-base";
+import { Tower } from "./tower";
 
 export class GunTower extends Tower {
   angle = randomRange(-Math.PI, Math.PI);

@@ -2,7 +2,7 @@ import { TowerKind } from "../../types";
 import { angleBetween, turnAngleTowards } from "../../utils";
 import { Missile } from "../projectiles/missile";
 import type { GameAccess } from "../game-access";
-import { Tower } from "./tower-base";
+import { Tower } from "./tower";
 
 export class MissileTower extends Tower {
   angle = Math.PI / 4;

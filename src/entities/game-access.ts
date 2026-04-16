@@ -1,12 +1,12 @@
 import type { LinkEffect } from "./effects/link-effect";
 import type { Particle } from "./effects/particle";
-import type { MonsterBase } from "./monsters/monster-base";
+import type { Monster } from "./monsters/monster";
 import type { Missile } from "./projectiles/missile";
 import type { Projectile } from "./projectiles/projectile";
 
 export interface GameAccess {
-  monsters: MonsterBase[];
-  readonly activeMonsters: Iterable<MonsterBase>;
+  monsters: Monster[];
+  readonly activeMonsters: Iterable<Monster>;
   projectiles: Projectile[];
   missiles: Missile[];
   particles: Particle[];

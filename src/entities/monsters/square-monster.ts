@@ -1,5 +1,5 @@
 import type { Point } from "../../types";
-import { MonsterBase } from "./monster-base";
+import { Monster } from "./monster";
 
 const COLOR = "#ff6f62";
 const SPEED = 1.25;
@@ -7,7 +7,7 @@ const HIT_POINTS = 150;
 const BOUNTY = 25;
 const RADIUS = 6.5;
 
-export class SquareMonster extends MonsterBase {
+export class SquareMonster extends Monster {
   constructor(path: Point[]) {
     super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS);
   }

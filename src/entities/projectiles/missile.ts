@@ -1,8 +1,8 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
 import type { Point } from "../../types";
-import { angleBetween, distanceSquaredXY, distanceXY, randomRange } from "../../utils";
+import { angleBetween, calculateDistance, randomRange } from "../../utils";
 import { Particle } from "../effects/particle";
-import type { MonsterBase } from "../monsters/monster-base";
+import type { Monster } from "../monsters/monster";
 import type { GameAccess } from "../game-access";
 
 export class Missile {
@@ -12,11 +12,11 @@ export class Missile {
   speed: number;
   damage: number;
   effectRadius: number;
-  trackedMonster?: MonsterBase;
+  trackedMonster?: Monster;
   removed = false;
   trailTimer = 0;
 
-  constructor(source: Point, trackedMonster: MonsterBase, damage: number, effectRadius: number, speed: number) {
+  constructor(source: Point, trackedMonster: Monster, damage: number, effectRadius: number, speed: number) {
     this.x = source.x;
     this.y = source.y;
     this.trackedMonster = trackedMonster;
@@ -26,7 +26,7 @@ export class Missile {
     this.angle = angleBetween(source, { x: trackedMonster.x, y: trackedMonster.y });
   }
 
-  update(game: GameAccess, multiplier: number, dt: number): void {
+  update(game: GameAccess, multiplier: number, deltaSeconds: number): void {
     this.speed += 0.05 * multiplier;
     if (this.trackedMonster && this.trackedMonster.removed) {
       this.trackedMonster = undefined;
@@ -38,7 +38,7 @@ export class Missile {
     this.x += Math.cos(this.angle) * this.speed * multiplier;
     this.y += Math.sin(this.angle) * this.speed * multiplier;
 
-    this.trailTimer += dt;
+    this.trailTimer += deltaSeconds;
     if (this.trailTimer >= 0.02) {
       this.trailTimer = 0;
       const trailX = this.x + randomRange(-3, 3) - (Math.cos(this.angle) * 9);
@@ -53,11 +53,11 @@ export class Missile {
 
     for (const monster of game.activeMonsters) {
       const hitDistance = monster.radius + 6;
-      if (distanceSquaredXY(this.x, this.y, monster.x, monster.y) <= hitDistance * hitDistance) {
+      if (calculateDistance(this.x, this.y, monster.x, monster.y) <= hitDistance) {
         this.removed = true;
         game.createExplosion(this.x, this.y, 20, 3, "#ffd34e", 1 / 30);
         for (const nearby of game.activeMonsters) {
-          const dist = distanceXY(this.x, this.y, nearby.x, nearby.y);
+          const dist = calculateDistance(this.x, this.y, nearby.x, nearby.y);
           if (dist <= this.effectRadius) {
             const ratio = (this.effectRadius - dist) / this.effectRadius;
             nearby.takeDamage(this.damage * ratio);

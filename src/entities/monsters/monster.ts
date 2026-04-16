@@ -1,7 +1,7 @@
 import type { Point } from "../../types";
-import { angleBetween, distanceXY, randomRange } from "../../utils";
+import { angleBetween, calculateDistance, randomRange } from "../../utils";
 
-export abstract class MonsterBase {
+export abstract class Monster {
   onKilled?: () => void;
   onEscaped?: () => void;
   x: number;
@@ -97,7 +97,7 @@ export abstract class MonsterBase {
         return;
       }
 
-      const toTarget = distanceXY(this.x, this.y, destination.x, destination.y);
+      const toTarget = calculateDistance(this.x, this.y, destination.x, destination.y);
       if (toTarget <= remainingStep) {
         this.x = destination.x;
         this.y = destination.y;

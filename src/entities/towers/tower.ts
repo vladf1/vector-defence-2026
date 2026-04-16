@@ -1,8 +1,8 @@
 import { MAX_TOWER_LEVEL, TOWER_SPECS, UPGRADE_COST } from "../../constants";
 import { TowerKind } from "../../types";
 import type { Point } from "../../types";
-import { distanceSquaredXY } from "../../utils";
-import type { MonsterBase } from "../monsters/monster-base";
+import { calculateDistance } from "../../utils";
+import type { Monster } from "../monsters/monster";
 import type { GameAccess } from "../game-access";
 
 export abstract class Tower {
@@ -35,8 +35,8 @@ export abstract class Tower {
     return this.level < MAX_TOWER_LEVEL;
   }
 
-  update(game: GameAccess, dt: number, multiplier: number): void {
-    this.cooldownMs = Math.max(0, this.cooldownMs - (dt * 1000));
+  update(game: GameAccess, deltaSeconds: number, multiplier: number): void {
+    this.cooldownMs = Math.max(0, this.cooldownMs - (deltaSeconds * 1000));
     this.onUpdate(game, multiplier);
   }
 
@@ -50,23 +50,23 @@ export abstract class Tower {
     this.onUpgrade();
   }
 
-  protected getClosestMonster(game: GameAccess): MonsterBase | undefined {
-    let closest: MonsterBase | undefined;
+  protected getClosestMonster(game: GameAccess): Monster | undefined {
+    let closest: Monster | undefined;
     let smallestDistance = Number.POSITIVE_INFINITY;
     for (const monster of game.activeMonsters) {
-      const distSq = distanceSquaredXY(this.x, this.y, monster.x, monster.y);
-      if (distSq > this.range * this.range) {
+      const distance = calculateDistance(this.x, this.y, monster.x, monster.y);
+      if (distance > this.range) {
         continue;
       }
-      if (distSq < smallestDistance) {
-        smallestDistance = distSq;
+      if (distance < smallestDistance) {
+        smallestDistance = distance;
         closest = monster;
       }
     }
     return closest;
   }
 
-  protected calculateIntercept(monster: MonsterBase, projectileSpeed: number, from: Point): Point {
+  protected calculateIntercept(monster: Monster, projectileSpeed: number, from: Point): Point {
     const target = { x: monster.x - from.x, y: monster.y - from.y };
     const a = (projectileSpeed * projectileSpeed) - ((monster.dx * monster.dx) + (monster.dy * monster.dy));
     const b = (target.x * monster.dx) + (target.y * monster.dy);
