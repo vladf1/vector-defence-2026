@@ -7,15 +7,15 @@ export class LaserTower extends Tower {
   angle = randomRange(-Math.PI, Math.PI);
   beamAlpha = 0;
   beamTarget = { x: 0, y: 0 };
-  damagePerHit = 1;
-  turnSpeed = 0.08;
+  damagePerSecond = 60;
+  turnSpeed = 4.8;
 
   constructor(x: number, y: number) {
     super(TowerKind.Laser, x, y);
   }
 
-  protected onUpdate(game: GameAccess, multiplier: number): void {
-    this.beamAlpha = Math.max(0, this.beamAlpha - (0.015 * multiplier));
+  protected onUpdate(game: GameAccess, deltaSeconds: number): void {
+    this.beamAlpha = Math.max(0, this.beamAlpha - (0.9 * deltaSeconds));
     const tracked = this.getClosestMonster(game);
     if (!tracked) {
       return;
@@ -23,7 +23,7 @@ export class LaserTower extends Tower {
 
     const target = { x: tracked.x, y: tracked.y };
     const targetAngle = angleBetween({ x: this.x, y: this.y }, target);
-    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * multiplier);
+    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * deltaSeconds);
     this.beamTarget = {
       x: this.x + (Math.cos(this.angle) * 1000),
       y: this.y + (Math.sin(this.angle) * 1000),
@@ -49,13 +49,13 @@ export class LaserTower extends Tower {
       }
       const distanceToBeam = calculateDistanceToSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
       if (distanceToBeam <= monster.radius) {
-        monster.takeDamage(this.damagePerHit * multiplier * this.beamAlpha);
+        monster.takeDamage(this.damagePerSecond * deltaSeconds * this.beamAlpha);
       }
     }
   }
 
   protected onUpgrade(): void {
-    this.damagePerHit = 1 + (this.level / 4);
+    this.damagePerSecond = 60 + (15 * this.level);
   }
 
   draw(context: CanvasRenderingContext2D, active: boolean): void {

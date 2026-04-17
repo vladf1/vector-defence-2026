@@ -16,15 +16,15 @@ export class Projectile {
     const angle = angleBetween(source, target);
     this.x = source.x;
     this.y = source.y;
-    this.dx = Math.cos(angle) * 7;
-    this.dy = Math.sin(angle) * 7;
+    this.dx = Math.cos(angle) * 420;
+    this.dy = Math.sin(angle) * 420;
     this.damage = damage;
     this.radius = size / 2;
   }
 
-  update(game: GameAccess, multiplier: number): void {
-    this.x += this.dx * multiplier;
-    this.y += this.dy * multiplier;
+  update(game: GameAccess, deltaSeconds: number): void {
+    this.x += this.dx * deltaSeconds;
+    this.y += this.dy * deltaSeconds;
     if (this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
       this.removed = true;
       return;

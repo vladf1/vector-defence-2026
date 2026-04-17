@@ -12,8 +12,8 @@ export class SlowTower extends Tower {
     super(TowerKind.Slow, x, y);
   }
 
-  protected onUpdate(game: GameAccess, multiplier: number): void {
-    this.pulse += 0.08 * multiplier;
+  protected onUpdate(game: GameAccess, deltaSeconds: number): void {
+    this.pulse += 4.8 * deltaSeconds;
     if (!this.ready()) {
       return;
     }
@@ -28,7 +28,7 @@ export class SlowTower extends Tower {
         continue;
       }
       monster.slowDown(0.5);
-      game.addLink(new LinkEffect(monster, "#d8ff4f", 1 / 60, { x: this.x, y: this.y }));
+      game.addLink(new LinkEffect(monster, "#d8ff4f", 1, { x: this.x, y: this.y }));
       affected += 1;
       if (affected === maxTargets) {
         break;

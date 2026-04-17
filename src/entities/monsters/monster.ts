@@ -48,7 +48,7 @@ export abstract class Monster extends EventTarget {
     this.speed = Math.min(this.speed, this.maxSpeed * factor);
   }
 
-  update(multiplier: number): void {
+  update(deltaSeconds: number): void {
     if (this.removed) {
       return;
     }
@@ -60,12 +60,12 @@ export abstract class Monster extends EventTarget {
     }
 
     if (this.speed < this.maxSpeed) {
-      this.speed = Math.min(this.maxSpeed, this.speed + (0.01 * multiplier));
+      this.speed = Math.min(this.maxSpeed, this.speed + (36 * deltaSeconds));
     }
 
-    this.moveAlongPath(multiplier);
-    this.updateSpecial(multiplier);
-    this.damageFlash = Math.max(0, this.damageFlash - (0.03 * multiplier));
+    this.moveAlongPath(deltaSeconds);
+    this.updateSpecial(deltaSeconds);
+    this.damageFlash = Math.max(0, this.damageFlash - (1.8 * deltaSeconds));
   }
 
   draw(context: CanvasRenderingContext2D): void {
@@ -81,13 +81,13 @@ export abstract class Monster extends EventTarget {
     this.drawHealthBar(context);
   }
 
-  protected updateSpecial(_multiplier: number): void {
+  protected updateSpecial(_deltaSeconds: number): void {
   }
 
   protected abstract drawBody(context: CanvasRenderingContext2D): void;
 
-  private moveAlongPath(multiplier: number): void {
-    let remainingStep = this.speed * multiplier;
+  private moveAlongPath(deltaSeconds: number): void {
+    let remainingStep = this.speed * deltaSeconds;
     while (remainingStep > 0 && !this.removed) {
       const destination = this.path[this.targetIndex];
       if (!destination) {

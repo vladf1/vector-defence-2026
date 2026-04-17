@@ -7,13 +7,13 @@ import { Tower } from "./tower";
 
 export class GunTower extends Tower {
   angle = randomRange(-Math.PI, Math.PI);
-  turnSpeed = 0.16;
+  turnSpeed = 9.6;
 
   constructor(x: number, y: number) {
     super(TowerKind.Gun, x, y);
   }
 
-  protected onUpdate(game: GameAccess, multiplier: number): void {
+  protected onUpdate(game: GameAccess, deltaSeconds: number): void {
     const tracked = this.getClosestMonster(game);
     if (!tracked) {
       return;
@@ -23,9 +23,9 @@ export class GunTower extends Tower {
       x: this.x + (Math.cos(this.angle) * 16),
       y: this.y + (Math.sin(this.angle) * 16),
     };
-    const target = this.calculateIntercept(tracked, 7, source);
+    const target = this.calculateIntercept(tracked, 420, source);
     const targetAngle = angleBetween({ x: this.x, y: this.y }, target);
-    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * multiplier);
+    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * deltaSeconds);
 
     if (this.ready()) {
       const actualSource = {

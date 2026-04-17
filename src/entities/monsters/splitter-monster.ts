@@ -2,7 +2,7 @@ import type { Point } from "../../types";
 import { Monster } from "./monster";
 
 const COLOR = "#ff8bd5";
-const SPEED = 1.35;
+const SPEED = 81;
 const HIT_POINTS = 230;
 const BOUNTY = 28;
 const RADIUS = 8.5;
@@ -12,8 +12,8 @@ export class SplitterMonster extends Monster {
     super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS);
   }
 
-  protected updateSpecial(multiplier: number): void {
-    this.rotation += 0.045 * multiplier;
+  protected updateSpecial(deltaSeconds: number): void {
+    this.rotation += 2.7 * deltaSeconds;
   }
 
   protected drawBody(context: CanvasRenderingContext2D): void {

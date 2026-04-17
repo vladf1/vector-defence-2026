@@ -2,7 +2,7 @@ import type { Point } from "../../types";
 import { Monster } from "./monster";
 
 const COLOR = "#ff6f62";
-const SPEED = 1.25;
+const SPEED = 75;
 const HIT_POINTS = 150;
 const BOUNTY = 25;
 const RADIUS = 6.5;
@@ -12,8 +12,8 @@ export class SquareMonster extends Monster {
     super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS);
   }
 
-  protected updateSpecial(multiplier: number): void {
-    this.rotation += 0.07 * multiplier;
+  protected updateSpecial(deltaSeconds: number): void {
+    this.rotation += 4.2 * deltaSeconds;
   }
 
   protected drawBody(context: CanvasRenderingContext2D): void {

@@ -34,9 +34,9 @@ export abstract class Tower {
     return this.level < MAX_TOWER_LEVEL;
   }
 
-  update(game: GameAccess, deltaSeconds: number, multiplier: number): void {
+  update(game: GameAccess, deltaSeconds: number): void {
     this.cooldownMs = Math.max(0, this.cooldownMs - (deltaSeconds * 1000));
-    this.onUpdate(game, multiplier);
+    this.onUpdate(game, deltaSeconds);
   }
 
   upgrade(): void {
@@ -123,7 +123,7 @@ export abstract class Tower {
     context.restore();
   }
 
-  protected abstract onUpdate(game: GameAccess, multiplier: number): void;
+  protected abstract onUpdate(game: GameAccess, deltaSeconds: number): void;
   protected abstract onUpgrade(): void;
   abstract draw(context: CanvasRenderingContext2D, active: boolean): void;
 }

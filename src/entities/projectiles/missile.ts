@@ -26,8 +26,8 @@ export class Missile {
     this.angle = angleBetween(source, { x: trackedMonster.x, y: trackedMonster.y });
   }
 
-  update(game: GameAccess, multiplier: number, deltaSeconds: number): void {
-    this.speed += 0.05 * multiplier;
+  update(game: GameAccess, deltaSeconds: number): void {
+    this.speed += 180 * deltaSeconds;
     if (this.trackedMonster && this.trackedMonster.removed) {
       this.trackedMonster = undefined;
     }
@@ -35,15 +35,15 @@ export class Missile {
       this.angle = angleBetween({ x: this.x, y: this.y }, { x: this.trackedMonster.x, y: this.trackedMonster.y });
     }
 
-    this.x += Math.cos(this.angle) * this.speed * multiplier;
-    this.y += Math.sin(this.angle) * this.speed * multiplier;
+    this.x += Math.cos(this.angle) * this.speed * deltaSeconds;
+    this.y += Math.sin(this.angle) * this.speed * deltaSeconds;
 
     this.trailTimer += deltaSeconds;
     if (this.trailTimer >= 0.02) {
       this.trailTimer = 0;
       const trailX = this.x + randomRange(-3, 3) - (Math.cos(this.angle) * 9);
       const trailY = this.y + randomRange(-3, 3) - (Math.sin(this.angle) * 9);
-      game.addParticle(new Particle(trailX, trailY, 1, "#7e858c", 1 / 60));
+      game.addParticle(new Particle(trailX, trailY, 1, "#7e858c", 1));
     }
 
     if (this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
@@ -58,7 +58,7 @@ export class Missile {
       const hitDistance = monster.radius + 6;
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         this.removed = true;
-        game.createExplosion(this.x, this.y, 20, 3, "#ffd34e", 1 / 30);
+        game.createExplosion(this.x, this.y, 20, 3, "#ffd34e", 2);
         for (const nearby of game.monsters) {
           if (nearby.removed) {
             continue;

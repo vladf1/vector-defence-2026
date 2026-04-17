@@ -2,7 +2,7 @@ import type { Point } from "../../types";
 import { Monster } from "./monster";
 
 const COLOR = "#ffba4f";
-const SPEED = 1.75;
+const SPEED = 105;
 const HIT_POINTS = 100;
 const BOUNTY = 30;
 const RADIUS = 7;

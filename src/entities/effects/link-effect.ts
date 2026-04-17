@@ -21,11 +21,11 @@ export class LinkEffect {
     this.alpha = color === "#d8ff4f" ? 0.8 : 0.7;
   }
 
-  update(multiplier: number): void {
+  update(deltaSeconds: number): void {
     if (this.target.removed || (this.fromTower && this.fromTower.removed)) {
       this.alpha = 0;
     } else {
-      this.alpha -= this.fadeBy * multiplier;
+      this.alpha -= this.fadeBy * deltaSeconds;
     }
     if (this.alpha <= 0) {
       this.removed = true;

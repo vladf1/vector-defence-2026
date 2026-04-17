@@ -272,9 +272,9 @@ export class Game {
     if (monster instanceof TankMonster) {
       this.createTankExplosion(monster.x, monster.y, monster.color);
     } else if (monster instanceof SplitterMonster) {
-      this.createExplosion(monster.x, monster.y, 34, randomRange(1.2, 3.3), monster.color, 1 / 30);
+      this.createExplosion(monster.x, monster.y, 34, randomRange(1.2, 3.3), monster.color, 2);
     } else {
-      this.createExplosion(monster.x, monster.y, 30, randomRange(1.5, 4), monster.color, 1 / 24);
+      this.createExplosion(monster.x, monster.y, 30, randomRange(1.5, 4), monster.color, 2.5);
     }
     this.requestHudSync();
   }
@@ -374,9 +374,9 @@ export class Game {
   }
 
   createTankExplosion(x: number, y: number, color: string): void {
-    this.createExplosion(x, y, 32, randomRange(3, 6), "#fff1a6", 1 / 28);
-    this.createExplosion(x, y, 34, randomRange(2.5, 5), color, 1 / 24);
-    this.createExplosion(x, y, 26, randomRange(2, 4.5), "#7e858c", 1 / 36);
+    this.createExplosion(x, y, 32, randomRange(3, 6), "#fff1a6", 2.142857);
+    this.createExplosion(x, y, 34, randomRange(2.5, 5), color, 2.5);
+    this.createExplosion(x, y, 26, randomRange(2, 4.5), "#7e858c", 1.666667);
 
     const debrisCount = Math.min(22, Math.max(0, MAX_PARTICLES - this.particles.length));
     for (let index = 0; index < debrisCount; index += 1) {
@@ -386,8 +386,8 @@ export class Game {
         y,
         randomRange(2.5, 5.5),
         debrisColor,
-        1 / 42,
-        randomRange(5, 10),
+        1.428571,
+        randomRange(300, 600),
         randomRange(2, 10),
       ));
     }
@@ -397,7 +397,7 @@ export class Game {
     const particleCount = Math.min(90, Math.max(0, MAX_PARTICLES - this.particles.length));
     for (let index = 0; index < particleCount; index += 1) {
       const color = `#${Math.floor(randomRange(0x555555, 0xffffff)).toString(16).padStart(6, "0")}`;
-      this.addParticle(new Particle(x, y, randomRange(1, 4), color, 1 / 40));
+      this.addParticle(new Particle(x, y, randomRange(1, 4), color, 1.5));
     }
   }
 
@@ -544,7 +544,6 @@ export class Game {
   }
 
   update(deltaSeconds: number): void {
-    const multiplier = deltaSeconds * 60;
     const previousPreWaveSecond = this.state === GameState.Playing && this.activeWave && this.spawnDelay > 0
       ? Math.ceil(this.spawnDelay)
       : -1;
@@ -579,27 +578,27 @@ export class Game {
     }
 
     for (const monster of this.monsters) {
-      monster.update(multiplier);
+      monster.update(deltaSeconds);
     }
 
     for (const projectile of this.projectiles) {
-      projectile.update(this, multiplier);
+      projectile.update(this, deltaSeconds);
     }
 
     for (const missile of this.missiles) {
-      missile.update(this, multiplier, deltaSeconds);
+      missile.update(this, deltaSeconds);
     }
 
     for (const particle of this.particles) {
-      particle.update(multiplier);
+      particle.update(deltaSeconds);
     }
 
     for (const link of this.links) {
-      link.update(multiplier);
+      link.update(deltaSeconds);
     }
 
     for (const tower of this.towers) {
-      tower.update(this, deltaSeconds, multiplier);
+      tower.update(this, deltaSeconds);
     }
 
     compactInPlace(this.monsters);

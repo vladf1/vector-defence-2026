@@ -12,7 +12,7 @@ export class Particle {
   burnRate: number;
   removed = false;
 
-  constructor(x: number, y: number, size: number, color: string, burnRate: number, speed = randomRange(2, 7), offset = randomRange(4, 6)) {
+  constructor(x: number, y: number, size: number, color: string, burnRate: number, speed = randomRange(120, 420), offset = randomRange(4, 6)) {
     const angle = randomRange(-Math.PI, Math.PI);
     this.dx = Math.cos(angle) * speed;
     this.dy = Math.sin(angle) * speed;
@@ -23,13 +23,13 @@ export class Particle {
     this.burnRate = burnRate;
   }
 
-  update(multiplier: number): void {
-    const slowDownFactor = 1 - (0.04 * multiplier);
+  update(deltaSeconds: number): void {
+    const slowDownFactor = 1 - (2.4 * deltaSeconds);
     this.dx *= slowDownFactor;
     this.dy *= slowDownFactor;
-    this.x += this.dx * multiplier;
-    this.y += this.dy * multiplier;
-    this.alpha -= this.burnRate * multiplier;
+    this.x += this.dx * deltaSeconds;
+    this.y += this.dy * deltaSeconds;
+    this.alpha -= this.burnRate * deltaSeconds;
     if (this.alpha <= 0 || this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
       this.removed = true;
     }

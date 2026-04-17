@@ -4,9 +4,9 @@ import { Monster } from "./monster";
 const BASE_COLOR = "#ff7a4f";
 const ENRAGED_COLOR = "#ff5a36";
 const FRENZIED_COLOR = "#ff3158";
-const BASE_SPEED = 1.15;
-const ENRAGED_SPEED = 1.85;
-const FRENZIED_SPEED = 2.55;
+const BASE_SPEED = 69;
+const ENRAGED_SPEED = 111;
+const FRENZIED_SPEED = 153;
 const HIT_POINTS = 260;
 const BOUNTY = 38;
 const RADIUS = 8;
@@ -18,7 +18,7 @@ export class BerserkerMonster extends Monster {
     super(path, BASE_COLOR, BASE_SPEED, HIT_POINTS, BOUNTY, RADIUS);
   }
 
-  protected updateSpecial(multiplier: number): void {
+  protected updateSpecial(deltaSeconds: number): void {
     const nextStage = this.hitPoints <= this.maxHitPoints * 0.2
       ? 2
       : (this.hitPoints <= this.maxHitPoints * 0.5 ? 1 : 0);
@@ -33,7 +33,7 @@ export class BerserkerMonster extends Monster {
     this.color = this.getStageColor();
 
     if (this.speed < this.maxSpeed) {
-      this.speed = Math.min(this.maxSpeed, this.speed + ((0.014 + (this.rageStage * 0.012)) * multiplier));
+      this.speed = Math.min(this.maxSpeed, this.speed + ((50.4 + (this.rageStage * 43.2)) * deltaSeconds));
     } else if (this.speed > this.maxSpeed) {
       this.speed = this.maxSpeed;
     }
