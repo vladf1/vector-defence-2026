@@ -16,6 +16,7 @@ export const MonsterKind = {
   Tank: "tank",
   Runner: "runner",
   Splitter: "splitter",
+  Berserker: "berserker",
 } as const;
 
 export type MonsterKind = typeof MonsterKind[keyof typeof MonsterKind];
