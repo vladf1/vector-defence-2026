@@ -35,6 +35,7 @@ import {
   normalizeLevels,
   calculateDistanceToSegment,
   randomRange,
+  withinDistance,
 } from "./utils";
 import {
   GameState,
@@ -336,20 +337,21 @@ export class Game {
       monster = new TankMonster(path);
     } else if (kind === MonsterKind.Splitter) {
       monster = new SplitterMonster(path);
-      monster.onKilled = () => {
-        this.onMonsterKilled(monster);
-        this.spawnSplitters(monster);
-      };
     } else {
       monster = new RunnerMonster(path);
     }
 
-    monster.onKilled ??= () => {
+    monster.addEventListener("killed", () => {
       this.onMonsterKilled(monster);
-    };
-    monster.onEscaped = () => {
+    });
+    if (monster instanceof SplitterMonster) {
+      monster.addEventListener("killed", () => {
+        this.spawnSplitters(monster);
+      });
+    }
+    monster.addEventListener("escaped", () => {
       this.onMonsterEscaped(monster);
-    };
+    });
     return monster;
   }
 
@@ -419,7 +421,7 @@ export class Game {
     }
 
     for (const tower of this.towers) {
-      if (calculateDistance(point.x, point.y, tower.x, tower.y) <= MIN_DISTANCE_TO_OTHER_TOWERS) {
+      if (withinDistance(point.x, point.y, tower.x, tower.y, MIN_DISTANCE_TO_OTHER_TOWERS)) {
         return false;
       }
     }
@@ -464,7 +466,7 @@ export class Game {
     let hit: Tower | undefined;
     for (let index = this.towers.length - 1; index >= 0; index -= 1) {
       const tower = this.towers[index];
-      if (calculateDistance(point.x, point.y, tower.x, tower.y) <= TOWER_RADIUS + 6) {
+      if (withinDistance(point.x, point.y, tower.x, tower.y, TOWER_RADIUS + 6)) {
         hit = tower;
         break;
       }

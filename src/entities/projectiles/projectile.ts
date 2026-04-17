@@ -1,6 +1,6 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
 import type { Point } from "../../types";
-import { angleBetween, calculateDistance } from "../../utils";
+import { angleBetween, withinDistance } from "../../utils";
 import type { GameAccess } from "../game-access";
 
 export class Projectile {
@@ -32,7 +32,7 @@ export class Projectile {
 
     for (const monster of game.activeMonsters) {
       const hitDistance = monster.radius + this.radius;
-      if (calculateDistance(this.x, this.y, monster.x, monster.y) <= hitDistance) {
+      if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         monster.takeDamage(this.damage);
         this.removed = true;
         return;

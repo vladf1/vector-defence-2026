@@ -1,9 +1,7 @@
 import type { Point } from "../../types";
 import { angleBetween, calculateDistance, randomRange } from "../../utils";
 
-export abstract class Monster {
-  onKilled?: () => void;
-  onEscaped?: () => void;
+export abstract class Monster extends EventTarget {
   x: number;
   y: number;
   dx = 0;
@@ -23,6 +21,7 @@ export abstract class Monster {
   removed = false;
 
   constructor(path: Point[], color: string, speed: number, hitPoints: number, bounty: number, radius: number) {
+    super();
     const start = path[0];
     this.x = start.x;
     this.y = start.y;
@@ -56,7 +55,7 @@ export abstract class Monster {
 
     if (this.hitPoints <= 0) {
       this.removed = true;
-      this.onKilled?.();
+      this.dispatchEvent(new Event("killed"));
       return;
     }
 
@@ -93,7 +92,7 @@ export abstract class Monster {
       const destination = this.path[this.targetIndex];
       if (!destination) {
         this.removed = true;
-        this.onEscaped?.();
+        this.dispatchEvent(new Event("escaped"));
         return;
       }
 
@@ -105,7 +104,7 @@ export abstract class Monster {
         const nextDestination = this.path[this.targetIndex];
         if (!nextDestination) {
           this.removed = true;
-          this.onEscaped?.();
+          this.dispatchEvent(new Event("escaped"));
           return;
         }
         this.angle = angleBetween({ x: this.x, y: this.y }, nextDestination);

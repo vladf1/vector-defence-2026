@@ -26,6 +26,20 @@ export function calculateDistance(x1: number, y1: number, x2: number, y2: number
   return Math.hypot(x1 - x2, y1 - y2);
 }
 
+export function withinDistance(x1: number, y1: number, x2: number, y2: number, maxDistance: number): boolean {
+  const dx = x2 - x1;
+  if (Math.abs(dx) > maxDistance) {
+    return false;
+  }
+
+  const dy = y2 - y1;
+  if (Math.abs(dy) > maxDistance) {
+    return false;
+  }
+
+  return (dx * dx) + (dy * dy) <= (maxDistance * maxDistance);
+}
+
 export function angleBetween(source: Point, target: Point): number {
   return Math.atan2(target.y - source.y, target.x - source.x);
 }

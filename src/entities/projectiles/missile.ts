@@ -1,6 +1,6 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
 import type { Point } from "../../types";
-import { angleBetween, calculateDistance, randomRange } from "../../utils";
+import { angleBetween, calculateDistance, randomRange, withinDistance } from "../../utils";
 import { Particle } from "../effects/particle";
 import type { Monster } from "../monsters/monster";
 import type { GameAccess } from "../game-access";
@@ -53,7 +53,7 @@ export class Missile {
 
     for (const monster of game.activeMonsters) {
       const hitDistance = monster.radius + 6;
-      if (calculateDistance(this.x, this.y, monster.x, monster.y) <= hitDistance) {
+      if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         this.removed = true;
         game.createExplosion(this.x, this.y, 20, 3, "#ffd34e", 1 / 30);
         for (const nearby of game.activeMonsters) {
