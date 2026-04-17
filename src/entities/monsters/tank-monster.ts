@@ -2,14 +2,14 @@ import type { Point } from "../../types";
 import { Monster } from "./monster";
 
 const COLOR = "#9fb6ff";
-const SPEED = 45;
+const SPEED_PER_SECOND = 45;
 const HIT_POINTS = 420;
 const BOUNTY = 55;
 const RADIUS = 10.5;
 
 export class TankMonster extends Monster {
   constructor(path: Point[]) {
-    super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS);
+    super(path, COLOR, SPEED_PER_SECOND, HIT_POINTS, BOUNTY, RADIUS);
   }
 
   protected drawBody(context: CanvasRenderingContext2D): void {

@@ -6,9 +6,9 @@ import { Tower } from "./tower";
 
 export class MissileTower extends Tower {
   angle = Math.PI / 4;
-  idleSpinSpeed = 0.75;
+  idleSpinSpeedPerSecond = 0.75;
   missileDamage = 50;
-  turnSpeed = 3.6;
+  turnSpeedPerSecond = 3.6;
 
   constructor(x: number, y: number) {
     super(TowerKind.Missile, x, y);
@@ -19,18 +19,18 @@ export class MissileTower extends Tower {
     const tracked = this.getClosestMonster(game);
     if (tracked) {
       const targetAngle = angleBetween({ x: this.x, y: this.y }, { x: tracked.x, y: tracked.y });
-      this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * deltaSeconds);
+      this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
     } else {
-      this.angle += this.idleSpinSpeed * deltaSeconds;
+      this.angle += this.idleSpinSpeedPerSecond * deltaSeconds;
     }
     if (tracked && this.ready()) {
       const damageRadius = 60 + (5 * this.level);
-      const missileSpeed = 108 + (30 * this.level);
+      const missileSpeedPerSecond = 108 + (30 * this.level);
       const source = {
         x: this.x + (Math.cos(this.angle) * 14),
         y: this.y + (Math.sin(this.angle) * 14),
       };
-      game.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeed));
+      game.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeedPerSecond));
       this.resetCooldown(1000 * (2 - (0.2 * this.level)));
     }
   }
@@ -40,7 +40,7 @@ export class MissileTower extends Tower {
   }
 
   private applyLevelStats(): void {
-    this.idleSpinSpeed = 0.75 + (0.5 * this.level);
+    this.idleSpinSpeedPerSecond = 0.75 + (0.5 * this.level);
     this.missileDamage = 50 + (4 * this.level);
   }
 

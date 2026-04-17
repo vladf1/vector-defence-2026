@@ -8,7 +8,7 @@ export class LaserTower extends Tower {
   beamAlpha = 0;
   beamTarget = { x: 0, y: 0 };
   damagePerSecond = 60;
-  turnSpeed = 4.8;
+  turnSpeedPerSecond = 4.8;
 
   constructor(x: number, y: number) {
     super(TowerKind.Laser, x, y);
@@ -23,7 +23,7 @@ export class LaserTower extends Tower {
 
     const target = { x: tracked.x, y: tracked.y };
     const targetAngle = angleBetween({ x: this.x, y: this.y }, target);
-    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * deltaSeconds);
+    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
     this.beamTarget = {
       x: this.x + (Math.cos(this.angle) * 1000),
       y: this.y + (Math.sin(this.angle) * 1000),

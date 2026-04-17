@@ -85,10 +85,10 @@ export abstract class Tower {
     return closest;
   }
 
-  protected calculateIntercept(monster: Monster, projectileSpeed: number, from: Point): Point {
+  protected calculateIntercept(monster: Monster, projectileSpeedPerSecond: number, from: Point): Point {
     const target = { x: monster.x - from.x, y: monster.y - from.y };
-    const a = (projectileSpeed * projectileSpeed) - ((monster.dx * monster.dx) + (monster.dy * monster.dy));
-    const b = (target.x * monster.dx) + (target.y * monster.dy);
+    const a = (projectileSpeedPerSecond * projectileSpeedPerSecond) - ((monster.velocityXPerSecond * monster.velocityXPerSecond) + (monster.velocityYPerSecond * monster.velocityYPerSecond));
+    const b = (target.x * monster.velocityXPerSecond) + (target.y * monster.velocityYPerSecond);
     const c = (target.x * target.x) + (target.y * target.y);
     const d = (b * b) + (a * c);
     let t = 0;
@@ -99,8 +99,8 @@ export abstract class Tower {
       }
     }
     return {
-      x: monster.x + (monster.dx * t),
-      y: monster.y + (monster.dy * t),
+      x: monster.x + (monster.velocityXPerSecond * t),
+      y: monster.y + (monster.velocityYPerSecond * t),
     };
   }
 

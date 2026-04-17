@@ -306,10 +306,10 @@ export class Game {
       const child = this.createMonster(MonsterKind.Runner, childPath);
       const speedMultiplier = randomRange(minSpeedMultiplier, maxSpeedMultiplier);
       child.angle = splitAngle + randomRange(-0.12, 0.12);
-      child.maxSpeed *= speedMultiplier;
-      child.speed = child.maxSpeed;
-      child.dx = Math.cos(child.angle) * child.speed;
-      child.dy = Math.sin(child.angle) * child.speed;
+      child.maxSpeedPerSecond *= speedMultiplier;
+      child.speedPerSecond = child.maxSpeedPerSecond;
+      child.velocityXPerSecond = Math.cos(child.angle) * child.speedPerSecond;
+      child.velocityYPerSecond = Math.sin(child.angle) * child.speedPerSecond;
       child.hitPoints = Math.round(child.maxHitPoints * 0.72);
       child.maxHitPoints = child.hitPoints;
       child.bounty = Math.max(8, Math.round(child.bounty * 0.55));
@@ -366,10 +366,10 @@ export class Game {
     this.requestHudSync();
   }
 
-  createExplosion(x: number, y: number, count: number, size: number, color: string, burnRate: number): void {
+  createExplosion(x: number, y: number, count: number, size: number, color: string, alphaFadePerSecond: number): void {
     const particleCount = Math.min(count, Math.max(0, MAX_PARTICLES - this.particles.length));
     for (let index = 0; index < particleCount; index += 1) {
-      this.addParticle(new Particle(x, y, size, color, burnRate));
+      this.addParticle(new Particle(x, y, size, color, alphaFadePerSecond));
     }
   }
 

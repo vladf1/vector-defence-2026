@@ -7,7 +7,7 @@ import { Tower } from "./tower";
 
 export class GunTower extends Tower {
   angle = randomRange(-Math.PI, Math.PI);
-  turnSpeed = 9.6;
+  turnSpeedPerSecond = 9.6;
 
   constructor(x: number, y: number) {
     super(TowerKind.Gun, x, y);
@@ -25,7 +25,7 @@ export class GunTower extends Tower {
     };
     const target = this.calculateIntercept(tracked, 420, source);
     const targetAngle = angleBetween({ x: this.x, y: this.y }, target);
-    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeed * deltaSeconds);
+    this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
 
     if (this.ready()) {
       const actualSource = {

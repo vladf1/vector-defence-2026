@@ -9,25 +9,25 @@ export class Missile {
   x: number;
   y: number;
   angle: number;
-  speed: number;
+  speedPerSecond: number;
   damage: number;
   effectRadius: number;
   trackedMonster?: Monster;
   removed = false;
   trailTimer = 0;
 
-  constructor(source: Point, trackedMonster: Monster, damage: number, effectRadius: number, speed: number) {
+  constructor(source: Point, trackedMonster: Monster, damage: number, effectRadius: number, speedPerSecond: number) {
     this.x = source.x;
     this.y = source.y;
     this.trackedMonster = trackedMonster;
     this.damage = damage;
     this.effectRadius = effectRadius;
-    this.speed = speed;
+    this.speedPerSecond = speedPerSecond;
     this.angle = angleBetween(source, { x: trackedMonster.x, y: trackedMonster.y });
   }
 
   update(game: GameAccess, deltaSeconds: number): void {
-    this.speed += 180 * deltaSeconds;
+    this.speedPerSecond += 180 * deltaSeconds;
     if (this.trackedMonster && this.trackedMonster.removed) {
       this.trackedMonster = undefined;
     }
@@ -35,8 +35,8 @@ export class Missile {
       this.angle = angleBetween({ x: this.x, y: this.y }, { x: this.trackedMonster.x, y: this.trackedMonster.y });
     }
 
-    this.x += Math.cos(this.angle) * this.speed * deltaSeconds;
-    this.y += Math.sin(this.angle) * this.speed * deltaSeconds;
+    this.x += Math.cos(this.angle) * this.speedPerSecond * deltaSeconds;
+    this.y += Math.sin(this.angle) * this.speedPerSecond * deltaSeconds;
 
     this.trailTimer += deltaSeconds;
     if (this.trailTimer >= 0.02) {

@@ -2,14 +2,14 @@ import type { Point } from "../../types";
 import { Monster } from "./monster";
 
 const COLOR = "#ff8bd5";
-const SPEED = 81;
+const SPEED_PER_SECOND = 81;
 const HIT_POINTS = 230;
 const BOUNTY = 28;
 const RADIUS = 8.5;
 
 export class SplitterMonster extends Monster {
   constructor(path: Point[]) {
-    super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS);
+    super(path, COLOR, SPEED_PER_SECOND, HIT_POINTS, BOUNTY, RADIUS);
   }
 
   protected updateSpecial(deltaSeconds: number): void {

@@ -4,9 +4,9 @@ import { Monster } from "./monster";
 const BASE_COLOR = "#ff7a4f";
 const ENRAGED_COLOR = "#ff5a36";
 const FRENZIED_COLOR = "#ff3158";
-const BASE_SPEED = 69;
-const ENRAGED_SPEED = 111;
-const FRENZIED_SPEED = 153;
+const BASE_SPEED_PER_SECOND = 69;
+const ENRAGED_SPEED_PER_SECOND = 111;
+const FRENZIED_SPEED_PER_SECOND = 153;
 const HIT_POINTS = 260;
 const BOUNTY = 38;
 const RADIUS = 8;
@@ -15,7 +15,7 @@ export class BerserkerMonster extends Monster {
   private rageStage = 0;
 
   constructor(path: Point[]) {
-    super(path, BASE_COLOR, BASE_SPEED, HIT_POINTS, BOUNTY, RADIUS);
+    super(path, BASE_COLOR, BASE_SPEED_PER_SECOND, HIT_POINTS, BOUNTY, RADIUS);
   }
 
   protected updateSpecial(deltaSeconds: number): void {
@@ -25,21 +25,21 @@ export class BerserkerMonster extends Monster {
 
     if (nextStage !== this.rageStage) {
       this.rageStage = nextStage;
-      const burstFloor = this.getStageSpeed() * (0.72 + (this.rageStage * 0.08));
-      this.speed = Math.max(this.speed, burstFloor);
+      const burstFloor = this.getStageSpeedPerSecond() * (0.72 + (this.rageStage * 0.08));
+      this.speedPerSecond = Math.max(this.speedPerSecond, burstFloor);
     }
 
-    this.maxSpeed = this.getStageSpeed();
+    this.maxSpeedPerSecond = this.getStageSpeedPerSecond();
     this.color = this.getStageColor();
 
-    if (this.speed < this.maxSpeed) {
-      this.speed = Math.min(this.maxSpeed, this.speed + ((50.4 + (this.rageStage * 43.2)) * deltaSeconds));
-    } else if (this.speed > this.maxSpeed) {
-      this.speed = this.maxSpeed;
+    if (this.speedPerSecond < this.maxSpeedPerSecond) {
+      this.speedPerSecond = Math.min(this.maxSpeedPerSecond, this.speedPerSecond + ((50.4 + (this.rageStage * 43.2)) * deltaSeconds));
+    } else if (this.speedPerSecond > this.maxSpeedPerSecond) {
+      this.speedPerSecond = this.maxSpeedPerSecond;
     }
 
-    this.dx = Math.cos(this.angle) * this.speed;
-    this.dy = Math.sin(this.angle) * this.speed;
+    this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
+    this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
   }
 
   protected drawBody(context: CanvasRenderingContext2D): void {
@@ -85,13 +85,13 @@ export class BerserkerMonster extends Monster {
     return BASE_COLOR;
   }
 
-  private getStageSpeed(): number {
+  private getStageSpeedPerSecond(): number {
     if (this.rageStage === 2) {
-      return FRENZIED_SPEED;
+      return FRENZIED_SPEED_PER_SECOND;
     }
     if (this.rageStage === 1) {
-      return ENRAGED_SPEED;
+      return ENRAGED_SPEED_PER_SECOND;
     }
-    return BASE_SPEED;
+    return BASE_SPEED_PER_SECOND;
   }
 }

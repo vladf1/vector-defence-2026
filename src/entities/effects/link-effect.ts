@@ -9,13 +9,13 @@ export class LinkEffect {
   target: Monster;
   color: string;
   alpha: number;
-  fadeBy: number;
+  alphaFadePerSecond: number;
   removed = false;
 
-  constructor(target: Monster, color: string, fadeBy: number, from?: Point, fromTower?: Tower) {
+  constructor(target: Monster, color: string, alphaFadePerSecond: number, from?: Point, fromTower?: Tower) {
     this.target = target;
     this.color = color;
-    this.fadeBy = fadeBy;
+    this.alphaFadePerSecond = alphaFadePerSecond;
     this.from = from;
     this.fromTower = fromTower;
     this.alpha = color === "#d8ff4f" ? 0.8 : 0.7;
@@ -25,7 +25,7 @@ export class LinkEffect {
     if (this.target.removed || (this.fromTower && this.fromTower.removed)) {
       this.alpha = 0;
     } else {
-      this.alpha -= this.fadeBy * deltaSeconds;
+      this.alpha -= this.alphaFadePerSecond * deltaSeconds;
     }
     if (this.alpha <= 0) {
       this.removed = true;

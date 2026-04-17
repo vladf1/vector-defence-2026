@@ -6,8 +6,8 @@ import type { GameAccess } from "../game-access";
 export class Projectile {
   x: number;
   y: number;
-  dx: number;
-  dy: number;
+  velocityXPerSecond: number;
+  velocityYPerSecond: number;
   damage: number;
   radius: number;
   removed = false;
@@ -16,15 +16,15 @@ export class Projectile {
     const angle = angleBetween(source, target);
     this.x = source.x;
     this.y = source.y;
-    this.dx = Math.cos(angle) * 420;
-    this.dy = Math.sin(angle) * 420;
+    this.velocityXPerSecond = Math.cos(angle) * 420;
+    this.velocityYPerSecond = Math.sin(angle) * 420;
     this.damage = damage;
     this.radius = size / 2;
   }
 
   update(game: GameAccess, deltaSeconds: number): void {
-    this.x += this.dx * deltaSeconds;
-    this.y += this.dy * deltaSeconds;
+    this.x += this.velocityXPerSecond * deltaSeconds;
+    this.y += this.velocityYPerSecond * deltaSeconds;
     if (this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
       this.removed = true;
       return;

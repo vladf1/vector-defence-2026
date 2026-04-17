@@ -4,10 +4,10 @@ import { angleBetween, calculateDistance, randomRange } from "../../utils";
 export abstract class Monster extends EventTarget {
   x: number;
   y: number;
-  dx = 0;
-  dy = 0;
-  speed: number;
-  maxSpeed: number;
+  velocityXPerSecond = 0;
+  velocityYPerSecond = 0;
+  speedPerSecond: number;
+  maxSpeedPerSecond: number;
   hitPoints: number;
   maxHitPoints: number;
   bounty: number;
@@ -20,13 +20,13 @@ export abstract class Monster extends EventTarget {
   damageFlash = 0;
   removed = false;
 
-  constructor(path: Point[], color: string, speed: number, hitPoints: number, bounty: number, radius: number) {
+  constructor(path: Point[], color: string, speedPerSecond: number, hitPoints: number, bounty: number, radius: number) {
     super();
     const start = path[0];
     this.x = start.x;
     this.y = start.y;
-    this.maxSpeed = speed;
-    this.speed = speed;
+    this.maxSpeedPerSecond = speedPerSecond;
+    this.speedPerSecond = speedPerSecond;
     this.hitPoints = hitPoints;
     this.maxHitPoints = hitPoints;
     this.bounty = bounty;
@@ -35,8 +35,8 @@ export abstract class Monster extends EventTarget {
     this.path = path;
     const initialTarget = path[1] ?? path[0];
     this.angle = angleBetween(start, initialTarget);
-    this.dx = Math.cos(this.angle) * this.speed;
-    this.dy = Math.sin(this.angle) * this.speed;
+    this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
+    this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
   }
 
   takeDamage(amount: number): void {
@@ -45,7 +45,7 @@ export abstract class Monster extends EventTarget {
   }
 
   slowDown(factor: number): void {
-    this.speed = Math.min(this.speed, this.maxSpeed * factor);
+    this.speedPerSecond = Math.min(this.speedPerSecond, this.maxSpeedPerSecond * factor);
   }
 
   update(deltaSeconds: number): void {
@@ -59,8 +59,8 @@ export abstract class Monster extends EventTarget {
       return;
     }
 
-    if (this.speed < this.maxSpeed) {
-      this.speed = Math.min(this.maxSpeed, this.speed + (36 * deltaSeconds));
+    if (this.speedPerSecond < this.maxSpeedPerSecond) {
+      this.speedPerSecond = Math.min(this.maxSpeedPerSecond, this.speedPerSecond + (36 * deltaSeconds));
     }
 
     this.moveAlongPath(deltaSeconds);
@@ -87,7 +87,7 @@ export abstract class Monster extends EventTarget {
   protected abstract drawBody(context: CanvasRenderingContext2D): void;
 
   private moveAlongPath(deltaSeconds: number): void {
-    let remainingStep = this.speed * deltaSeconds;
+    let remainingStep = this.speedPerSecond * deltaSeconds;
     while (remainingStep > 0 && !this.removed) {
       const destination = this.path[this.targetIndex];
       if (!destination) {
@@ -108,15 +108,15 @@ export abstract class Monster extends EventTarget {
           return;
         }
         this.angle = angleBetween({ x: this.x, y: this.y }, nextDestination);
-        this.dx = Math.cos(this.angle) * this.speed;
-        this.dy = Math.sin(this.angle) * this.speed;
+        this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
+        this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
         remainingStep -= toTarget;
       } else {
         this.angle = angleBetween({ x: this.x, y: this.y }, destination);
-        this.dx = Math.cos(this.angle) * this.speed;
-        this.dy = Math.sin(this.angle) * this.speed;
-        this.x += this.dx * (remainingStep / this.speed);
-        this.y += this.dy * (remainingStep / this.speed);
+        this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
+        this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
+        this.x += this.velocityXPerSecond * (remainingStep / this.speedPerSecond);
+        this.y += this.velocityYPerSecond * (remainingStep / this.speedPerSecond);
         remainingStep = 0;
       }
     }

@@ -10,7 +10,7 @@ export interface GameAccess {
   missiles: Missile[];
   particles: Particle[];
   links: LinkEffect[];
-  createExplosion(x: number, y: number, count: number, size: number, color: string, burnRate: number): void;
+  createExplosion(x: number, y: number, count: number, size: number, color: string, alphaFadePerSecond: number): void;
   addParticle(particle: Particle): void;
   addLink(link: LinkEffect): void;
 }
