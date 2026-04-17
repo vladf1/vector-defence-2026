@@ -120,10 +120,6 @@ export class Game {
     return this.currentLevel?.waves?.length ?? 1;
   }
 
-  get activeMonsters(): Iterable<Monster> {
-    return this.monsters.filter((monster) => !monster.removed);
-  }
-
   addParticle(particle: Particle): void {
     if (this.particles.length < MAX_PARTICLES) {
       this.particles.push(particle);

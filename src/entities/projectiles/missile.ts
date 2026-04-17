@@ -51,12 +51,18 @@ export class Missile {
       return;
     }
 
-    for (const monster of game.activeMonsters) {
+    for (const monster of game.monsters) {
+      if (monster.removed) {
+        continue;
+      }
       const hitDistance = monster.radius + 6;
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         this.removed = true;
         game.createExplosion(this.x, this.y, 20, 3, "#ffd34e", 1 / 30);
-        for (const nearby of game.activeMonsters) {
+        for (const nearby of game.monsters) {
+          if (nearby.removed) {
+            continue;
+          }
           const dist = calculateDistance(this.x, this.y, nearby.x, nearby.y);
           if (dist <= this.effectRadius) {
             const ratio = (this.effectRadius - dist) / this.effectRadius;

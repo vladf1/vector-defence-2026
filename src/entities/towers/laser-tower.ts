@@ -43,7 +43,10 @@ export class LaserTower extends Tower {
       y: this.y + (Math.sin(this.angle) * 9),
     };
 
-    for (const monster of game.activeMonsters) {
+    for (const monster of game.monsters) {
+      if (monster.removed) {
+        continue;
+      }
       const distanceToBeam = calculateDistanceToSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
       if (distanceToBeam <= monster.radius) {
         monster.takeDamage(this.damagePerHit * multiplier * this.beamAlpha);

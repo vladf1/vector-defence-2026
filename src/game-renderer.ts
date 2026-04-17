@@ -39,7 +39,6 @@ export class GameRenderer {
   }
 
   draw(): void {
-    this.ctx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
     this.ctx.drawImage(this.backgroundCanvas, 0, 0, FIELD_WIDTH, FIELD_HEIGHT);
 
     for (const link of this.game.links) {
@@ -54,7 +53,10 @@ export class GameRenderer {
       missile.draw(this.ctx);
     }
 
-    for (const monster of this.game.activeMonsters) {
+    for (const monster of this.game.monsters) {
+      if (monster.removed) {
+        continue;
+      }
       monster.draw(this.ctx);
     }
 

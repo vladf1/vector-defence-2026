@@ -1,7 +1,6 @@
 import { MAX_TOWER_LEVEL, TOWER_SPECS, UPGRADE_COST } from "../../constants";
 import { TowerKind } from "../../types";
 import type { Point } from "../../types";
-import { calculateDistance } from "../../utils";
 import type { Monster } from "../monsters/monster";
 import type { GameAccess } from "../game-access";
 
@@ -52,14 +51,34 @@ export abstract class Tower {
 
   protected getClosestMonster(game: GameAccess): Monster | undefined {
     let closest: Monster | undefined;
-    let smallestDistance = Number.POSITIVE_INFINITY;
-    for (const monster of game.activeMonsters) {
-      const distance = calculateDistance(this.x, this.y, monster.x, monster.y);
-      if (distance > this.range) {
+    let smallestDistanceSquared = Number.POSITIVE_INFINITY;
+    const range = this.range;
+    const rangeSquared = range * range;
+    const towerX = this.x;
+    const towerY = this.y;
+
+    for (const monster of game.monsters) {
+      if (monster.removed) {
         continue;
       }
-      if (distance < smallestDistance) {
-        smallestDistance = distance;
+
+      const dx = monster.x - towerX;
+      if (Math.abs(dx) > range) {
+        continue;
+      }
+
+      const dy = monster.y - towerY;
+      if (Math.abs(dy) > range) {
+        continue;
+      }
+
+      const distanceSquared = (dx * dx) + (dy * dy);
+      if (distanceSquared > rangeSquared) {
+        continue;
+      }
+
+      if (distanceSquared < smallestDistanceSquared) {
+        smallestDistanceSquared = distanceSquared;
         closest = monster;
       }
     }
