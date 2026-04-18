@@ -7,6 +7,10 @@ import type { TowerClass } from "./tower";
 
 export const TOWER_CLASSES = [GunTower, LaserTower, MissileTower, SlowTower] as const satisfies readonly TowerClass[];
 
+const TOWER_KIND_BY_SHORTCUT: Record<string, TowerKind> = Object.fromEntries(
+  TOWER_CLASSES.flatMap((towerClass) => towerClass.shortcuts.map((shortcut) => [shortcut, towerClass.kind] as const)),
+) as Record<string, TowerKind>;
+
 export function getTowerClass(kind: TowerKind): TowerClass {
   switch (kind) {
     case TowerKind.Gun:
@@ -21,6 +25,5 @@ export function getTowerClass(kind: TowerKind): TowerClass {
 }
 
 export function findTowerShortcut(key: string): TowerKind | undefined {
-  const normalizedKey = key.toLowerCase();
-  return TOWER_CLASSES.find((towerClass) => towerClass.shortcuts.some((shortcut) => shortcut === normalizedKey))?.kind;
+  return TOWER_KIND_BY_SHORTCUT[key.toLowerCase()];
 }
