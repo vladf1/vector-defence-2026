@@ -17,7 +17,7 @@
   });
 </script>
 
-<svelte:window on:keydown={session.handleKeyDown} on:resize={session.handleResize} />
+<svelte:window onkeydown={session.handleKeyDown} onresize={session.handleResize} />
 
 <section class="board-card">
   <div class="board-frame">
@@ -26,9 +26,9 @@
       id="game"
       width="700"
       height="450"
-      on:mousemove={session.handleCanvasMove}
-      on:mouseleave={session.handleCanvasLeave}
-      on:mousedown={session.handleCanvasDown}
+      onmousemove={session.handleCanvasMove}
+      onmouseleave={session.handleCanvasLeave}
+      onmousedown={session.handleCanvasDown}
     ></canvas>
     <div class="banner">
       <div class="banner-chip">{$hud.banner}</div>

@@ -14,7 +14,7 @@
       {#if $modal.actions.length > 0}
         <div class={`selection-actions ${$modal.actionClassName ?? ""}`.trim()}>
           {#each $modal.actions as item}
-            <button class="modal-button" type="button" on:click={() => session.handleModalAction(item.action)}>
+            <button class="modal-button" type="button" onclick={() => session.handleModalAction(item.action)}>
               {item.label}
             </button>
           {/each}
@@ -28,7 +28,7 @@
               class={`level-card${item.unlocked ? "" : " locked"}${item.cleared ? " cleared" : ""}${item.current ? " current" : ""}`}
               type="button"
               disabled={!item.unlocked}
-              on:click={() => session.selectLevel(item.index)}
+              onclick={() => session.selectLevel(item.index)}
             >
               <span class="level-pill">{item.status}</span>
               <strong>Level {item.level.levelNumber ?? "?"}: {item.level.name}</strong>
