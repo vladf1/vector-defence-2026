@@ -1,32 +1,30 @@
 <script lang="ts">
-  import { TOWER_KINDS, TOWER_SHORTCUTS } from "../game-engine";
-  import { TOWER_SPECS } from "../constants";
+  import { TOWER_CLASSES } from "../entities/towers/tower-registry";
   import { getGameSessionContext } from "../game-context";
-  import type { TowerKind } from "../types";
   import { formatMoney } from "../utils";
 
   const session = getGameSessionContext();
   const { hud } = session;
 
-  const shortcutLabel = (kind: TowerKind): string => TOWER_SHORTCUTS[kind].map((shortcut) => shortcut.toUpperCase()).join("/");
+  const formatShortcuts = (shortcuts: readonly string[]): string => shortcuts.map((shortcut) => shortcut.toUpperCase()).join("/");
 </script>
 
 <section class="controls-grid">
   <div class="control-card">
     <div class="tower-strip">
-      {#each TOWER_KINDS as kind}
+      {#each TOWER_CLASSES as towerClass}
         <button
-          class={`tower-button${$hud.placingTower === kind ? " active" : ""}`}
+          class={`tower-button${$hud.placingTower === towerClass.kind ? " active" : ""}`}
           type="button"
-          title={`${TOWER_SPECS[kind].label} tower (${shortcutLabel(kind)})`}
+          title={`${towerClass.label} tower (${formatShortcuts(towerClass.shortcuts)})`}
           disabled={$hud.towerButtonsDisabled}
-          on:click={() => session.toggleTowerPlacement(kind)}
+          on:click={() => session.toggleTowerPlacement(towerClass.kind)}
         >
           <strong>
-            {TOWER_SPECS[kind].label}
-            <span class="shortcut-chip">{shortcutLabel(kind)}</span>
+            {towerClass.label}
+            <span class="shortcut-chip">{formatShortcuts(towerClass.shortcuts)}</span>
           </strong>
-          <span>{formatMoney(TOWER_SPECS[kind].cost)} · {TOWER_SPECS[kind].summary}</span>
+          <span>{formatMoney(towerClass.baseCost)} · {towerClass.summary}</span>
         </button>
       {/each}
     </div>

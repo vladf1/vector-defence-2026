@@ -1,4 +1,5 @@
-import { STARTING_MONEY, TOWER_SPECS } from "./constants";
+import { STARTING_MONEY } from "./constants";
+import { getTowerClass } from "./entities/towers/tower-registry";
 import { isBattleState, isModalState } from "./game-engine";
 import { formatMoney } from "./utils";
 import type { Game } from "./game-engine";
@@ -41,12 +42,12 @@ export function createHudSnapshot(game: Game): HudSnapshot {
   let selectionBody = "Choose a build from the toolbar, then click the field to place it.";
 
   if (selected) {
-    selectionTitle = `${TOWER_SPECS[selected.kind].label} Tower · Lv ${selected.level + 1}`;
+    selectionTitle = `${getTowerClass(selected.kind).label} Tower · Lv ${selected.level + 1}`;
     selectionBody = `Range ${Math.round(selected.range)} · Upgrade ${formatMoney(selected.upgradeCost)} · Sell ${formatMoney(selected.resaleValue)}`;
   } else if (game.placingTower) {
-    const spec = TOWER_SPECS[game.placingTower];
-    selectionTitle = `Placing ${spec.label}`;
-    selectionBody = `${spec.summary} Cost ${formatMoney(spec.cost)}. Click the field to place it.`;
+    const towerClass = getTowerClass(game.placingTower);
+    selectionTitle = `Placing ${towerClass.label}`;
+    selectionBody = `${towerClass.summary} Cost ${formatMoney(towerClass.baseCost)}. Click the field to place it.`;
   } else if (game.currentLevel) {
     selectionTitle = game.currentLevel.name;
     selectionBody = game.currentLevel.subtitle ?? "Hold the route and keep your towers overlapping.";

@@ -6,10 +6,17 @@ import type { GameAccess } from "../game-access";
 import { Tower } from "./tower";
 
 export class SlowTower extends Tower {
+  static readonly kind = TowerKind.Slow;
+  static readonly label = "Slow";
+  static readonly summary = "Freezes clusters so the rest can clean up.";
+  static readonly baseCost = 30;
+  static readonly baseRange = 70;
+  static readonly shortcuts = ["4", "s"] as const;
+
   pulse = 0;
 
   constructor(x: number, y: number) {
-    super(TowerKind.Slow, x, y);
+    super(x, y);
   }
 
   protected onUpdate(game: GameAccess, deltaSeconds: number): void {
@@ -39,7 +46,7 @@ export class SlowTower extends Tower {
       return;
     }
 
-    this.resetCooldown(1000);
+    this.resetCooldown(1);
   }
 
   protected onUpgrade(): void {

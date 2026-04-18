@@ -59,13 +59,6 @@ export interface LevelData {
   waves?: WaveData[];
 }
 
-export interface TowerSpec {
-  label: string;
-  cost: number;
-  range: number;
-  summary: string;
-}
-
 export interface LevelJsonData {
   name: string;
   monsterCount: number;

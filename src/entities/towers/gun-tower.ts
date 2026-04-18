@@ -6,11 +6,18 @@ import type { GameAccess } from "../game-access";
 import { Tower } from "./tower";
 
 export class GunTower extends Tower {
+  static readonly kind = TowerKind.Gun;
+  static readonly label = "Gun";
+  static readonly summary = "Fast, cheap, accurate lead shots.";
+  static readonly baseCost = 20;
+  static readonly baseRange = 60;
+  static readonly shortcuts = ["1", "g"] as const;
+
   angle = randomRange(-Math.PI, Math.PI);
   turnSpeedPerSecond = 9.6;
 
   constructor(x: number, y: number) {
-    super(TowerKind.Gun, x, y);
+    super(x, y);
   }
 
   protected onUpdate(game: GameAccess, deltaSeconds: number): void {
@@ -33,7 +40,7 @@ export class GunTower extends Tower {
         y: this.y + (Math.sin(this.angle) * 16),
       };
       game.projectiles.push(new Projectile(actualSource, target, 10 + this.level, 3 + (this.level / 2)));
-      this.resetCooldown(200);
+      this.resetCooldown(0.2);
     }
   }
 

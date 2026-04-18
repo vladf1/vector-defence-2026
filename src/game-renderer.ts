@@ -1,4 +1,5 @@
-import { FIELD_HEIGHT, FIELD_WIDTH, TOWER_RADIUS, TOWER_SPECS } from "./constants";
+import { FIELD_HEIGHT, FIELD_WIDTH, TOWER_RADIUS } from "./constants";
+import { getTowerClass } from "./entities/towers/tower-registry";
 import type { Game } from "./game-engine";
 
 export class GameRenderer {
@@ -127,8 +128,8 @@ export class GameRenderer {
       return;
     }
 
-    const spec = TOWER_SPECS[this.game.placingTower];
-    const valid = this.game.canPlaceTower(this.game.pointer) && this.game.money >= spec.cost;
+    const towerClass = getTowerClass(this.game.placingTower);
+    const valid = this.game.canPlaceTower(this.game.pointer) && this.game.money >= towerClass.baseCost;
     context.save();
     context.strokeStyle = valid ? "rgba(255, 255, 255, 0.35)" : "rgba(255, 120, 120, 0.45)";
     context.setLineDash([6, 6]);
@@ -142,7 +143,7 @@ export class GameRenderer {
     context.strokeStyle = valid ? "rgba(92, 255, 158, 0.3)" : "rgba(255, 120, 120, 0.32)";
     context.fillStyle = valid ? "rgba(92, 255, 158, 0.08)" : "rgba(255, 120, 120, 0.08)";
     context.beginPath();
-    context.arc(this.game.pointer.x, this.game.pointer.y, spec.range, 0, Math.PI * 2);
+    context.arc(this.game.pointer.x, this.game.pointer.y, towerClass.baseRange, 0, Math.PI * 2);
     context.fill();
     context.stroke();
     context.beginPath();

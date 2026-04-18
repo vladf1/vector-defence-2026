@@ -1,7 +1,7 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "./constants";
+import { findTowerShortcut } from "./entities/towers/tower-registry";
 import {
   Game,
-  findTowerShortcut,
   isModalState,
   levels,
 } from "./game-engine";

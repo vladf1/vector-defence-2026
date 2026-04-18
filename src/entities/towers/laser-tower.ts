@@ -4,6 +4,13 @@ import type { GameAccess } from "../game-access";
 import { Tower } from "./tower";
 
 export class LaserTower extends Tower {
+  static readonly kind = TowerKind.Laser;
+  static readonly label = "Laser";
+  static readonly summary = "Piercing beam that melts lines of enemies.";
+  static readonly baseCost = 30;
+  static readonly baseRange = 100;
+  static readonly shortcuts = ["2", "l"] as const;
+
   angle = randomRange(-Math.PI, Math.PI);
   beamAlpha = 0;
   beamTarget = { x: 0, y: 0 };
@@ -11,7 +18,7 @@ export class LaserTower extends Tower {
   turnSpeedPerSecond = 4.8;
 
   constructor(x: number, y: number) {
-    super(TowerKind.Laser, x, y);
+    super(x, y);
   }
 
   protected onUpdate(game: GameAccess, deltaSeconds: number): void {
@@ -31,7 +38,7 @@ export class LaserTower extends Tower {
 
     if (this.ready()) {
       this.beamAlpha = 1;
-      this.resetCooldown(1500);
+      this.resetCooldown(1.5);
     }
 
     if (this.beamAlpha <= 0) {

@@ -1,8 +1,18 @@
-import { MAX_TOWER_LEVEL, TOWER_SPECS, UPGRADE_COST } from "../../constants";
-import { TowerKind } from "../../types";
+import { MAX_TOWER_LEVEL, UPGRADE_COST } from "../../constants";
 import type { Point } from "../../types";
+import type { TowerKind } from "../../types";
 import type { Monster } from "../monsters/monster";
 import type { GameAccess } from "../game-access";
+
+export interface TowerClass<T extends Tower = Tower> {
+  new (x: number, y: number): T;
+  readonly kind: TowerKind;
+  readonly label: string;
+  readonly summary: string;
+  readonly baseCost: number;
+  readonly baseRange: number;
+  readonly shortcuts: readonly string[];
+}
 
 export abstract class Tower {
   kind: TowerKind;
@@ -12,15 +22,16 @@ export abstract class Tower {
   cost: number;
   currentTarget?: Monster;
   level = 0;
-  cooldownMs = 0;
+  cooldownSeconds = 0;
   removed = false;
 
-  constructor(kind: TowerKind, x: number, y: number) {
-    this.kind = kind;
+  constructor(x: number, y: number) {
+    const towerClass = this.constructor as TowerClass;
+    this.kind = towerClass.kind;
     this.x = x;
     this.y = y;
-    this.range = TOWER_SPECS[kind].range;
-    this.cost = TOWER_SPECS[kind].cost;
+    this.range = towerClass.baseRange;
+    this.cost = towerClass.baseCost;
   }
 
   get upgradeCost(): number {
@@ -36,7 +47,7 @@ export abstract class Tower {
   }
 
   update(game: GameAccess, deltaSeconds: number): void {
-    this.cooldownMs = Math.max(0, this.cooldownMs - (deltaSeconds * 1000));
+    this.cooldownSeconds = Math.max(0, this.cooldownSeconds - deltaSeconds);
     this.onUpdate(game, deltaSeconds);
   }
 
@@ -123,12 +134,12 @@ export abstract class Tower {
     };
   }
 
-  protected resetCooldown(milliseconds: number): void {
-    this.cooldownMs = milliseconds;
+  protected resetCooldown(seconds: number): void {
+    this.cooldownSeconds = seconds;
   }
 
   protected ready(): boolean {
-    return this.cooldownMs <= 0;
+    return this.cooldownSeconds <= 0;
   }
 
   protected drawSelection(context: CanvasRenderingContext2D): void {

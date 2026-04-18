@@ -24,10 +24,7 @@ import { TankMonster } from "./entities/monsters/tank-monster";
 import { TriangleMonster } from "./entities/monsters/triangle-monster";
 import { Missile } from "./entities/projectiles/missile";
 import { Projectile } from "./entities/projectiles/projectile";
-import { GunTower } from "./entities/towers/gun-tower";
-import { LaserTower } from "./entities/towers/laser-tower";
-import { MissileTower } from "./entities/towers/missile-tower";
-import { SlowTower } from "./entities/towers/slow-tower";
+import { getTowerClass } from "./entities/towers/tower-registry";
 import { Tower } from "./entities/towers/tower";
 import {
   calculateDistance,
@@ -48,15 +45,6 @@ import {
   type WaveData,
 } from "./types";
 
-export const TOWER_KINDS = [TowerKind.Gun, TowerKind.Laser, TowerKind.Missile, TowerKind.Slow] as const;
-
-export const TOWER_SHORTCUTS: Record<TowerKind, string[]> = {
-  [TowerKind.Gun]: ["1", "g"],
-  [TowerKind.Laser]: ["2", "l"],
-  [TowerKind.Missile]: ["3", "m"],
-  [TowerKind.Slow]: ["4", "s"],
-};
-
 type BattleState = typeof GameState.Playing | typeof GameState.Paused;
 
 export function isBattleState(state: GameState): state is BattleState {
@@ -65,11 +53,6 @@ export function isBattleState(state: GameState): state is BattleState {
 
 export function isModalState(state: GameState): boolean {
   return state === GameState.Menu || state === GameState.Won || state === GameState.Lost || state === GameState.CampaignWon;
-}
-
-export function findTowerShortcut(key: string): TowerKind | undefined {
-  return (Object.entries(TOWER_SHORTCUTS) as [TowerKind, string[]][])
-    .find(([, shortcuts]) => shortcuts.includes(key.toLowerCase()))?.[0];
 }
 
 const baseRoutes = normalizeLevels(levelsJson as LevelJsonData[]);
@@ -449,16 +432,8 @@ export class Game {
   }
 
   createTower(kind: TowerKind, point: Point): Tower {
-    if (kind === TowerKind.Gun) {
-      return new GunTower(point.x, point.y);
-    }
-    if (kind === TowerKind.Laser) {
-      return new LaserTower(point.x, point.y);
-    }
-    if (kind === TowerKind.Missile) {
-      return new MissileTower(point.x, point.y);
-    }
-    return new SlowTower(point.x, point.y);
+    const TowerClass = getTowerClass(kind);
+    return new TowerClass(point.x, point.y);
   }
 
   selectTowerAt(point: Point): void {

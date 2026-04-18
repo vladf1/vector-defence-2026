@@ -5,13 +5,20 @@ import type { GameAccess } from "../game-access";
 import { Tower } from "./tower";
 
 export class MissileTower extends Tower {
+  static readonly kind = TowerKind.Missile;
+  static readonly label = "Missile";
+  static readonly summary = "Slow launcher with splash damage.";
+  static readonly baseCost = 50;
+  static readonly baseRange = 150;
+  static readonly shortcuts = ["3", "m"] as const;
+
   angle = Math.PI / 4;
   idleSpinSpeedPerSecond = 0.75;
   missileDamage = 50;
   turnSpeedPerSecond = 3.6;
 
   constructor(x: number, y: number) {
-    super(TowerKind.Missile, x, y);
+    super(x, y);
     this.applyLevelStats();
   }
 
@@ -31,7 +38,7 @@ export class MissileTower extends Tower {
         y: this.y + (Math.sin(this.angle) * 14),
       };
       game.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeedPerSecond));
-      this.resetCooldown(1000 * (2 - (0.2 * this.level)));
+      this.resetCooldown(2 - (0.2 * this.level));
     }
   }
 
