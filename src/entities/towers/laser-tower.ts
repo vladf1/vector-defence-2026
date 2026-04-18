@@ -16,7 +16,7 @@ export class LaserTower extends Tower {
 
   protected onUpdate(game: GameAccess, deltaSeconds: number): void {
     this.beamAlpha = Math.max(0, this.beamAlpha - (0.9 * deltaSeconds));
-    const tracked = this.getClosestMonster(game);
+    const tracked = this.getTrackedMonster(game);
     if (!tracked) {
       return;
     }

@@ -47,14 +47,17 @@ function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, wave
   if (pressure >= 3.3) {
     pool.push(MonsterKind.Tank);
   }
+  if (pressure >= 3.7) {
+    pool.push(MonsterKind.Bulwark);
+  }
   if (pressure >= 4.1) {
     pool.push(MonsterKind.Berserker);
   }
   if (pressure >= 4.6) {
-    pool.push(MonsterKind.Runner, MonsterKind.Square, MonsterKind.Tank, MonsterKind.Splitter, MonsterKind.Berserker);
+    pool.push(MonsterKind.Runner, MonsterKind.Square, MonsterKind.Tank, MonsterKind.Splitter, MonsterKind.Berserker, MonsterKind.Bulwark);
   }
   if (pressure >= 6.1) {
-    pool.push(MonsterKind.Triangle, MonsterKind.Runner, MonsterKind.Tank, MonsterKind.Splitter, MonsterKind.Berserker);
+    pool.push(MonsterKind.Triangle, MonsterKind.Runner, MonsterKind.Tank, MonsterKind.Splitter, MonsterKind.Berserker, MonsterKind.Bulwark);
   }
   if (introduceSplitterEarly) {
     pool.push(MonsterKind.Splitter);
@@ -77,10 +80,21 @@ function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, wave
   }
 
   if (pressure >= 3.1) {
-    sequence.push(waveIndex % 3 === 0 ? MonsterKind.Berserker : (waveIndex % 2 === 0 ? MonsterKind.Tank : MonsterKind.Triangle));
+    sequence.push(
+      waveIndex % 3 === 0
+        ? MonsterKind.Berserker
+        : (waveIndex % 2 === 0 ? MonsterKind.Tank : MonsterKind.Triangle),
+    );
+  }
+  if (pressure >= 4.3) {
+    sequence.push(waveIndex % 2 === 0 ? MonsterKind.Bulwark : MonsterKind.Square);
   }
   if (pressure >= 5.4) {
-    sequence.push(waveIndex % 3 === 1 ? MonsterKind.Berserker : (waveIndex % 2 === 0 ? MonsterKind.Splitter : MonsterKind.Runner));
+    sequence.push(
+      waveIndex % 3 === 1
+        ? MonsterKind.Berserker
+        : (waveIndex % 2 === 0 ? MonsterKind.Splitter : MonsterKind.Runner),
+    );
   }
   if (introduceSplitterEarly) {
     sequence.push(MonsterKind.Splitter);

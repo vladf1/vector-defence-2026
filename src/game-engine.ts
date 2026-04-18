@@ -15,6 +15,7 @@ import { LinkEffect } from "./entities/effects/link-effect";
 import { Particle } from "./entities/effects/particle";
 import { BallMonster } from "./entities/monsters/ball-monster";
 import { BerserkerMonster } from "./entities/monsters/berserker-monster";
+import { BulwarkMonster } from "./entities/monsters/bulwark-monster";
 import type { Monster } from "./entities/monsters/monster";
 import { RunnerMonster } from "./entities/monsters/runner-monster";
 import { SplitterMonster } from "./entities/monsters/splitter-monster";
@@ -325,6 +326,8 @@ export class Game {
       monster = new BallMonster(path);
     } else if (kind === MonsterKind.Berserker) {
       monster = new BerserkerMonster(path);
+    } else if (kind === MonsterKind.Bulwark) {
+      monster = new BulwarkMonster(path);
     } else if (kind === MonsterKind.Square) {
       monster = new SquareMonster(path);
     } else if (kind === MonsterKind.Triangle) {

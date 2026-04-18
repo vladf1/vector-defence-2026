@@ -81,7 +81,15 @@ function createLevelName(style: RouteStyle): string {
 
 function buildMonsterSequence(): MonsterKind[] {
   const rushPool: MonsterKind[] = [MonsterKind.Ball, MonsterKind.Runner, MonsterKind.Runner, MonsterKind.Square, MonsterKind.Triangle, MonsterKind.Triangle];
-  const bruiserPool: MonsterKind[] = [MonsterKind.Square, MonsterKind.Triangle, MonsterKind.Tank, MonsterKind.Runner, MonsterKind.Tank, MonsterKind.Berserker];
+  const bruiserPool: MonsterKind[] = [
+    MonsterKind.Square,
+    MonsterKind.Triangle,
+    MonsterKind.Tank,
+    MonsterKind.Runner,
+    MonsterKind.Tank,
+    MonsterKind.Berserker,
+    MonsterKind.Bulwark,
+  ];
   const sequenceLength = randomInt(11, 14);
   const sequence: MonsterKind[] = [MonsterKind.Ball, MonsterKind.Runner, MonsterKind.Triangle];
 
@@ -92,6 +100,7 @@ function buildMonsterSequence(): MonsterKind[] {
 
   sequence.push(MonsterKind.Square);
   sequence.push(MonsterKind.Tank);
+  sequence.push(MonsterKind.Bulwark);
   sequence.push(MonsterKind.Berserker);
   return sequence;
 }

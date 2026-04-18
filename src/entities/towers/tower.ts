@@ -10,6 +10,7 @@ export abstract class Tower {
   y: number;
   range: number;
   cost: number;
+  currentTarget?: Monster;
   level = 0;
   cooldownMs = 0;
   removed = false;
@@ -49,31 +50,22 @@ export abstract class Tower {
     this.onUpgrade();
   }
 
+  protected getTrackedMonster(game: GameAccess): Monster | undefined {
+    if (this.currentTarget && this.canTrack(this.currentTarget)) {
+      return this.currentTarget;
+    }
+
+    this.currentTarget = this.getClosestMonster(game);
+    return this.currentTarget;
+  }
+
   protected getClosestMonster(game: GameAccess): Monster | undefined {
     let closest: Monster | undefined;
     let smallestDistanceSquared = Number.POSITIVE_INFINITY;
-    const range = this.range;
-    const rangeSquared = range * range;
-    const towerX = this.x;
-    const towerY = this.y;
 
     for (const monster of game.monsters) {
-      if (monster.removed) {
-        continue;
-      }
-
-      const dx = monster.x - towerX;
-      if (Math.abs(dx) > range) {
-        continue;
-      }
-
-      const dy = monster.y - towerY;
-      if (Math.abs(dy) > range) {
-        continue;
-      }
-
-      const distanceSquared = (dx * dx) + (dy * dy);
-      if (distanceSquared > rangeSquared) {
+      const distanceSquared = this.getDistanceSquaredInRange(monster);
+      if (distanceSquared === null) {
         continue;
       }
 
@@ -83,6 +75,33 @@ export abstract class Tower {
       }
     }
     return closest;
+  }
+
+  protected canTrack(monster: Monster): boolean {
+    return this.getDistanceSquaredInRange(monster) !== null;
+  }
+
+  private getDistanceSquaredInRange(monster: Monster): number | null {
+    if (monster.removed) {
+      return null;
+    }
+
+    const dx = monster.x - this.x;
+    if (Math.abs(dx) > this.range) {
+      return null;
+    }
+
+    const dy = monster.y - this.y;
+    if (Math.abs(dy) > this.range) {
+      return null;
+    }
+
+    const distanceSquared = (dx * dx) + (dy * dy);
+    if (distanceSquared > this.range * this.range) {
+      return null;
+    }
+
+    return distanceSquared;
   }
 
   protected calculateIntercept(monster: Monster, projectileSpeedPerSecond: number, from: Point): Point {

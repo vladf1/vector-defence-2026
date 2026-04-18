@@ -16,7 +16,7 @@ export class MissileTower extends Tower {
   }
 
   protected onUpdate(game: GameAccess, deltaSeconds: number): void {
-    const tracked = this.getClosestMonster(game);
+    const tracked = this.getTrackedMonster(game);
     if (tracked) {
       const targetAngle = angleBetween({ x: this.x, y: this.y }, { x: tracked.x, y: tracked.y });
       this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);

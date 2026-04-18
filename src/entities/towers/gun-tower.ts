@@ -14,7 +14,7 @@ export class GunTower extends Tower {
   }
 
   protected onUpdate(game: GameAccess, deltaSeconds: number): void {
-    const tracked = this.getClosestMonster(game);
+    const tracked = this.getTrackedMonster(game);
     if (!tracked) {
       return;
     }
