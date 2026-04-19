@@ -71,4 +71,4 @@ npm run dev
 - Simulation engine: `src/game-engine.ts`
 - Campaign builder: `src/campaign.ts`
 - Renderer: `src/game-renderer.ts`
-- Browser level data: `Levels.json`
+- Browser level data: `game-levels.json`

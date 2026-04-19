@@ -21,7 +21,7 @@ Key paths:
 - Shared browser utilities: `src/utils.ts`
 - Browser styles: `src/style.css`
 - Browser package/scripts: `package.json`
-- Browser level data: `Levels.json`
+- Browser level data: `game-levels.json`
 
 Repository notes:
 
@@ -56,7 +56,7 @@ Current code structure:
 
 Data / naming conventions:
 
-- Monster identifiers in `Levels.json` use the readable string values from `MonsterKind`, not one-letter codes:
+- Monster identifiers in `game-levels.json` use the readable string values from `MonsterKind`, not one-letter codes:
   - `ball`
   - `square`
   - `triangle`
@@ -66,8 +66,8 @@ Data / naming conventions:
   - `berserker`
   - `bulwark`
 - `GameState`, `MonsterKind`, and `TowerKind` are `as const` value objects with derived union types in `src/types.ts`, not TypeScript enums.
-- Keep `Levels.json` monster identifiers as plain strings. `src/utils.ts` normalizes them to `MonsterKind` values at runtime.
-- `Levels.json` provides the handcrafted base routes. The actual playable campaign data is generated at runtime by `createCampaignLevels(...)`, which expands those routes into per-wave monster sequences and build windows.
+- Keep `game-levels.json` monster identifiers as plain strings. `src/utils.ts` normalizes them to `MonsterKind` values at runtime.
+- `game-levels.json` provides the handcrafted base routes. The actual playable campaign data is generated at runtime by `createCampaignLevels(...)`, which expands those routes into per-wave monster sequences and build windows.
 - Monster constructors pass private named constants to `Monster` with `super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS)`.
 - Monster constructor stats use `hitPoints`, not `hp`.
 - `hitPoints` is current monster health. `maxHitPoints` is the full-health denominator used by the health bar.
@@ -84,7 +84,7 @@ Gameplay / UI notes:
 - Initial build time is campaign-driven, not a fixed global delay: early levels start around 10 seconds and later ones reach 14 seconds.
 - Intermission build windows between later waves are shorter and are generated per wave in `src/campaign.ts` (roughly 2.5 to 5.5 seconds).
 - Level 1 introduces `splitter` monsters in later waves. Splitters burst into weakened runner children when killed.
-- Later campaign waves and procedural routes also introduce `bulwark` and `berserker` monsters; do not assume the handcrafted `Levels.json` sequences cover the full runtime enemy roster.
+- Later campaign waves and procedural routes also introduce `bulwark` and `berserker` monsters; do not assume the handcrafted `game-levels.json` sequences cover the full runtime enemy roster.
 - Monster spawning and lifecycle event wiring are centralized in `Game.createMonster(...)`; tower creation is centralized in `Game.createTower(...)`.
 - Combat callers should iterate `game.activeMonsters` instead of `game.monsters` when they only want non-removed monsters.
 - Monster classes should own their own body rendering. Shared monster rendering concerns belong in `Monster`.

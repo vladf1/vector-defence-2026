@@ -1,4 +1,4 @@
-import levelsJson from "../Levels.json";
+import levelsJson from "../game-levels.json";
 import { createCampaignLevels } from "./campaign";
 import { GameRenderer } from "./game-renderer";
 import {
