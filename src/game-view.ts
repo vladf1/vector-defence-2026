@@ -17,7 +17,6 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   selectionBody: "Choose a build from the toolbar, then click the field to place it.",
   upgradeDisabled: true,
   sellDisabled: true,
-  cancelDisabled: true,
   towerButtonsDisabled: true,
 };
 
@@ -25,7 +24,7 @@ export function createHudSnapshot(game: Game): HudSnapshot {
   const selected = game.selectedTower;
   const activeWave = game.activeWave;
   const levelName = game.currentLevel
-    ? `Level ${game.currentLevel.levelNumber ?? "?"} · ${game.currentLevel.name}`
+    ? `${game.currentLevel.levelNumber ?? "?"} · ${game.currentLevel.name}`
     : "Campaign Map";
   const wave = game.currentLevel
     ? (activeWave && game.state === GameState.Playing && game.spawnDelay > 0
@@ -67,7 +66,9 @@ export function createHudSnapshot(game: Game): HudSnapshot {
     selectionBody,
     upgradeDisabled: !selected || !selected.canUpgrade() || game.money < selected.upgradeCost || isModalState(game.state),
     sellDisabled: !selected || isModalState(game.state),
-    cancelDisabled: !game.placingTower || isModalState(game.state),
+    selectedTowerPoint: selected && !isModalState(game.state)
+      ? { x: selected.x, y: selected.y }
+      : undefined,
     placingTower: game.placingTower,
     towerButtonsDisabled: isModalState(game.state),
   };

@@ -82,10 +82,5 @@
       <strong>{$hud.selectionTitle}</strong>
       <span>{$hud.selectionBody}</span>
     </div>
-    <div class="selection-actions">
-      <button class="action-button" type="button" onclick={session.upgradeSelectedTower} disabled={$hud.upgradeDisabled}>Upgrade</button>
-      <button class="action-button sell" type="button" onclick={session.sellSelectedTower} disabled={$hud.sellDisabled}>Sell</button>
-      <button class="action-button" type="button" onclick={session.cancelBuild} disabled={$hud.cancelDisabled}>Cancel Build</button>
-    </div>
   </div>
 </section>

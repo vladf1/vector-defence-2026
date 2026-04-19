@@ -79,7 +79,7 @@ export interface HudSnapshot {
   selectionBody: string;
   upgradeDisabled: boolean;
   sellDisabled: boolean;
-  cancelDisabled: boolean;
+  selectedTowerPoint?: Point;
   placingTower?: TowerKind;
   towerButtonsDisabled: boolean;
 }
