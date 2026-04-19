@@ -76,7 +76,9 @@ Deploy from `main`:
 git push origin main
 ```
 
-The published site will be available at `https://vladf1.github.io/vector-defence-2026/`.
+Deployment runs are available in [GitHub Actions](https://github.com/vladf1/vector-defence-2026/actions/workflows/deploy-pages.yml).
+
+The published site is available at [vladf1.github.io/vector-defence-2026](https://vladf1.github.io/vector-defence-2026/).
 
 ## Controls
 
