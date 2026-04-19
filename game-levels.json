@@ -1,6 +1,6 @@
 [
   {
-    "name": "Bellingham",
+    "name": "Bellevue",
     "monsterCount": 96,
     "allowEscape": 10,
     "monsterSequence": ["ball", "runner", "ball", "square", "triangle", "runner", "square", "tank", "triangle", "runner"],
