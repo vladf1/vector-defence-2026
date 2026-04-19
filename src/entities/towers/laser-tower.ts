@@ -36,7 +36,8 @@ export class LaserTower extends Tower {
       y: this.y + (Math.sin(this.angle) * 1000),
     };
 
-    if (this.ready()) {
+    const alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle);
+    if (alignedToTarget && this.ready()) {
       this.beamAlpha = 1;
       this.resetCooldown(1.5);
     }

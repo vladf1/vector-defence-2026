@@ -338,6 +338,7 @@ button {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
   gap: 10px;
+  align-items: start;
 }
 
 .tower-strip {
@@ -347,19 +348,23 @@ button {
 }
 
 .tower-button {
+  position: relative;
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 4px;
-  min-height: 82px;
-  padding: 4px 5px 3px;
+  gap: 1px;
+  min-height: 72px;
+  padding: 2px 5px 1px;
   border-radius: 8px;
+  overflow: hidden;
 }
 
 .tower-icon {
   display: block;
   width: 60px;
   height: 60px;
+  justify-self: center;
+  margin-top: -4px;
 }
 
 .tower-button.active {
@@ -369,15 +374,20 @@ button {
 }
 
 .tower-button-meta {
-  width: 100%;
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  right: 5px;
   display: flex;
-  align-items: center;
+  align-items: start;
   justify-content: space-between;
   gap: 8px;
+  pointer-events: none;
 }
 
 .tower-button-label {
-  margin: -1px 0 0;
+  margin: -8px 0 0;
+  justify-self: center;
   font-size: 0.82rem;
   font-weight: 500;
   letter-spacing: 0.03em;

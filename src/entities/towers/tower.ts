@@ -1,8 +1,11 @@
 import { MAX_TOWER_LEVEL, UPGRADE_COST } from "../../constants";
 import type { Point } from "../../types";
 import type { TowerKind } from "../../types";
+import { normalizeAngle } from "../../utils";
 import type { Monster } from "../monsters/monster";
 import type { GameAccess } from "../game-access";
+
+const DEFAULT_FIRING_ANGLE_TOLERANCE = 0.08;
 
 export interface TowerClass<T extends Tower = Tower> {
   new (x: number, y: number): T;
@@ -140,6 +143,10 @@ export abstract class Tower {
 
   protected ready(): boolean {
     return this.cooldownSeconds <= 0;
+  }
+
+  protected isAimedAtTarget(currentAngle: number, targetAngle: number, tolerance = DEFAULT_FIRING_ANGLE_TOLERANCE): boolean {
+    return Math.abs(normalizeAngle(targetAngle - currentAngle)) <= tolerance;
   }
 
   protected drawSelection(context: CanvasRenderingContext2D): void {

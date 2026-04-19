@@ -24,13 +24,17 @@ export class MissileTower extends Tower {
 
   protected onUpdate(game: GameAccess, deltaSeconds: number): void {
     const tracked = this.getTrackedMonster(game);
+    let alignedToTarget = false;
+
     if (tracked) {
       const targetAngle = angleBetween({ x: this.x, y: this.y }, { x: tracked.x, y: tracked.y });
       this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
+      alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle);
     } else {
       this.angle += this.idleSpinSpeedPerSecond * deltaSeconds;
     }
-    if (tracked && this.ready()) {
+
+    if (tracked && alignedToTarget && this.ready()) {
       const damageRadius = 60 + (5 * this.level);
       const missileSpeedPerSecond = 108 + (30 * this.level);
       const source = {

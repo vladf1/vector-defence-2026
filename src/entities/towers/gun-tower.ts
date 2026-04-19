@@ -34,7 +34,8 @@ export class GunTower extends Tower {
     const targetAngle = angleBetween({ x: this.x, y: this.y }, target);
     this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
 
-    if (this.ready()) {
+    const alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle);
+    if (alignedToTarget && this.ready()) {
       const actualSource = {
         x: this.x + (Math.cos(this.angle) * 16),
         y: this.y + (Math.sin(this.angle) * 16),
