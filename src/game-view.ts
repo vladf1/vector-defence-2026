@@ -105,6 +105,7 @@ export function createModalView(game: Game): ModalView | null {
     return {
       title: "Level Clear",
       description: `Level ${game.currentLevel?.levelNumber ?? "?"} is secure. Keep the pressure on and push into the next route.`,
+      centered: true,
       actions: [
         { action: "next-level", label: `Continue to Level ${(game.currentLevel?.levelNumber ?? 0) + 1}` },
         { action: "replay", label: "Replay This Level" },
@@ -117,6 +118,7 @@ export function createModalView(game: Game): ModalView | null {
     return {
       title: "You Won the Campaign",
       description: "All ten levels are secured. The prototype is now a full campaign run, and the frontier held.",
+      centered: true,
       actions: [
         { action: "restart-campaign", label: "Restart Campaign" },
         { action: "replay", label: "Replay Final Level" },
@@ -129,6 +131,7 @@ export function createModalView(game: Game): ModalView | null {
     return {
       title: "Defeat",
       description: "The route broke through. Rework the build, lean on the intermissions, and try again.",
+      centered: true,
       actions: [
         { action: "replay", label: "Try Again" },
         { action: "campaign-map", label: "Campaign Map" },

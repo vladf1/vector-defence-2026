@@ -6,8 +6,8 @@
 </script>
 
 {#if $modal}
-  <div class="modal">
-    <div class="modal-panel">
+  <div class={`modal${$modal.centered ? " centered" : ""}`}>
+    <div class={`modal-panel${$modal.centered ? " centered" : ""}`}>
       <h2>{$modal.title}</h2>
       <p>{$modal.description}</p>
 

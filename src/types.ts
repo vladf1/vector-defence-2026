@@ -103,5 +103,6 @@ export interface ModalView {
   description: string;
   actions: ModalActionView[];
   actionClassName?: string;
+  centered?: boolean;
   levelCards?: ModalLevelCardView[];
 }

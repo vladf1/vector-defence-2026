@@ -297,6 +297,12 @@ textarea,
   z-index: 2;
 }
 
+.modal.centered {
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
 .modal-panel {
   width: 100%;
   min-height: 100%;
@@ -305,6 +311,16 @@ textarea,
     rgba(7, 15, 12, 0.96);
   padding: clamp(18px, 3vw, 34px);
   overflow: visible;
+}
+
+.modal-panel.centered {
+  width: min(720px, 100%);
+  min-height: 0;
+  padding: clamp(22px, 4vw, 34px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
+  text-align: center;
 }
 
 .modal-panel h2 {
@@ -319,6 +335,10 @@ textarea,
 
 .campaign-actions {
   margin-top: 14px;
+}
+
+.modal-panel.centered .selection-actions {
+  justify-content: center;
 }
 
 .level-grid {
