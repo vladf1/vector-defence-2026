@@ -13,7 +13,6 @@ export class MissileTower extends Tower {
   static readonly shortcuts = ["3", "m"] as const;
 
   angle = Math.PI / 4;
-  idleSpinSpeedPerSecond = 0.75;
   missileDamage = 50;
   turnSpeedPerSecond = 3.6;
 
@@ -30,8 +29,6 @@ export class MissileTower extends Tower {
       const targetAngle = angleBetween({ x: this.x, y: this.y }, { x: tracked.x, y: tracked.y });
       this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
       alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle);
-    } else {
-      this.angle += this.idleSpinSpeedPerSecond * deltaSeconds;
     }
 
     if (tracked && alignedToTarget && this.ready()) {
@@ -51,7 +48,6 @@ export class MissileTower extends Tower {
   }
 
   private applyLevelStats(): void {
-    this.idleSpinSpeedPerSecond = 0.75 + (0.5 * this.level);
     this.missileDamage = 50 + (4 * this.level);
   }
 

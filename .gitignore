@@ -3,3 +3,5 @@ dist/
 dist-single/
 artifacts/
 /.DS_Store
+.codex-vite.out.log
+.codex-vite.err.log

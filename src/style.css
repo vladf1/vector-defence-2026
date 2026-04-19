@@ -28,10 +28,18 @@ body {
 
 body {
   padding: 12px;
+  /* Hide Chrome's page caret on static HUD text; restore it explicitly for real inputs. */
+  caret-color: transparent;
 }
 
 button {
   font: inherit;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  caret-color: auto;
 }
 
 .shell {
