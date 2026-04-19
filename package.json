@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
+    "build:pages": "svelte-check --tsconfig ./tsconfig.json && vite build --base=/vector-defence-2026/",
     "build:single": "svelte-check --tsconfig ./tsconfig.json && node scripts/build-single-html.mjs",
     "preview": "vite preview"
   },
