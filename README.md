@@ -33,6 +33,12 @@ Create a production build:
 npm run build
 ```
 
+Create a GitHub Pages build with the repository base path:
+
+```bash
+npm run build:pages
+```
+
 Preview the production build locally:
 
 ```bash
@@ -49,9 +55,28 @@ Useful validation commands:
 
 ```bash
 npm run build
+npm run build:pages
 npm run build:single
 npm run dev
 ```
+
+## Deploy To GitHub Pages
+
+This repository includes a GitHub Actions workflow that builds the app for the `vector-defence-2026` Pages path and deploys the generated `dist/` output whenever changes are pushed to `main`.
+
+One-time GitHub setup:
+
+1. Open the repository Settings page on GitHub.
+2. Open Pages.
+3. Set the publishing source to `GitHub Actions`.
+
+Deploy from `main`:
+
+```bash
+git push origin main
+```
+
+The published site will be available at `https://vladf1.github.io/vector-defence-2026/`.
 
 ## Controls
 
