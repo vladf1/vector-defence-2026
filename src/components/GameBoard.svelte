@@ -56,16 +56,6 @@
           >
             <span class="tower-action-icon tower-action-icon-upgrade">▲</span>
           </button>
-          <button
-            class="tower-action-fab sell"
-            type="button"
-            title="Sell tower"
-            aria-label="Sell tower"
-            onclick={session.sellSelectedTower}
-            disabled={$hud.sellDisabled}
-          >
-            <span class="tower-action-icon tower-action-icon-sell">$</span>
-          </button>
         </div>
       {/if}
     </div>

@@ -10,7 +10,7 @@ export class MissileTower extends Tower {
   static readonly summary = "Slow launcher with splash damage.";
   static readonly baseCost = 50;
   static readonly baseRange = 150;
-  static readonly shortcuts = ["3", "m"] as const;
+  static readonly shortcuts = ["3", "r"] as const;
 
   angle = Math.PI / 4;
   missileDamage = 50;

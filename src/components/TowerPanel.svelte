@@ -78,9 +78,19 @@
   </div>
 
   <div class="control-card selection-card">
-    <div class="selection-copy">
-      <strong>{$hud.selectionTitle}</strong>
-      <span>{$hud.selectionBody}</span>
+    <div class="selection-header">
+      <div class="selection-copy">
+        <strong>{$hud.selectionTitle}</strong>
+        <span>{$hud.selectionBody}</span>
+      </div>
+      <button
+        class="action-button sell selection-sell-button"
+        type="button"
+        onclick={session.sellSelectedTower}
+        disabled={$hud.sellDisabled}
+      >
+        Sell
+      </button>
     </div>
   </div>
 </section>

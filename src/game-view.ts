@@ -47,11 +47,11 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     ? `${game.currentLevel.levelNumber ?? "?"} · ${game.currentLevel.name}`
     : "Campaign Map";
   const wave = game.currentLevel
-    ? (activeWave && game.state === GameState.Playing && game.spawnDelay > 0
-        ? `Wave ${game.currentWaveIndex + 1}/${game.waveTotal} in ${Math.ceil(game.spawnDelay)}s`
-        : activeWave
-          ? `Wave ${game.currentWaveIndex + 1}/${game.waveTotal} · ${Math.min(game.waveSpawnedMonsters, activeWave.count)} / ${activeWave.count}`
-          : `All ${game.waveTotal} waves cleared`)
+    ? (activeWave
+        ? (game.state === GameState.Playing && game.spawnDelay > 0
+            ? `Wave ${game.currentWaveIndex + 1}/${game.waveTotal}`
+            : `Wave ${game.currentWaveIndex + 1}/${game.waveTotal} · ${Math.min(game.waveSpawnedMonsters, activeWave.count)} / ${activeWave.count}`)
+        : `All ${game.waveTotal} waves cleared`)
     : "Idle";
   const banner = game.state === GameState.Playing && activeWave && game.spawnDelay > 0
     ? `Wave ${game.currentWaveIndex + 1} ${activeWave.label} in ${Math.ceil(game.spawnDelay)}`

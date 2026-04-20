@@ -9,7 +9,7 @@ export class LaserTower extends Tower {
   static readonly summary = "Piercing beam that melts lines of enemies.";
   static readonly baseCost = 30;
   static readonly baseRange = 100;
-  static readonly shortcuts = ["2", "l"] as const;
+  static readonly shortcuts = ["2", "z"] as const;
 
   angle = randomRange(-Math.PI, Math.PI);
   beamAlpha = 0;

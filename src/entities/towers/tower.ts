@@ -151,8 +151,8 @@ export abstract class Tower {
 
   protected drawSelection(context: CanvasRenderingContext2D): void {
     context.save();
-    context.strokeStyle = "rgba(92, 255, 158, 0.25)";
-    context.fillStyle = "rgba(92, 255, 158, 0.05)";
+    context.strokeStyle = "rgba(92, 255, 158, 0.18)";
+    context.fillStyle = "rgba(92, 255, 158, 0.035)";
     context.beginPath();
     context.arc(0, 0, this.range, 0, Math.PI * 2);
     context.fill();
