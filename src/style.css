@@ -534,6 +534,56 @@ textarea,
   font-size: 0.83rem;
 }
 
+.footnote-link {
+  margin-left: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #b3ffe0;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
+  cursor: pointer;
+}
+
+.footnote-link:hover {
+  color: #e5fff3;
+}
+
+.nerd-panel {
+  background: rgba(8, 18, 15, 0.7);
+  border: 1px solid rgba(109, 240, 194, 0.14);
+  border-radius: 10px;
+  padding: 10px 12px 12px;
+}
+
+.nerd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 6px;
+}
+
+.nerd-stat {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.nerd-stat span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex: 0 0 auto;
+}
+
+.nerd-stat strong {
+  font-size: 0.95rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 @media (max-width: 840px) {
   body {
     padding: 10px;

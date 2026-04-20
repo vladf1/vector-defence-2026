@@ -5,6 +5,16 @@ import { formatMoney } from "./utils";
 import type { Game } from "./game-engine";
 import { GameState, type HudSnapshot, type ModalLevelCardView, type ModalView } from "./types";
 
+export interface RuntimeHudStats {
+  fps: number;
+  frameTimeMs: number;
+}
+
+export const INITIAL_RUNTIME_HUD_STATS: RuntimeHudStats = {
+  fps: 0,
+  frameTimeMs: 0,
+};
+
 export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   levelName: "Campaign Map",
   money: formatMoney(STARTING_MONEY),
@@ -18,9 +28,19 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   upgradeDisabled: true,
   sellDisabled: true,
   towerButtonsDisabled: true,
+  nerdStats: {
+    fps: "0",
+    frameTime: "0.0 ms",
+    trackedObjects: "0",
+    towers: "0",
+    hostiles: "0",
+    shots: "0",
+    effects: "0",
+    renderScale: "1x",
+  },
 };
 
-export function createHudSnapshot(game: Game): HudSnapshot {
+export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = INITIAL_RUNTIME_HUD_STATS): HudSnapshot {
   const selected = game.selectedTower;
   const activeWave = game.activeWave;
   const levelName = game.currentLevel
@@ -52,6 +72,10 @@ export function createHudSnapshot(game: Game): HudSnapshot {
     selectionBody = game.currentLevel.subtitle ?? "Hold the route and keep your towers overlapping.";
   }
 
+  const shotsTracked = game.projectiles.length + game.missiles.length;
+  const effectsTracked = game.particles.length + game.links.length;
+  const trackedObjects = game.towers.length + game.monsters.length + shotsTracked + effectsTracked;
+
   game.hudDirty = false;
 
   return {
@@ -71,6 +95,16 @@ export function createHudSnapshot(game: Game): HudSnapshot {
       : undefined,
     placingTower: game.placingTower,
     towerButtonsDisabled: isModalState(game.state),
+    nerdStats: {
+      fps: String(Math.max(0, Math.round(runtimeStats.fps))),
+      frameTime: `${runtimeStats.frameTimeMs.toFixed(1)} ms`,
+      trackedObjects: String(trackedObjects),
+      towers: String(game.towers.length),
+      hostiles: String(game.monsters.length),
+      shots: String(shotsTracked),
+      effects: String(effectsTracked),
+      renderScale: `${game.renderer.currentDpr.toFixed(game.renderer.currentDpr % 1 === 0 ? 0 : 1)}x`,
+    },
   };
 }
 

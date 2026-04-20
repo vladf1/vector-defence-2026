@@ -82,6 +82,18 @@ export interface HudSnapshot {
   selectedTowerPoint?: Point;
   placingTower?: TowerKind;
   towerButtonsDisabled: boolean;
+  nerdStats: NerdStatsSnapshot;
+}
+
+export interface NerdStatsSnapshot {
+  fps: string;
+  frameTime: string;
+  trackedObjects: string;
+  towers: string;
+  hostiles: string;
+  shots: string;
+  effects: string;
+  renderScale: string;
 }
 
 export interface ModalActionView {

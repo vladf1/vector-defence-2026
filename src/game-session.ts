@@ -7,14 +7,17 @@ import {
 } from "./game-engine";
 import {
   INITIAL_HUD_SNAPSHOT,
+  INITIAL_RUNTIME_HUD_STATS,
   createHudSnapshot,
   createModalView,
   performModalAction,
+  type RuntimeHudStats,
 } from "./game-view";
 import type { HudSnapshot, ModalView, Point, TowerKind } from "./types";
 import { readonly, writable, type Readable } from "svelte/store";
 
 const MAX_FRAME_DELTA = 1 / 15;
+const NERD_STATS_SAMPLE_MS = 500;
 
 interface GameWindow extends Window {
   __vectorDefence?: Game;
@@ -23,6 +26,7 @@ interface GameWindow extends Window {
 export interface GameSession {
   hud: Readable<HudSnapshot>;
   modal: Readable<ModalView | null>;
+  setNerdStatsEnabled(enabled: boolean): void;
   mount(canvas: HTMLCanvasElement): void;
   destroy(): void;
   handleResize(): void;
@@ -48,17 +52,22 @@ export function createGameSession(): GameSession {
   let game: Game | null = null;
   let frameId = 0;
   let previousFrameTime = 0;
+  let runtimeStats: RuntimeHudStats = { ...INITIAL_RUNTIME_HUD_STATS };
+  let sampledFrameCount = 0;
+  let sampledFrameDurationMs = 0;
+  let lastNerdStatsSampleTime = 0;
+  let nerdStatsEnabled = false;
 
-  const publish = (force = false): void => {
+  const publish = (forceHud = false, forceModal = false): void => {
     if (!game) {
       return;
     }
 
-    if (force || game.hudDirty) {
-      hudStore.set(createHudSnapshot(game));
+    if (forceHud || game.hudDirty) {
+      hudStore.set(createHudSnapshot(game, runtimeStats));
     }
 
-    if (force || game.modalDirty) {
+    if (forceModal || game.modalDirty) {
       modalStore.set(createModalView(game));
     }
   };
@@ -69,7 +78,7 @@ export function createGameSession(): GameSession {
     }
 
     action(game);
-    publish(force);
+    publish(force, force);
   };
 
   const toCanvasPoint = (event: MouseEvent): Point | null => {
@@ -97,6 +106,24 @@ export function createGameSession(): GameSession {
       ? 0
       : Math.min((timestamp - previousFrameTime) / 1000, MAX_FRAME_DELTA);
 
+    if (nerdStatsEnabled && previousFrameTime !== 0) {
+      sampledFrameCount += 1;
+      sampledFrameDurationMs += timestamp - previousFrameTime;
+
+      if (lastNerdStatsSampleTime === 0) {
+        lastNerdStatsSampleTime = timestamp;
+      } else if (timestamp - lastNerdStatsSampleTime >= NERD_STATS_SAMPLE_MS && sampledFrameDurationMs > 0) {
+        runtimeStats = {
+          fps: (sampledFrameCount * 1000) / sampledFrameDurationMs,
+          frameTimeMs: sampledFrameDurationMs / sampledFrameCount,
+        };
+        sampledFrameCount = 0;
+        sampledFrameDurationMs = 0;
+        lastNerdStatsSampleTime = timestamp;
+        game.requestHudSync();
+      }
+    }
+
     game.update(deltaSeconds);
     publish();
     frameId = window.requestAnimationFrame(frame);
@@ -120,7 +147,11 @@ export function createGameSession(): GameSession {
     (window as GameWindow).__vectorDefence = game;
     game.resize();
     game.draw();
-    publish(true);
+    runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
+    sampledFrameCount = 0;
+    sampledFrameDurationMs = 0;
+    lastNerdStatsSampleTime = 0;
+    publish(true, true);
     previousFrameTime = 0;
     frameId = window.requestAnimationFrame(frame);
   };
@@ -136,8 +167,29 @@ export function createGameSession(): GameSession {
     }
 
     previousFrameTime = 0;
+    runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
+    sampledFrameCount = 0;
+    sampledFrameDurationMs = 0;
+    lastNerdStatsSampleTime = 0;
     canvas = null;
     game = null;
+  };
+
+  const setNerdStatsEnabled = (enabled: boolean): void => {
+    nerdStatsEnabled = enabled;
+
+    if (!enabled) {
+      runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
+      sampledFrameCount = 0;
+      sampledFrameDurationMs = 0;
+      lastNerdStatsSampleTime = 0;
+      publish(true, false);
+      return;
+    }
+
+    sampledFrameCount = 0;
+    sampledFrameDurationMs = 0;
+    lastNerdStatsSampleTime = 0;
   };
 
   const handleResize = (): void => {
@@ -287,6 +339,7 @@ export function createGameSession(): GameSession {
   return {
     hud: readonly(hudStore),
     modal: readonly(modalStore),
+    setNerdStatsEnabled,
     mount,
     destroy,
     handleResize,
