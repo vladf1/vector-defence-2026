@@ -3,7 +3,7 @@ import { Monster } from "./monster";
 
 const COLOR = "#ff8bd5";
 const SPEED_PER_SECOND = 81;
-const HIT_POINTS = 230;
+const HIT_POINTS = 253;
 const BOUNTY = 28;
 const RADIUS = 8.5;
 

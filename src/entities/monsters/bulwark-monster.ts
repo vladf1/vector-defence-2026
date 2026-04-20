@@ -5,7 +5,7 @@ import { Monster } from "./monster";
 const COLOR = "#78d7ff";
 const ARMOR_GLOW_COLOR = "#dff7ff";
 const SPEED_PER_SECOND = 54;
-const HIT_POINTS = 310;
+const HIT_POINTS = 341;
 const BOUNTY = 42;
 const RADIUS = 9.5;
 const ARMOR_PER_HIT = 3.5;

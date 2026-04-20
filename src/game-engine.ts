@@ -323,6 +323,10 @@ export class Game {
       monster = new RunnerMonster(path);
     }
 
+    const levelHitPointMultiplier = this.getLevelHitPointMultiplier();
+    monster.hitPoints *= levelHitPointMultiplier;
+    monster.maxHitPoints *= levelHitPointMultiplier;
+
     monster.addEventListener("killed", () => {
       this.onMonsterKilled(monster);
     });
@@ -335,6 +339,12 @@ export class Game {
       this.onMonsterEscaped(monster);
     });
     return monster;
+  }
+
+  private getLevelHitPointMultiplier(): number {
+    const levelOffset = Math.max(0, this.currentLevelIndex);
+    const bonusPerLevel = 0.05;
+    return 1 + (levelOffset * bonusPerLevel);
   }
 
   onMonsterEscaped(monster: Monster): void {
