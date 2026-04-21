@@ -65,10 +65,12 @@ export function createGameSession(): GameSession {
 
     if (forceHud || game.hudDirty) {
       hudStore.set(createHudSnapshot(game, runtimeStats));
+      game.hudDirty = false;
     }
 
     if (forceModal || game.modalDirty) {
       modalStore.set(createModalView(game));
+      game.modalDirty = false;
     }
   };
 

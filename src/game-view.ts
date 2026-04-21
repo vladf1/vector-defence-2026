@@ -76,8 +76,6 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
   const effectsTracked = game.particles.length + game.links.length;
   const trackedObjects = game.towers.length + game.monsters.length + shotsTracked + effectsTracked;
 
-  game.hudDirty = false;
-
   return {
     levelName,
     money: formatMoney(game.money),
@@ -109,8 +107,6 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
 }
 
 export function createModalView(game: Game): ModalView | null {
-  game.modalDirty = false;
-
   if (game.state === GameState.Menu) {
     const actions = [
       {
