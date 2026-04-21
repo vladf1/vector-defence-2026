@@ -76,7 +76,6 @@ Data / naming conventions:
 - Monsters expose lifecycle event handlers such as `onKilled` and `onEscaped`; wire those handlers in `Game.createMonster(...)`.
 - Concrete monster classes should not import `GameAccess` or call game orchestration methods directly.
 - Monster instances do not carry `MonsterKind`; use `MonsterKind` for level/campaign data and `instanceof` for runtime class-specific behavior.
-- Towers use `TowerKind` values as keys into `TOWER_SPECS`; keep tower identifiers readable strings.
 
 Gameplay / UI notes:
 
@@ -86,20 +85,10 @@ Gameplay / UI notes:
 - Level 1 introduces `splitter` monsters in later waves. Splitters burst into weakened runner children when killed.
 - Later campaign waves and procedural routes also introduce `bulwark` and `berserker` monsters; do not assume the handcrafted `game-levels.json` sequences cover the full runtime enemy roster.
 - Monster spawning and lifecycle event wiring are centralized in `Game.createMonster(...)`; tower creation is centralized in `Game.createTower(...)`.
-- Combat callers should iterate `game.activeMonsters` instead of `game.monsters` when they only want non-removed monsters.
 - Monster classes should own their own body rendering. Shared monster rendering concerns belong in `Monster`.
 - Tower classes should own their own drawing and attack behavior. Shared tower rendering/selection concerns belong in `Tower`.
 - Svelte components should consume `HudSnapshot` and `ModalView` data rather than reaching into the `Game` object directly.
 - The HUD selection card supports upgrade, sell, and cancel-build actions; keep those interactions flowing through `GameSession` and the HUD snapshot rather than binding components directly to `Game`.
-- Keyboard shortcuts:
-  - `1` / `G` = Gun tower
-  - `2` / `L` = Laser tower
-  - `3` / `M` = Missile tower
-  - `4` / `S` = Slow tower
-  - `U` = Upgrade selected tower
-  - `Esc` = Cancel build mode
-  - `Space` = Pause / resume
-- Keyboard shortcut lookup lives in `findTowerShortcut(...)` in `src/entities/towers/tower-registry.ts`; add new bindings there instead of open-coding them in `src/game-session.ts`.
 - The campaign modal doubles as the map screen, win/loss screen, and resume flow.
 
 To run the browser version:
@@ -118,4 +107,4 @@ Maintenance preferences:
 - Keep Svelte UI declarative and thin; put formatting and modal/HUD derivation in `src/game-view.ts`.
 - Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in Svelte components.
 - When adding monsters, add a `MonsterKind` value, a concrete monster class, a `Game.createMonster(...)` branch, and campaign/level-generator usage as needed.
-- When adding towers, add a `TowerKind` value, `TOWER_SPECS` entry, tower class, shortcut entry, and `Game.createTower(...)` branch.
+- When adding towers, add a `TowerKind` value, tower class, shortcut entry, and `Game.createTower(...)` branch.

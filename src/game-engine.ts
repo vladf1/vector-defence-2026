@@ -77,6 +77,33 @@ export class Game {
   waveSpawnedMonsters = 0;
   towers: Tower[] = [];
   monsters: Monster[] = [];
+  readonly activeMonsters: Iterable<Monster> = {
+    [Symbol.iterator]: (): Iterator<Monster> => {
+      const monsters = this.monsters;
+      let index = 0;
+
+      return {
+        next(): IteratorResult<Monster> {
+          while (index < monsters.length) {
+            const monster = monsters[index];
+            index += 1;
+
+            if (!monster.removed) {
+              return {
+                value: monster,
+                done: false,
+              };
+            }
+          }
+
+          return {
+            value: undefined,
+            done: true,
+          };
+        },
+      };
+    },
+  };
   projectiles: Projectile[] = [];
   missiles: Missile[] = [];
   particles: Particle[] = [];

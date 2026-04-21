@@ -77,7 +77,7 @@ export abstract class Tower {
     let closest: Monster | undefined;
     let smallestDistanceSquared = Number.POSITIVE_INFINITY;
 
-    for (const monster of game.monsters) {
+    for (const monster of game.activeMonsters) {
       const distanceSquared = this.getDistanceSquaredInRange(monster);
       if (distanceSquared === null) {
         continue;

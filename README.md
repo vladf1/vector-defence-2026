@@ -85,8 +85,8 @@ The published site is available at [https://vladf1.github.io/vector-defence-2026
 ## Controls
 
 - `1` / `G`: Gun tower
-- `2` / `L`: Laser tower
-- `3` / `M`: Missile tower
+- `2` / `Z`: Laser tower
+- `3` / `R`: Missile tower
 - `4` / `S`: Slow tower
 - `U`: Upgrade selected tower
 - `Esc`: Cancel build mode

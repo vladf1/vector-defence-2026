@@ -30,10 +30,7 @@ export class Projectile {
       return;
     }
 
-    for (const monster of game.monsters) {
-      if (monster.removed) {
-        continue;
-      }
+    for (const monster of game.activeMonsters) {
       const hitDistance = monster.radius + this.radius;
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         monster.takeDamage(this.damage);

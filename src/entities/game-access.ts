@@ -6,6 +6,7 @@ import type { Projectile } from "./projectiles/projectile";
 
 export interface GameAccess {
   monsters: Monster[];
+  readonly activeMonsters: Iterable<Monster>;
   projectiles: Projectile[];
   missiles: Missile[];
   particles: Particle[];

@@ -27,10 +27,7 @@ export class SlowTower extends Tower {
 
     let affected = 0;
     const maxTargets = this.level + 2;
-    for (const monster of game.monsters) {
-      if (monster.removed) {
-        continue;
-      }
+    for (const monster of game.activeMonsters) {
       if (!withinDistance(this.x, this.y, monster.x, monster.y, this.range)) {
         continue;
       }
