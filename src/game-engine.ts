@@ -2,14 +2,9 @@ import levelsJson from "../game-levels.json";
 import { createCampaignLevels } from "./campaign";
 import { GameRenderer } from "./game-renderer";
 import {
-  FIELD_HEIGHT,
-  FIELD_WIDTH,
   MAX_LINKS,
   MAX_PARTICLES,
-  MIN_DISTANCE_TO_OTHER_TOWERS,
-  MIN_DISTANCE_TO_ROAD,
   STARTING_MONEY,
-  TOWER_RADIUS,
 } from "./constants";
 import { LinkEffect } from "./entities/effects/link-effect";
 import { Particle } from "./entities/effects/particle";
@@ -26,14 +21,13 @@ import { Missile } from "./entities/projectiles/missile";
 import { Projectile } from "./entities/projectiles/projectile";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { Tower } from "./entities/towers/tower";
+import { canPlaceTower, findTowerAtPoint } from "./placement-rules";
 import {
   calculateDistance,
   compactInPlace,
   formatMoney,
   normalizeLevels,
-  calculateDistanceToSegment,
   randomRange,
-  withinDistance,
 } from "./utils";
 import {
   GameState,
@@ -425,35 +419,7 @@ export class Game {
   }
 
   canPlaceTower(point: Point): boolean {
-    if (!this.currentLevel) {
-      return false;
-    }
-
-    const outsideBounds =
-      point.x < TOWER_RADIUS ||
-      point.y < TOWER_RADIUS ||
-      point.x > FIELD_WIDTH - TOWER_RADIUS ||
-      point.y > FIELD_HEIGHT - TOWER_RADIUS;
-
-    if (outsideBounds) {
-      return false;
-    }
-
-    for (const tower of this.towers) {
-      if (withinDistance(point.x, point.y, tower.x, tower.y, MIN_DISTANCE_TO_OTHER_TOWERS)) {
-        return false;
-      }
-    }
-
-    for (let index = 0; index < this.currentLevel.points.length - 1; index += 1) {
-      const start = this.currentLevel.points[index];
-      const end = this.currentLevel.points[index + 1];
-      if (calculateDistanceToSegment(point.x, point.y, start.x, start.y, end.x, end.y) <= MIN_DISTANCE_TO_ROAD) {
-        return false;
-      }
-    }
-
-    return true;
+    return canPlaceTower(point, this.currentLevel?.points, this.towers);
   }
 
   placeTower(kind: TowerKind, point: Point): void {
@@ -474,15 +440,7 @@ export class Game {
   }
 
   selectTowerAt(point: Point): void {
-    let hit: Tower | undefined;
-    for (let index = this.towers.length - 1; index >= 0; index -= 1) {
-      const tower = this.towers[index];
-      if (withinDistance(point.x, point.y, tower.x, tower.y, TOWER_RADIUS + 6)) {
-        hit = tower;
-        break;
-      }
-    }
-    this.selectedTower = hit;
+    this.selectedTower = findTowerAtPoint(point, this.towers);
     this.requestHudSync();
   }
 

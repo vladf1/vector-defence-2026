@@ -11,6 +11,7 @@ Key paths:
 - Svelte/game bridge: `src/game-session.ts`
 - Browser HUD/modal view-models: `src/game-view.ts`
 - Browser simulation engine: `src/game-engine.ts`
+- Browser placement geometry/tower hit-testing: `src/placement-rules.ts`
 - Browser renderer/canvas orchestration: `src/game-renderer.ts`
 - Browser gameplay entities: `src/entities/`
 - Tower metadata/shortcuts/previews: `src/entities/towers/tower-registry.ts`
@@ -37,7 +38,8 @@ Current code structure:
 - `src/components/ChromeBar.svelte`, `src/components/GameBoard.svelte`, `src/components/GameModal.svelte`, and `src/components/TowerPanel.svelte` own the declarative UI around the canvas.
 - `src/game-context.ts` owns the Svelte context helpers for the shared `GameSession`.
 - `src/game-session.ts` bridges Svelte stores/events to the imperative game runtime, handles keyboard/pointer input, and publishes HUD/modal snapshots.
-- `src/game-engine.ts` owns gameplay state, campaign progression, placement rules, and simulation.
+- `src/game-engine.ts` owns gameplay state, campaign progression, and simulation orchestration.
+- `src/placement-rules.ts` owns tower placement geometry and board hit-testing through explicit route/tower inputs; it should not import `Game`.
 - `src/game-renderer.ts` owns canvas sizing, background caching, board rendering, placement previews, and orchestration of entity drawing.
 - `src/game-view.ts` owns HUD/modal view-model generation for Svelte.
 - `src/entities/` owns active gameplay entities split by concern: towers, monsters, projectiles, effects, and entity-local game access.
