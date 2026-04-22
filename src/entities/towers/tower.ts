@@ -2,8 +2,8 @@ import { MAX_TOWER_LEVEL, UPGRADE_COST } from "../../constants";
 import type { Point } from "../../types";
 import type { TowerKind } from "../../types";
 import { normalizeAngle } from "../../utils";
+import type { Game } from "../../game-engine";
 import type { Monster } from "../monsters/monster";
-import type { GameAccess } from "../game-access";
 
 const DEFAULT_FIRING_ANGLE_TOLERANCE = 0.08;
 
@@ -49,7 +49,7 @@ export abstract class Tower {
     return this.level < MAX_TOWER_LEVEL;
   }
 
-  update(game: GameAccess, deltaSeconds: number): void {
+  update(game: Game, deltaSeconds: number): void {
     this.cooldownSeconds = Math.max(0, this.cooldownSeconds - deltaSeconds);
     this.onUpdate(game, deltaSeconds);
   }
@@ -64,7 +64,7 @@ export abstract class Tower {
     this.onUpgrade();
   }
 
-  protected getTrackedMonster(game: GameAccess): Monster | undefined {
+  protected getTrackedMonster(game: Game): Monster | undefined {
     if (this.currentTarget && this.canTrack(this.currentTarget)) {
       return this.currentTarget;
     }
@@ -73,11 +73,11 @@ export abstract class Tower {
     return this.currentTarget;
   }
 
-  protected getClosestMonster(game: GameAccess): Monster | undefined {
+  protected getClosestMonster(game: Game): Monster | undefined {
     let closest: Monster | undefined;
     let smallestDistanceSquared = Number.POSITIVE_INFINITY;
 
-    for (const monster of game.activeMonsters) {
+    for (const monster of game.runtime.getActiveMonsters()) {
       const distanceSquared = this.getDistanceSquaredInRange(monster);
       if (distanceSquared === null) {
         continue;
@@ -160,7 +160,7 @@ export abstract class Tower {
     context.restore();
   }
 
-  protected abstract onUpdate(game: GameAccess, deltaSeconds: number): void;
+  protected abstract onUpdate(game: Game, deltaSeconds: number): void;
   protected abstract onUpgrade(): void;
   abstract draw(context: CanvasRenderingContext2D, active: boolean): void;
 }

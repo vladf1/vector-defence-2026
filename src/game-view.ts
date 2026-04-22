@@ -41,20 +41,22 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
 };
 
 export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = INITIAL_RUNTIME_HUD_STATS): HudSnapshot {
-  const selected = game.selectedTower;
-  const activeWave = game.activeWave;
-  const levelName = game.currentLevel
-    ? `${game.currentLevel.levelNumber ?? "?"} · ${game.currentLevel.name}`
+  const currentLevel = game.currentLevel;
+  const runtime = game.runtime;
+  const selected = runtime.selectedTower;
+  const activeWave = runtime.activeWave;
+  const levelName = currentLevel
+    ? `${currentLevel.levelNumber ?? "?"} · ${currentLevel.name}`
     : "Campaign Map";
-  const wave = game.currentLevel
+  const wave = currentLevel
     ? (activeWave
-        ? (game.state === GameState.Playing && game.spawnDelay > 0
-            ? `Wave ${game.currentWaveIndex + 1}/${game.waveTotal}`
-            : `Wave ${game.currentWaveIndex + 1}/${game.waveTotal} · ${Math.min(game.waveSpawnedMonsters, activeWave.count)} / ${activeWave.count}`)
+        ? (game.state === GameState.Playing && runtime.spawnDelay > 0
+            ? `Wave ${runtime.currentWaveIndex + 1}/${runtime.waveTotal}`
+            : `Wave ${runtime.currentWaveIndex + 1}/${runtime.waveTotal} · ${Math.min(runtime.waveSpawnedMonsters, activeWave.count)} / ${activeWave.count}`)
         : `All ${game.waveTotal} waves cleared`)
     : "Idle";
-  const banner = game.state === GameState.Playing && activeWave && game.spawnDelay > 0
-    ? `Wave ${game.currentWaveIndex + 1} ${activeWave.label} in ${Math.ceil(game.spawnDelay)}`
+  const banner = game.state === GameState.Playing && activeWave && runtime.spawnDelay > 0
+    ? `Wave ${runtime.currentWaveIndex + 1} ${activeWave.label} in ${Math.ceil(runtime.spawnDelay)}`
     : (game.bannerTimer > 0 ? game.bannerText : (game.state === GameState.Menu ? "Awaiting orders" : game.statusText));
 
   let selectionTitle = "No tower selected";
@@ -63,42 +65,42 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
   if (selected) {
     selectionTitle = `${getTowerClass(selected.kind).label} Tower · Lv ${selected.level + 1}`;
     selectionBody = `Range ${Math.round(selected.range)} · Upgrade ${formatMoney(selected.upgradeCost)} · Sell ${formatMoney(selected.resaleValue)}`;
-  } else if (game.placingTower) {
-    const towerClass = getTowerClass(game.placingTower);
+  } else if (runtime.placingTower) {
+    const towerClass = getTowerClass(runtime.placingTower);
     selectionTitle = `Placing ${towerClass.label}`;
     selectionBody = `${towerClass.summary} Cost ${formatMoney(towerClass.baseCost)}. Click the field to place it.`;
-  } else if (game.currentLevel) {
-    selectionTitle = game.currentLevel.name;
-    selectionBody = game.currentLevel.subtitle ?? "Hold the route and keep your towers overlapping.";
+  } else if (currentLevel) {
+    selectionTitle = currentLevel.name;
+    selectionBody = currentLevel.subtitle ?? "Hold the route and keep your towers overlapping.";
   }
 
-  const shotsTracked = game.projectiles.length + game.missiles.length;
-  const effectsTracked = game.particles.length + game.links.length;
-  const trackedObjects = game.towers.length + game.monsters.length + shotsTracked + effectsTracked;
+  const shotsTracked = runtime.projectiles.length + runtime.missiles.length;
+  const effectsTracked = runtime.particles.length + runtime.links.length;
+  const trackedObjects = runtime.towers.length + runtime.monsters.length + shotsTracked + effectsTracked;
 
   return {
     levelName,
-    money: formatMoney(game.money),
-    escapes: String(Math.max(0, game.escapesLeft)),
+    money: formatMoney(runtime.money),
+    escapes: String(Math.max(0, runtime.escapesLeft)),
     wave,
     banner,
     pauseLabel: game.state === GameState.Paused ? "Resume" : "Pause",
     pauseDisabled: !isBattleState(game.state),
     selectionTitle,
     selectionBody,
-    upgradeDisabled: !selected || !selected.canUpgrade() || game.money < selected.upgradeCost || isModalState(game.state),
+    upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || isModalState(game.state),
     sellDisabled: !selected || isModalState(game.state),
     selectedTowerPoint: selected && !isModalState(game.state)
       ? { x: selected.x, y: selected.y }
       : undefined,
-    placingTower: game.placingTower,
+    placingTower: runtime.placingTower,
     towerButtonsDisabled: isModalState(game.state),
     nerdStats: {
       fps: String(Math.max(0, Math.round(runtimeStats.fps))),
       frameTime: `${runtimeStats.frameTimeMs.toFixed(1)} ms`,
       trackedObjects: String(trackedObjects),
-      towers: String(game.towers.length),
-      hostiles: String(game.monsters.length),
+      towers: String(runtime.towers.length),
+      hostiles: String(runtime.monsters.length),
       shots: String(shotsTracked),
       effects: String(effectsTracked),
       renderScale: `${game.renderer.currentDpr.toFixed(game.renderer.currentDpr % 1 === 0 ? 0 : 1)}x`,

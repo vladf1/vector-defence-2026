@@ -1,8 +1,8 @@
 import { TOWER_RADIUS } from "../../constants";
+import type { Game } from "../../game-engine";
 import { TowerKind } from "../../types";
 import { angleBetween, randomRange, turnAngleTowards } from "../../utils";
 import { Projectile } from "../projectiles/projectile";
-import type { GameAccess } from "../game-access";
 import { Tower } from "./tower";
 
 export class GunTower extends Tower {
@@ -20,7 +20,7 @@ export class GunTower extends Tower {
     super(x, y);
   }
 
-  protected onUpdate(game: GameAccess, deltaSeconds: number): void {
+  protected onUpdate(game: Game, deltaSeconds: number): void {
     const tracked = this.getTrackedMonster(game);
     if (!tracked) {
       return;
@@ -40,7 +40,7 @@ export class GunTower extends Tower {
         x: this.x + (Math.cos(this.angle) * 16),
         y: this.y + (Math.sin(this.angle) * 16),
       };
-      game.projectiles.push(new Projectile(actualSource, target, 10 + this.level, 3 + (this.level / 2)));
+      game.runtime.projectiles.push(new Projectile(actualSource, target, 10 + this.level, 3 + (this.level / 2)));
       this.resetCooldown(0.2);
     }
   }

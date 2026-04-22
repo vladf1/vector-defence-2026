@@ -233,11 +233,11 @@ export function createGameSession(): GameSession {
 
   const cancelBuild = (): void => {
     withGame((currentGame) => {
-      if (!currentGame.placingTower) {
+      if (!currentGame.runtime.placingTower) {
         return;
       }
 
-      currentGame.placingTower = undefined;
+      currentGame.runtime.placingTower = undefined;
       currentGame.requestHudSync();
     });
   };
@@ -248,8 +248,8 @@ export function createGameSession(): GameSession {
         return;
       }
 
-      currentGame.selectedTower = undefined;
-      currentGame.placingTower = currentGame.placingTower === kind ? undefined : kind;
+      currentGame.runtime.selectedTower = undefined;
+      currentGame.runtime.placingTower = currentGame.runtime.placingTower === kind ? undefined : kind;
       currentGame.requestHudSync();
     });
   };
@@ -272,7 +272,7 @@ export function createGameSession(): GameSession {
       return;
     }
 
-    game.pointer = point;
+    game.runtime.pointer = point;
   };
 
   const handleCanvasDown = (event: MouseEvent): void => {
@@ -290,8 +290,8 @@ export function createGameSession(): GameSession {
         return;
       }
 
-      if (currentGame.placingTower) {
-        currentGame.placeTower(currentGame.placingTower, point);
+      if (currentGame.runtime.placingTower) {
+        currentGame.placeTower(currentGame.runtime.placingTower, point);
         return;
       }
 
@@ -301,7 +301,7 @@ export function createGameSession(): GameSession {
 
   const handleCanvasLeave = (): void => {
     if (game) {
-      game.pointer = undefined;
+      game.runtime.pointer = undefined;
     }
   };
 

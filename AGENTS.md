@@ -49,7 +49,7 @@ Current code structure:
 - Effect classes live under `src/entities/effects/`; import the concrete `particle.ts` or `link-effect.ts` file directly.
 - Tower classes live under `src/entities/towers/`; `Tower` in `tower.ts` owns shared targeting/upgrade/selection behavior.
 - `src/entities/towers/tower-registry.ts` is the source of truth for tower class lookup, keyboard shortcuts, and tower preview instances used by the Svelte toolbar.
-- `src/entities/game-access.ts` contains the entity-local `GameAccess` interface used by towers and projectiles.
+- Towers and projectiles operate against `Game` directly; keep their gameplay interactions narrow and rooted in the active level runtime where possible.
 - `src/campaign.ts` turns the base route list plus four procedural routes into the 10-level campaign used by the browser game.
 - `src/level-generator.ts` creates the procedural route seeds consumed by `src/campaign.ts`; there is no separate random-route menu path anymore.
 - `src/types.ts` is the source of truth for shared browser types such as `TowerKind`, `MonsterKind`, `GameState`, `Point`, `LevelData`, `WaveData`, and `HudSnapshot`.
@@ -76,7 +76,7 @@ Data / naming conventions:
 - Monster constructors take the concrete `Point[]` path they should follow, not `LevelData`.
 - For unusual spawn positions, build a new path array that starts at the custom spawn point and continues through the remaining route.
 - Monsters expose lifecycle event handlers such as `onKilled` and `onEscaped`; wire those handlers in `Game.createMonster(...)`.
-- Concrete monster classes should not import `GameAccess` or call game orchestration methods directly.
+- Concrete monster classes should not import `Game` or call game orchestration methods directly.
 - Monster instances do not carry `MonsterKind`; use `MonsterKind` for level/campaign data and `instanceof` for runtime class-specific behavior.
 
 Gameplay / UI notes:

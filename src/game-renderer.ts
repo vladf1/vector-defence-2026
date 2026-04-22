@@ -40,29 +40,31 @@ export class GameRenderer {
   }
 
   draw(): void {
+    const runtime = this.game.runtime;
+
     this.ctx.drawImage(this.backgroundCanvas, 0, 0, FIELD_WIDTH, FIELD_HEIGHT);
 
-    for (const link of this.game.links) {
+    for (const link of runtime.links) {
       link.draw(this.ctx);
     }
 
-    for (const projectile of this.game.projectiles) {
+    for (const projectile of runtime.projectiles) {
       projectile.draw(this.ctx);
     }
 
-    for (const missile of this.game.missiles) {
+    for (const missile of runtime.missiles) {
       missile.draw(this.ctx);
     }
 
-    for (const monster of this.game.activeMonsters) {
+    for (const monster of runtime.getActiveMonsters()) {
       monster.draw(this.ctx);
     }
 
-    for (const tower of this.game.towers) {
-      tower.draw(this.ctx, tower === this.game.selectedTower);
+    for (const tower of runtime.towers) {
+      tower.draw(this.ctx, tower === runtime.selectedTower);
     }
 
-    for (const particle of this.game.particles) {
+    for (const particle of runtime.particles) {
       particle.draw(this.ctx);
     }
 
@@ -121,30 +123,31 @@ export class GameRenderer {
   }
 
   private drawPreview(context: CanvasRenderingContext2D): void {
-    if (!this.game.pointer || !this.game.placingTower) {
+    const runtime = this.game.runtime;
+    if (!runtime.pointer || !runtime.placingTower) {
       return;
     }
 
-    const towerClass = getTowerClass(this.game.placingTower);
-    const valid = this.game.canPlaceTower(this.game.pointer) && this.game.money >= towerClass.baseCost;
+    const towerClass = getTowerClass(runtime.placingTower);
+    const valid = this.game.canPlaceTower(runtime.pointer) && runtime.money >= towerClass.baseCost;
     context.save();
     context.strokeStyle = valid ? "rgba(255, 255, 255, 0.35)" : "rgba(255, 120, 120, 0.45)";
     context.setLineDash([6, 6]);
     context.beginPath();
-    context.moveTo(this.game.pointer.x, 0);
-    context.lineTo(this.game.pointer.x, FIELD_HEIGHT);
-    context.moveTo(0, this.game.pointer.y);
-    context.lineTo(FIELD_WIDTH, this.game.pointer.y);
+    context.moveTo(runtime.pointer.x, 0);
+    context.lineTo(runtime.pointer.x, FIELD_HEIGHT);
+    context.moveTo(0, runtime.pointer.y);
+    context.lineTo(FIELD_WIDTH, runtime.pointer.y);
     context.stroke();
     context.setLineDash([]);
     context.strokeStyle = valid ? "rgba(92, 255, 158, 0.3)" : "rgba(255, 120, 120, 0.32)";
     context.fillStyle = valid ? "rgba(92, 255, 158, 0.08)" : "rgba(255, 120, 120, 0.08)";
     context.beginPath();
-    context.arc(this.game.pointer.x, this.game.pointer.y, towerClass.baseRange, 0, Math.PI * 2);
+    context.arc(runtime.pointer.x, runtime.pointer.y, towerClass.baseRange, 0, Math.PI * 2);
     context.fill();
     context.stroke();
     context.beginPath();
-    context.arc(this.game.pointer.x, this.game.pointer.y, TOWER_RADIUS, 0, Math.PI * 2);
+    context.arc(runtime.pointer.x, runtime.pointer.y, TOWER_RADIUS, 0, Math.PI * 2);
     context.stroke();
     context.restore();
   }

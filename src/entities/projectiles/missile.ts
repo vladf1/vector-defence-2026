@@ -1,9 +1,9 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
+import type { Game } from "../../game-engine";
 import type { Point } from "../../types";
 import { angleBetween, calculateDistance, randomRange, withinDistance } from "../../utils";
 import { Particle } from "../effects/particle";
 import type { Monster } from "../monsters/monster";
-import type { GameAccess } from "../game-access";
 
 export class Missile {
   x: number;
@@ -26,7 +26,7 @@ export class Missile {
     this.angle = angleBetween(source, { x: trackedMonster.x, y: trackedMonster.y });
   }
 
-  update(game: GameAccess, deltaSeconds: number): void {
+  update(game: Game, deltaSeconds: number): void {
     this.speedPerSecond += 180 * deltaSeconds;
     if (this.trackedMonster && this.trackedMonster.removed) {
       this.trackedMonster = undefined;
@@ -51,12 +51,12 @@ export class Missile {
       return;
     }
 
-    for (const monster of game.activeMonsters) {
+    for (const monster of game.runtime.getActiveMonsters()) {
       const hitDistance = monster.radius + 6;
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         this.removed = true;
         game.createExplosion(this.x, this.y, 20, 3, "#ffd34e", 2);
-        for (const nearby of game.activeMonsters) {
+        for (const nearby of game.runtime.getActiveMonsters()) {
           const dist = calculateDistance(this.x, this.y, nearby.x, nearby.y);
           if (dist <= this.effectRadius) {
             const ratio = (this.effectRadius - dist) / this.effectRadius;

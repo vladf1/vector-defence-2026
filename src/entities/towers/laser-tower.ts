@@ -1,6 +1,6 @@
+import type { Game } from "../../game-engine";
 import { TowerKind } from "../../types";
 import { angleBetween, calculateDistanceToSegment, randomRange, turnAngleTowards } from "../../utils";
-import type { GameAccess } from "../game-access";
 import { Tower } from "./tower";
 
 export class LaserTower extends Tower {
@@ -21,7 +21,7 @@ export class LaserTower extends Tower {
     super(x, y);
   }
 
-  protected onUpdate(game: GameAccess, deltaSeconds: number): void {
+  protected onUpdate(game: Game, deltaSeconds: number): void {
     this.beamAlpha = Math.max(0, this.beamAlpha - (0.9 * deltaSeconds));
     const tracked = this.getTrackedMonster(game);
     if (!tracked) {
@@ -51,7 +51,7 @@ export class LaserTower extends Tower {
       y: this.y + (Math.sin(this.angle) * 9),
     };
 
-    for (const monster of game.activeMonsters) {
+    for (const monster of game.runtime.getActiveMonsters()) {
       const distanceToBeam = calculateDistanceToSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
       if (distanceToBeam <= monster.radius) {
         monster.takeDamage(this.damagePerSecond * deltaSeconds * this.beamAlpha);

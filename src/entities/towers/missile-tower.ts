@@ -1,7 +1,7 @@
+import type { Game } from "../../game-engine";
 import { TowerKind } from "../../types";
 import { angleBetween, turnAngleTowards } from "../../utils";
 import { Missile } from "../projectiles/missile";
-import type { GameAccess } from "../game-access";
 import { Tower } from "./tower";
 
 export class MissileTower extends Tower {
@@ -21,7 +21,7 @@ export class MissileTower extends Tower {
     this.applyLevelStats();
   }
 
-  protected onUpdate(game: GameAccess, deltaSeconds: number): void {
+  protected onUpdate(game: Game, deltaSeconds: number): void {
     const tracked = this.getTrackedMonster(game);
     let alignedToTarget = false;
 
@@ -38,7 +38,7 @@ export class MissileTower extends Tower {
         x: this.x + (Math.cos(this.angle) * 14),
         y: this.y + (Math.sin(this.angle) * 14),
       };
-      game.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeedPerSecond));
+      game.runtime.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeedPerSecond));
       this.resetCooldown(2 - (0.2 * this.level));
     }
   }

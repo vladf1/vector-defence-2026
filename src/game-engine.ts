@@ -1,11 +1,7 @@
 import levelsJson from "../game-levels.json";
 import { createCampaignLevels } from "./campaign";
 import { GameRenderer } from "./game-renderer";
-import {
-  MAX_LINKS,
-  MAX_PARTICLES,
-  STARTING_MONEY,
-} from "./constants";
+import { MAX_LINKS, MAX_PARTICLES } from "./constants";
 import { LinkEffect } from "./entities/effects/link-effect";
 import { Particle } from "./entities/effects/particle";
 import { BallMonster } from "./entities/monsters/ball-monster";
@@ -21,10 +17,10 @@ import { Missile } from "./entities/projectiles/missile";
 import { Projectile } from "./entities/projectiles/projectile";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { Tower } from "./entities/towers/tower";
+import { LevelRuntime } from "./level-runtime";
 import { canPlaceTower, findTowerAtPoint } from "./placement-rules";
 import {
   calculateDistance,
-  compactInPlace,
   formatMoney,
   normalizeLevels,
   randomRange,
@@ -55,60 +51,15 @@ export const levels = createCampaignLevels(baseRoutes);
 export class Game {
   levels: LevelData[];
   renderer: GameRenderer;
-  currentLevel?: LevelData;
   currentLevelIndex = -1;
   highestUnlockedLevelIndex = 0;
   campaignCleared = false;
   menuReturnState?: BattleState;
   state: GameState = GameState.Menu;
-  money = STARTING_MONEY;
-  escapesLeft = 0;
-  spawnDelay = 0;
-  spawnCooldown = 0;
-  spawnIndex = 0;
-  spawnedMonsters = 0;
-  currentWaveIndex = 0;
-  waveSpawnedMonsters = 0;
-  towers: Tower[] = [];
-  monsters: Monster[] = [];
-  readonly activeMonsters: Iterable<Monster> = {
-    [Symbol.iterator]: (): Iterator<Monster> => {
-      const monsters = this.monsters;
-      let index = 0;
-
-      return {
-        next(): IteratorResult<Monster> {
-          while (index < monsters.length) {
-            const monster = monsters[index];
-            index += 1;
-
-            if (!monster.removed) {
-              return {
-                value: monster,
-                done: false,
-              };
-            }
-          }
-
-          return {
-            value: undefined,
-            done: true,
-          };
-        },
-      };
-    },
-  };
-  projectiles: Projectile[] = [];
-  missiles: Missile[] = [];
-  particles: Particle[] = [];
-  links: LinkEffect[] = [];
-  selectedTower?: Tower;
-  placingTower?: TowerKind;
-  pointer?: Point;
+  runtime = new LevelRuntime();
   statusText = "Select a map";
   bannerText = "Awaiting orders";
   bannerTimer = 0;
-  winDelay = 0;
   hudDirty = true;
   modalDirty = true;
 
@@ -118,22 +69,26 @@ export class Game {
   }
 
   get activeWave(): WaveData | undefined {
-    return this.currentLevel?.waves?.[this.currentWaveIndex];
+    return this.runtime.activeWave;
   }
 
   get waveTotal(): number {
-    return this.currentLevel?.waves?.length ?? 1;
+    return this.runtime.waveTotal;
+  }
+
+  get currentLevel(): LevelData | undefined {
+    return this.runtime.level;
   }
 
   addParticle(particle: Particle): void {
-    if (this.particles.length < MAX_PARTICLES) {
-      this.particles.push(particle);
+    if (this.runtime.particles.length < MAX_PARTICLES) {
+      this.runtime.particles.push(particle);
     }
   }
 
   addLink(link: LinkEffect): void {
-    if (this.links.length < MAX_LINKS) {
-      this.links.push(link);
+    if (this.runtime.links.length < MAX_LINKS) {
+      this.runtime.links.push(link);
     }
   }
 
@@ -169,36 +124,15 @@ export class Game {
     this.requestHudSync();
   }
 
-  resetField(): void {
-    this.towers = [];
-    this.monsters = [];
-    this.projectiles = [];
-    this.missiles = [];
-    this.particles = [];
-    this.links = [];
-    this.selectedTower = undefined;
-    this.placingTower = undefined;
-    this.winDelay = 0;
-    this.requestHudSync();
-  }
-
   startLevel(level: LevelData): void {
-    this.currentLevel = level;
     this.currentLevelIndex = this.levels.findIndex((candidate) => candidate.id === level.id || candidate === level);
-    this.money = level.startingMoney ?? STARTING_MONEY;
-    this.escapesLeft = level.allowEscape;
-    this.spawnDelay = level.waves?.[0]?.buildTime ?? 8;
-    this.spawnCooldown = 0.2;
-    this.spawnIndex = 0;
-    this.spawnedMonsters = 0;
-    this.currentWaveIndex = 0;
-    this.waveSpawnedMonsters = 0;
+    this.runtime = new LevelRuntime(level);
     this.menuReturnState = undefined;
-    this.resetField();
     this.setBanner(`Level ${level.levelNumber ?? "?"}: ${level.name}`, 2.4);
     this.setState(GameState.Playing);
     this.rebuildBackgroundCache();
     this.requestModalSync();
+    this.requestHudSync();
   }
 
   startLevelByIndex(index: number): void {
@@ -260,20 +194,21 @@ export class Game {
   }
 
   spawnMonster(): void {
-    if (!this.currentLevel) {
+    const { level } = this.runtime;
+    if (!level) {
       return;
     }
 
-    const sequence = this.activeWave?.monsterSequence ?? this.currentLevel.monsterSequence;
-    const code = sequence[this.spawnIndex] ?? MonsterKind.Ball;
-    this.spawnIndex = (this.spawnIndex + 1) % sequence.length;
-    this.spawnedMonsters += 1;
-    this.waveSpawnedMonsters += 1;
-    this.monsters.push(this.createMonster(code, this.currentLevel.points));
+    const sequence = this.activeWave?.monsterSequence ?? level.monsterSequence;
+    const code = sequence[this.runtime.spawnIndex] ?? MonsterKind.Ball;
+    this.runtime.spawnIndex = (this.runtime.spawnIndex + 1) % sequence.length;
+    this.runtime.spawnedMonsters += 1;
+    this.runtime.waveSpawnedMonsters += 1;
+    this.runtime.monsters.push(this.createMonster(code, level.points));
   }
 
   onMonsterKilled(monster: Monster): void {
-    this.money += monster.bounty;
+    this.runtime.money += monster.bounty;
     if (monster instanceof TankMonster) {
       this.createTankExplosion(monster.x, monster.y, monster.color);
     } else if (monster instanceof SplitterMonster) {
@@ -319,7 +254,7 @@ export class Game {
       child.maxHitPoints = child.hitPoints;
       child.bounty = Math.max(8, Math.round(child.bounty * 0.55));
       child.radius *= 0.86;
-      this.monsters.push(child);
+      this.runtime.monsters.push(child);
     }
     this.setBanner("Splitter burst", 1.2);
   }
@@ -370,9 +305,9 @@ export class Game {
 
   onMonsterEscaped(monster: Monster): void {
     this.createEscapeBurst(monster.x, monster.y);
-    this.escapesLeft = Math.max(0, this.escapesLeft - 1);
-    if (this.escapesLeft === 0) {
-      this.monsters.forEach((item) => {
+    this.runtime.escapesLeft = Math.max(0, this.runtime.escapesLeft - 1);
+    if (this.runtime.escapesLeft === 0) {
+      this.runtime.monsters.forEach((item) => {
         item.removed = true;
       });
       this.setState(GameState.Lost);
@@ -384,7 +319,7 @@ export class Game {
   }
 
   createExplosion(x: number, y: number, count: number, size: number, color: string, alphaFadePerSecond: number): void {
-    const particleCount = Math.min(count, Math.max(0, MAX_PARTICLES - this.particles.length));
+    const particleCount = Math.min(count, Math.max(0, MAX_PARTICLES - this.runtime.particles.length));
     for (let index = 0; index < particleCount; index += 1) {
       this.addParticle(new Particle(x, y, size, color, alphaFadePerSecond));
     }
@@ -395,7 +330,7 @@ export class Game {
     this.createExplosion(x, y, 34, randomRange(2.5, 5), color, 2.5);
     this.createExplosion(x, y, 26, randomRange(2, 4.5), "#7e858c", 1.666667);
 
-    const debrisCount = Math.min(22, Math.max(0, MAX_PARTICLES - this.particles.length));
+    const debrisCount = Math.min(22, Math.max(0, MAX_PARTICLES - this.runtime.particles.length));
     for (let index = 0; index < debrisCount; index += 1) {
       const debrisColor = index % 3 === 0 ? "#ffffff" : (index % 2 === 0 ? "#b0bdc8" : "#5b6470");
       this.addParticle(new Particle(
@@ -411,7 +346,7 @@ export class Game {
   }
 
   createEscapeBurst(x: number, y: number): void {
-    const particleCount = Math.min(90, Math.max(0, MAX_PARTICLES - this.particles.length));
+    const particleCount = Math.min(90, Math.max(0, MAX_PARTICLES - this.runtime.particles.length));
     for (let index = 0; index < particleCount; index += 1) {
       const color = `#${Math.floor(randomRange(0x555555, 0xffffff)).toString(16).padStart(6, "0")}`;
       this.addParticle(new Particle(x, y, randomRange(1, 4), color, 1.5));
@@ -419,18 +354,18 @@ export class Game {
   }
 
   canPlaceTower(point: Point): boolean {
-    return canPlaceTower(point, this.currentLevel?.points, this.towers);
+    return canPlaceTower(point, this.currentLevel?.points, this.runtime.towers);
   }
 
   placeTower(kind: TowerKind, point: Point): void {
     const tower = this.createTower(kind, point);
-    if (this.money < tower.cost || !this.canPlaceTower(point)) {
+    if (this.runtime.money < tower.cost || !this.canPlaceTower(point)) {
       return;
     }
-    this.money -= tower.cost;
-    this.towers.push(tower);
-    this.selectedTower = tower;
-    this.placingTower = undefined;
+    this.runtime.money -= tower.cost;
+    this.runtime.towers.push(tower);
+    this.runtime.selectedTower = tower;
+    this.runtime.placingTower = undefined;
     this.requestHudSync();
   }
 
@@ -440,27 +375,29 @@ export class Game {
   }
 
   selectTowerAt(point: Point): void {
-    this.selectedTower = findTowerAtPoint(point, this.towers);
+    this.runtime.selectedTower = findTowerAtPoint(point, this.runtime.towers);
     this.requestHudSync();
   }
 
   sellSelectedTower(): void {
-    if (!this.selectedTower) {
+    const { selectedTower } = this.runtime;
+    if (!selectedTower) {
       return;
     }
-    this.money += this.selectedTower.resaleValue;
-    this.selectedTower.removed = true;
-    this.towers = this.towers.filter((tower) => tower !== this.selectedTower);
-    this.selectedTower = undefined;
+    this.runtime.money += selectedTower.resaleValue;
+    selectedTower.removed = true;
+    this.runtime.towers = this.runtime.towers.filter((tower) => tower !== selectedTower);
+    this.runtime.selectedTower = undefined;
     this.requestHudSync();
   }
 
   upgradeSelectedTower(): void {
-    if (!this.selectedTower || !this.selectedTower.canUpgrade() || this.money < this.selectedTower.upgradeCost) {
+    const { selectedTower } = this.runtime;
+    if (!selectedTower || !selectedTower.canUpgrade() || this.runtime.money < selectedTower.upgradeCost) {
       return;
     }
-    this.money -= this.selectedTower.upgradeCost;
-    this.selectedTower.upgrade();
+    this.runtime.money -= selectedTower.upgradeCost;
+    selectedTower.upgrade();
     this.requestHudSync();
   }
 
@@ -470,19 +407,19 @@ export class Game {
       return;
     }
 
-    this.money += wave.reward;
-    this.currentWaveIndex += 1;
-    this.waveSpawnedMonsters = 0;
-    this.spawnIndex = 0;
-    this.spawnCooldown = 0.2;
+    this.runtime.money += wave.reward;
+    this.runtime.currentWaveIndex += 1;
+    this.runtime.waveSpawnedMonsters = 0;
+    this.runtime.spawnIndex = 0;
+    this.runtime.spawnCooldown = 0.2;
     this.requestHudSync();
 
     const nextWave = this.activeWave;
     if (nextWave) {
-      this.spawnDelay = nextWave.buildTime;
-      this.setBanner(`Wave ${this.currentWaveIndex} cleared · +${formatMoney(wave.reward)}`, 2.3);
+      this.runtime.spawnDelay = nextWave.buildTime;
+      this.setBanner(`Wave ${this.runtime.currentWaveIndex} cleared · +${formatMoney(wave.reward)}`, 2.3);
     } else {
-      this.spawnDelay = 0;
+      this.runtime.spawnDelay = 0;
       this.setBanner(`Final wave cleared · +${formatMoney(wave.reward)}`, 2.6);
     }
   }
@@ -517,8 +454,8 @@ export class Game {
   }
 
   update(deltaSeconds: number): void {
-    const previousPreWaveSecond = this.state === GameState.Playing && this.activeWave && this.spawnDelay > 0
-      ? Math.ceil(this.spawnDelay)
+    const previousPreWaveSecond = this.state === GameState.Playing && this.activeWave && this.runtime.spawnDelay > 0
+      ? Math.ceil(this.runtime.spawnDelay)
       : -1;
 
     if (this.bannerTimer > 0) {
@@ -535,62 +472,58 @@ export class Game {
     }
 
     const wave = this.activeWave;
-    if (wave && this.spawnDelay > 0) {
-      this.spawnDelay = Math.max(0, this.spawnDelay - deltaSeconds);
-      const nextPreWaveSecond = this.activeWave && this.spawnDelay > 0 ? Math.ceil(this.spawnDelay) : -1;
+    if (wave && this.runtime.spawnDelay > 0) {
+      this.runtime.spawnDelay = Math.max(0, this.runtime.spawnDelay - deltaSeconds);
+      const nextPreWaveSecond = this.activeWave && this.runtime.spawnDelay > 0 ? Math.ceil(this.runtime.spawnDelay) : -1;
       if (previousPreWaveSecond !== nextPreWaveSecond) {
         this.requestHudSync();
       }
-    } else if (wave && this.waveSpawnedMonsters < wave.count) {
-      this.spawnCooldown -= deltaSeconds;
-      if (this.spawnCooldown <= 0) {
+    } else if (wave && this.runtime.waveSpawnedMonsters < wave.count) {
+      this.runtime.spawnCooldown -= deltaSeconds;
+      if (this.runtime.spawnCooldown <= 0) {
         this.spawnMonster();
-        this.spawnCooldown = randomRange(wave.spawnIntervalMin, wave.spawnIntervalMax);
+        this.runtime.spawnCooldown = randomRange(wave.spawnIntervalMin, wave.spawnIntervalMax);
         this.requestHudSync();
       }
     }
 
-    for (const monster of this.monsters) {
+    for (const monster of this.runtime.monsters) {
       monster.update(deltaSeconds);
     }
 
-    for (const projectile of this.projectiles) {
+    for (const projectile of this.runtime.projectiles) {
       projectile.update(this, deltaSeconds);
     }
 
-    for (const missile of this.missiles) {
+    for (const missile of this.runtime.missiles) {
       missile.update(this, deltaSeconds);
     }
 
-    for (const particle of this.particles) {
+    for (const particle of this.runtime.particles) {
       particle.update(deltaSeconds);
     }
 
-    for (const link of this.links) {
+    for (const link of this.runtime.links) {
       link.update(deltaSeconds);
     }
 
-    for (const tower of this.towers) {
+    for (const tower of this.runtime.towers) {
       tower.update(this, deltaSeconds);
     }
 
-    compactInPlace(this.monsters);
-    compactInPlace(this.projectiles);
-    compactInPlace(this.missiles);
-    compactInPlace(this.particles);
-    compactInPlace(this.links);
+    this.runtime.compactRemoved();
 
-    if (wave && this.waveSpawnedMonsters >= wave.count && this.monsters.length === 0) {
+    if (wave && this.runtime.waveSpawnedMonsters >= wave.count && this.runtime.monsters.length === 0) {
       this.completeCurrentWave();
     }
 
-    if (!this.activeWave && this.currentLevel && this.spawnedMonsters >= this.currentLevel.monsterCount && this.monsters.length === 0) {
-      this.winDelay += deltaSeconds;
-      if (this.winDelay >= 0.6 && this.state === GameState.Playing) {
+    if (!this.activeWave && this.currentLevel && this.runtime.spawnedMonsters >= this.currentLevel.monsterCount && this.runtime.monsters.length === 0) {
+      this.runtime.winDelay += deltaSeconds;
+      if (this.runtime.winDelay >= 0.6 && this.state === GameState.Playing) {
         this.finishLevel();
       }
     } else {
-      this.winDelay = 0;
+      this.runtime.winDelay = 0;
     }
 
     this.draw();
