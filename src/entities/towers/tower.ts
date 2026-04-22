@@ -161,6 +161,7 @@ export abstract class Tower {
   }
 
   protected abstract onUpdate(game: Game, deltaSeconds: number): void;
-  protected abstract onUpgrade(): void;
+  protected onUpgrade(): void {
+  }
   abstract draw(context: CanvasRenderingContext2D, active: boolean): void;
 }

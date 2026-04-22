@@ -46,9 +46,6 @@ export class SlowTower extends Tower {
     this.resetCooldown(1);
   }
 
-  protected onUpgrade(): void {
-  }
-
   draw(context: CanvasRenderingContext2D, active: boolean): void {
     context.save();
     context.translate(this.x, this.y);

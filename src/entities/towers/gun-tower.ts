@@ -45,9 +45,6 @@ export class GunTower extends Tower {
     }
   }
 
-  protected onUpgrade(): void {
-  }
-
   draw(context: CanvasRenderingContext2D, active: boolean): void {
     context.save();
     context.translate(this.x, this.y);
