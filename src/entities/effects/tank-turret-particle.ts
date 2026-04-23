@@ -17,7 +17,7 @@ export class TankTurretParticle extends Particle {
     rotation: number,
   ) {
     super(x, y, radius * 2, color, 0, 0, 0);
-    const travelAngle = rotation + randomRange(-0.45, 0.45);
+    const travelAngle = randomRange(-Math.PI, Math.PI);
     const speedPerSecond = randomRange(115, 185);
     this.velocityXPerSecond = Math.cos(travelAngle) * speedPerSecond;
     this.velocityYPerSecond = Math.sin(travelAngle) * speedPerSecond;
