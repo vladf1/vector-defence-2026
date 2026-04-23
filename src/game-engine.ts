@@ -1,26 +1,18 @@
 import levelsJson from "../game-levels.json";
 import { createCampaignLevels } from "./campaign";
+import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { GameRenderer } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
 import { LinkEffect } from "./entities/effects/link-effect";
 import { Particle } from "./entities/effects/particle";
-import { BallMonster } from "./entities/monsters/ball-monster";
-import { BerserkerMonster } from "./entities/monsters/berserker-monster";
-import { BulwarkMonster } from "./entities/monsters/bulwark-monster";
 import type { Monster } from "./entities/monsters/monster";
-import { RunnerMonster } from "./entities/monsters/runner-monster";
 import { SplitterMonster } from "./entities/monsters/splitter-monster";
-import { SquareMonster } from "./entities/monsters/square-monster";
 import { TankMonster } from "./entities/monsters/tank-monster";
-import { TriangleMonster } from "./entities/monsters/triangle-monster";
-import { Missile } from "./entities/projectiles/missile";
-import { Projectile } from "./entities/projectiles/projectile";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { Tower } from "./entities/towers/tower";
 import { LevelRuntime } from "./level-runtime";
 import { canPlaceTower, findTowerAtPoint } from "./placement-rules";
 import {
-  calculateDistance,
   formatMoney,
   normalizeLevels,
   randomRange,
@@ -204,7 +196,7 @@ export class Game {
     this.runtime.spawnIndex = (this.runtime.spawnIndex + 1) % sequence.length;
     this.runtime.spawnedMonsters += 1;
     this.runtime.waveSpawnedMonsters += 1;
-    this.runtime.monsters.push(this.createMonster(code, level.points));
+    this.runtime.monsters.push(createMonster(this, code, level.points));
   }
 
   onMonsterKilled(monster: Monster): void {
@@ -224,83 +216,10 @@ export class Game {
       return;
     }
 
-    const childCount = 2;
-    const splitAngle = monster.angle;
-    const forwardX = Math.cos(splitAngle);
-    const forwardY = Math.sin(splitAngle);
-    const segmentStart = monster.path[Math.max(0, monster.targetIndex - 1)] ?? { x: monster.x, y: monster.y };
-    const segmentEnd = monster.path[monster.targetIndex] ?? { x: monster.x, y: monster.y };
-    const distanceFromSegmentStart = calculateDistance(segmentStart.x, segmentStart.y, monster.x, monster.y);
-    const distanceToNextWaypoint = calculateDistance(monster.x, monster.y, segmentEnd.x, segmentEnd.y);
-    const maxOffsetDistance = Math.min(12, distanceFromSegmentStart, distanceToNextWaypoint);
-    const minSpeedMultiplier = 0.89;
-    const maxSpeedMultiplier = 0.97;
-
-    for (let index = 0; index < childCount; index += 1) {
-      const forwardOffset = randomRange(-maxOffsetDistance, maxOffsetDistance);
-      const spawnPoint = {
-        x: monster.x + (forwardX * forwardOffset),
-        y: monster.y + (forwardY * forwardOffset),
-      };
-      const childPath = [spawnPoint, ...monster.path.slice(monster.targetIndex)];
-      const child = this.createMonster(MonsterKind.Runner, childPath);
-      const speedMultiplier = randomRange(minSpeedMultiplier, maxSpeedMultiplier);
-      child.angle = splitAngle + randomRange(-0.12, 0.12);
-      child.maxSpeedPerSecond *= speedMultiplier;
-      child.speedPerSecond = child.maxSpeedPerSecond;
-      child.velocityXPerSecond = Math.cos(child.angle) * child.speedPerSecond;
-      child.velocityYPerSecond = Math.sin(child.angle) * child.speedPerSecond;
-      child.hitPoints = Math.round(child.maxHitPoints * 0.72);
-      child.maxHitPoints = child.hitPoints;
-      child.bounty = Math.max(8, Math.round(child.bounty * 0.55));
-      child.radius *= 0.86;
+    for (const child of createSplitterChildren(this, monster)) {
       this.runtime.monsters.push(child);
     }
     this.setBanner("Splitter burst", 1.2);
-  }
-
-  createMonster(kind: MonsterKind, path: Point[]): Monster {
-    let monster: Monster;
-    if (kind === MonsterKind.Ball) {
-      monster = new BallMonster(path);
-    } else if (kind === MonsterKind.Berserker) {
-      monster = new BerserkerMonster(path);
-    } else if (kind === MonsterKind.Bulwark) {
-      monster = new BulwarkMonster(path);
-    } else if (kind === MonsterKind.Square) {
-      monster = new SquareMonster(path);
-    } else if (kind === MonsterKind.Triangle) {
-      monster = new TriangleMonster(path);
-    } else if (kind === MonsterKind.Tank) {
-      monster = new TankMonster(path);
-    } else if (kind === MonsterKind.Splitter) {
-      monster = new SplitterMonster(path);
-    } else {
-      monster = new RunnerMonster(path);
-    }
-
-    const levelHitPointMultiplier = this.getLevelHitPointMultiplier();
-    monster.hitPoints *= levelHitPointMultiplier;
-    monster.maxHitPoints *= levelHitPointMultiplier;
-
-    monster.addEventListener("killed", () => {
-      this.onMonsterKilled(monster);
-    });
-    if (monster instanceof SplitterMonster) {
-      monster.addEventListener("killed", () => {
-        this.spawnSplitters(monster);
-      });
-    }
-    monster.addEventListener("escaped", () => {
-      this.onMonsterEscaped(monster);
-    });
-    return monster;
-  }
-
-  private getLevelHitPointMultiplier(): number {
-    const levelOffset = Math.max(0, this.currentLevelIndex);
-    const bonusPerLevel = 0.05;
-    return 1 + (levelOffset * bonusPerLevel);
   }
 
   onMonsterEscaped(monster: Monster): void {
