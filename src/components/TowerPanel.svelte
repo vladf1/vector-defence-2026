@@ -54,7 +54,7 @@
 </script>
 
 <section class="controls-grid">
-  <div class="control-card">
+  <div class="tower-strip-card">
     <div class="tower-strip">
       {#each towerButtons as tower (tower.towerClass.kind)}
         <button
