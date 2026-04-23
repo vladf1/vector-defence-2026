@@ -1,13 +1,12 @@
 import levelsJson from "../game-levels.json";
 import { createCampaignLevels } from "./campaign";
+import { createMonsterDeathEffect } from "./game-engine/monster-death-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { GameRenderer } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
 import { LinkEffect } from "./entities/effects/link-effect";
 import { Particle } from "./entities/effects/particle";
 import type { Monster } from "./entities/monsters/monster";
-import { SplitterMonster } from "./entities/monsters/splitter-monster";
-import { TankMonster } from "./entities/monsters/tank-monster";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { Tower } from "./entities/towers/tower";
 import { LevelRuntime } from "./level-runtime";
@@ -201,13 +200,7 @@ export class Game {
 
   onMonsterKilled(monster: Monster): void {
     this.runtime.money += monster.bounty;
-    if (monster instanceof TankMonster) {
-      this.createTankExplosion(monster.x, monster.y, monster.color);
-    } else if (monster instanceof SplitterMonster) {
-      this.createExplosion(monster.x, monster.y, 34, randomRange(1.2, 3.3), monster.color, 2);
-    } else {
-      this.createExplosion(monster.x, monster.y, 30, randomRange(1.5, 4), monster.color, 2.5);
-    }
+    createMonsterDeathEffect(this, monster);
     this.requestHudSync();
   }
 
@@ -241,26 +234,6 @@ export class Game {
     const particleCount = Math.min(count, Math.max(0, MAX_PARTICLES - this.runtime.particles.length));
     for (let index = 0; index < particleCount; index += 1) {
       this.addParticle(new Particle(x, y, size, color, alphaFadePerSecond));
-    }
-  }
-
-  createTankExplosion(x: number, y: number, color: string): void {
-    this.createExplosion(x, y, 32, randomRange(3, 6), "#fff1a6", 2.142857);
-    this.createExplosion(x, y, 34, randomRange(2.5, 5), color, 2.5);
-    this.createExplosion(x, y, 26, randomRange(2, 4.5), "#7e858c", 1.666667);
-
-    const debrisCount = Math.min(22, Math.max(0, MAX_PARTICLES - this.runtime.particles.length));
-    for (let index = 0; index < debrisCount; index += 1) {
-      const debrisColor = index % 3 === 0 ? "#ffffff" : (index % 2 === 0 ? "#b0bdc8" : "#5b6470");
-      this.addParticle(new Particle(
-        x,
-        y,
-        randomRange(2.5, 5.5),
-        debrisColor,
-        1.428571,
-        randomRange(300, 600),
-        randomRange(2, 10),
-      ));
     }
   }
 

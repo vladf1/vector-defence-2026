@@ -20,6 +20,16 @@ const LEVEL_BUILD_TIMES = [10, 10, 11, 11, 12, 12, 13, 13, 14, 14] as const;
 const LEVEL_ESCAPES = [15, 15, 14, 13, 12, 12, 11, 10, 9, 8] as const;
 const LEVEL_STARTING_MONEY = [320, 335, 350, 365, 380, 395, 410, 430, 450, 470] as const;
 const LEVEL_WAVE_TOTALS = [4, 4, 5, 5, 5, 6, 6, 6, 7, 7] as const;
+const LEVEL_ONE_SHOWCASE_SEQUENCE = [
+  MonsterKind.Ball,
+  MonsterKind.Runner,
+  MonsterKind.Square,
+  MonsterKind.Triangle,
+  MonsterKind.Splitter,
+  MonsterKind.Berserker,
+  MonsterKind.Bulwark,
+  MonsterKind.Tank,
+] as const;
 
 function uniqueSequence(sequence: MonsterKind[]): MonsterKind[] {
   const seen = new Set<MonsterKind>();
@@ -34,6 +44,10 @@ function uniqueSequence(sequence: MonsterKind[]): MonsterKind[] {
 }
 
 function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, waveIndex: number): MonsterKind[] {
+  if (levelIndex === 0) {
+    return buildLevelOneShowcaseSequence(waveIndex);
+  }
+
   const pressure = (levelIndex * 0.85) + (waveIndex * 0.9);
   const introduceSplitterEarly = levelIndex === 0 && waveIndex >= 2;
   const pool: MonsterKind[] = [...baseSequence];
@@ -100,6 +114,17 @@ function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, wave
     sequence.push(MonsterKind.Splitter);
   }
 
+  return sequence;
+}
+
+function buildLevelOneShowcaseSequence(waveIndex: number): MonsterKind[] {
+  const sequence: MonsterKind[] = [];
+  for (let index = 0; index < LEVEL_ONE_SHOWCASE_SEQUENCE.length + 2; index += 1) {
+    sequence.push(
+      LEVEL_ONE_SHOWCASE_SEQUENCE[(index + waveIndex) % LEVEL_ONE_SHOWCASE_SEQUENCE.length]
+      ?? MonsterKind.Ball,
+    );
+  }
   return sequence;
 }
 
