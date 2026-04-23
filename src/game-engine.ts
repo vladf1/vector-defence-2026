@@ -245,6 +245,42 @@ export class Game {
     }
   }
 
+  setPointer(point?: Point): void {
+    this.runtime.pointer = point;
+  }
+
+  cancelTowerPlacement(): void {
+    if (!this.runtime.placingTower) {
+      return;
+    }
+
+    this.runtime.placingTower = undefined;
+    this.requestHudSync();
+  }
+
+  toggleTowerPlacement(kind: TowerKind): void {
+    if (!this.currentLevel || isModalState(this.state)) {
+      return;
+    }
+
+    this.runtime.selectedTower = undefined;
+    this.runtime.placingTower = this.runtime.placingTower === kind ? undefined : kind;
+    this.requestHudSync();
+  }
+
+  handleBoardClick(point: Point): void {
+    if (isModalState(this.state)) {
+      return;
+    }
+
+    if (this.runtime.placingTower) {
+      this.placeTower(this.runtime.placingTower, point);
+      return;
+    }
+
+    this.selectTowerAt(point);
+  }
+
   canPlaceTower(point: Point): boolean {
     return canPlaceTower(point, this.currentLevel?.points, this.runtime.towers);
   }
@@ -384,7 +420,7 @@ export class Game {
     }
 
     for (const projectile of this.runtime.projectiles) {
-      projectile.update(this, deltaSeconds);
+      projectile.update(this.runtime.getActiveMonsters(), deltaSeconds);
     }
 
     for (const missile of this.runtime.missiles) {

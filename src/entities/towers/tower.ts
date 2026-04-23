@@ -29,12 +29,17 @@ export abstract class Tower {
   removed = false;
 
   constructor(x: number, y: number) {
-    const towerClass = this.constructor as TowerClass;
+    // Reading this.towerClass invokes the getter below, which reflects static metadata from the concrete tower constructor.
+    const towerClass = this.towerClass;
     this.kind = towerClass.kind;
     this.x = x;
     this.y = y;
     this.range = towerClass.baseRange;
     this.cost = towerClass.baseCost;
+  }
+
+  get towerClass(): TowerClass {
+    return this.constructor as TowerClass;
   }
 
   get upgradeCost(): number {

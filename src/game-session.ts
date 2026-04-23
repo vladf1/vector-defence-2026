@@ -2,7 +2,6 @@ import { FIELD_HEIGHT, FIELD_WIDTH } from "./constants";
 import { findTowerShortcut } from "./entities/towers/tower-registry";
 import {
   Game,
-  isModalState,
   levels,
 } from "./game-engine";
 import {
@@ -13,7 +12,7 @@ import {
   performModalAction,
   type RuntimeHudStats,
 } from "./game-view";
-import type { HudSnapshot, ModalView, Point, TowerKind } from "./types";
+import type { HudSnapshot, ModalAction, ModalView, Point, TowerKind } from "./types";
 import { readonly, writable, type Readable } from "svelte/store";
 
 const MAX_FRAME_DELTA = 1 / 15;
@@ -41,7 +40,7 @@ export interface GameSession {
   sellSelectedTower(): void;
   cancelBuild(): void;
   toggleTowerPlacement(kind: TowerKind): void;
-  handleModalAction(action: string): void;
+  handleModalAction(action: ModalAction): void;
   selectLevel(levelIndex: number): void;
 }
 
@@ -233,28 +232,17 @@ export function createGameSession(): GameSession {
 
   const cancelBuild = (): void => {
     withGame((currentGame) => {
-      if (!currentGame.runtime.placingTower) {
-        return;
-      }
-
-      currentGame.runtime.placingTower = undefined;
-      currentGame.requestHudSync();
+      currentGame.cancelTowerPlacement();
     });
   };
 
   const toggleTowerPlacement = (kind: TowerKind): void => {
     withGame((currentGame) => {
-      if (!currentGame.currentLevel || isModalState(currentGame.state)) {
-        return;
-      }
-
-      currentGame.runtime.selectedTower = undefined;
-      currentGame.runtime.placingTower = currentGame.runtime.placingTower === kind ? undefined : kind;
-      currentGame.requestHudSync();
+      currentGame.toggleTowerPlacement(kind);
     });
   };
 
-  const handleModalAction = (action: string): void => {
+  const handleModalAction = (action: ModalAction): void => {
     withGame((currentGame) => {
       performModalAction(currentGame, action);
     }, true);
@@ -272,7 +260,7 @@ export function createGameSession(): GameSession {
       return;
     }
 
-    game.runtime.pointer = point;
+    game.setPointer(point);
   };
 
   const handleCanvasDown = (event: MouseEvent): void => {
@@ -286,22 +274,13 @@ export function createGameSession(): GameSession {
     }
 
     withGame((currentGame) => {
-      if (isModalState(currentGame.state)) {
-        return;
-      }
-
-      if (currentGame.runtime.placingTower) {
-        currentGame.placeTower(currentGame.runtime.placingTower, point);
-        return;
-      }
-
-      currentGame.selectTowerAt(point);
+      currentGame.handleBoardClick(point);
     });
   };
 
   const handleCanvasLeave = (): void => {
     if (game) {
-      game.runtime.pointer = undefined;
+      game.setPointer();
     }
   };
 

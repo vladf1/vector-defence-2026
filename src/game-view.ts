@@ -3,7 +3,14 @@ import { getTowerClass } from "./entities/towers/tower-registry";
 import { isBattleState, isModalState } from "./game-engine";
 import { formatMoney } from "./utils";
 import type { Game } from "./game-engine";
-import { GameState, type HudSnapshot, type ModalLevelCardView, type ModalView } from "./types";
+import {
+  GameState,
+  ModalAction,
+  type HudSnapshot,
+  type ModalActionView,
+  type ModalLevelCardView,
+  type ModalView,
+} from "./types";
 
 export interface RuntimeHudStats {
   fps: number;
@@ -110,16 +117,16 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
 
 export function createModalView(game: Game): ModalView | null {
   if (game.state === GameState.Menu) {
-    const actions = [
+    const actions: ModalActionView[] = [
       {
-        action: game.menuReturnState && game.currentLevel ? "resume" : "play-unlocked",
+        action: game.menuReturnState && game.currentLevel ? ModalAction.Resume : ModalAction.PlayUnlocked,
         label: game.menuReturnState && game.currentLevel ? "Resume Battle" : "Play Unlocked Level",
       },
     ];
 
     if (game.highestUnlockedLevelIndex > 0 || game.campaignCleared) {
       actions.push({
-        action: "restart-campaign",
+        action: ModalAction.RestartCampaign,
         label: "Restart Campaign",
       });
     }
@@ -139,9 +146,9 @@ export function createModalView(game: Game): ModalView | null {
       description: `Level ${game.currentLevel?.levelNumber ?? "?"} is secure. Keep the pressure on and push into the next route.`,
       centered: true,
       actions: [
-        { action: "next-level", label: `Continue to Level ${(game.currentLevel?.levelNumber ?? 0) + 1}` },
-        { action: "replay", label: "Replay This Level" },
-        { action: "campaign-map", label: "Campaign Map" },
+        { action: ModalAction.NextLevel, label: `Continue to Level ${(game.currentLevel?.levelNumber ?? 0) + 1}` },
+        { action: ModalAction.Replay, label: "Replay This Level" },
+        { action: ModalAction.CampaignMap, label: "Campaign Map" },
       ],
     };
   }
@@ -152,9 +159,9 @@ export function createModalView(game: Game): ModalView | null {
       description: "All ten levels are secured. The prototype is now a full campaign run, and the frontier held.",
       centered: true,
       actions: [
-        { action: "restart-campaign", label: "Restart Campaign" },
-        { action: "replay", label: "Replay Final Level" },
-        { action: "campaign-map", label: "Campaign Map" },
+        { action: ModalAction.RestartCampaign, label: "Restart Campaign" },
+        { action: ModalAction.Replay, label: "Replay Final Level" },
+        { action: ModalAction.CampaignMap, label: "Campaign Map" },
       ],
     };
   }
@@ -165,8 +172,8 @@ export function createModalView(game: Game): ModalView | null {
       description: "The route broke through. Rework the build, lean on the intermissions, and try again.",
       centered: true,
       actions: [
-        { action: "replay", label: "Try Again" },
-        { action: "campaign-map", label: "Campaign Map" },
+        { action: ModalAction.Replay, label: "Try Again" },
+        { action: ModalAction.CampaignMap, label: "Campaign Map" },
       ],
     };
   }
@@ -174,20 +181,33 @@ export function createModalView(game: Game): ModalView | null {
   return null;
 }
 
-export function performModalAction(game: Game, action: string): void {
-  if (action === "resume") {
-    game.resumeBattle();
-  } else if (action === "play-unlocked") {
-    game.startLevelByIndex(game.campaignCleared ? game.levels.length - 1 : game.highestUnlockedLevelIndex);
-  } else if (action === "restart-campaign") {
-    game.restartCampaign();
-  } else if (action === "next-level") {
-    game.startNextLevel();
-  } else if (action === "replay") {
-    game.restart();
-  } else if (action === "campaign-map") {
-    game.openMenu();
+export function performModalAction(game: Game, action: ModalAction): void {
+  switch (action) {
+    case ModalAction.Resume:
+      game.resumeBattle();
+      break;
+    case ModalAction.PlayUnlocked:
+      game.startLevelByIndex(game.campaignCleared ? game.levels.length - 1 : game.highestUnlockedLevelIndex);
+      break;
+    case ModalAction.RestartCampaign:
+      game.restartCampaign();
+      break;
+    case ModalAction.NextLevel:
+      game.startNextLevel();
+      break;
+    case ModalAction.Replay:
+      game.restart();
+      break;
+    case ModalAction.CampaignMap:
+      game.openMenu();
+      break;
+    default:
+      assertNever(action);
   }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled modal action: ${value}`);
 }
 
 function createModalLevelCards(game: Game): ModalLevelCardView[] {

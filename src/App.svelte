@@ -3,13 +3,13 @@
   import GameBoard from "./components/GameBoard.svelte";
   import NerdStatsPanel from "./components/NerdStatsPanel.svelte";
   import TowerPanel from "./components/TowerPanel.svelte";
-  import { TOWER_CLASSES } from "./entities/towers/tower-registry";
+  import { TOWER_TOOLBAR_PREVIEWS } from "./entities/towers/tower-registry";
   import { setGameSessionContext } from "./game-context";
   import { createGameSession } from "./game-session";
 
   const session = createGameSession();
-  const towerNumberShortcuts = TOWER_CLASSES.map((towerClass) => towerClass.shortcuts[0]?.toUpperCase() ?? "").join("-");
-  const towerLetterShortcuts = TOWER_CLASSES.map((towerClass) => towerClass.shortcuts[1]?.toUpperCase() ?? "").join("/");
+  const towerNumberShortcuts = TOWER_TOOLBAR_PREVIEWS.map((tower) => tower.towerClass.shortcuts[0]?.toUpperCase() ?? "").join("-");
+  const towerLetterShortcuts = TOWER_TOOLBAR_PREVIEWS.map((tower) => tower.towerClass.shortcuts[1]?.toUpperCase() ?? "").join("/");
   let showNerdStats = $state(false);
 
   function toggleNerdStats(): void {

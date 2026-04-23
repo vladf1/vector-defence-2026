@@ -1,16 +1,12 @@
 <script lang="ts">
   import type { Action } from "svelte/action";
-  import { TOWER_CLASSES, TOWER_PREVIEW_TOWERS } from "../entities/towers/tower-registry";
+  import { TOWER_TOOLBAR_PREVIEWS } from "../entities/towers/tower-registry";
   import { getGameSessionContext } from "../game-context";
   import type { TowerKind } from "../types";
   import type { Tower } from "../entities/towers/tower";
   import { formatMoney } from "../utils";
 
   const ICON_SIZE = 60;
-  const towerButtons = TOWER_CLASSES.map((towerClass, index) => ({
-    towerClass,
-    previewTower: TOWER_PREVIEW_TOWERS[index],
-  }));
   const session = getGameSessionContext();
   const hud = session.hud;
 
@@ -56,22 +52,23 @@
 <section class="controls-grid">
   <div class="tower-strip-card">
     <div class="tower-strip">
-      {#each towerButtons as tower (tower.towerClass.kind)}
+      {#each TOWER_TOOLBAR_PREVIEWS as tower (tower.kind)}
+        {@const towerClass = tower.towerClass}
         <button
-          class={`tower-button${$hud.placingTower === tower.towerClass.kind ? " active" : ""}`}
+          class={`tower-button${$hud.placingTower === tower.kind ? " active" : ""}`}
           type="button"
-          value={tower.towerClass.kind}
-          title={`${tower.towerClass.label} tower (${formatShortcuts(tower.towerClass.shortcuts)})`}
-          aria-label={`${tower.towerClass.label} tower for ${formatMoney(tower.towerClass.baseCost)} (${formatShortcuts(tower.towerClass.shortcuts)})`}
+          value={tower.kind}
+          title={`${towerClass.label} tower (${formatShortcuts(towerClass.shortcuts)})`}
+          aria-label={`${towerClass.label} tower for ${formatMoney(towerClass.baseCost)} (${formatShortcuts(towerClass.shortcuts)})`}
           disabled={$hud.towerButtonsDisabled}
           onclick={handleTowerButtonClick}
         >
           <div class="tower-button-meta">
-            <span>{formatMoney(tower.towerClass.baseCost)}</span>
-            <span class="shortcut-chip">{formatShortcuts(tower.towerClass.shortcuts)}</span>
+            <span>{formatMoney(towerClass.baseCost)}</span>
+            <span class="shortcut-chip">{formatShortcuts(towerClass.shortcuts)}</span>
           </div>
-          <canvas use:towerIcon={tower.previewTower} class="tower-icon" aria-hidden="true"></canvas>
-          <strong class="tower-button-label">{tower.towerClass.label}</strong>
+          <canvas use:towerIcon={tower} class="tower-icon" aria-hidden="true"></canvas>
+          <strong class="tower-button-label">{towerClass.label}</strong>
         </button>
       {/each}
     </div>

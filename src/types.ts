@@ -31,6 +31,17 @@ export const TowerKind = {
 
 export type TowerKind = typeof TowerKind[keyof typeof TowerKind];
 
+export const ModalAction = {
+  Resume: "resume",
+  PlayUnlocked: "play-unlocked",
+  RestartCampaign: "restart-campaign",
+  NextLevel: "next-level",
+  Replay: "replay",
+  CampaignMap: "campaign-map",
+} as const;
+
+export type ModalAction = typeof ModalAction[keyof typeof ModalAction];
+
 export interface Point {
   x: number;
   y: number;
@@ -97,7 +108,7 @@ export interface NerdStatsSnapshot {
 }
 
 export interface ModalActionView {
-  action: string;
+  action: ModalAction;
   label: string;
 }
 
