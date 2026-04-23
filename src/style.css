@@ -436,14 +436,16 @@ textarea,
 }
 
 .controls-grid {
+  --controls-row-height: 77px;
   display: grid;
   grid-template-columns: 1.6fr 1fr;
+  grid-template-rows: var(--controls-row-height);
   gap: 10px;
   align-items: stretch;
 }
 
 .tower-strip-card {
-  height: 100%;
+  height: var(--controls-row-height);
 }
 
 .tower-strip {
@@ -460,8 +462,8 @@ textarea,
   justify-items: center;
   align-content: center;
   gap: 1px;
-  height: 100%;
-  min-height: 72px;
+  height: var(--controls-row-height);
+  min-height: 0;
   padding: 2px 5px 1px;
   border-radius: 8px;
   overflow: hidden;
@@ -510,25 +512,39 @@ textarea,
 .selection-card {
   display: grid;
   gap: 10px;
-  min-height: 100%;
+  height: var(--controls-row-height);
+  min-height: 0;
+  overflow: hidden;
 }
 
 .selection-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-height: 0;
 }
 
 .selection-copy strong {
   display: block;
   font-size: 1rem;
   margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .selection-copy {
   min-width: 0;
   flex: 1 1 auto;
+}
+
+.selection-copy span {
+  display: -webkit-box;
+  line-height: 1.28;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .selection-sell-button {
@@ -614,6 +630,14 @@ textarea,
   .controls-grid,
   .tower-strip {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .tower-strip-card,
+  .tower-button,
+  .selection-card {
+    height: auto;
+    min-height: 72px;
   }
 
   .topbar {
