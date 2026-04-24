@@ -34,7 +34,7 @@ export class SlowTower extends Tower {
         continue;
       }
       monster.slowDown(0.5);
-      game.addLink(new LinkEffect(monster, "#d8ff4f", 1, { x: this.x, y: this.y }));
+      game.addLink(new LinkEffect(monster, "#d8ff4f", 1, this));
       affected += 1;
       if (affected === maxTargets) {
         break;
@@ -67,10 +67,10 @@ export class SlowTower extends Tower {
     context.stroke();
 
     if (this.level > 0) {
-      context.strokeStyle = `rgba(216, 255, 79, ${0.28 + (this.level * 0.04)})`;
-      context.lineWidth = 1 + (this.level * 0.12);
+      context.strokeStyle = `rgba(216, 255, 79, ${0.22 + (this.level * 0.02)})`;
+      context.lineWidth = 0.9 + (this.level * 0.08);
       context.beginPath();
-      context.arc(0, 0, TOWER_RADIUS + 2 + (this.level * 0.45), 0, Math.PI * 2);
+      context.arc(0, 0, TOWER_RADIUS + 1.3 + (this.level * 0.22), 0, Math.PI * 2);
       context.stroke();
 
       const nodeCount = Math.min(6, this.level + 1);

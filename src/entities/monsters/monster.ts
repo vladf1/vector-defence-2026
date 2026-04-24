@@ -124,10 +124,21 @@ export abstract class Monster extends EventTarget {
 
   private drawHealthBar(context: CanvasRenderingContext2D): void {
     const barWidth = Math.max(16, this.radius * 2);
-    const fillWidth = barWidth * (this.hitPoints / this.maxHitPoints);
+    const healthRatio = this.hitPoints / this.maxHitPoints;
+    const fillWidth = barWidth * healthRatio;
     context.fillStyle = "rgba(5, 10, 8, 0.85)";
     context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, barWidth, 3);
-    context.fillStyle = "#4cff90";
+    context.fillStyle = this.getHealthBarColor(healthRatio);
     context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, fillWidth, 3);
+  }
+
+  private getHealthBarColor(healthRatio: number): string {
+    if (healthRatio > 0.5) {
+      const danger = (1 - healthRatio) * 2;
+      return `rgb(${Math.round(76 + (179 * danger))}, 255, ${Math.round(144 * (1 - danger))})`;
+    }
+
+    const danger = 1 - (healthRatio * 2);
+    return `rgb(255, ${Math.round(227 * (1 - danger))}, 79)`;
   }
 }

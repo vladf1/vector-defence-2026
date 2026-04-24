@@ -3,6 +3,13 @@ import { TowerKind } from "../../types";
 import { angleBetween, calculateDistanceToSegment, randomRange, turnAngleTowards } from "../../utils";
 import { Tower } from "./tower";
 
+const LASER_COLORS = [
+  { body: "#5bf4ff", accent: "#9dffd7", ring: "110, 255, 152", beam: "110, 255, 152" },
+  { body: "#6dff9c", accent: "#d8ff4f", ring: "216, 255, 79", beam: "185, 255, 105" },
+  { body: "#ffe36f", accent: "#ff9d5c", ring: "255, 227, 111", beam: "255, 227, 111" },
+  { body: "#ff8edb", accent: "#b58cff", ring: "255, 142, 219", beam: "255, 142, 219" },
+] as const;
+
 export class LaserTower extends Tower {
   static readonly kind = TowerKind.Laser;
   static readonly label = "Laser";
@@ -63,7 +70,13 @@ export class LaserTower extends Tower {
     this.damagePerSecond = 60 + (15 * this.level);
   }
 
+  private getLaserColors(): typeof LASER_COLORS[number] {
+    return LASER_COLORS[Math.min(this.level, LASER_COLORS.length - 1)];
+  }
+
   draw(context: CanvasRenderingContext2D, active: boolean): void {
+    const colors = this.getLaserColors();
+
     context.save();
     context.translate(this.x, this.y);
     context.fillStyle = "#050908";
@@ -75,15 +88,15 @@ export class LaserTower extends Tower {
     context.stroke();
 
     if (this.level > 0) {
-      context.strokeStyle = `rgba(110, 255, 152, ${0.28 + (this.level * 0.04)})`;
-      context.lineWidth = 1 + (this.level * 0.16);
+      context.strokeStyle = `rgba(${colors.ring}, ${0.22 + (this.level * 0.02)})`;
+      context.lineWidth = 0.9 + (this.level * 0.08);
       context.beginPath();
-      context.arc(0, 0, 13.5 + (this.level * 0.7), 0, Math.PI * 2);
+      context.arc(0, 0, 13.2 + (this.level * 0.25), 0, Math.PI * 2);
       context.stroke();
     }
 
     context.rotate(this.angle);
-    context.fillStyle = "#5bf4ff";
+    context.fillStyle = colors.body;
     context.beginPath();
     context.moveTo(-10 - (this.level * 0.35), 5 + (this.level * 0.18));
     context.lineTo(-2, 4);
@@ -95,7 +108,7 @@ export class LaserTower extends Tower {
     context.stroke();
 
     if (this.level > 0) {
-      context.fillStyle = "#9dffd7";
+      context.fillStyle = colors.accent;
       context.fillRect(-7, -7 - (this.level * 0.15), 8 + this.level, 1.8);
       context.fillRect(-7, 5.2 + (this.level * 0.15), 8 + this.level, 1.8);
     }
@@ -107,7 +120,7 @@ export class LaserTower extends Tower {
 
     if (this.beamAlpha > 0) {
       context.save();
-      context.strokeStyle = `rgba(110, 255, 152, ${0.85 * this.beamAlpha})`;
+      context.strokeStyle = `rgba(${colors.beam}, ${0.85 * this.beamAlpha})`;
       context.lineWidth = 1.5 + (this.level / 3);
       context.beginPath();
       context.moveTo(this.x + (Math.cos(this.angle) * 9), this.y + (Math.sin(this.angle) * 9));

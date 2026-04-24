@@ -57,10 +57,10 @@ export class GunTower extends Tower {
     context.stroke();
 
     if (this.level > 0) {
-      context.strokeStyle = `rgba(255, 226, 122, ${0.3 + (this.level * 0.04)})`;
-      context.lineWidth = 1 + (this.level * 0.14);
+      context.strokeStyle = `rgba(255, 226, 122, ${0.22 + (this.level * 0.02)})`;
+      context.lineWidth = 0.9 + (this.level * 0.08);
       context.beginPath();
-      context.arc(0, 0, TOWER_RADIUS + 1.5 + (this.level * 0.45), 0, Math.PI * 2);
+      context.arc(0, 0, TOWER_RADIUS + 1.2 + (this.level * 0.22), 0, Math.PI * 2);
       context.stroke();
     }
 
