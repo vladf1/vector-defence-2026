@@ -74,17 +74,32 @@ export class LaserTower extends Tower {
     context.fill();
     context.stroke();
 
+    if (this.level > 0) {
+      context.strokeStyle = `rgba(110, 255, 152, ${0.28 + (this.level * 0.04)})`;
+      context.lineWidth = 1 + (this.level * 0.16);
+      context.beginPath();
+      context.arc(0, 0, 13.5 + (this.level * 0.7), 0, Math.PI * 2);
+      context.stroke();
+    }
+
     context.rotate(this.angle);
     context.fillStyle = "#5bf4ff";
     context.beginPath();
-    context.moveTo(-10, 5);
+    context.moveTo(-10 - (this.level * 0.35), 5 + (this.level * 0.18));
     context.lineTo(-2, 4);
-    context.lineTo(10, 0);
+    context.lineTo(10 + (this.level * 0.75), 0);
     context.lineTo(-2, -4);
-    context.lineTo(-10, -5);
+    context.lineTo(-10 - (this.level * 0.35), -5 - (this.level * 0.18));
     context.closePath();
     context.fill();
     context.stroke();
+
+    if (this.level > 0) {
+      context.fillStyle = "#9dffd7";
+      context.fillRect(-7, -7 - (this.level * 0.15), 8 + this.level, 1.8);
+      context.fillRect(-7, 5.2 + (this.level * 0.15), 8 + this.level, 1.8);
+    }
+
     if (active) {
       this.drawSelection(context);
     }

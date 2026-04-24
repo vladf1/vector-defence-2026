@@ -14,6 +14,7 @@ export class SlowTower extends Tower {
   static readonly shortcuts = ["4", "s"] as const;
 
   pulse = 0;
+  orbit = 0;
 
   constructor(x: number, y: number) {
     super(x, y);
@@ -21,6 +22,7 @@ export class SlowTower extends Tower {
 
   protected onUpdate(game: Game, deltaSeconds: number): void {
     this.pulse += 4.8 * deltaSeconds;
+    this.orbit += this.getOrbitSpeedPerSecond() * deltaSeconds;
     if (!this.ready()) {
       return;
     }
@@ -46,6 +48,10 @@ export class SlowTower extends Tower {
     this.resetCooldown(1);
   }
 
+  private getOrbitSpeedPerSecond(): number {
+    return 4.8 / (1 + (this.level * 0.7));
+  }
+
   draw(context: CanvasRenderingContext2D, active: boolean): void {
     context.save();
     context.translate(this.x, this.y);
@@ -59,6 +65,25 @@ export class SlowTower extends Tower {
     context.arc(0, 0, TOWER_RADIUS, 0, Math.PI * 2);
     context.fill();
     context.stroke();
+
+    if (this.level > 0) {
+      context.strokeStyle = `rgba(216, 255, 79, ${0.28 + (this.level * 0.04)})`;
+      context.lineWidth = 1 + (this.level * 0.12);
+      context.beginPath();
+      context.arc(0, 0, TOWER_RADIUS + 2 + (this.level * 0.45), 0, Math.PI * 2);
+      context.stroke();
+
+      const nodeCount = Math.min(6, this.level + 1);
+      const orbitRadius = 7 + (this.level * 0.75);
+      for (let i = 0; i < nodeCount; i += 1) {
+        const angle = this.orbit + ((Math.PI * 2 * i) / nodeCount);
+        context.fillStyle = i % 2 === 0 ? "#ffe27a" : "#d8ff4f";
+        context.beginPath();
+        context.arc(Math.cos(angle) * orbitRadius, Math.sin(angle) * orbitRadius, 1.8 + (this.level * 0.12), 0, Math.PI * 2);
+        context.fill();
+      }
+    }
+
     if (active) {
       this.drawSelection(context);
     }

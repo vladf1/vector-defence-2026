@@ -56,13 +56,45 @@ export class GunTower extends Tower {
     context.fill();
     context.stroke();
 
+    if (this.level > 0) {
+      context.strokeStyle = `rgba(255, 226, 122, ${0.3 + (this.level * 0.04)})`;
+      context.lineWidth = 1 + (this.level * 0.14);
+      context.beginPath();
+      context.arc(0, 0, TOWER_RADIUS + 1.5 + (this.level * 0.45), 0, Math.PI * 2);
+      context.stroke();
+    }
+
+    context.save();
+    context.rotate(this.angle);
+    if (this.level > 0) {
+      context.fillStyle = "#ffe27a";
+      const pipCount = Math.min(6, this.level);
+      for (let i = 0; i < pipCount; i += 1) {
+        context.beginPath();
+        context.arc(-7 + (i * 2.8), -6.4, 1, 0, Math.PI * 2);
+        context.fill();
+      }
+
+      context.strokeStyle = "#9dffd7";
+      context.lineWidth = 1.2;
+      context.lineCap = "round";
+      context.beginPath();
+      context.moveTo(-3, -4.5 - (this.level * 0.2));
+      context.lineTo(8 + (this.level * 0.45), -3.5 - (this.level * 0.15));
+      context.moveTo(-3, 4.5 + (this.level * 0.2));
+      context.lineTo(8 + (this.level * 0.45), 3.5 + (this.level * 0.15));
+      context.stroke();
+    }
+
     context.strokeStyle = "#ffffff";
     context.lineWidth = 2 + (this.level / 2);
     context.lineCap = "round";
     context.beginPath();
     context.moveTo(0, 0);
-    context.lineTo(Math.cos(this.angle) * 16, Math.sin(this.angle) * 16);
+    context.lineTo(16 + (this.level * 0.9), 0);
     context.stroke();
+    context.restore();
+
     if (active) {
       this.drawSelection(context);
     }

@@ -62,12 +62,20 @@ export class MissileTower extends Tower {
     context.fill();
     context.stroke();
 
+    if (this.level > 0) {
+      context.strokeStyle = `rgba(255, 226, 122, ${0.28 + (this.level * 0.04)})`;
+      context.lineWidth = 1 + (this.level * 0.14);
+      context.beginPath();
+      context.arc(0, 0, 15.2 + (this.level * 0.45), 0, Math.PI * 2);
+      context.stroke();
+    }
+
     context.save();
     context.rotate(this.angle);
     context.fillStyle = "#202b35";
     context.strokeStyle = "#ffffff";
-    context.fillRect(-9.5, -4.5, 9, 9);
-    context.strokeRect(-9.5, -4.5, 9, 9);
+    context.fillRect(-10.5 - (this.level * 0.25), -4.5, 10 + (this.level * 0.45), 9);
+    context.strokeRect(-10.5 - (this.level * 0.25), -4.5, 10 + (this.level * 0.45), 9);
     context.fillStyle = this.ready() ? "#ffe27a" : "#78838b";
     context.fillRect(-7.5, -8, 11, 3.5);
     context.strokeRect(-7.5, -8, 11, 3.5);
@@ -87,6 +95,28 @@ export class MissileTower extends Tower {
     context.closePath();
     context.fill();
     context.stroke();
+
+    if (this.level > 0) {
+      context.fillStyle = "#ffe27a";
+      const pipCount = Math.min(6, this.level);
+      for (let i = 0; i < pipCount; i += 1) {
+        context.beginPath();
+        context.arc(-7.5 + (i * 3), 9.2, 1, 0, Math.PI * 2);
+        context.fill();
+      }
+
+      context.fillStyle = this.ready() ? "#ff9d5c" : "#78838b";
+      context.fillRect(-6.5, -2, 9 + (this.level * 0.45), 4);
+      context.strokeRect(-6.5, -2, 9 + (this.level * 0.45), 4);
+      context.beginPath();
+      context.moveTo(2.5 + (this.level * 0.45), -2);
+      context.lineTo(7 + (this.level * 0.45), 0);
+      context.lineTo(2.5 + (this.level * 0.45), 2);
+      context.closePath();
+      context.fill();
+      context.stroke();
+    }
+
     context.restore();
 
     if (active) {
