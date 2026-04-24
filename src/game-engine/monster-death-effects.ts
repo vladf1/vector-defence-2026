@@ -417,7 +417,7 @@ function createExplosion(game: Game, x: number, y: number, count: number, size: 
 }
 
 function addBurstParticle(game: Game, x: number, y: number, color: string, size: number, alphaFadePerSecond: number, angle: number, speedPerSecond: number): void {
-  const particle = new Particle(x, y, size, color, alphaFadePerSecond, 0, 0);
+  const particle = new Particle(x, y, size, color, alphaFadePerSecond, { speedPerSecond: 0, offset: 0 });
   particle.velocityXPerSecond = Math.cos(angle) * speedPerSecond;
   particle.velocityYPerSecond = Math.sin(angle) * speedPerSecond;
   particle.x = x;

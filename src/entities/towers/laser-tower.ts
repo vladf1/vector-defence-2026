@@ -119,13 +119,29 @@ export class LaserTower extends Tower {
     context.restore();
 
     if (this.beamAlpha > 0) {
+      const sourceX = this.x + (Math.cos(this.angle) * 9);
+      const sourceY = this.y + (Math.sin(this.angle) * 9);
       context.save();
+      context.globalCompositeOperation = "lighter";
+      context.shadowColor = `rgba(${colors.beam}, ${0.7 * this.beamAlpha})`;
+      context.shadowBlur = 14 + (this.level * 2);
+      context.strokeStyle = `rgba(${colors.beam}, ${0.2 * this.beamAlpha})`;
+      context.lineWidth = 7 + (this.level * 0.55);
+      context.lineCap = "round";
+      context.beginPath();
+      context.moveTo(sourceX, sourceY);
+      context.lineTo(this.beamTarget.x, this.beamTarget.y);
+      context.stroke();
       context.strokeStyle = `rgba(${colors.beam}, ${0.85 * this.beamAlpha})`;
       context.lineWidth = 1.5 + (this.level / 3);
       context.beginPath();
-      context.moveTo(this.x + (Math.cos(this.angle) * 9), this.y + (Math.sin(this.angle) * 9));
+      context.moveTo(sourceX, sourceY);
       context.lineTo(this.beamTarget.x, this.beamTarget.y);
       context.stroke();
+      context.fillStyle = `rgba(${colors.beam}, ${0.35 * this.beamAlpha})`;
+      context.beginPath();
+      context.arc(sourceX, sourceY, 4 + (this.level * 0.35), 0, Math.PI * 2);
+      context.fill();
       context.restore();
     }
   }

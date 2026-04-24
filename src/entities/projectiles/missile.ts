@@ -43,7 +43,22 @@ export class Missile {
       this.trailTimer = 0;
       const trailX = this.x + randomRange(-3, 3) - (Math.cos(this.angle) * 9);
       const trailY = this.y + randomRange(-3, 3) - (Math.sin(this.angle) * 9);
-      game.addParticle(new Particle(trailX, trailY, 1, "#7e858c", 1));
+      const exhaustAngle = this.angle + Math.PI + randomRange(-0.35, 0.35);
+      game.addParticle(new Particle(trailX, trailY, randomRange(0.6, 1.2), "#fff0a8", 5.5, {
+        speedPerSecond: randomRange(36, 82),
+        offset: 0,
+        angle: exhaustAngle,
+      }));
+      game.addParticle(new Particle(trailX, trailY, randomRange(0.8, 1.5), "#ff8f45", 3.8, {
+        speedPerSecond: randomRange(28, 68),
+        offset: 1,
+        angle: exhaustAngle,
+      }));
+      game.addParticle(new Particle(trailX, trailY, 1, "#7e858c", 1.4, {
+        speedPerSecond: randomRange(22, 50),
+        offset: 2,
+        angle: exhaustAngle,
+      }));
     }
 
     if (this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
@@ -55,7 +70,7 @@ export class Missile {
       const hitDistance = monster.radius + 6;
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         this.removed = true;
-        game.createExplosion(this.x, this.y, 20, 3, "#ffd34e", 2);
+        game.createMissileExplosion(this.x, this.y, this.angle);
         for (const nearby of game.runtime.getActiveMonsters()) {
           const dist = calculateDistance(this.x, this.y, nearby.x, nearby.y);
           if (dist <= this.effectRadius) {

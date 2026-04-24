@@ -22,7 +22,7 @@ export class GlassShardParticle extends Particle {
     rotation: number,
     speedPerSecond: number,
   ) {
-    super(x, y, 1, color, 0, speedPerSecond, 0);
+    super(x, y, 1, color, 0, { speedPerSecond, offset: 0 });
     const centroid = getCentroid(vertices);
     const travelAngle = Math.atan2(centroid.y, centroid.x) + randomRange(-0.22, 0.22);
     this.velocityXPerSecond = Math.cos(travelAngle) * speedPerSecond;

@@ -27,7 +27,7 @@ export class CircleShardParticle extends Particle {
     innerEnd: Point,
     speedPerSecond: number,
   ) {
-    super(x, y, radius * 2, color, 0, speedPerSecond, 0);
+    super(x, y, radius * 2, color, 0, { speedPerSecond, offset: 0 });
     const travelAngle = startAngle + (sweepAngle / 2) + randomRange(-0.12, 0.12);
     this.velocityXPerSecond = Math.cos(travelAngle) * speedPerSecond;
     this.velocityYPerSecond = Math.sin(travelAngle) * speedPerSecond;

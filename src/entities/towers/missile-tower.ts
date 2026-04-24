@@ -15,6 +15,7 @@ export class MissileTower extends Tower {
   angle = Math.PI / 4;
   missileDamage = 50;
   turnSpeedPerSecond = 3.6;
+  muzzleFlashSeconds = 0;
 
   constructor(x: number, y: number) {
     super(x, y);
@@ -22,6 +23,7 @@ export class MissileTower extends Tower {
   }
 
   protected onUpdate(game: Game, deltaSeconds: number): void {
+    this.muzzleFlashSeconds = Math.max(0, this.muzzleFlashSeconds - deltaSeconds);
     const tracked = this.getTrackedMonster(game);
     let alignedToTarget = false;
 
@@ -39,6 +41,7 @@ export class MissileTower extends Tower {
         y: this.y + (Math.sin(this.angle) * 14),
       };
       game.runtime.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeedPerSecond));
+      this.muzzleFlashSeconds = 0.12;
       this.resetCooldown(2 - (0.2 * this.level));
     }
   }
@@ -115,6 +118,19 @@ export class MissileTower extends Tower {
       context.closePath();
       context.fill();
       context.stroke();
+    }
+
+    if (this.muzzleFlashSeconds > 0) {
+      const flashAlpha = this.muzzleFlashSeconds / 0.12;
+      context.save();
+      context.globalCompositeOperation = "lighter";
+      context.fillStyle = `rgba(255, 164, 82, ${0.62 * flashAlpha})`;
+      context.shadowColor = "#ff9d5c";
+      context.shadowBlur = 10;
+      context.beginPath();
+      context.arc(10 + (this.level * 0.45), 0, 3.5 + (4 * flashAlpha), 0, Math.PI * 2);
+      context.fill();
+      context.restore();
     }
 
     context.restore();

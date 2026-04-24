@@ -1,7 +1,7 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
+import type { Game } from "../../game-engine";
 import type { Point } from "../../types";
 import { angleBetween, withinDistance } from "../../utils";
-import type { Monster } from "../monsters/monster";
 
 export class Projectile {
   x: number;
@@ -22,7 +22,7 @@ export class Projectile {
     this.radius = size / 2;
   }
 
-  update(activeMonsters: Iterable<Monster>, deltaSeconds: number): void {
+  update(game: Game, deltaSeconds: number): void {
     this.x += this.velocityXPerSecond * deltaSeconds;
     this.y += this.velocityYPerSecond * deltaSeconds;
     if (this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
@@ -30,10 +30,11 @@ export class Projectile {
       return;
     }
 
-    for (const monster of activeMonsters) {
+    for (const monster of game.runtime.getActiveMonsters()) {
       const hitDistance = monster.radius + this.radius;
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         monster.takeDamage(this.damage);
+        game.createHitImpact(this.x, this.y, "#9fffe4", Math.atan2(this.velocityYPerSecond, this.velocityXPerSecond));
         this.removed = true;
         return;
       }

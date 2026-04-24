@@ -1,5 +1,6 @@
 import levelsJson from "../game-levels.json";
 import { createGameLevels, createRandomChallengeLevel, getCampaignLevelCount } from "./campaign";
+import { createHitImpactEffect, createMissileExplosionEffect } from "./game-engine/combat-effects";
 import { createMonsterDeathEffect } from "./game-engine/monster-death-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { GameRenderer } from "./game-renderer";
@@ -247,6 +248,14 @@ export class Game {
     }
   }
 
+  createHitImpact(x: number, y: number, color: string, sparkAngle?: number): void {
+    createHitImpactEffect(this, x, y, color, sparkAngle);
+  }
+
+  createMissileExplosion(x: number, y: number, blastAngle: number): void {
+    createMissileExplosionEffect(this, x, y, blastAngle);
+  }
+
   createEscapeBurst(x: number, y: number): void {
     const particleCount = Math.min(90, Math.max(0, MAX_PARTICLES - this.runtime.particles.length));
     for (let index = 0; index < particleCount; index += 1) {
@@ -434,7 +443,7 @@ export class Game {
     }
 
     for (const projectile of this.runtime.projectiles) {
-      projectile.update(this.runtime.getActiveMonsters(), deltaSeconds);
+      projectile.update(this, deltaSeconds);
     }
 
     for (const missile of this.runtime.missiles) {

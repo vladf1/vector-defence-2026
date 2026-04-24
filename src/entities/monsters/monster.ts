@@ -1,5 +1,11 @@
 import type { Point } from "../../types";
-import { angleBetween, calculateDistance, randomRange } from "../../utils";
+import { angleBetween, calculateDistance, hexWithAlpha, randomRange } from "../../utils";
+
+const DAMAGE_FLASH_BASE_ALPHA = 0.32;
+const DAMAGE_FLASH_EXTRA_ALPHA = 0.42;
+const DAMAGE_FLASH_BLUR = 10;
+const DAMAGE_FLASH_COLOR = "#fff2a8";
+const MOTION_TRAIL_LENGTH = 2.2;
 
 export abstract class Monster extends EventTarget {
   x: number;
@@ -72,10 +78,9 @@ export abstract class Monster extends EventTarget {
     const damageMix = this.damageFlash;
     context.save();
     context.translate(this.x, this.y);
-    context.strokeStyle = this.color;
-    context.fillStyle = damageMix > 0 ? `rgba(153, 79, 255, ${0.25 + (damageMix * 0.55)})` : "#050908";
-    context.lineWidth = 1.5;
-    this.drawBody(context);
+    this.drawMotionTrail(context, damageMix);
+    this.drawDamageGlow(context, damageMix);
+    this.drawCoreBody(context, damageMix);
     context.restore();
 
     this.drawHealthBar(context);
@@ -85,6 +90,56 @@ export abstract class Monster extends EventTarget {
   }
 
   protected abstract drawBody(context: CanvasRenderingContext2D): void;
+
+  private drawMotionTrail(context: CanvasRenderingContext2D, damageMix: number): void {
+    const speedRatio = Math.min(1.35, this.speedPerSecond / Math.max(1, this.maxSpeedPerSecond));
+    const trailLength = this.radius * MOTION_TRAIL_LENGTH * speedRatio;
+    const trailAlpha = 0.12 + (damageMix * 0.1);
+    const gradient = context.createLinearGradient(
+      -Math.cos(this.angle) * trailLength,
+      -Math.sin(this.angle) * trailLength,
+      0,
+      0,
+    );
+    gradient.addColorStop(0, hexWithAlpha(this.color, 0));
+    gradient.addColorStop(1, hexWithAlpha(this.color, trailAlpha));
+
+    context.save();
+    context.globalCompositeOperation = "lighter";
+    context.strokeStyle = gradient;
+    context.lineWidth = Math.max(5, this.radius * 1.15);
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(-Math.cos(this.angle) * trailLength, -Math.sin(this.angle) * trailLength);
+    context.lineTo(0, 0);
+    context.stroke();
+    context.restore();
+  }
+
+  private drawDamageGlow(context: CanvasRenderingContext2D, damageMix: number): void {
+    if (damageMix <= 0) {
+      return;
+    }
+
+    context.save();
+    context.globalCompositeOperation = "lighter";
+    context.shadowColor = DAMAGE_FLASH_COLOR;
+    context.shadowBlur = DAMAGE_FLASH_BLUR + (damageMix * 10);
+    context.strokeStyle = hexWithAlpha(DAMAGE_FLASH_COLOR, DAMAGE_FLASH_BASE_ALPHA + (damageMix * DAMAGE_FLASH_EXTRA_ALPHA));
+    context.fillStyle = hexWithAlpha(this.color, 0.12);
+    context.lineWidth = 3.2 + (damageMix * 1.2);
+    this.drawBody(context);
+    context.restore();
+  }
+
+  private drawCoreBody(context: CanvasRenderingContext2D, damageMix: number): void {
+    context.save();
+    context.strokeStyle = damageMix > 0 ? hexWithAlpha(DAMAGE_FLASH_COLOR, 0.5 + (damageMix * 0.5)) : this.color;
+    context.fillStyle = "#050908";
+    context.lineWidth = 1.5 + (damageMix * 0.9);
+    this.drawBody(context);
+    context.restore();
+  }
 
   private moveAlongPath(deltaSeconds: number): void {
     let remainingStep = this.speedPerSecond * deltaSeconds;

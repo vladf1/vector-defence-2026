@@ -15,12 +15,14 @@ export class GunTower extends Tower {
 
   angle = randomRange(-Math.PI, Math.PI);
   turnSpeedPerSecond = 9.6;
+  muzzleFlashSeconds = 0;
 
   constructor(x: number, y: number) {
     super(x, y);
   }
 
   protected onUpdate(game: Game, deltaSeconds: number): void {
+    this.muzzleFlashSeconds = Math.max(0, this.muzzleFlashSeconds - deltaSeconds);
     const tracked = this.getTrackedMonster(game);
     if (!tracked) {
       return;
@@ -41,6 +43,7 @@ export class GunTower extends Tower {
         y: this.y + (Math.sin(this.angle) * 16),
       };
       game.runtime.projectiles.push(new Projectile(actualSource, target, 10 + this.level, 3 + (this.level / 2)));
+      this.muzzleFlashSeconds = 0.055;
       this.resetCooldown(0.2);
     }
   }
@@ -88,11 +91,28 @@ export class GunTower extends Tower {
 
     context.strokeStyle = "#ffffff";
     context.lineWidth = 2 + (this.level / 2);
-    context.lineCap = "round";
+    context.lineCap = "butt";
     context.beginPath();
     context.moveTo(0, 0);
     context.lineTo(16 + (this.level * 0.9), 0);
     context.stroke();
+
+    if (this.muzzleFlashSeconds > 0) {
+      const flashAlpha = this.muzzleFlashSeconds / 0.055;
+      context.save();
+      context.globalCompositeOperation = "lighter";
+      context.fillStyle = `rgba(255, 239, 156, ${0.78 * flashAlpha})`;
+      context.shadowColor = "#ffe27a";
+      context.shadowBlur = 8;
+      context.beginPath();
+      context.moveTo(16 + (this.level * 0.9), 0);
+      context.lineTo(22 + (this.level * 1.2), -3.4);
+      context.lineTo(25 + (this.level * 1.35), 0);
+      context.lineTo(22 + (this.level * 1.2), 3.4);
+      context.closePath();
+      context.fill();
+      context.restore();
+    }
     context.restore();
 
     if (active) {
