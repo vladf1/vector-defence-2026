@@ -1,5 +1,5 @@
 import levelsJson from "../game-levels.json";
-import { createCampaignLevels } from "./campaign";
+import { createGameLevels, createRandomChallengeLevel, getCampaignLevelCount } from "./campaign";
 import { createMonsterDeathEffect } from "./game-engine/monster-death-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { GameRenderer } from "./game-renderer";
@@ -37,7 +37,10 @@ export function isModalState(state: GameState): boolean {
 }
 
 const baseRoutes = normalizeLevels(levelsJson as LevelJsonData[]);
-export const levels = createCampaignLevels(baseRoutes);
+
+export function createLevels(): LevelData[] {
+  return createGameLevels(baseRoutes);
+}
 
 export class Game {
   levels: LevelData[];
@@ -69,6 +72,10 @@ export class Game {
 
   get currentLevel(): LevelData | undefined {
     return this.runtime.level;
+  }
+
+  get campaignLevelCount(): number {
+    return getCampaignLevelCount(this.levels);
   }
 
   addParticle(particle: Particle): void {
@@ -127,11 +134,14 @@ export class Game {
   }
 
   startLevelByIndex(index: number): void {
-    const level = this.levels[index];
+    let level = this.levels[index];
     if (!level) {
       return;
     }
-    if (!this.campaignCleared && index > this.highestUnlockedLevelIndex) {
+    if (level.isChallenge) {
+      level = createRandomChallengeLevel(this.campaignLevelCount);
+      this.levels[index] = level;
+    } else if (!this.campaignCleared && index > this.highestUnlockedLevelIndex) {
       return;
     }
     this.startLevel(level);
@@ -156,7 +166,7 @@ export class Game {
       this.startLevelByIndex(0);
       return;
     }
-    const nextIndex = Math.min(this.currentLevelIndex + 1, this.levels.length - 1);
+    const nextIndex = Math.min(this.currentLevelIndex + 1, this.campaignLevelCount - 1);
     this.startLevelByIndex(nextIndex);
   }
 
@@ -357,18 +367,22 @@ export class Game {
       return;
     }
 
-    const isFinalLevel = this.currentLevelIndex >= this.levels.length - 1;
+    const isChallenge = this.currentLevel.isChallenge === true;
+    const finalCampaignLevelIndex = this.campaignLevelCount - 1;
+    const isFinalCampaignLevel = !isChallenge && this.currentLevelIndex >= finalCampaignLevelIndex;
     this.menuReturnState = undefined;
 
-    if (isFinalLevel) {
+    if (isFinalCampaignLevel) {
       this.campaignCleared = true;
-      this.highestUnlockedLevelIndex = this.levels.length - 1;
+      this.highestUnlockedLevelIndex = finalCampaignLevelIndex;
       this.setState(GameState.CampaignWon);
       this.setBanner("Campaign Complete", 5.5);
     } else {
-      this.highestUnlockedLevelIndex = Math.max(this.highestUnlockedLevelIndex, this.currentLevelIndex + 1);
+      if (!isChallenge) {
+        this.highestUnlockedLevelIndex = Math.max(this.highestUnlockedLevelIndex, this.currentLevelIndex + 1);
+      }
       this.setState(GameState.Won);
-      this.setBanner("Level Clear", 5);
+      this.setBanner(isChallenge ? "Challenge Clear" : "Level Clear", 5);
     }
     this.requestModalSync();
   }

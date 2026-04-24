@@ -2,7 +2,7 @@
 
 Vector Defence is a browser-based tower defense game built with Svelte 5, TypeScript, and Vite. This repository's active implementation is the browser app at the repo root, with the current runtime living in `src/`.
 
-The game features a fixed 10-level campaign, canvas-based combat, four tower types, and routes generated from handcrafted level data plus procedural campaign seeding.
+The game features a fixed 9-level campaign, an unlocked random challenge, canvas-based combat, four tower types, and routes generated from handcrafted level data.
 
 Play online: [https://vladf1.github.io/vector-defence-2026/](https://vladf1.github.io/vector-defence-2026/)
 

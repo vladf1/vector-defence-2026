@@ -119,9 +119,10 @@ textarea,
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 14px;
+  gap: 6px 14px;
   min-width: 0;
   flex: 1 1 auto;
+  flex-wrap: wrap;
 }
 
 .stat-card {
@@ -156,10 +157,10 @@ textarea,
 
 .stat-card strong {
   font-size: clamp(0.92rem, 1.1vw, 1.16rem);
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
