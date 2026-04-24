@@ -1,55 +1,16 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "./constants";
 import { MonsterKind, type LevelData, type Point } from "./types";
-import { clamp, randomRange } from "./utils";
+import { calculateDistance, calculateDistanceToSegment, clamp, randomRange } from "./utils";
 
-type Beat = "far-sweep" | "follow-through" | "snap-back" | "center-cut" | "edge-dive" | "pocket" | "weave" | "settle";
+type RouteTemplate = () => Point[];
 
-interface RouteStyle {
-  beats: Beat[];
-  prefixes: readonly string[];
-  suffixes: readonly string[];
-}
-
-interface RouteState {
-  edgeBias: number;
-  flowDir: number;
-}
-
-interface AnchorNode {
-  x: number;
-  y: number;
-  lane: number;
-}
-
-const ROUTE_STYLES: readonly RouteStyle[] = [
-  {
-    beats: ["far-sweep", "follow-through", "center-cut", "snap-back", "edge-dive", "settle"],
-    prefixes: ["Neon", "Comet", "Solar"],
-    suffixes: ["Circuit", "Run", "Drift"],
-  },
-  {
-    beats: ["pocket", "far-sweep", "snap-back", "weave", "pocket", "center-cut"],
-    prefixes: ["Chaos", "Ricochet", "Prism"],
-    suffixes: ["Maze", "Crossfire", "Switch"],
-  },
-  {
-    beats: ["edge-dive", "follow-through", "weave", "center-cut", "far-sweep", "snap-back"],
-    prefixes: ["Nova", "Breaker", "Pulse"],
-    suffixes: ["Channel", "Gauntlet", "Spiral"],
-  },
-  {
-    beats: ["weave", "center-cut", "pocket", "far-sweep", "follow-through", "settle"],
-    prefixes: ["Vector", "Aurora", "Ion"],
-    suffixes: ["Braid", "Drift", "Tangle"],
-  },
-] as const;
-
-const Y_LANES = [50, 98, 148, 206, 268, 330, 396];
-const CENTER_LANE = Math.floor(Y_LANES.length / 2);
-const ENTRY_X = 42;
-const EXIT_X = FIELD_WIDTH - 58;
-const ROUTE_MARGIN_Y = 40;
-const MIN_SEGMENT_WIDTH = 64;
+const ENTRY_X = 36;
+const EXIT_X = FIELD_WIDTH - 36;
+const MIN_Y = 44;
+const MAX_Y = FIELD_HEIGHT - 44;
+const MIN_TURN_ROAD_CLEARANCE = 72;
+const MIN_CROSSING_TURN_CLEARANCE = 84;
+const ROUTE_ATTEMPTS = 80;
 
 function randomInt(min: number, max: number): number {
   return Math.floor(randomRange(min, max + 1));
@@ -59,24 +20,25 @@ function pick<T>(items: readonly T[]): T {
   return items[randomInt(0, items.length - 1)];
 }
 
-function lerp(start: number, end: number, t: number): number {
-  return start + ((end - start) * t);
+function point(x: number, y: number): Point {
+  return {
+    x: Math.round(clamp(x, 24, FIELD_WIDTH - 24)),
+    y: Math.round(clamp(y, MIN_Y, MAX_Y)),
+  };
 }
 
-function randomSign(): number {
-  return Math.random() < 0.5 ? -1 : 1;
+function jitter(value: number, amount: number): number {
+  return value + randomRange(-amount, amount);
 }
 
-function laneToY(lane: number): number {
-  return Y_LANES[clamp(lane, 0, Y_LANES.length - 1)];
+function yAt(ratio: number): number {
+  return MIN_Y + ((MAX_Y - MIN_Y) * ratio);
 }
 
-function clampY(value: number): number {
-  return clamp(value, ROUTE_MARGIN_Y, FIELD_HEIGHT - ROUTE_MARGIN_Y);
-}
-
-function createLevelName(style: RouteStyle): string {
-  return `${pick(style.prefixes)} ${pick(style.suffixes)}`;
+function oppositeY(y: number): number {
+  return y < FIELD_HEIGHT / 2
+    ? randomRange(yAt(0.68), yAt(0.95))
+    : randomRange(yAt(0.05), yAt(0.32));
 }
 
 function buildMonsterSequence(): MonsterKind[] {
@@ -86,281 +48,212 @@ function buildMonsterSequence(): MonsterKind[] {
     MonsterKind.Triangle,
     MonsterKind.Tank,
     MonsterKind.Runner,
+    MonsterKind.Splitter,
     MonsterKind.Tank,
     MonsterKind.Berserker,
     MonsterKind.Bulwark,
   ];
-  const sequenceLength = randomInt(11, 14);
+  const sequenceLength = randomInt(12, 15);
   const sequence: MonsterKind[] = [MonsterKind.Ball, MonsterKind.Runner, MonsterKind.Triangle];
 
-  while (sequence.length < sequenceLength - 3) {
+  while (sequence.length < sequenceLength - 4) {
     const pool = sequence.length % 4 === 3 ? bruiserPool : rushPool;
     sequence.push(pick(pool));
   }
 
-  sequence.push(MonsterKind.Square);
+  sequence.push(MonsterKind.Splitter);
   sequence.push(MonsterKind.Tank);
   sequence.push(MonsterKind.Bulwark);
   sequence.push(MonsterKind.Berserker);
   return sequence;
 }
 
-function createSegmentXs(segmentCount: number): number[] {
-  const totalWidth = EXIT_X - ENTRY_X;
-  const baseSegment = totalWidth / segmentCount;
-  const xs = [ENTRY_X];
-  let previousX = ENTRY_X;
+function crossingSwitchbackRoute(): Point[] {
+  const lowStart = randomRange(yAt(0.72), yAt(0.94));
+  const high = randomRange(yAt(0.08), yAt(0.28));
+  const low = randomRange(yAt(0.66), yAt(0.9));
+  const center = randomRange(yAt(0.38), yAt(0.62));
+  const verticalX = randomRange(285, 350);
 
-  for (let index = 1; index < segmentCount; index += 1) {
-    const remainingSegments = segmentCount - index;
-    const ideal = ENTRY_X + (baseSegment * index);
-    const jitter = randomRange(-baseSegment * 0.28, baseSegment * 0.28);
-    const minX = previousX + MIN_SEGMENT_WIDTH;
-    const maxX = EXIT_X - (remainingSegments * MIN_SEGMENT_WIDTH);
-    const x = Math.round(clamp(ideal + jitter, minX, maxX));
-    xs.push(x);
-    previousX = x;
-  }
-
-  xs.push(EXIT_X);
-  return xs;
+  return [
+    point(ENTRY_X, lowStart),
+    point(jitter(178, 20), high),
+    point(jitter(178, 20), low),
+    point(jitter(438, 24), high + randomRange(-8, 34)),
+    point(verticalX, high + randomRange(-4, 18)),
+    point(verticalX, low + randomRange(-18, 18)),
+    point(jitter(560, 22), center),
+    point(EXIT_X, oppositeY(center)),
+  ];
 }
 
-function addLaneCandidate(candidates: Map<number, number>, lane: number, weight: number): void {
-  if (lane < 0 || lane >= Y_LANES.length || weight <= 0) {
-    return;
-  }
-  candidates.set(lane, (candidates.get(lane) ?? 0) + weight);
+function verticalGateRoute(): Point[] {
+  const start = randomRange(yAt(0.1), yAt(0.36));
+  const firstLow = randomRange(yAt(0.7), yAt(0.94));
+  const secondHigh = randomRange(yAt(0.05), yAt(0.24));
+  const end = randomRange(yAt(0.56), yAt(0.88));
+  const firstX = randomRange(210, 260);
+  const secondX = randomRange(455, 520);
+
+  return [
+    point(ENTRY_X, start),
+    point(firstX, firstLow),
+    point(firstX, secondHigh),
+    point(secondX, firstLow + randomRange(-28, 18)),
+    point(secondX, secondHigh + randomRange(-12, 28)),
+    point(jitter(172, 28), yAt(0.52)),
+    point(jitter(552, 24), yAt(0.52) + randomRange(-24, 24)),
+    point(EXIT_X, end),
+  ];
 }
 
-function weightedLanePick(candidates: Map<number, number>, currentLane: number): number {
-  const entries = [...candidates.entries()]
-    .map(([lane, weight]) => [lane, lane === currentLane ? weight * 0.2 : weight] as const)
-    .filter(([, weight]) => weight > 0);
+function hourglassRoute(): Point[] {
+  const top = randomRange(yAt(0.05), yAt(0.24));
+  const bottom = randomRange(yAt(0.74), yAt(0.95));
+  const center = randomRange(yAt(0.43), yAt(0.57));
+  const leftPost = randomRange(138, 190);
+  const rightPost = randomRange(500, 565);
 
-  if (entries.length === 0) {
-    return clamp(currentLane + randomSign(), 0, Y_LANES.length - 1);
-  }
+  return [
+    point(ENTRY_X, bottom),
+    point(leftPost, bottom),
+    point(rightPost, top),
+    point(rightPost, bottom),
+    point(leftPost + randomRange(60, 100), top),
+    point(leftPost + randomRange(60, 100), bottom - randomRange(18, 52)),
+    point(jitter(420, 34), center),
+    point(EXIT_X, top + randomRange(40, 130)),
+  ];
+}
 
-  const totalWeight = entries.reduce((sum, [, weight]) => sum + weight, 0);
-  let choice = randomRange(0, totalWeight);
-  for (const [lane, weight] of entries) {
-    choice -= weight;
-    if (choice <= 0) {
-      return lane;
+function centerSpineRoute(): Point[] {
+  const spineX = randomRange(320, 380);
+  const start = randomRange(yAt(0.12), yAt(0.36));
+  const top = randomRange(yAt(0.05), yAt(0.18));
+  const bottom = randomRange(yAt(0.78), yAt(0.95));
+  const exit = randomRange(yAt(0.34), yAt(0.72));
+
+  return [
+    point(ENTRY_X, start),
+    point(jitter(260, 30), bottom),
+    point(spineX, bottom),
+    point(spineX, top),
+    point(jitter(150, 28), top + randomRange(70, 130)),
+    point(jitter(505, 26), bottom - randomRange(42, 92)),
+    point(jitter(505, 26), top + randomRange(16, 56)),
+    point(EXIT_X, exit),
+  ];
+}
+
+const ROUTE_TEMPLATES: readonly RouteTemplate[] = [
+  crossingSwitchbackRoute,
+  verticalGateRoute,
+  hourglassRoute,
+  centerSpineRoute,
+];
+
+function segmentsShareTurn(firstIndex: number, secondIndex: number): boolean {
+  return Math.abs(firstIndex - secondIndex) <= 1;
+}
+
+function isTurnTooCloseToRoad(points: Point[], turnIndex: number): boolean {
+  const turn = points[turnIndex];
+
+  for (let segmentIndex = 0; segmentIndex < points.length - 1; segmentIndex += 1) {
+    if (segmentIndex === turnIndex || segmentIndex === turnIndex - 1) {
+      continue;
+    }
+
+    const start = points[segmentIndex];
+    const end = points[segmentIndex + 1];
+    const distance = calculateDistanceToSegment(turn.x, turn.y, start.x, start.y, end.x, end.y);
+    if (distance < MIN_TURN_ROAD_CLEARANCE) {
+      return true;
     }
   }
 
-  return entries[entries.length - 1][0];
+  return false;
 }
 
-function chooseLaneForBeat(beat: Beat, currentLane: number, previousDelta: number, state: RouteState): number {
-  const candidates = new Map<number, number>();
-  const direction = previousDelta === 0 ? state.flowDir : Math.sign(previousDelta);
-  const reverseDirection = direction * -1;
-  const towardCenter = Math.sign(CENTER_LANE - currentLane) || reverseDirection;
-  const edgeLane = state.edgeBias < 0 ? randomInt(0, 1) : randomInt(Y_LANES.length - 2, Y_LANES.length - 1);
-  const oppositeEdgeLane = state.edgeBias < 0 ? randomInt(Y_LANES.length - 2, Y_LANES.length - 1) : randomInt(0, 1);
-
-  switch (beat) {
-    case "far-sweep":
-      addLaneCandidate(candidates, currentLane + (direction * 2), 4);
-      addLaneCandidate(candidates, currentLane + (direction * 3), 3);
-      addLaneCandidate(candidates, currentLane + (reverseDirection * 2), 2);
-      addLaneCandidate(candidates, CENTER_LANE + direction, 1);
-      break;
-    case "follow-through":
-      addLaneCandidate(candidates, currentLane + direction, 4);
-      addLaneCandidate(candidates, currentLane + (direction * 2), 3);
-      addLaneCandidate(candidates, currentLane + towardCenter, 2);
-      addLaneCandidate(candidates, CENTER_LANE, 1);
-      break;
-    case "snap-back":
-      addLaneCandidate(candidates, currentLane + (reverseDirection * 2), 4);
-      addLaneCandidate(candidates, currentLane + (reverseDirection * 3), 3);
-      addLaneCandidate(candidates, CENTER_LANE - direction, 2);
-      addLaneCandidate(candidates, oppositeEdgeLane, 1);
-      break;
-    case "center-cut":
-      addLaneCandidate(candidates, CENTER_LANE, 4);
-      addLaneCandidate(candidates, CENTER_LANE - 1, 2);
-      addLaneCandidate(candidates, CENTER_LANE + 1, 2);
-      addLaneCandidate(candidates, currentLane + towardCenter, 2);
-      break;
-    case "edge-dive":
-      addLaneCandidate(candidates, edgeLane, 4);
-      addLaneCandidate(candidates, currentLane + (state.edgeBias * 2), 3);
-      addLaneCandidate(candidates, currentLane + state.edgeBias, 2);
-      addLaneCandidate(candidates, currentLane + reverseDirection, 1);
-      break;
-    case "pocket":
-      addLaneCandidate(candidates, currentLane + direction, 3);
-      addLaneCandidate(candidates, currentLane + reverseDirection, 3);
-      addLaneCandidate(candidates, currentLane + (direction * 2), 2);
-      addLaneCandidate(candidates, CENTER_LANE + reverseDirection, 1);
-      break;
-    case "weave":
-      addLaneCandidate(candidates, currentLane + direction, 3);
-      addLaneCandidate(candidates, currentLane + reverseDirection, 3);
-      addLaneCandidate(candidates, currentLane + (direction * 2), 2);
-      addLaneCandidate(candidates, CENTER_LANE + randomSign(), 2);
-      break;
-    case "settle":
-      addLaneCandidate(candidates, CENTER_LANE, 3);
-      addLaneCandidate(candidates, currentLane + towardCenter, 3);
-      addLaneCandidate(candidates, currentLane, 1);
-      addLaneCandidate(candidates, CENTER_LANE + state.flowDir, 1);
-      break;
+function getSegmentIntersection(a: Point, b: Point, c: Point, d: Point): Point | undefined {
+  const denominator = ((b.x - a.x) * (d.y - c.y)) - ((b.y - a.y) * (d.x - c.x));
+  if (Math.abs(denominator) < 0.001) {
+    return undefined;
   }
 
-  return weightedLanePick(candidates, currentLane);
-}
+  const numeratorA = ((c.x - a.x) * (d.y - c.y)) - ((c.y - a.y) * (d.x - c.x));
+  const numeratorB = ((c.x - a.x) * (b.y - a.y)) - ((c.y - a.y) * (b.x - a.x));
+  const ratioA = numeratorA / denominator;
+  const ratioB = numeratorB / denominator;
 
-function createAnchorNode(x: number, lane: number, jitter = 10): AnchorNode {
+  if (ratioA <= 0 || ratioA >= 1 || ratioB <= 0 || ratioB >= 1) {
+    return undefined;
+  }
+
   return {
-    x: Math.round(x),
-    lane,
-    y: Math.round(clampY(laneToY(lane) + randomRange(-jitter, jitter))),
+    x: a.x + ((b.x - a.x) * ratioA),
+    y: a.y + ((b.y - a.y) * ratioA),
   };
 }
 
-function createAnchorNodes(style: RouteStyle): AnchorNode[] {
-  const xs = createSegmentXs(style.beats.length);
-  const nodes: AnchorNode[] = [];
-  const state: RouteState = {
-    edgeBias: randomSign(),
-    flowDir: randomSign(),
-  };
+function isCrossingTooCloseToTurn(points: Point[], firstSegmentIndex: number, secondSegmentIndex: number): boolean {
+  const intersection = getSegmentIntersection(
+    points[firstSegmentIndex],
+    points[firstSegmentIndex + 1],
+    points[secondSegmentIndex],
+    points[secondSegmentIndex + 1],
+  );
 
-  let currentLane = randomInt(1, Y_LANES.length - 2);
-  let previousDelta = state.flowDir;
-  nodes.push(createAnchorNode(xs[0], currentLane, 6));
+  if (!intersection) {
+    return false;
+  }
 
-  for (let index = 0; index < style.beats.length; index += 1) {
-    const beat = style.beats[index];
-    const nextLane = chooseLaneForBeat(beat, currentLane, previousDelta, state);
-    const delta = nextLane - currentLane;
-    if (delta !== 0) {
-      previousDelta = delta;
-      state.flowDir = Math.sign(delta);
-    } else if (Math.random() < 0.35) {
-      state.flowDir *= -1;
+  return [
+    points[firstSegmentIndex],
+    points[firstSegmentIndex + 1],
+    points[secondSegmentIndex],
+    points[secondSegmentIndex + 1],
+  ].some((turn) => calculateDistance(intersection.x, intersection.y, turn.x, turn.y) < MIN_CROSSING_TURN_CLEARANCE);
+}
+
+function hasCrowdedTurns(points: Point[]): boolean {
+  for (let turnIndex = 1; turnIndex < points.length - 1; turnIndex += 1) {
+    if (isTurnTooCloseToRoad(points, turnIndex)) {
+      return true;
     }
-    currentLane = nextLane;
-    nodes.push(createAnchorNode(xs[index + 1], currentLane, index === style.beats.length - 1 ? 8 : 11));
   }
 
-  return nodes;
+  for (let firstSegmentIndex = 0; firstSegmentIndex < points.length - 1; firstSegmentIndex += 1) {
+    for (let secondSegmentIndex = firstSegmentIndex + 1; secondSegmentIndex < points.length - 1; secondSegmentIndex += 1) {
+      if (!segmentsShareTurn(firstSegmentIndex, secondSegmentIndex) && isCrossingTooCloseToTurn(points, firstSegmentIndex, secondSegmentIndex)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
-function createControlPoint(x: number, y: number): Point {
-  return {
-    x: Math.round(x),
-    y: Math.round(clampY(y)),
-  };
-}
+function buildRoutePoints(): Point[] {
+  let fallback = pick(ROUTE_TEMPLATES)();
 
-function createSegmentControlPoints(from: AnchorNode, to: AnchorNode, beat: Beat): Point[] {
-  const gap = to.x - from.x;
-  const dy = to.y - from.y;
-  const points: Point[] = [];
-
-  if (gap < 74) {
-    return points;
+  for (let attempt = 0; attempt < ROUTE_ATTEMPTS; attempt += 1) {
+    const route = pick(ROUTE_TEMPLATES)();
+    if (!hasCrowdedTurns(route)) {
+      return route;
+    }
+    fallback = route;
   }
 
-  switch (beat) {
-    case "far-sweep":
-      points.push(createControlPoint(
-        lerp(from.x, to.x, randomRange(0.42, 0.62)),
-        lerp(from.y, to.y, 0.48) + randomRange(-55, 55),
-      ));
-      break;
-    case "follow-through":
-      if (gap > 96) {
-        points.push(createControlPoint(
-          lerp(from.x, to.x, randomRange(0.34, 0.46)),
-          from.y + (dy * randomRange(0.18, 0.34)) + randomRange(-24, 24),
-        ));
-      }
-      break;
-    case "snap-back":
-      if (gap > 120) {
-        points.push(createControlPoint(
-          lerp(from.x, to.x, randomRange(0.25, 0.35)),
-          from.y + randomRange(-46, 46),
-        ));
-      }
-      points.push(createControlPoint(
-        lerp(from.x, to.x, randomRange(0.62, 0.74)),
-        lerp(from.y, to.y, 0.55) + randomRange(-72, 72),
-      ));
-      break;
-    case "center-cut":
-      points.push(createControlPoint(
-        lerp(from.x, to.x, randomRange(0.44, 0.58)),
-        lerp(from.y, to.y, 0.5) + randomRange(-38, 38),
-      ));
-      break;
-    case "edge-dive":
-      points.push(createControlPoint(
-        lerp(from.x, to.x, randomRange(0.56, 0.72)),
-        lerp(from.y, to.y, 0.6) + randomRange(-58, 58),
-      ));
-      break;
-    case "pocket":
-      if (gap > 110) {
-        points.push(createControlPoint(
-          lerp(from.x, to.x, randomRange(0.24, 0.34)),
-          from.y + randomRange(-26, 26),
-        ));
-      }
-      points.push(createControlPoint(
-        lerp(from.x, to.x, randomRange(0.6, 0.74)),
-        to.y + randomRange(-60, 60),
-      ));
-      break;
-    case "weave":
-      points.push(createControlPoint(
-        lerp(from.x, to.x, randomRange(0.38, 0.52)),
-        lerp(from.y, to.y, 0.4) + randomRange(-46, 46),
-      ));
-      break;
-    case "settle":
-      if (Math.abs(dy) > 36 && gap > 100) {
-        points.push(createControlPoint(
-          lerp(from.x, to.x, randomRange(0.48, 0.62)),
-          lerp(from.y, to.y, 0.52) + randomRange(-20, 20),
-        ));
-      }
-      break;
-  }
-
-  return points;
-}
-
-function buildRoutePoints(style: RouteStyle): Point[] {
-  const anchors = createAnchorNodes(style);
-  const points: Point[] = [createControlPoint(anchors[0].x, anchors[0].y)];
-
-  for (let index = 0; index < style.beats.length; index += 1) {
-    const from = anchors[index];
-    const to = anchors[index + 1];
-    const controls = createSegmentControlPoints(from, to, style.beats[index]);
-    points.push(...controls, createControlPoint(to.x, to.y));
-  }
-
-  return points;
+  return fallback;
 }
 
 export function createProceduralLevel(): LevelData {
-  const style = pick(ROUTE_STYLES);
-
   return {
-    name: createLevelName(style),
-    monsterCount: randomInt(148, 182),
-    allowEscape: randomInt(8, 11),
+    name: "Random",
+    monsterCount: randomInt(156, 190),
+    allowEscape: randomInt(8, 10),
     monsterSequence: buildMonsterSequence(),
-    points: buildRoutePoints(style),
+    points: buildRoutePoints(),
   };
 }

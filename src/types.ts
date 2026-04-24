@@ -65,6 +65,7 @@ export interface LevelData {
   points: Point[];
   id?: string;
   levelNumber?: number;
+  isChallenge?: boolean;
   subtitle?: string;
   startingMoney?: number;
   waves?: WaveData[];

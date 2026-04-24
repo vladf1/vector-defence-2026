@@ -10,16 +10,15 @@ const CAMPAIGN_NOTES = [
   "Split pressure starts appearing from wave to wave.",
   "Long corners reward towers that can hold a lane.",
   "Bruisers begin arriving in real numbers.",
-  "A wider route tests how well you scale your economy.",
+  "Diagonal cuts and crossings make tower placement matter.",
   "Dense mixed waves force you to balance single-target and splash.",
-  "Almost every wave now contains a hard anchor enemy.",
-  "The final route is a siege. Build fast and spend well.",
+  "The final route is a siege through crossing roads.",
 ] as const;
 
-const LEVEL_BUILD_TIMES = [10, 10, 11, 11, 12, 12, 13, 13, 14, 14] as const;
-const LEVEL_ESCAPES = [15, 15, 14, 13, 12, 12, 11, 10, 9, 8] as const;
-const LEVEL_STARTING_MONEY = [320, 335, 350, 365, 380, 395, 410, 430, 450, 470] as const;
-const LEVEL_WAVE_TOTALS = [4, 4, 5, 5, 5, 6, 6, 6, 7, 7] as const;
+const LEVEL_BUILD_TIMES = [10, 10, 11, 11, 12, 12, 13, 13, 14] as const;
+const LEVEL_ESCAPES = [15, 15, 14, 13, 12, 12, 11, 10, 8] as const;
+const LEVEL_STARTING_MONEY = [320, 335, 350, 365, 380, 395, 415, 435, 465] as const;
+const LEVEL_WAVE_TOTALS = [4, 4, 5, 5, 5, 6, 6, 6, 7] as const;
 const LEVEL_ONE_SHOWCASE_SEQUENCE = [
   MonsterKind.Ball,
   MonsterKind.Runner,
@@ -150,18 +149,8 @@ function buildWave(levelIndex: number, waveIndex: number, waveTotal: number, bas
   };
 }
 
-function createBonusRoutes(): LevelData[] {
-  return Array.from({ length: 4 }, (_, index) => {
-    const generated = createProceduralLevel();
-    generated.name = `Frontier ${index + 1}: ${generated.name}`;
-    return generated;
-  });
-}
-
 export function createCampaignLevels(routes: LevelData[]): LevelData[] {
-  const routePool = [...routes, ...createBonusRoutes()].slice(0, 10);
-
-  return routePool.map((route, levelIndex) => {
+  return routes.map((route, levelIndex) => {
     const waveTotal = LEVEL_WAVE_TOTALS[levelIndex] ?? LEVEL_WAVE_TOTALS[LEVEL_WAVE_TOTALS.length - 1];
     const buildTime = LEVEL_BUILD_TIMES[levelIndex] ?? LEVEL_BUILD_TIMES[LEVEL_BUILD_TIMES.length - 1];
     const waves = Array.from({ length: waveTotal }, (_, waveIndex) =>
@@ -180,4 +169,41 @@ export function createCampaignLevels(routes: LevelData[]): LevelData[] {
       monsterSequence: waves.flatMap((wave) => wave.monsterSequence),
     };
   });
+}
+
+export function getCampaignLevelCount(levels: readonly LevelData[]): number {
+  return levels.filter((level) => !level.isChallenge).length;
+}
+
+export function createRandomChallengeLevel(campaignLevelCount: number): LevelData {
+  const route = createProceduralLevel();
+  const challengeIndex = campaignLevelCount;
+  const waveTotal = 7;
+  const buildTime = 14;
+  const waves = Array.from({ length: waveTotal }, (_, waveIndex) =>
+    buildWave(challengeIndex, waveIndex, waveTotal, route.monsterSequence, buildTime),
+  );
+
+  return {
+    ...route,
+    id: "random-challenge",
+    levelNumber: campaignLevelCount + 1,
+    isChallenge: true,
+    name: "Random",
+    subtitle: "A fresh crossing route with diagonal cuts, vertical runs, and no lock.",
+    allowEscape: 9,
+    startingMoney: 470,
+    waves,
+    monsterCount: waves.reduce((total, wave) => total + wave.count, 0),
+    monsterSequence: waves.flatMap((wave) => wave.monsterSequence),
+  };
+}
+
+export function createGameLevels(routes: LevelData[]): LevelData[] {
+  const campaignLevels = createCampaignLevels(routes);
+
+  return [
+    ...campaignLevels,
+    createRandomChallengeLevel(campaignLevels.length),
+  ];
 }

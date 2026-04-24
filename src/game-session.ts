@@ -2,7 +2,7 @@ import { FIELD_HEIGHT, FIELD_WIDTH } from "./constants";
 import { findTowerShortcut } from "./entities/towers/tower-registry";
 import {
   Game,
-  levels,
+  createLevels,
 } from "./game-engine";
 import {
   INITIAL_HUD_SNAPSHOT,
@@ -144,7 +144,7 @@ export function createGameSession(): GameSession {
       throw new Error("Canvas context unavailable.");
     }
 
-    game = new Game(levels, canvas, ctx);
+    game = new Game(createLevels(), canvas, ctx);
     (window as GameWindow).__vectorDefence = game;
     game.resize();
     game.draw();

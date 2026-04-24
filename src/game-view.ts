@@ -120,7 +120,9 @@ export function createModalView(game: Game): ModalView | null {
     const actions: ModalActionView[] = [
       {
         action: game.menuReturnState && game.currentLevel ? ModalAction.Resume : ModalAction.PlayUnlocked,
-        label: game.menuReturnState && game.currentLevel ? "Resume Battle" : "Play Unlocked Level",
+        label: game.menuReturnState && game.currentLevel
+          ? "Resume Battle"
+          : (game.campaignCleared ? "Replay Campaign" : "Play Next Campaign Level"),
       },
     ];
 
@@ -133,7 +135,7 @@ export function createModalView(game: Game): ModalView | null {
 
     return {
       title: "Campaign Map",
-      description: "Ten routed battles, longer wave trains, and short build breaks between pushes. Clear each level to unlock the next.",
+      description: `${game.campaignLevelCount} authored campaign battles plus an unlocked random challenge.`,
       actions,
       actionClassName: "campaign-actions",
       levelCards: createModalLevelCards(game),
@@ -141,6 +143,18 @@ export function createModalView(game: Game): ModalView | null {
   }
 
   if (game.state === GameState.Won) {
+    if (game.currentLevel?.isChallenge) {
+      return {
+        title: "Challenge Clear",
+        description: "The random route held. Try another layout from the map when you want a fresh run.",
+        centered: true,
+        actions: [
+          { action: ModalAction.Replay, label: "Replay This Route" },
+          { action: ModalAction.CampaignMap, label: "Campaign Map" },
+        ],
+      };
+    }
+
     return {
       title: "Level Clear",
       description: `Level ${game.currentLevel?.levelNumber ?? "?"} is secure. Keep the pressure on and push into the next route.`,
@@ -156,7 +170,7 @@ export function createModalView(game: Game): ModalView | null {
   if (game.state === GameState.CampaignWon) {
     return {
       title: "You Won the Campaign",
-      description: "All ten levels are secured. The prototype is now a full campaign run, and the frontier held.",
+      description: `All ${game.campaignLevelCount} campaign levels are secure. The random challenge is still open from the map.`,
       centered: true,
       actions: [
         { action: ModalAction.RestartCampaign, label: "Restart Campaign" },
@@ -187,7 +201,7 @@ export function performModalAction(game: Game, action: ModalAction): void {
       game.resumeBattle();
       break;
     case ModalAction.PlayUnlocked:
-      game.startLevelByIndex(game.campaignCleared ? game.levels.length - 1 : game.highestUnlockedLevelIndex);
+      game.startLevelByIndex(game.campaignCleared ? 0 : game.highestUnlockedLevelIndex);
       break;
     case ModalAction.RestartCampaign:
       game.restartCampaign();
@@ -212,16 +226,19 @@ function assertNever(value: never): never {
 
 function createModalLevelCards(game: Game): ModalLevelCardView[] {
   return game.levels.map((level, index) => {
-    const unlocked = game.campaignCleared || index <= game.highestUnlockedLevelIndex;
-    const cleared = game.campaignCleared || index < game.highestUnlockedLevelIndex;
+    const unlocked = level.isChallenge || game.campaignCleared || index <= game.highestUnlockedLevelIndex;
+    const cleared = !level.isChallenge && (game.campaignCleared || index < game.highestUnlockedLevelIndex);
     const current = game.currentLevelIndex === index && !!game.currentLevel;
+    const status = level.isChallenge
+      ? (current ? "Current" : "Random")
+      : (!unlocked ? "Locked" : (cleared ? "Cleared" : (index === Math.min(game.highestUnlockedLevelIndex, game.campaignLevelCount - 1) ? "Next" : "Ready")));
 
     return {
       index,
       unlocked,
       cleared,
       current,
-      status: !unlocked ? "Locked" : (cleared ? "Cleared" : (index === game.highestUnlockedLevelIndex ? "Next" : "Ready")),
+      status,
       level,
     };
   });
