@@ -57,9 +57,9 @@ export class Game {
   hudDirty = true;
   modalDirty = true;
 
-  constructor(levelList: LevelData[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+  constructor(levelList: LevelData[], canvas: HTMLCanvasElement) {
     this.levels = levelList;
-    this.renderer = new GameRenderer(canvas, ctx, this);
+    this.renderer = new GameRenderer(canvas, this);
   }
 
   get activeWave(): WaveData | undefined {
@@ -96,6 +96,34 @@ export class Game {
 
   requestModalSync(): void {
     this.modalDirty = true;
+  }
+
+  screenToBoardPoint(canvasPoint: Point): Point {
+    return this.renderer.screenToBoardPoint(canvasPoint);
+  }
+
+  boardToCanvasPoint(point: Point): Point {
+    return this.renderer.boardToCanvasPoint(point);
+  }
+
+  panBoardView(deltaCanvasX: number, deltaCanvasY: number): void {
+    this.renderer.panView(deltaCanvasX, deltaCanvasY);
+    this.requestHudSync();
+  }
+
+  zoomBoardViewAt(canvasPoint: Point, deltaY: number): void {
+    this.renderer.zoomViewAt(canvasPoint, deltaY);
+    this.requestHudSync();
+  }
+
+  rotateBoardViewAt(canvasPoint: Point, deltaRadians: number): void {
+    this.renderer.rotateViewAt(canvasPoint, deltaRadians);
+    this.requestHudSync();
+  }
+
+  resetBoardView(): void {
+    this.renderer.resetView();
+    this.requestHudSync();
   }
 
   setBanner(text: string, duration = 1.6): void {

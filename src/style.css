@@ -53,8 +53,10 @@ textarea,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
   min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .title-block {
@@ -66,7 +68,7 @@ textarea,
 
 .title-block h1 {
   margin: 0;
-  font-size: clamp(0.98rem, 1.35vw, 1.55rem);
+  font-size: clamp(0.92rem, 1.22vw, 1.38rem);
   letter-spacing: 0.07em;
   text-transform: uppercase;
   flex: 0 0 auto;
@@ -78,6 +80,7 @@ textarea,
   flex: 0 0 auto;
   gap: 6px;
   flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .chrome-button,
@@ -118,11 +121,12 @@ textarea,
 .hud {
   display: flex;
   align-items: baseline;
-  justify-content: center;
-  gap: 6px 14px;
+  justify-content: flex-start;
+  gap: 10px;
   min-width: 0;
   flex: 1 1 auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 .stat-card {
@@ -130,6 +134,8 @@ textarea,
   align-items: baseline;
   gap: 6px;
   min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
   white-space: nowrap;
 }
 
@@ -144,7 +150,7 @@ textarea,
 
 .stat-card span {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   flex: 0 0 auto;
@@ -156,16 +162,16 @@ textarea,
 }
 
 .stat-card strong {
-  font-size: clamp(0.92rem, 1.1vw, 1.16rem);
-  flex: 0 0 auto;
+  font-size: clamp(0.84rem, 0.95vw, 1.05rem);
+  flex: 0 1 auto;
   min-width: 0;
-  overflow: visible;
-  text-overflow: clip;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .chrome-button {
-  padding: 7px 12px;
+  padding: 7px 10px;
 }
 
 .board-card {
@@ -200,6 +206,8 @@ textarea,
   height: auto;
   aspect-ratio: 14 / 9;
   cursor: crosshair;
+  touch-action: none;
+  user-select: none;
 }
 
 .tower-actions-overlay {
@@ -270,18 +278,24 @@ textarea,
   inset: 10px 10px auto;
   display: flex;
   justify-content: center;
+  min-width: 0;
   pointer-events: none;
 }
 
 .banner-chip {
+  max-width: min(560px, calc(100% - 20px));
+  min-width: 0;
   padding: 6px 12px;
   border-radius: 8px;
   background: rgba(8, 16, 13, 0.86);
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #9dffd7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 0.82rem;
+  font-size: 0.74rem;
 }
 
 .modal {
@@ -642,23 +656,28 @@ textarea,
   }
 
   .topbar {
-    align-items: start;
-    flex-direction: column;
+    align-items: center;
+    gap: 8px;
   }
 
   .title-block {
-    align-items: start;
+    flex: 0 1 auto;
+    overflow: hidden;
+  }
+
+  .title-block h1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .hud {
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    gap: 8px 12px;
+    width: auto;
+    flex: 1 1 auto;
+    gap: 8px;
   }
 
   .actions {
-    flex-wrap: wrap;
+    flex: 0 0 auto;
   }
 
   #game {

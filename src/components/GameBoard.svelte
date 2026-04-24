@@ -30,7 +30,7 @@
   });
 </script>
 
-<svelte:window onkeydown={session.handleKeyDown} onresize={session.handleResize} />
+<svelte:window onkeydown={session.handleKeyDown} onresize={session.handleResize} onmouseup={session.handleCanvasUp} />
 
 <section class="board-card">
   <div class="board-frame">
@@ -43,6 +43,10 @@
         onmousemove={session.handleCanvasMove}
         onmouseleave={session.handleCanvasLeave}
         onmousedown={session.handleCanvasDown}
+        onmouseup={session.handleCanvasUp}
+        onwheel={session.handleCanvasWheel}
+        ondblclick={session.handleCanvasDoubleClick}
+        oncontextmenu={session.handleCanvasContextMenu}
       ></canvas>
       {#if $hud.selectedTowerPoint}
         <div class="tower-actions-overlay" style={selectedTowerActionStyle($hud.selectedTowerPoint.x, $hud.selectedTowerPoint.y)}>

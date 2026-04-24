@@ -17,6 +17,7 @@ import { readonly, writable, type Readable } from "svelte/store";
 
 const MAX_FRAME_DELTA = 1 / 15;
 const NERD_STATS_SAMPLE_MS = 500;
+const ROTATION_RADIANS_PER_CANVAS_PIXEL = 0.012;
 
 interface GameWindow extends Window {
   __vectorDefence?: Game;
@@ -32,6 +33,10 @@ export interface GameSession {
   handleKeyDown(event: KeyboardEvent): void;
   handleCanvasMove(event: MouseEvent): void;
   handleCanvasDown(event: MouseEvent): void;
+  handleCanvasUp(event: MouseEvent): void;
+  handleCanvasWheel(event: WheelEvent): void;
+  handleCanvasDoubleClick(event: MouseEvent): void;
+  handleCanvasContextMenu(event: MouseEvent): void;
   handleCanvasLeave(): void;
   togglePause(): void;
   openMenu(): void;
@@ -56,6 +61,11 @@ export function createGameSession(): GameSession {
   let sampledFrameDurationMs = 0;
   let lastNerdStatsSampleTime = 0;
   let nerdStatsEnabled = false;
+  let viewDrag: {
+    mode: "pan" | "rotate";
+    clientX: number;
+    clientY: number;
+  } | null = null;
 
   const publish = (forceHud = false, forceModal = false): void => {
     if (!game) {
@@ -82,7 +92,7 @@ export function createGameSession(): GameSession {
     publish(force, force);
   };
 
-  const toCanvasPoint = (event: MouseEvent): Point | null => {
+  const toCanvasLocalPoint = (event: MouseEvent): Point | null => {
     if (!canvas) {
       return null;
     }
@@ -96,6 +106,34 @@ export function createGameSession(): GameSession {
       x: ((event.clientX - rect.left) / rect.width) * FIELD_WIDTH,
       y: ((event.clientY - rect.top) / rect.height) * FIELD_HEIGHT,
     };
+  };
+
+  const toBoardPoint = (event: MouseEvent): Point | null => {
+    if (!game) {
+      return null;
+    }
+
+    const point = toCanvasLocalPoint(event);
+    return point ? game.screenToBoardPoint(point) : null;
+  };
+
+  const getCanvasDelta = (event: MouseEvent): Point | null => {
+    if (!canvas || !viewDrag) {
+      return null;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return null;
+    }
+
+    const delta = {
+      x: ((event.clientX - viewDrag.clientX) / rect.width) * FIELD_WIDTH,
+      y: ((event.clientY - viewDrag.clientY) / rect.height) * FIELD_HEIGHT,
+    };
+    viewDrag.clientX = event.clientX;
+    viewDrag.clientY = event.clientY;
+    return delta;
   };
 
   const frame = (timestamp: number): void => {
@@ -139,12 +177,7 @@ export function createGameSession(): GameSession {
     destroy();
 
     canvas = nextCanvas;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      throw new Error("Canvas context unavailable.");
-    }
-
-    game = new Game(createLevels(), canvas, ctx);
+    game = new Game(createLevels(), canvas);
     (window as GameWindow).__vectorDefence = game;
     game.resize();
     game.draw();
@@ -255,20 +288,64 @@ export function createGameSession(): GameSession {
   };
 
   const handleCanvasMove = (event: MouseEvent): void => {
-    const point = toCanvasPoint(event);
-    if (!game || !point) {
+    if (!game) {
       return;
     }
 
+    if (viewDrag) {
+      const delta = getCanvasDelta(event);
+      const canvasPoint = toCanvasLocalPoint(event);
+      if (!delta || !canvasPoint) {
+        return;
+      }
+
+      event.preventDefault();
+      if (viewDrag.mode === "pan") {
+        game.panBoardView(delta.x, delta.y);
+      } else {
+        game.rotateBoardViewAt(canvasPoint, delta.x * ROTATION_RADIANS_PER_CANVAS_PIXEL);
+      }
+      publish(true, false);
+      return;
+    }
+
+    const point = toBoardPoint(event);
+    if (!point) {
+      return;
+    }
     game.setPointer(point);
   };
 
   const handleCanvasDown = (event: MouseEvent): void => {
+    if (!game) {
+      return;
+    }
+
+    if (event.button === 1 || event.button === 2) {
+      event.preventDefault();
+      viewDrag = {
+        mode: "pan",
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
+      return;
+    }
+
+    if (event.button === 0 && event.shiftKey) {
+      event.preventDefault();
+      viewDrag = {
+        mode: "rotate",
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
+      return;
+    }
+
     if (event.button !== 0) {
       return;
     }
 
-    const point = toCanvasPoint(event);
+    const point = toBoardPoint(event);
     if (!point) {
       return;
     }
@@ -276,6 +353,46 @@ export function createGameSession(): GameSession {
     withGame((currentGame) => {
       currentGame.handleBoardClick(point);
     });
+  };
+
+  const handleCanvasUp = (event: MouseEvent): void => {
+    if (!viewDrag) {
+      return;
+    }
+
+    event.preventDefault();
+    viewDrag = null;
+  };
+
+  const handleCanvasWheel = (event: WheelEvent): void => {
+    if (!game) {
+      return;
+    }
+
+    const point = toCanvasLocalPoint(event);
+    if (!point) {
+      return;
+    }
+
+    event.preventDefault();
+    game.zoomBoardViewAt(point, event.deltaY);
+    const boardPoint = game.screenToBoardPoint(point);
+    game.setPointer(boardPoint);
+    publish(true, false);
+  };
+
+  const handleCanvasDoubleClick = (event: MouseEvent): void => {
+    if (!game) {
+      return;
+    }
+
+    event.preventDefault();
+    game.resetBoardView();
+    publish(true, false);
+  };
+
+  const handleCanvasContextMenu = (event: MouseEvent): void => {
+    event.preventDefault();
   };
 
   const handleCanvasLeave = (): void => {
@@ -327,6 +444,10 @@ export function createGameSession(): GameSession {
     handleKeyDown,
     handleCanvasMove,
     handleCanvasDown,
+    handleCanvasUp,
+    handleCanvasWheel,
+    handleCanvasDoubleClick,
+    handleCanvasContextMenu,
     handleCanvasLeave,
     togglePause,
     openMenu,

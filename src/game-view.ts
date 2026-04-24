@@ -98,7 +98,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || isModalState(game.state),
     sellDisabled: !selected || isModalState(game.state),
     selectedTowerPoint: selected && !isModalState(game.state)
-      ? { x: selected.x, y: selected.y }
+      ? game.boardToCanvasPoint({ x: selected.x, y: selected.y })
       : undefined,
     placingTower: runtime.placingTower,
     towerButtonsDisabled: isModalState(game.state),
