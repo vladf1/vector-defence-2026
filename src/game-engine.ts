@@ -7,6 +7,7 @@ import { GameRenderer } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
 import { LinkEffect } from "./entities/effects/link-effect";
 import { Particle } from "./entities/effects/particle";
+import { HitRingEffect } from "./entities/effects/hit-ring-effect";
 import type { Monster } from "./entities/monsters/monster";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { Tower } from "./entities/towers/tower";
@@ -263,10 +264,17 @@ export class Game {
   }
 
   createEscapeBurst(x: number, y: number): void {
-    const particleCount = Math.min(90, Math.max(0, MAX_PARTICLES - this.runtime.particles.length));
+    this.addParticle(new HitRingEffect(x, y, "#b0ffe1", 24));
+    this.addParticle(new HitRingEffect(x, y, "#ffe36f", 15));
+
+    const colors = ["#b0ffe1", "#6df0c2", "#ffe36f", "#ffffff", "#7fd7ff"];
+    const particleCount = Math.min(130, Math.max(0, MAX_PARTICLES - this.runtime.particles.length));
     for (let index = 0; index < particleCount; index += 1) {
-      const color = `#${Math.floor(randomRange(0x555555, 0xffffff)).toString(16).padStart(6, "0")}`;
-      this.addParticle(new Particle(x, y, randomRange(1, 4), color, 1.5));
+      const color = colors[Math.floor(randomRange(0, colors.length))] ?? "#b0ffe1";
+      this.addParticle(new Particle(x, y, randomRange(1.5, 5.5), color, randomRange(1.1, 1.8), {
+        speedPerSecond: randomRange(150, 520),
+        offset: randomRange(1, 7),
+      }));
     }
   }
 
@@ -295,6 +303,13 @@ export class Game {
 
   handleBoardClick(point: Point): void {
     if (isModalState(this.state)) {
+      return;
+    }
+
+    if (this.renderer.isPointInUpgradeButton(point)) {
+      if (this.canUpgradeSelectedTower()) {
+        this.upgradeSelectedTower();
+      }
       return;
     }
 
@@ -346,12 +361,23 @@ export class Game {
 
   upgradeSelectedTower(): void {
     const { selectedTower } = this.runtime;
-    if (!selectedTower || !selectedTower.canUpgrade() || this.runtime.money < selectedTower.upgradeCost) {
+    if (!this.canUpgradeSelectedTower()) {
+      return;
+    }
+    if (!selectedTower) {
       return;
     }
     this.runtime.money -= selectedTower.upgradeCost;
     selectedTower.upgrade();
     this.requestHudSync();
+  }
+
+  canUpgradeSelectedTower(): boolean {
+    const { selectedTower } = this.runtime;
+    return selectedTower !== undefined
+      && selectedTower.canUpgrade()
+      && this.runtime.money >= selectedTower.upgradeCost
+      && !isModalState(this.state);
   }
 
   completeCurrentWave(): void {

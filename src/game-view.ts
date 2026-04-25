@@ -1,4 +1,5 @@
 import { STARTING_MONEY } from "./constants";
+import { createBannerText } from "./banner-text";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { isBattleState, isModalState } from "./game-engine";
 import { formatMoney } from "./utils";
@@ -61,9 +62,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
             : `Wave ${runtime.currentWaveIndex + 1}/${runtime.waveTotal} · ${Math.min(runtime.waveSpawnedMonsters, activeWave.count)} / ${activeWave.count}`)
         : `All ${game.waveTotal} waves cleared`)
     : "Idle";
-  const banner = game.state === GameState.Playing && activeWave && runtime.spawnDelay > 0
-    ? `Wave ${runtime.currentWaveIndex + 1} ${activeWave.label} in ${Math.ceil(runtime.spawnDelay)}`
-    : (game.bannerTimer > 0 ? game.bannerText : (game.state === GameState.Menu ? "Awaiting orders" : game.statusText));
+  const banner = createBannerText(game);
 
   let selectionTitle = "No tower selected";
   let selectionBody = "Choose a build from the toolbar, then click the field to place it.";
@@ -95,9 +94,6 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     selectionBody,
     upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || isModalState(game.state),
     sellDisabled: !selected || isModalState(game.state),
-    selectedTowerPoint: selected && !isModalState(game.state)
-      ? { x: selected.x, y: selected.y }
-      : undefined,
     placingTower: runtime.placingTower,
     towerButtonsDisabled: isModalState(game.state),
     nerdStats: {

@@ -1,9 +1,29 @@
+import { createBannerText } from "./banner-text";
 import { FIELD_HEIGHT, FIELD_WIDTH, TOWER_RADIUS } from "./constants";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import type { Game } from "./game-engine";
 
 const ROAD_CENTER_COLOR = "rgba(109, 240, 194, 0.18)";
 const EXIT_MARKER_FILL = "rgb(29, 80, 67)";
+const BANNER_FONT_SIZE = 9;
+const BANNER_HEIGHT = 24;
+const BANNER_PADDING_X = 8;
+const BANNER_RADIUS = 8;
+const BANNER_TOP = 10;
+const BANNER_LETTER_SPACING = 1.5;
+const UPGRADE_BUTTON_WIDTH = 32;
+const UPGRADE_BUTTON_HEIGHT = 26;
+const UPGRADE_BUTTON_EDGE_GUTTER = 42;
+const UPGRADE_BUTTON_BELOW_OFFSET = 22;
+const UPGRADE_BUTTON_ABOVE_OFFSET = 22;
+const UPGRADE_BUTTON_ABOVE_THRESHOLD = 56;
+
+export interface CanvasButtonRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 export class GameRenderer {
   backgroundCanvas: HTMLCanvasElement;
@@ -72,6 +92,40 @@ export class GameRenderer {
     }
 
     this.drawPreview(this.ctx);
+    this.drawUpgradeButton(this.ctx);
+    this.drawBanner(this.ctx);
+  }
+
+  getUpgradeButtonRect(): CanvasButtonRect | undefined {
+    const selectedTower = this.game.runtime.selectedTower;
+    if (!selectedTower) {
+      return undefined;
+    }
+
+    const centerX = Math.min(
+      Math.max(selectedTower.x, UPGRADE_BUTTON_EDGE_GUTTER),
+      FIELD_WIDTH - UPGRADE_BUTTON_EDGE_GUTTER,
+    );
+    const placeAbove = selectedTower.y > FIELD_HEIGHT - UPGRADE_BUTTON_ABOVE_THRESHOLD;
+    const top = placeAbove
+      ? selectedTower.y - UPGRADE_BUTTON_ABOVE_OFFSET - UPGRADE_BUTTON_HEIGHT
+      : selectedTower.y + UPGRADE_BUTTON_BELOW_OFFSET;
+
+    return {
+      x: centerX - (UPGRADE_BUTTON_WIDTH / 2),
+      y: top,
+      width: UPGRADE_BUTTON_WIDTH,
+      height: UPGRADE_BUTTON_HEIGHT,
+    };
+  }
+
+  isPointInUpgradeButton(point: { x: number; y: number }): boolean {
+    const rect = this.getUpgradeButtonRect();
+    return rect !== undefined
+      && point.x >= rect.x
+      && point.x <= rect.x + rect.width
+      && point.y >= rect.y
+      && point.y <= rect.y + rect.height;
   }
 
   private drawBackground(context: CanvasRenderingContext2D): void {
@@ -141,6 +195,88 @@ export class GameRenderer {
     context.textBaseline = "middle";
     context.fillText(String(allowance), last.x, last.y + 1);
     context.restore();
+  }
+
+  private drawBanner(context: CanvasRenderingContext2D): void {
+    const text = createBannerText(this.game).toUpperCase();
+    if (!text) {
+      return;
+    }
+
+    context.save();
+    context.font = `${BANNER_FONT_SIZE}px "Avenir Next", "Segoe UI", sans-serif`;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    const textWidth = this.measureSpacedText(context, text, BANNER_LETTER_SPACING);
+    const width = Math.ceil(textWidth) + (BANNER_PADDING_X * 2);
+    const left = (FIELD_WIDTH - width) / 2;
+    context.fillStyle = "rgba(8, 16, 13, 0.86)";
+    context.strokeStyle = "rgba(255, 255, 255, 0.16)";
+    context.lineWidth = 1;
+    context.beginPath();
+    context.roundRect(left, BANNER_TOP, width, BANNER_HEIGHT, BANNER_RADIUS);
+    context.fill();
+    context.stroke();
+    context.fillStyle = "rgba(176, 255, 225, 0.96)";
+    this.fillSpacedText(context, text, FIELD_WIDTH / 2, BANNER_TOP + (BANNER_HEIGHT / 2) + 1, BANNER_LETTER_SPACING);
+    context.restore();
+  }
+
+  private measureSpacedText(context: CanvasRenderingContext2D, text: string, letterSpacing: number): number {
+    return context.measureText(text).width + (Math.max(0, text.length - 1) * letterSpacing);
+  }
+
+  private fillSpacedText(
+    context: CanvasRenderingContext2D,
+    text: string,
+    centerX: number,
+    centerY: number,
+    letterSpacing: number,
+  ): void {
+    let x = centerX - (this.measureSpacedText(context, text, letterSpacing) / 2);
+
+    context.textAlign = "left";
+    for (const character of text) {
+      context.fillText(character, x, centerY);
+      x += context.measureText(character).width + letterSpacing;
+    }
+  }
+
+  private drawUpgradeButton(context: CanvasRenderingContext2D): void {
+    const rect = this.getUpgradeButtonRect();
+    if (!rect) {
+      return;
+    }
+
+    const disabled = !this.game.canUpgradeSelectedTower();
+    const hovered = this.game.runtime.pointer ? this.isPointInUpgradeButton(this.game.runtime.pointer) : false;
+
+    context.save();
+    context.globalAlpha = disabled ? 0.4 : 1;
+    context.fillStyle = hovered && !disabled ? "rgba(33, 57, 50, 0.52)" : "rgba(18, 35, 30, 0.82)";
+    context.strokeStyle = hovered && !disabled ? "rgba(255, 255, 255, 0.34)" : "rgba(255, 255, 255, 0.2)";
+    context.lineWidth = 1;
+    context.shadowColor = disabled ? "transparent" : "rgba(0, 0, 0, 0.22)";
+    context.shadowBlur = hovered && !disabled ? 9 : 6;
+    context.beginPath();
+    context.roundRect(rect.x, rect.y, rect.width, rect.height, 7);
+    context.fill();
+    context.stroke();
+    context.shadowBlur = 0;
+    context.fillStyle = "#effff7";
+    this.drawUpgradeArrow(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2));
+    context.restore();
+  }
+
+  private drawUpgradeArrow(context: CanvasRenderingContext2D, centerX: number, centerY: number): void {
+    const halfWidth = 7;
+    const halfHeight = 6;
+    context.beginPath();
+    context.moveTo(centerX, centerY - halfHeight);
+    context.lineTo(centerX + halfWidth, centerY + halfHeight);
+    context.lineTo(centerX - halfWidth, centerY + halfHeight);
+    context.closePath();
+    context.fill();
   }
 
   private drawPreview(context: CanvasRenderingContext2D): void {
