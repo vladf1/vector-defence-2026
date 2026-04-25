@@ -2,47 +2,49 @@ import { FIELD_HEIGHT, FIELD_WIDTH, TOWER_RADIUS } from "./constants";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import type { Game } from "./game-engine";
 
+const ROAD_CENTER_COLOR = "rgba(109, 240, 194, 0.18)";
+const EXIT_MARKER_FILL = "rgb(29, 80, 67)";
+
 export class GameRenderer {
+  backgroundCanvas: HTMLCanvasElement;
+  backgroundCtx: CanvasRenderingContext2D;
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
-  backgroundCanvas = document.createElement("canvas");
-  backgroundCtx: CanvasRenderingContext2D;
   currentDpr = window.devicePixelRatio || 1;
 
   constructor(
+    backgroundCanvas: HTMLCanvasElement,
+    backgroundCtx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D,
     private readonly game: Game,
   ) {
-    const backgroundCtx = this.backgroundCanvas.getContext("2d");
-    if (!backgroundCtx) {
-      throw new Error("Background canvas unavailable.");
-    }
-
+    this.backgroundCanvas = backgroundCanvas;
+    this.backgroundCtx = backgroundCtx;
     this.canvas = canvas;
     this.ctx = ctx;
-    this.backgroundCtx = backgroundCtx;
   }
 
   resize(): void {
     this.currentDpr = window.devicePixelRatio || 1;
-    this.canvas.width = Math.round(FIELD_WIDTH * this.currentDpr);
-    this.canvas.height = Math.round(FIELD_HEIGHT * this.currentDpr);
-    this.ctx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
-    this.rebuildBackgroundCache();
-  }
-
-  rebuildBackgroundCache(): void {
     this.backgroundCanvas.width = Math.round(FIELD_WIDTH * this.currentDpr);
     this.backgroundCanvas.height = Math.round(FIELD_HEIGHT * this.currentDpr);
     this.backgroundCtx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
+    this.canvas.width = Math.round(FIELD_WIDTH * this.currentDpr);
+    this.canvas.height = Math.round(FIELD_HEIGHT * this.currentDpr);
+    this.ctx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
+    this.renderBackgroundLayer();
+  }
+
+  renderBackgroundLayer(): void {
+    this.backgroundCtx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
     this.drawBackground(this.backgroundCtx);
   }
 
   draw(): void {
     const runtime = this.game.runtime;
 
-    this.ctx.drawImage(this.backgroundCanvas, 0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+    this.ctx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
     this.drawEscapeAllowance(this.ctx);
 
     for (const link of runtime.links) {
@@ -105,7 +107,7 @@ export class GameRenderer {
     context.lineJoin = "round";
     context.lineCap = "round";
     context.strokeStyle = "rgba(8, 40, 36, 0.96)";
-    context.lineWidth = 24;
+    context.lineWidth = 21;
     context.beginPath();
     context.moveTo(first.x, first.y);
     for (let index = 1; index < this.game.currentLevel.points.length; index += 1) {
@@ -113,10 +115,10 @@ export class GameRenderer {
       context.lineTo(point.x, point.y);
     }
     context.stroke();
-    context.strokeStyle = "rgba(109, 240, 194, 0.18)";
-    context.lineWidth = 8;
+    context.strokeStyle = ROAD_CENTER_COLOR;
+    context.lineWidth = 9;
     context.stroke();
-    context.fillStyle = "rgba(109, 240, 194, 0.14)";
+    context.fillStyle = EXIT_MARKER_FILL;
     context.beginPath();
     context.arc(last.x, last.y, 18, 0, Math.PI * 2);
     context.fill();
@@ -131,16 +133,8 @@ export class GameRenderer {
 
     const last = level.points[level.points.length - 1];
     const allowance = Math.max(0, this.game.runtime.escapesLeft);
-    const radius = 18;
 
     context.save();
-    context.shadowColor = allowance === 0 ? "rgba(255, 104, 120, 0.22)" : "rgba(90, 255, 210, 0.2)";
-    context.shadowBlur = 8;
-    context.fillStyle = allowance === 0 ? "rgba(58, 12, 18, 0.82)" : "rgba(10, 72, 66, 0.78)";
-    context.beginPath();
-    context.arc(last.x, last.y, radius, 0, Math.PI * 2);
-    context.fill();
-    context.shadowBlur = 0;
     context.fillStyle = "rgba(238, 255, 248, 0.86)";
     context.font = "700 19px Inter, system-ui, sans-serif";
     context.textAlign = "center";

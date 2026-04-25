@@ -7,7 +7,8 @@
   const session = getGameSessionContext();
   const { hud } = session;
 
-  let canvas: HTMLCanvasElement;
+  let backgroundCanvas: HTMLCanvasElement;
+  let gameCanvas: HTMLCanvasElement;
 
   function selectedTowerActionStyle(x: number, y: number): string {
     const leftPercent = (x / FIELD_WIDTH) * 100;
@@ -22,7 +23,7 @@
   }
 
   onMount(() => {
-    session.mount(canvas);
+    session.mount(backgroundCanvas, gameCanvas);
 
     return () => {
       session.destroy();
@@ -36,7 +37,15 @@
   <div class="board-frame">
     <div class="board-stage">
       <canvas
-        bind:this={canvas}
+        bind:this={backgroundCanvas}
+        class="board-canvas board-background"
+        width="700"
+        height="450"
+        aria-hidden="true"
+      ></canvas>
+      <canvas
+        bind:this={gameCanvas}
+        class="board-canvas board-game"
         id="game"
         width="700"
         height="450"

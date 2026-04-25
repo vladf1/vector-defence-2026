@@ -26,7 +26,7 @@ export interface GameSession {
   hud: Readable<HudSnapshot>;
   modal: Readable<ModalView | null>;
   setNerdStatsEnabled(enabled: boolean): void;
-  mount(canvas: HTMLCanvasElement): void;
+  mount(backgroundCanvas: HTMLCanvasElement, gameCanvas: HTMLCanvasElement): void;
   destroy(): void;
   handleResize(): void;
   handleKeyDown(event: KeyboardEvent): void;
@@ -131,7 +131,7 @@ export function createGameSession(): GameSession {
     previousFrameTime = timestamp;
   };
 
-  const mount = (nextCanvas: HTMLCanvasElement): void => {
+  const mount = (nextBackgroundCanvas: HTMLCanvasElement, nextCanvas: HTMLCanvasElement): void => {
     if (canvas === nextCanvas && game) {
       return;
     }
@@ -139,12 +139,16 @@ export function createGameSession(): GameSession {
     destroy();
 
     canvas = nextCanvas;
+    const backgroundCtx = nextBackgroundCanvas.getContext("2d");
+    if (!backgroundCtx) {
+      throw new Error("Background canvas context unavailable.");
+    }
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       throw new Error("Canvas context unavailable.");
     }
 
-    game = new Game(createLevels(), canvas, ctx);
+    game = new Game(createLevels(), nextBackgroundCanvas, backgroundCtx, canvas, ctx);
     (window as GameWindow).__vectorDefence = game;
     game.resize();
     game.draw();

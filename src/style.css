@@ -192,14 +192,28 @@ textarea,
   position: relative;
   width: min(100%, calc((100vh - 248px) * 1.555));
   max-width: 100%;
+  aspect-ratio: 14 / 9;
 }
 
-#game {
+.board-canvas {
   display: block;
   width: 100%;
   max-width: 100%;
-  height: auto;
+  height: 100%;
   aspect-ratio: 14 / 9;
+}
+
+.board-background,
+.board-game {
+  position: absolute;
+  inset: 0;
+}
+
+.board-background {
+  pointer-events: none;
+}
+
+.board-game {
   cursor: crosshair;
 }
 

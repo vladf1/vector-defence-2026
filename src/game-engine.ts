@@ -58,9 +58,15 @@ export class Game {
   hudDirty = true;
   modalDirty = true;
 
-  constructor(levelList: LevelData[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+  constructor(
+    levelList: LevelData[],
+    backgroundCanvas: HTMLCanvasElement,
+    backgroundCtx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+  ) {
     this.levels = levelList;
-    this.renderer = new GameRenderer(canvas, ctx, this);
+    this.renderer = new GameRenderer(backgroundCanvas, backgroundCtx, canvas, ctx, this);
   }
 
   get activeWave(): WaveData | undefined {
@@ -129,7 +135,7 @@ export class Game {
     this.menuReturnState = undefined;
     this.setBanner(`Level ${level.levelNumber ?? "?"}: ${level.name}`, 2.4);
     this.setState(GameState.Playing);
-    this.rebuildBackgroundCache();
+    this.renderBackgroundLayer();
     this.requestModalSync();
     this.requestHudSync();
   }
@@ -400,8 +406,8 @@ export class Game {
     this.renderer.resize();
   }
 
-  rebuildBackgroundCache(): void {
-    this.renderer.rebuildBackgroundCache();
+  renderBackgroundLayer(): void {
+    this.renderer.renderBackgroundLayer();
   }
 
   update(deltaSeconds: number): void {
