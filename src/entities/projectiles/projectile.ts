@@ -1,4 +1,5 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
+import { createHitImpactEffect } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
 import type { Point } from "../../types";
 import { angleBetween, withinDistance } from "../../utils";
@@ -34,7 +35,7 @@ export class Projectile {
       const hitDistance = monster.radius + this.radius;
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         monster.takeDamage(this.damage);
-        game.createHitImpact(this.x, this.y, "#9fffe4", Math.atan2(this.velocityYPerSecond, this.velocityXPerSecond));
+        createHitImpactEffect(game, this.x, this.y, "#9fffe4", Math.atan2(this.velocityYPerSecond, this.velocityXPerSecond));
         this.removed = true;
         return;
       }

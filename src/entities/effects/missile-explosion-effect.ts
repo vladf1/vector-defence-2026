@@ -4,7 +4,7 @@ import { Particle } from "./particle";
 export class MissileShockwaveEffect extends Particle {
   private ageSeconds = 0;
 
-  constructor(x: number, y: number) {
+  constructor(x: number, y: number, private readonly scale = 1) {
     super(x, y, 0, "#fff0a8", 1, { speedPerSecond: 0, offset: 0, angle: 0 });
     this.alpha = 1;
   }
@@ -20,29 +20,30 @@ export class MissileShockwaveEffect extends Particle {
   override draw(context: CanvasRenderingContext2D): void {
     const progress = Math.min(1, this.ageSeconds * 4.8);
     const coreAlpha = Math.max(0, 1 - (progress * 4.7));
-    const shockRadius = 5.5 + (progress * 34);
+    const shockRadius = (5.5 + (progress * 34)) * this.scale;
 
     context.save();
     context.globalCompositeOperation = "lighter";
     if (coreAlpha > 0) {
-      const coreGradient = context.createRadialGradient(this.x, this.y, 0, this.x, this.y, 13);
+      const coreRadius = 13 * this.scale;
+      const coreGradient = context.createRadialGradient(this.x, this.y, 0, this.x, this.y, coreRadius);
       coreGradient.addColorStop(0, hexWithAlpha("#ffffff", coreAlpha));
       coreGradient.addColorStop(0.38, hexWithAlpha("#fff0a8", coreAlpha * 0.9));
       coreGradient.addColorStop(1, hexWithAlpha("#ff7a3d", 0));
       context.fillStyle = coreGradient;
       context.beginPath();
-      context.arc(this.x, this.y, 13, 0, Math.PI * 2);
+      context.arc(this.x, this.y, coreRadius, 0, Math.PI * 2);
       context.fill();
     }
 
     context.strokeStyle = hexWithAlpha("#ffb45f", this.alpha * 0.84);
-    context.lineWidth = 2.85 * (1 - (progress * 0.44));
+    context.lineWidth = 2.85 * this.scale * (1 - (progress * 0.44));
     context.beginPath();
     context.arc(this.x, this.y, shockRadius, 0, Math.PI * 2);
     context.stroke();
 
     context.strokeStyle = hexWithAlpha("#fff2a8", this.alpha * 0.51);
-    context.lineWidth = 1.1;
+    context.lineWidth = 1.1 * this.scale;
     context.beginPath();
     context.arc(this.x, this.y, shockRadius * 0.56, 0, Math.PI * 2);
     context.stroke();

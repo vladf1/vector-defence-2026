@@ -14,6 +14,7 @@ import { TankMonster } from "../entities/monsters/tank-monster";
 import { TriangleMonster } from "../entities/monsters/triangle-monster";
 import type { Game } from "../game-engine";
 import { randomRange } from "../utils";
+import { createExplosionEffect } from "./combat-effects";
 import {
   buildShards,
   createCoreShardVertices,
@@ -41,7 +42,7 @@ export function createMonsterDeathEffect(game: Game, monster: Monster): void {
   } else if (monster instanceof SplitterMonster) {
     createSplitterBurstExplosion(game, monster);
   } else {
-    createExplosion(game, monster.x, monster.y, 30, randomRange(1.5, 4), monster.color, 2.5);
+    createExplosionEffect(game, monster.x, monster.y, 30, randomRange(1.5, 4), monster.color, 2.5);
   }
 }
 
@@ -87,8 +88,8 @@ function createBallShatterExplosion(game: Game, monster: BallMonster): void {
     ));
   }
 
-  createExplosion(game, monster.x, monster.y, 6, randomRange(1.5, 2.8), monster.color, randomRange(2.4, 3.6));
-  createExplosion(game, monster.x, monster.y, 4, randomRange(1, 1.8), "#dcfffe", randomRange(3, 4.2));
+  createExplosionEffect(game, monster.x, monster.y, 6, randomRange(1.5, 2.8), monster.color, randomRange(2.4, 3.6));
+  createExplosionEffect(game, monster.x, monster.y, 4, randomRange(1, 1.8), "#dcfffe", randomRange(3, 4.2));
 }
 
 function createRunnerShearExplosion(game: Game, monster: RunnerMonster): void {
@@ -161,7 +162,7 @@ function createSquareShatterExplosion(game: Game, monster: SquareMonster): void 
     ));
   }
 
-  createExplosion(game, monster.x, monster.y, 6, randomRange(1.2, 2.2), "#ffffff", randomRange(3, 4.4));
+  createExplosionEffect(game, monster.x, monster.y, 6, randomRange(1.2, 2.2), "#ffffff", randomRange(3, 4.4));
 }
 
 function createTriangleShatterExplosion(game: Game, monster: TriangleMonster): void {
@@ -188,7 +189,7 @@ function createTriangleShatterExplosion(game: Game, monster: TriangleMonster): v
     ));
   }
 
-  createExplosion(game, monster.x, monster.y, 5, randomRange(1.1, 2), "#fff0c8", randomRange(3.1, 4.2));
+  createExplosionEffect(game, monster.x, monster.y, 5, randomRange(1.1, 2), "#fff0c8", randomRange(3.1, 4.2));
 }
 
 function createBulwarkBreakExplosion(game: Game, monster: BulwarkMonster): void {
@@ -259,7 +260,7 @@ function createBulwarkBreakExplosion(game: Game, monster: BulwarkMonster): void 
     );
   }
 
-  createExplosion(game, monster.x, monster.y, 5, randomRange(1.2, 2.2), "#ffffff", randomRange(3.2, 4.4));
+  createExplosionEffect(game, monster.x, monster.y, 5, randomRange(1.2, 2.2), "#ffffff", randomRange(3.2, 4.4));
 }
 
 function createBerserkerRageExplosion(game: Game, monster: BerserkerMonster): void {
@@ -405,15 +406,8 @@ function createTankExplosion(game: Game, monster: TankMonster): void {
     ));
   }
 
-  createExplosion(game, monster.x, monster.y, 12, randomRange(2.6, 4.8), "#fff1a6", randomRange(1.8, 2.5));
-  createExplosion(game, monster.x, monster.y, 8, randomRange(1.5, 2.8), "#dfe6f3", randomRange(2.6, 3.8));
-}
-
-function createExplosion(game: Game, x: number, y: number, count: number, size: number, color: string, alphaFadePerSecond: number): void {
-  const particleCount = Math.min(count, Math.max(0, MAX_PARTICLES - game.runtime.particles.length));
-  for (let index = 0; index < particleCount; index += 1) {
-    game.addParticle(new Particle(x, y, size, color, alphaFadePerSecond));
-  }
+  createExplosionEffect(game, monster.x, monster.y, 12, randomRange(2.6, 4.8), "#fff1a6", randomRange(1.8, 2.5));
+  createExplosionEffect(game, monster.x, monster.y, 8, randomRange(1.5, 2.8), "#dfe6f3", randomRange(2.6, 3.8));
 }
 
 function addBurstParticle(game: Game, x: number, y: number, color: string, size: number, alphaFadePerSecond: number, angle: number, speedPerSecond: number): void {

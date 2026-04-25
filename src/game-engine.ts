@@ -1,13 +1,12 @@
 import levelsJson from "../game-levels.json";
 import { createGameLevels, createRandomChallengeLevel, getCampaignLevelCount } from "./campaign";
-import { createHitImpactEffect, createMissileExplosionEffect } from "./game-engine/combat-effects";
+import { createEscapeBurstEffect } from "./game-engine/combat-effects";
 import { createMonsterDeathEffect } from "./game-engine/monster-death-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { GameRenderer } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
 import { LinkEffect } from "./entities/effects/link-effect";
 import { Particle } from "./entities/effects/particle";
-import { HitRingEffect } from "./entities/effects/hit-ring-effect";
 import type { Monster } from "./entities/monsters/monster";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { Tower } from "./entities/towers/tower";
@@ -234,7 +233,7 @@ export class Game {
   }
 
   onMonsterEscaped(monster: Monster): void {
-    this.createEscapeBurst(monster.x, monster.y);
+    createEscapeBurstEffect(this, monster.x, monster.y);
     this.runtime.escapesLeft = Math.max(0, this.runtime.escapesLeft - 1);
     if (this.runtime.escapesLeft === 0) {
       this.runtime.monsters.forEach((item) => {
@@ -246,36 +245,6 @@ export class Game {
       this.requestModalSync();
     }
     this.requestHudSync();
-  }
-
-  createExplosion(x: number, y: number, count: number, size: number, color: string, alphaFadePerSecond: number): void {
-    const particleCount = Math.min(count, Math.max(0, MAX_PARTICLES - this.runtime.particles.length));
-    for (let index = 0; index < particleCount; index += 1) {
-      this.addParticle(new Particle(x, y, size, color, alphaFadePerSecond));
-    }
-  }
-
-  createHitImpact(x: number, y: number, color: string, sparkAngle?: number): void {
-    createHitImpactEffect(this, x, y, color, sparkAngle);
-  }
-
-  createMissileExplosion(x: number, y: number, blastAngle: number): void {
-    createMissileExplosionEffect(this, x, y, blastAngle);
-  }
-
-  createEscapeBurst(x: number, y: number): void {
-    this.addParticle(new HitRingEffect(x, y, "#b0ffe1", 24));
-    this.addParticle(new HitRingEffect(x, y, "#ffe36f", 15));
-
-    const colors = ["#b0ffe1", "#6df0c2", "#ffe36f", "#ffffff", "#7fd7ff"];
-    const particleCount = Math.min(130, Math.max(0, MAX_PARTICLES - this.runtime.particles.length));
-    for (let index = 0; index < particleCount; index += 1) {
-      const color = colors[Math.floor(randomRange(0, colors.length))] ?? "#b0ffe1";
-      this.addParticle(new Particle(x, y, randomRange(1.5, 5.5), color, randomRange(1.1, 1.8), {
-        speedPerSecond: randomRange(150, 520),
-        offset: randomRange(1, 7),
-      }));
-    }
   }
 
   setPointer(point?: Point): void {
