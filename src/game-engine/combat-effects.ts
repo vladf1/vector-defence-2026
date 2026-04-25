@@ -21,7 +21,7 @@ export function createHitImpactEffect(game: Game, x: number, y: number, color: s
 export function createMissileExplosionEffect(game: Game, x: number, y: number, blastAngle: number): void {
   game.addParticle(new MissileShockwaveEffect(x, y));
 
-  const emberCount = Math.min(12, Math.max(0, MAX_PARTICLES - game.runtime.particles.length));
+  const emberCount = Math.min(14, Math.max(0, MAX_PARTICLES - game.runtime.particles.length));
   for (let index = 0; index < emberCount; index += 1) {
     game.addParticle(new EmberStreakParticle(x, y, blastAngle));
   }

@@ -19,30 +19,30 @@ export class MissileShockwaveEffect extends Particle {
 
   override draw(context: CanvasRenderingContext2D): void {
     const progress = Math.min(1, this.ageSeconds * 4.8);
-    const coreAlpha = Math.max(0, 1 - (progress * 5));
-    const shockRadius = 5 + (progress * 31);
+    const coreAlpha = Math.max(0, 1 - (progress * 4.7));
+    const shockRadius = 5.5 + (progress * 34);
 
     context.save();
     context.globalCompositeOperation = "lighter";
     if (coreAlpha > 0) {
-      const coreGradient = context.createRadialGradient(this.x, this.y, 0, this.x, this.y, 12);
+      const coreGradient = context.createRadialGradient(this.x, this.y, 0, this.x, this.y, 13);
       coreGradient.addColorStop(0, hexWithAlpha("#ffffff", coreAlpha));
       coreGradient.addColorStop(0.38, hexWithAlpha("#fff0a8", coreAlpha * 0.9));
       coreGradient.addColorStop(1, hexWithAlpha("#ff7a3d", 0));
       context.fillStyle = coreGradient;
       context.beginPath();
-      context.arc(this.x, this.y, 12, 0, Math.PI * 2);
+      context.arc(this.x, this.y, 13, 0, Math.PI * 2);
       context.fill();
     }
 
-    context.strokeStyle = hexWithAlpha("#ffb45f", this.alpha * 0.78);
-    context.lineWidth = 2.6 * (1 - (progress * 0.45));
+    context.strokeStyle = hexWithAlpha("#ffb45f", this.alpha * 0.84);
+    context.lineWidth = 2.85 * (1 - (progress * 0.44));
     context.beginPath();
     context.arc(this.x, this.y, shockRadius, 0, Math.PI * 2);
     context.stroke();
 
-    context.strokeStyle = hexWithAlpha("#fff2a8", this.alpha * 0.45);
-    context.lineWidth = 1;
+    context.strokeStyle = hexWithAlpha("#fff2a8", this.alpha * 0.51);
+    context.lineWidth = 1.1;
     context.beginPath();
     context.arc(this.x, this.y, shockRadius * 0.56, 0, Math.PI * 2);
     context.stroke();
@@ -86,8 +86,8 @@ export class EmberStreakParticle extends Particle {
 
   constructor(x: number, y: number, blastAngle: number) {
     const angle = blastAngle + Math.PI + randomRange(-1.8, 1.8);
-    super(x, y, randomRange(2, 3.4), randomRange(0, 1) > 0.45 ? "#ff8f45" : "#fff0a8", randomRange(3.5, 5.4), {
-      speedPerSecond: randomRange(160, 360),
+    super(x, y, randomRange(2.1, 3.6), randomRange(0, 1) > 0.45 ? "#ff8f45" : "#fff0a8", randomRange(3.5, 5.4), {
+      speedPerSecond: randomRange(175, 385),
       offset: randomRange(2, 6),
       angle,
     });
@@ -95,7 +95,7 @@ export class EmberStreakParticle extends Particle {
   }
 
   override draw(context: CanvasRenderingContext2D): void {
-    const tailLength = 4 + (this.size * 2.1);
+    const tailLength = 4.5 + (this.size * 2.35);
     context.save();
     context.globalCompositeOperation = "lighter";
     context.strokeStyle = hexWithAlpha(this.color, this.alpha);
