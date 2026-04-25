@@ -1,7 +1,7 @@
 import { STARTING_MONEY } from "./constants";
 import { createBannerText } from "./banner-text";
 import { getTowerClass } from "./entities/towers/tower-registry";
-import { isBattleState, isModalState } from "./game-engine";
+import { isModalState } from "./game-engine";
 import { formatMoney } from "./utils";
 import type { Game } from "./game-engine";
 import {
@@ -28,8 +28,6 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   money: formatMoney(STARTING_MONEY),
   wave: "Idle",
   banner: "Awaiting orders",
-  pauseLabel: "Pause",
-  pauseDisabled: true,
   selectionTitle: "No tower selected",
   selectionBody: "Choose a build from the toolbar, then click the field to place it.",
   upgradeDisabled: true,
@@ -88,8 +86,6 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     money: formatMoney(runtime.money),
     wave,
     banner,
-    pauseLabel: game.state === GameState.Paused ? "Resume" : "Pause",
-    pauseDisabled: !isBattleState(game.state),
     selectionTitle,
     selectionBody,
     upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || isModalState(game.state),

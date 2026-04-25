@@ -1,6 +1,7 @@
 import { createBannerText } from "./banner-text";
 import { FIELD_HEIGHT, FIELD_WIDTH, TOWER_RADIUS } from "./constants";
 import { getTowerClass } from "./entities/towers/tower-registry";
+import { GameState } from "./types";
 import type { Game } from "./game-engine";
 
 const ROAD_CENTER_COLOR = "rgba(109, 240, 194, 0.18)";
@@ -17,6 +18,10 @@ const UPGRADE_BUTTON_EDGE_GUTTER = 42;
 const UPGRADE_BUTTON_BELOW_OFFSET = 22;
 const UPGRADE_BUTTON_ABOVE_OFFSET = 22;
 const UPGRADE_BUTTON_ABOVE_THRESHOLD = 56;
+const PAUSE_BUTTON_WIDTH = 34;
+const PAUSE_BUTTON_HEIGHT = 24;
+const PAUSE_BUTTON_TOP = 10;
+const PAUSE_BUTTON_RIGHT = 10;
 
 export interface CanvasButtonRect {
   x: number;
@@ -93,7 +98,30 @@ export class GameRenderer {
 
     this.drawPreview(this.ctx);
     this.drawUpgradeButton(this.ctx);
+    this.drawPauseButton(this.ctx);
     this.drawBanner(this.ctx);
+  }
+
+  getPauseButtonRect(): CanvasButtonRect | undefined {
+    if (!this.canTogglePause()) {
+      return undefined;
+    }
+
+    return {
+      x: FIELD_WIDTH - PAUSE_BUTTON_RIGHT - PAUSE_BUTTON_WIDTH,
+      y: PAUSE_BUTTON_TOP,
+      width: PAUSE_BUTTON_WIDTH,
+      height: PAUSE_BUTTON_HEIGHT,
+    };
+  }
+
+  isPointInPauseButton(point: { x: number; y: number }): boolean {
+    const rect = this.getPauseButtonRect();
+    return rect !== undefined
+      && point.x >= rect.x
+      && point.x <= rect.x + rect.width
+      && point.y >= rect.y
+      && point.y <= rect.y + rect.height;
   }
 
   getUpgradeButtonRect(): CanvasButtonRect | undefined {
@@ -220,6 +248,53 @@ export class GameRenderer {
     context.fillStyle = "rgba(176, 255, 225, 0.96)";
     this.fillSpacedText(context, text, FIELD_WIDTH / 2, BANNER_TOP + (BANNER_HEIGHT / 2) + 1, BANNER_LETTER_SPACING);
     context.restore();
+  }
+
+  private drawPauseButton(context: CanvasRenderingContext2D): void {
+    const rect = this.getPauseButtonRect();
+    if (!rect) {
+      return;
+    }
+
+    const hovered = this.game.runtime.pointer ? this.isPointInPauseButton(this.game.runtime.pointer) : false;
+    context.save();
+    context.fillStyle = hovered ? "rgba(33, 57, 50, 0.52)" : "rgba(8, 16, 13, 0.86)";
+    context.strokeStyle = hovered ? "rgba(255, 255, 255, 0.34)" : "rgba(255, 255, 255, 0.16)";
+    context.lineWidth = 1;
+    context.beginPath();
+    context.roundRect(rect.x, rect.y, rect.width, rect.height, 8);
+    context.fill();
+    context.stroke();
+    context.fillStyle = "rgba(176, 255, 225, 0.96)";
+    if (this.game.state === GameState.Paused) {
+      this.drawPlayIcon(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2));
+    } else {
+      this.drawPauseIcon(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2));
+    }
+    context.restore();
+  }
+
+  private drawPlayIcon(context: CanvasRenderingContext2D, centerX: number, centerY: number): void {
+    const halfHeight = 6;
+    context.beginPath();
+    context.moveTo(centerX - 4, centerY - halfHeight);
+    context.lineTo(centerX - 4, centerY + halfHeight);
+    context.lineTo(centerX + 7, centerY);
+    context.closePath();
+    context.fill();
+  }
+
+  private drawPauseIcon(context: CanvasRenderingContext2D, centerX: number, centerY: number): void {
+    const barWidth = 3;
+    const barHeight = 13;
+    const gap = 2.5;
+    const top = centerY - (barHeight / 2);
+    context.fillRect(centerX - gap - barWidth, top, barWidth, barHeight);
+    context.fillRect(centerX + gap, top, barWidth, barHeight);
+  }
+
+  private canTogglePause(): boolean {
+    return this.game.state === GameState.Playing || this.game.state === GameState.Paused;
   }
 
   private measureSpacedText(context: CanvasRenderingContext2D, text: string, letterSpacing: number): number {

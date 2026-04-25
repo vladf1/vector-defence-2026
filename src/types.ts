@@ -84,8 +84,6 @@ export interface HudSnapshot {
   money: string;
   wave: string;
   banner: string;
-  pauseLabel: string;
-  pauseDisabled: boolean;
   selectionTitle: string;
   selectionBody: string;
   upgradeDisabled: boolean;

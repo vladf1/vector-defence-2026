@@ -22,9 +22,6 @@
     {/each}
   </section>
   <div class="actions">
-    <button class="chrome-button" type="button" onclick={session.togglePause} disabled={$hud.pauseDisabled}>
-      {$hud.pauseLabel}
-    </button>
     <button class="chrome-button" type="button" onclick={session.openMenu}>Campaign</button>
     <button class="chrome-button" type="button" onclick={session.restart}>Restart</button>
   </div>
