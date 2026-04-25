@@ -14,14 +14,20 @@ const BANNER_TOP = 10;
 const BANNER_LETTER_SPACING = 1.5;
 const UPGRADE_BUTTON_WIDTH = 32;
 const UPGRADE_BUTTON_HEIGHT = 26;
+const COMPACT_UPGRADE_BUTTON_WIDTH = 84;
+const COMPACT_UPGRADE_BUTTON_HEIGHT = 54;
 const UPGRADE_BUTTON_EDGE_GUTTER = 42;
+const COMPACT_UPGRADE_BUTTON_EDGE_GUTTER = 58;
 const UPGRADE_BUTTON_BELOW_OFFSET = 22;
 const UPGRADE_BUTTON_ABOVE_OFFSET = 22;
 const UPGRADE_BUTTON_ABOVE_THRESHOLD = 56;
 const PAUSE_BUTTON_WIDTH = 34;
 const PAUSE_BUTTON_HEIGHT = 24;
+const COMPACT_PAUSE_BUTTON_WIDTH = 64;
+const COMPACT_PAUSE_BUTTON_HEIGHT = 42;
 const PAUSE_BUTTON_TOP = 10;
 const PAUSE_BUTTON_RIGHT = 10;
+const COMPACT_CANVAS_WIDTH_THRESHOLD = 520;
 
 export interface CanvasButtonRect {
   x: number;
@@ -107,11 +113,13 @@ export class GameRenderer {
       return undefined;
     }
 
+    const width = this.getPauseButtonWidth();
+    const height = this.getPauseButtonHeight();
     return {
-      x: FIELD_WIDTH - PAUSE_BUTTON_RIGHT - PAUSE_BUTTON_WIDTH,
+      x: FIELD_WIDTH - PAUSE_BUTTON_RIGHT - width,
       y: PAUSE_BUTTON_TOP,
-      width: PAUSE_BUTTON_WIDTH,
-      height: PAUSE_BUTTON_HEIGHT,
+      width,
+      height,
     };
   }
 
@@ -130,20 +138,23 @@ export class GameRenderer {
       return undefined;
     }
 
+    const width = this.getUpgradeButtonWidth();
+    const height = this.getUpgradeButtonHeight();
+    const edgeGutter = this.isCompactCanvas() ? COMPACT_UPGRADE_BUTTON_EDGE_GUTTER : UPGRADE_BUTTON_EDGE_GUTTER;
     const centerX = Math.min(
-      Math.max(selectedTower.x, UPGRADE_BUTTON_EDGE_GUTTER),
-      FIELD_WIDTH - UPGRADE_BUTTON_EDGE_GUTTER,
+      Math.max(selectedTower.x, edgeGutter),
+      FIELD_WIDTH - edgeGutter,
     );
-    const placeAbove = selectedTower.y > FIELD_HEIGHT - UPGRADE_BUTTON_ABOVE_THRESHOLD;
+    const placeAbove = selectedTower.y > FIELD_HEIGHT - UPGRADE_BUTTON_ABOVE_THRESHOLD - (height - UPGRADE_BUTTON_HEIGHT);
     const top = placeAbove
-      ? selectedTower.y - UPGRADE_BUTTON_ABOVE_OFFSET - UPGRADE_BUTTON_HEIGHT
+      ? selectedTower.y - UPGRADE_BUTTON_ABOVE_OFFSET - height
       : selectedTower.y + UPGRADE_BUTTON_BELOW_OFFSET;
 
     return {
-      x: centerX - (UPGRADE_BUTTON_WIDTH / 2),
+      x: centerX - (width / 2),
       y: top,
-      width: UPGRADE_BUTTON_WIDTH,
-      height: UPGRADE_BUTTON_HEIGHT,
+      width,
+      height,
     };
   }
 
@@ -250,6 +261,26 @@ export class GameRenderer {
     context.restore();
   }
 
+  private isCompactCanvas(): boolean {
+    return this.canvas.getBoundingClientRect().width <= COMPACT_CANVAS_WIDTH_THRESHOLD;
+  }
+
+  private getPauseButtonWidth(): number {
+    return this.isCompactCanvas() ? COMPACT_PAUSE_BUTTON_WIDTH : PAUSE_BUTTON_WIDTH;
+  }
+
+  private getPauseButtonHeight(): number {
+    return this.isCompactCanvas() ? COMPACT_PAUSE_BUTTON_HEIGHT : PAUSE_BUTTON_HEIGHT;
+  }
+
+  private getUpgradeButtonWidth(): number {
+    return this.isCompactCanvas() ? COMPACT_UPGRADE_BUTTON_WIDTH : UPGRADE_BUTTON_WIDTH;
+  }
+
+  private getUpgradeButtonHeight(): number {
+    return this.isCompactCanvas() ? COMPACT_UPGRADE_BUTTON_HEIGHT : UPGRADE_BUTTON_HEIGHT;
+  }
+
   private drawPauseButton(context: CanvasRenderingContext2D): void {
     const rect = this.getPauseButtonRect();
     if (!rect) {
@@ -266,28 +297,29 @@ export class GameRenderer {
     context.fill();
     context.stroke();
     context.fillStyle = "rgba(176, 255, 225, 0.96)";
+    const iconScale = this.isCompactCanvas() ? 1.45 : 1;
     if (this.game.state === GameState.Paused) {
-      this.drawPlayIcon(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2));
+      this.drawPlayIcon(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2), iconScale);
     } else {
-      this.drawPauseIcon(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2));
+      this.drawPauseIcon(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2), iconScale);
     }
     context.restore();
   }
 
-  private drawPlayIcon(context: CanvasRenderingContext2D, centerX: number, centerY: number): void {
-    const halfHeight = 6;
+  private drawPlayIcon(context: CanvasRenderingContext2D, centerX: number, centerY: number, scale = 1): void {
+    const halfHeight = 6 * scale;
     context.beginPath();
-    context.moveTo(centerX - 4, centerY - halfHeight);
-    context.lineTo(centerX - 4, centerY + halfHeight);
-    context.lineTo(centerX + 7, centerY);
+    context.moveTo(centerX - (4 * scale), centerY - halfHeight);
+    context.lineTo(centerX - (4 * scale), centerY + halfHeight);
+    context.lineTo(centerX + (7 * scale), centerY);
     context.closePath();
     context.fill();
   }
 
-  private drawPauseIcon(context: CanvasRenderingContext2D, centerX: number, centerY: number): void {
-    const barWidth = 3;
-    const barHeight = 13;
-    const gap = 2.5;
+  private drawPauseIcon(context: CanvasRenderingContext2D, centerX: number, centerY: number, scale = 1): void {
+    const barWidth = 3 * scale;
+    const barHeight = 13 * scale;
+    const gap = 2.5 * scale;
     const top = centerY - (barHeight / 2);
     context.fillRect(centerX - gap - barWidth, top, barWidth, barHeight);
     context.fillRect(centerX + gap, top, barWidth, barHeight);
@@ -339,13 +371,13 @@ export class GameRenderer {
     context.stroke();
     context.shadowBlur = 0;
     context.fillStyle = "#effff7";
-    this.drawUpgradeArrow(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2));
+    this.drawUpgradeArrow(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2), this.isCompactCanvas() ? 1.45 : 1);
     context.restore();
   }
 
-  private drawUpgradeArrow(context: CanvasRenderingContext2D, centerX: number, centerY: number): void {
-    const halfWidth = 7;
-    const halfHeight = 6;
+  private drawUpgradeArrow(context: CanvasRenderingContext2D, centerX: number, centerY: number, scale = 1): void {
+    const halfWidth = 7 * scale;
+    const halfHeight = 6 * scale;
     context.beginPath();
     context.moveTo(centerX, centerY - halfHeight);
     context.lineTo(centerX + halfWidth, centerY + halfHeight);

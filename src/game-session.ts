@@ -30,8 +30,8 @@ export interface GameSession {
   destroy(): void;
   handleResize(): void;
   handleKeyDown(event: KeyboardEvent): void;
-  handleCanvasMove(event: MouseEvent): void;
-  handleCanvasDown(event: MouseEvent): void;
+  handleCanvasMove(event: PointerEvent): void;
+  handleCanvasDown(event: PointerEvent): void;
   handleCanvasLeave(): void;
   togglePause(): void;
   openMenu(): void;
@@ -82,7 +82,7 @@ export function createGameSession(): GameSession {
     publish(force, force);
   };
 
-  const toCanvasPoint = (event: MouseEvent): Point | null => {
+  const toCanvasPoint = (event: PointerEvent): Point | null => {
     if (!canvas) {
       return null;
     }
@@ -258,7 +258,7 @@ export function createGameSession(): GameSession {
     }, true);
   };
 
-  const handleCanvasMove = (event: MouseEvent): void => {
+  const handleCanvasMove = (event: PointerEvent): void => {
     const point = toCanvasPoint(event);
     if (!game || !point) {
       return;
@@ -267,8 +267,8 @@ export function createGameSession(): GameSession {
     game.setPointer(point);
   };
 
-  const handleCanvasDown = (event: MouseEvent): void => {
-    if (event.button !== 0) {
+  const handleCanvasDown = (event: PointerEvent): void => {
+    if (event.button !== 0 && event.pointerType !== "touch") {
       return;
     }
 
@@ -277,6 +277,8 @@ export function createGameSession(): GameSession {
       return;
     }
 
+    event.preventDefault();
+    game?.setPointer(point);
     withGame((currentGame) => {
       currentGame.handleBoardClick(point);
     });

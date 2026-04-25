@@ -34,9 +34,9 @@
         id="game"
         width="700"
         height="450"
-        onmousemove={session.handleCanvasMove}
-        onmouseleave={session.handleCanvasLeave}
-        onmousedown={session.handleCanvasDown}
+        onpointermove={session.handleCanvasMove}
+        onpointerleave={session.handleCanvasLeave}
+        onpointerdown={session.handleCanvasDown}
       ></canvas>
     </div>
     <GameModal />
