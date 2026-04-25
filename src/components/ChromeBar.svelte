@@ -13,7 +13,6 @@
     {#each [
       { label: "Level", value: $hud.levelName },
       { label: "Money", value: $hud.money },
-      { label: "Leaks", value: $hud.escapes },
       { label: "Wave", value: $hud.wave },
     ] as stat}
       <div class="stat-card">

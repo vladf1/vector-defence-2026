@@ -43,6 +43,7 @@ export class GameRenderer {
     const runtime = this.game.runtime;
 
     this.ctx.drawImage(this.backgroundCanvas, 0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+    this.drawEscapeAllowance(this.ctx);
 
     for (const link of runtime.links) {
       link.draw(this.ctx);
@@ -113,12 +114,38 @@ export class GameRenderer {
     }
     context.stroke();
     context.strokeStyle = "rgba(109, 240, 194, 0.18)";
-    context.lineWidth = 6;
+    context.lineWidth = 8;
     context.stroke();
     context.fillStyle = "rgba(109, 240, 194, 0.14)";
     context.beginPath();
     context.arc(last.x, last.y, 18, 0, Math.PI * 2);
     context.fill();
+    context.restore();
+  }
+
+  private drawEscapeAllowance(context: CanvasRenderingContext2D): void {
+    const level = this.game.currentLevel;
+    if (!level) {
+      return;
+    }
+
+    const last = level.points[level.points.length - 1];
+    const allowance = Math.max(0, this.game.runtime.escapesLeft);
+    const radius = 18;
+
+    context.save();
+    context.shadowColor = allowance === 0 ? "rgba(255, 104, 120, 0.22)" : "rgba(90, 255, 210, 0.2)";
+    context.shadowBlur = 8;
+    context.fillStyle = allowance === 0 ? "rgba(58, 12, 18, 0.82)" : "rgba(10, 72, 66, 0.78)";
+    context.beginPath();
+    context.arc(last.x, last.y, radius, 0, Math.PI * 2);
+    context.fill();
+    context.shadowBlur = 0;
+    context.fillStyle = "rgba(238, 255, 248, 0.86)";
+    context.font = "700 19px Inter, system-ui, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(String(allowance), last.x, last.y + 1);
     context.restore();
   }
 

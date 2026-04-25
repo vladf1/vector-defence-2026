@@ -82,7 +82,6 @@ export interface LevelJsonData {
 export interface HudSnapshot {
   levelName: string;
   money: string;
-  escapes: string;
   wave: string;
   banner: string;
   pauseLabel: string;

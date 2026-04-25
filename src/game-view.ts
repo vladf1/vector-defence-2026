@@ -25,7 +25,6 @@ export const INITIAL_RUNTIME_HUD_STATS: RuntimeHudStats = {
 export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   levelName: "Campaign Map",
   money: formatMoney(STARTING_MONEY),
-  escapes: "0",
   wave: "Idle",
   banner: "Awaiting orders",
   pauseLabel: "Pause",
@@ -88,7 +87,6 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
   return {
     levelName,
     money: formatMoney(runtime.money),
-    escapes: String(Math.max(0, runtime.escapesLeft)),
     wave,
     banner,
     pauseLabel: game.state === GameState.Paused ? "Resume" : "Pause",
