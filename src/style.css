@@ -21,7 +21,7 @@ body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(circle at top, rgba(77, 130, 112, 0.16), transparent 28%),
+    radial-gradient(circle at top, rgba(28, 52, 44, 0.12), transparent 28%),
     linear-gradient(180deg, #0c1915 0%, #050807 100%);
   color: var(--text);
 }
@@ -281,6 +281,10 @@ textarea,
   margin-top: 16px;
 }
 
+.level-grid:first-child {
+  margin-top: 0;
+}
+
 .level-card {
   position: relative;
   border-radius: 10px;
@@ -291,6 +295,7 @@ textarea,
   cursor: pointer;
   color: inherit;
   display: grid;
+  align-content: start;
   gap: 6px;
   transition:
     transform 120ms ease,
@@ -338,9 +343,10 @@ textarea,
 }
 
 .level-card.locked {
-  opacity: 0.5;
   cursor: not-allowed;
-  background: rgba(10, 17, 15, 0.94);
+  background: rgba(5, 10, 8, 0.96);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(205, 220, 213, 0.62);
 }
 
 .level-card.cleared {
@@ -357,17 +363,26 @@ textarea,
 
 .level-pill {
   justify-self: start;
+  align-self: start;
   padding: 2px 8px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: #dfffee;
   font-size: 0.68rem;
+  line-height: 1.2;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .level-card.locked .level-pill {
-  color: #c2d2ca;
+  background: rgba(5, 10, 8, 0.92);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(205, 220, 213, 0.7);
+}
+
+.level-card.locked span,
+.level-card.locked small {
+  color: rgba(156, 199, 178, 0.58);
 }
 
 .controls-grid {

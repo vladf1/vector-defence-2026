@@ -4,8 +4,7 @@ import { getTowerClass } from "./entities/towers/tower-registry";
 import { GameState } from "./types";
 import type { Game } from "./game-engine";
 
-const ROAD_CENTER_COLOR = "rgba(109, 240, 194, 0.18)";
-const EXIT_MARKER_FILL = "rgb(29, 80, 67)";
+const ROAD_COLOR = "rgba(8, 40, 36, 0.96)";
 const BANNER_FONT_SIZE = 9;
 const BANNER_HEIGHT = 24;
 const BANNER_PADDING_X = 8;
@@ -169,8 +168,8 @@ export class GameRenderer {
 
   private drawBackground(context: CanvasRenderingContext2D): void {
     const fieldGradient = context.createLinearGradient(0, 0, 0, FIELD_HEIGHT);
-    fieldGradient.addColorStop(0, "#050b08");
-    fieldGradient.addColorStop(1, "#0c1c17");
+    fieldGradient.addColorStop(0, "#010302");
+    fieldGradient.addColorStop(1, "#050d0a");
     context.fillStyle = fieldGradient;
     context.fillRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
 
@@ -199,7 +198,7 @@ export class GameRenderer {
     context.save();
     context.lineJoin = "round";
     context.lineCap = "round";
-    context.strokeStyle = "rgba(8, 40, 36, 0.96)";
+    context.strokeStyle = ROAD_COLOR;
     context.lineWidth = 21;
     context.beginPath();
     context.moveTo(first.x, first.y);
@@ -208,10 +207,7 @@ export class GameRenderer {
       context.lineTo(point.x, point.y);
     }
     context.stroke();
-    context.strokeStyle = ROAD_CENTER_COLOR;
-    context.lineWidth = 9;
-    context.stroke();
-    context.fillStyle = EXIT_MARKER_FILL;
+    context.fillStyle = ROAD_COLOR;
     context.beginPath();
     context.arc(last.x, last.y, 18, 0, Math.PI * 2);
     context.fill();

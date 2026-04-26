@@ -8,17 +8,19 @@
 {#if $modal}
   <div class={`modal${$modal.centered ? " centered" : ""}`}>
     <div class={`modal-panel${$modal.centered ? " centered" : ""}`}>
-      <h2>{$modal.title}</h2>
-      <p>{$modal.description}</p>
+      {#if !$modal.levelCards}
+        <h2>{$modal.title}</h2>
+        <p>{$modal.description}</p>
 
-      {#if $modal.actions.length > 0}
-        <div class={`selection-actions ${$modal.actionClassName ?? ""}`.trim()}>
-          {#each $modal.actions as item}
-            <button class="modal-button" type="button" onclick={() => session.handleModalAction(item.action)}>
-              {item.label}
-            </button>
-          {/each}
-        </div>
+        {#if $modal.actions.length > 0}
+          <div class={`selection-actions ${$modal.actionClassName ?? ""}`.trim()}>
+            {#each $modal.actions as item}
+              <button class="modal-button" type="button" onclick={() => session.handleModalAction(item.action)}>
+                {item.label}
+              </button>
+            {/each}
+          </div>
+        {/if}
       {/if}
 
       {#if $modal.levelCards}
