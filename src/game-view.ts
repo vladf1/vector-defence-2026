@@ -29,8 +29,9 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   wave: "Idle",
   banner: "Awaiting orders",
   selectionTitle: "No tower selected",
-  selectionBody: "Choose a build from the toolbar, then click the field to place it.",
+  selectionBody: "Choose a build from the toolbar.",
   upgradeDisabled: true,
+  hasSelectedTower: false,
   sellDisabled: true,
   towerButtonsDisabled: true,
   nerdStats: {
@@ -57,21 +58,25 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     ? (activeWave
         ? (game.state === GameState.Playing && runtime.spawnDelay > 0
             ? `Wave ${runtime.currentWaveIndex + 1}/${runtime.waveTotal}`
-            : `Wave ${runtime.currentWaveIndex + 1}/${runtime.waveTotal} · ${Math.min(runtime.waveSpawnedMonsters, activeWave.count)} / ${activeWave.count}`)
+            : `Wave ${runtime.currentWaveIndex + 1}/${runtime.waveTotal} · ${Math.min(runtime.waveSpawnedMonsters, activeWave.count)}/${activeWave.count}`)
         : `All ${game.waveTotal} waves cleared`)
     : "Idle";
   const banner = createBannerText(game);
 
   let selectionTitle = "No tower selected";
-  let selectionBody = "Choose a build from the toolbar, then click the field to place it.";
+  let selectionBody = "Choose a build from the toolbar.";
 
   if (selected) {
-    selectionTitle = `${getTowerClass(selected.kind).label} Tower · Lv ${selected.level + 1}`;
-    selectionBody = `Range ${Math.round(selected.range)} · Upgrade ${formatMoney(selected.upgradeCost)} · Sell ${formatMoney(selected.resaleValue)}`;
+    selectionTitle = `${getTowerClass(selected.kind).label} Tower · Level ${selected.level + 1}`;
+    selectionBody = [
+      `Range ${Math.round(selected.range)}`,
+      selected.canUpgrade() ? `Upgrade ${formatMoney(selected.upgradeCost)}` : undefined,
+      `Sell ${formatMoney(selected.resaleValue)}`,
+    ].filter((item) => item !== undefined).join(" · ");
   } else if (runtime.placingTower) {
     const towerClass = getTowerClass(runtime.placingTower);
     selectionTitle = `Placing ${towerClass.label}`;
-    selectionBody = `${towerClass.summary} Cost ${formatMoney(towerClass.baseCost)}. Click the field to place it.`;
+    selectionBody = towerClass.summary;
   } else if (currentLevel) {
     selectionTitle = currentLevel.name;
     selectionBody = currentLevel.subtitle ?? "Hold the route and keep your towers overlapping.";
@@ -89,6 +94,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     selectionTitle,
     selectionBody,
     upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || isModalState(game.state),
+    hasSelectedTower: selected !== undefined,
     sellDisabled: !selected || isModalState(game.state),
     placingTower: runtime.placingTower,
     towerButtonsDisabled: isModalState(game.state),

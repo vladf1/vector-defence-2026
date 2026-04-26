@@ -4,6 +4,7 @@ import { calculateDistance, calculateDistanceToSegment, clamp, randomRange } fro
 
 type RouteTemplate = () => Point[];
 
+const BASE_FIELD_WIDTH = 700;
 const ENTRY_X = 36;
 const EXIT_X = FIELD_WIDTH - 36;
 const MIN_Y = 44;
@@ -14,6 +15,10 @@ const ROUTE_ATTEMPTS = 80;
 
 function randomInt(min: number, max: number): number {
   return Math.floor(randomRange(min, max + 1));
+}
+
+function xFromBase(x: number): number {
+  return (x / BASE_FIELD_WIDTH) * FIELD_WIDTH;
 }
 
 function pick<T>(items: readonly T[]): T {
@@ -73,16 +78,16 @@ function crossingSwitchbackRoute(): Point[] {
   const high = randomRange(yAt(0.08), yAt(0.28));
   const low = randomRange(yAt(0.66), yAt(0.9));
   const center = randomRange(yAt(0.38), yAt(0.62));
-  const verticalX = randomRange(285, 350);
+  const verticalX = randomRange(xFromBase(285), xFromBase(350));
 
   return [
     point(ENTRY_X, lowStart),
-    point(jitter(178, 20), high),
-    point(jitter(178, 20), low),
-    point(jitter(438, 24), high + randomRange(-8, 34)),
+    point(jitter(xFromBase(178), xFromBase(20)), high),
+    point(jitter(xFromBase(178), xFromBase(20)), low),
+    point(jitter(xFromBase(438), xFromBase(24)), high + randomRange(-8, 34)),
     point(verticalX, high + randomRange(-4, 18)),
     point(verticalX, low + randomRange(-18, 18)),
-    point(jitter(560, 22), center),
+    point(jitter(xFromBase(560), xFromBase(22)), center),
     point(EXIT_X, oppositeY(center)),
   ];
 }
@@ -92,8 +97,8 @@ function verticalGateRoute(): Point[] {
   const firstLow = randomRange(yAt(0.7), yAt(0.94));
   const secondHigh = randomRange(yAt(0.05), yAt(0.24));
   const end = randomRange(yAt(0.56), yAt(0.88));
-  const firstX = randomRange(210, 260);
-  const secondX = randomRange(455, 520);
+  const firstX = randomRange(xFromBase(210), xFromBase(260));
+  const secondX = randomRange(xFromBase(455), xFromBase(520));
 
   return [
     point(ENTRY_X, start),
@@ -101,8 +106,8 @@ function verticalGateRoute(): Point[] {
     point(firstX, secondHigh),
     point(secondX, firstLow + randomRange(-28, 18)),
     point(secondX, secondHigh + randomRange(-12, 28)),
-    point(jitter(172, 28), yAt(0.52)),
-    point(jitter(552, 24), yAt(0.52) + randomRange(-24, 24)),
+    point(jitter(xFromBase(172), xFromBase(28)), yAt(0.52)),
+    point(jitter(xFromBase(552), xFromBase(24)), yAt(0.52) + randomRange(-24, 24)),
     point(EXIT_X, end),
   ];
 }
@@ -111,23 +116,23 @@ function hourglassRoute(): Point[] {
   const top = randomRange(yAt(0.05), yAt(0.24));
   const bottom = randomRange(yAt(0.74), yAt(0.95));
   const center = randomRange(yAt(0.43), yAt(0.57));
-  const leftPost = randomRange(138, 190);
-  const rightPost = randomRange(500, 565);
+  const leftPost = randomRange(xFromBase(138), xFromBase(190));
+  const rightPost = randomRange(xFromBase(500), xFromBase(565));
 
   return [
     point(ENTRY_X, bottom),
     point(leftPost, bottom),
     point(rightPost, top),
     point(rightPost, bottom),
-    point(leftPost + randomRange(60, 100), top),
-    point(leftPost + randomRange(60, 100), bottom - randomRange(18, 52)),
-    point(jitter(420, 34), center),
+    point(leftPost + randomRange(xFromBase(60), xFromBase(100)), top),
+    point(leftPost + randomRange(xFromBase(60), xFromBase(100)), bottom - randomRange(18, 52)),
+    point(jitter(xFromBase(420), xFromBase(34)), center),
     point(EXIT_X, top + randomRange(40, 130)),
   ];
 }
 
 function centerSpineRoute(): Point[] {
-  const spineX = randomRange(320, 380);
+  const spineX = randomRange(xFromBase(320), xFromBase(380));
   const start = randomRange(yAt(0.12), yAt(0.36));
   const top = randomRange(yAt(0.05), yAt(0.18));
   const bottom = randomRange(yAt(0.78), yAt(0.95));
@@ -135,12 +140,12 @@ function centerSpineRoute(): Point[] {
 
   return [
     point(ENTRY_X, start),
-    point(jitter(260, 30), bottom),
+    point(jitter(xFromBase(260), xFromBase(30)), bottom),
     point(spineX, bottom),
     point(spineX, top),
-    point(jitter(150, 28), top + randomRange(70, 130)),
-    point(jitter(505, 26), bottom - randomRange(42, 92)),
-    point(jitter(505, 26), top + randomRange(16, 56)),
+    point(jitter(xFromBase(150), xFromBase(28)), top + randomRange(70, 130)),
+    point(jitter(xFromBase(505), xFromBase(26)), bottom - randomRange(42, 92)),
+    point(jitter(xFromBase(505), xFromBase(26)), top + randomRange(16, 56)),
     point(EXIT_X, exit),
   ];
 }

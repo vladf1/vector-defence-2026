@@ -11,11 +11,11 @@
   </div>
   <section class="hud">
     {#each [
-      { label: "Level", value: $hud.levelName },
-      { label: "Money", value: $hud.money },
-      { label: "Wave", value: $hud.wave },
+      { label: "Level", value: $hud.levelName, className: "level-stat" },
+      { label: "Money", value: $hud.money, className: "money-stat" },
+      { label: "Wave", value: $hud.wave, className: "wave-stat" },
     ] as stat}
-      <div class="stat-card">
+      <div class={`stat-card ${stat.className}`}>
         <span>{stat.label}</span>
         <strong>{stat.value}</strong>
       </div>
