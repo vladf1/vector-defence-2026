@@ -1,5 +1,5 @@
-import type { PathEntry } from "../../route-path";
-import { angleBetween, hexWithAlpha, normalizeAngle, randomRange } from "../../utils";
+import { getPathHeadingAngle, type PathEntry } from "../../route-path";
+import { angleBetween, hexWithAlpha, randomRange } from "../../utils";
 
 const DAMAGE_FLASH_BASE_ALPHA = 0.32;
 const DAMAGE_FLASH_EXTRA_ALPHA = 0.42;
@@ -122,7 +122,7 @@ export abstract class Monster extends EventTarget {
       this.x = end.x;
       this.y = end.y;
       this.targetIndex = Math.max(0, this.path.length - 1);
-      this.angle = this.getAngleAtDistance(pathLength);
+      this.angle = getPathHeadingAngle(this.path, pathLength, this.targetIndex);
       this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
       this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
       this.removed = true;
@@ -150,17 +150,7 @@ export abstract class Monster extends EventTarget {
 
     this.x = start.x + ((end.x - start.x) * ratio);
     this.y = start.y + ((end.y - start.y) * ratio);
-    this.angle = this.getAngleAtDistance(distance);
-  }
-
-  private getAngleAtDistance(distance: number): number {
-    const nextAngle = getSegmentAngle(this.path, this.targetIndex);
-    const previousAngle = getSegmentAngle(this.path, Math.max(1, this.targetIndex - 1));
-    const startDistance = this.path[Math.max(0, this.targetIndex - 1)]?.totalDistance ?? 0;
-    const endDistance = this.path[this.targetIndex]?.totalDistance ?? startDistance;
-    const span = endDistance - startDistance;
-    const ratio = span > 0 ? (distance - startDistance) / span : 1;
-    return normalizeAngle(previousAngle + (normalizeAngle(nextAngle - previousAngle) * ratio));
+    this.angle = getPathHeadingAngle(this.path, distance, this.targetIndex);
   }
 
   private drawHealthBar(context: CanvasRenderingContext2D): void {
@@ -186,13 +176,4 @@ export abstract class Monster extends EventTarget {
 
 function getPathLength(path: readonly PathEntry[]): number {
   return path[path.length - 1]?.totalDistance ?? 0;
-}
-
-function getSegmentAngle(path: readonly PathEntry[], targetIndex: number): number {
-  const end = path[Math.min(Math.max(1, targetIndex), path.length - 1)];
-  const start = path[Math.max(0, Math.min(targetIndex - 1, path.length - 2))];
-  if (!start || !end || end.totalDistance === start.totalDistance) {
-    return 0;
-  }
-  return angleBetween(start, end);
 }

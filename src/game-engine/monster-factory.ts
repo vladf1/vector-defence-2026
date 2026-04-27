@@ -8,9 +8,12 @@ import { SplitterMonster } from "../entities/monsters/splitter-monster";
 import { SquareMonster } from "../entities/monsters/square-monster";
 import { TankMonster } from "../entities/monsters/tank-monster";
 import { TriangleMonster } from "../entities/monsters/triangle-monster";
-import { createPathEntriesFromTail, type PathEntry } from "../route-path";
-import { MonsterKind, type Point } from "../types";
-import { calculateDistance, randomRange } from "../utils";
+import { createPathEntriesFromDistance, type PathEntry } from "../route-path";
+import { MonsterKind } from "../types";
+import { randomRange } from "../utils";
+
+const MIN_SPLITTER_CHILD_OFFSET_DISTANCE = 10;
+const MAX_SPLITTER_CHILD_OFFSET_DISTANCE = 18;
 
 export function createMonster(game: Game, kind: MonsterKind, path: PathEntry[]): Monster {
   const monster = createBaseMonster(kind, path);
@@ -36,23 +39,13 @@ export function createSplitterChildren(game: Game, monster: Monster): Monster[] 
   const children: Monster[] = [];
   const childCount = 2;
   const splitAngle = monster.angle;
-  const forwardX = Math.cos(splitAngle);
-  const forwardY = Math.sin(splitAngle);
-  const segmentStart = monster.path[Math.max(0, monster.targetIndex - 1)] ?? { x: monster.x, y: monster.y };
-  const segmentEnd = monster.path[monster.targetIndex] ?? { x: monster.x, y: monster.y };
-  const distanceFromSegmentStart = calculateDistance(segmentStart.x, segmentStart.y, monster.x, monster.y);
-  const distanceToNextWaypoint = calculateDistance(monster.x, monster.y, segmentEnd.x, segmentEnd.y);
-  const maxOffsetDistance = Math.min(12, distanceFromSegmentStart, distanceToNextWaypoint);
+  const pathLength = monster.path[monster.path.length - 1]?.totalDistance ?? 0;
   const minSpeedMultiplier = 0.89;
   const maxSpeedMultiplier = 0.97;
 
   for (let index = 0; index < childCount; index += 1) {
-    const forwardOffset = randomRange(-maxOffsetDistance, maxOffsetDistance);
-    const spawnPoint = {
-      x: monster.x + (forwardX * forwardOffset),
-      y: monster.y + (forwardY * forwardOffset),
-    };
-    const childPath = createPathEntriesFromTail(spawnPoint, monster.path, monster.targetIndex);
+    const spawnDistance = monster.distanceAlongPath + createSplitterChildPathOffset(monster.distanceAlongPath, pathLength, index);
+    const childPath = createPathEntriesFromDistance(monster.path, spawnDistance);
     const child = createMonster(game, MonsterKind.Runner, childPath);
     const speedMultiplier = randomRange(minSpeedMultiplier, maxSpeedMultiplier);
     child.angle = splitAngle + randomRange(-0.12, 0.12);
@@ -68,6 +61,29 @@ export function createSplitterChildren(game: Game, monster: Monster): Monster[] 
   }
 
   return children;
+}
+
+function createSplitterChildPathOffset(distanceAlongPath: number, pathLength: number, childIndex: number): number {
+  const preferredDirection = childIndex % 2 === 0 ? -1 : 1;
+  return createRandomOffsetInDirection(distanceAlongPath, pathLength, preferredDirection)
+    ?? createRandomOffsetInDirection(distanceAlongPath, pathLength, -preferredDirection)
+    ?? 0;
+}
+
+function createRandomOffsetInDirection(distanceAlongPath: number, pathLength: number, direction: number): number | undefined {
+  const availableDistance = direction < 0
+    ? distanceAlongPath
+    : Math.max(0, pathLength - distanceAlongPath);
+
+  if (availableDistance < MIN_SPLITTER_CHILD_OFFSET_DISTANCE) {
+    return undefined;
+  }
+
+  const offsetDistance = randomRange(
+    MIN_SPLITTER_CHILD_OFFSET_DISTANCE,
+    Math.min(MAX_SPLITTER_CHILD_OFFSET_DISTANCE, availableDistance),
+  );
+  return offsetDistance * direction;
 }
 
 function createBaseMonster(kind: MonsterKind, path: PathEntry[]): Monster {

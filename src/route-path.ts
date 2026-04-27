@@ -8,6 +8,7 @@ export type RoutePathCommand =
 
 export interface PathEntry extends Point {
   totalDistance: number;
+  heading?: PathEntryHeading;
 }
 
 export interface RouteMotionPath {
@@ -23,15 +24,19 @@ interface RoundedTurn {
   exit: Point;
 }
 
+type PathEntryHeading =
+  | { kind: "line"; angle: number }
+  | { kind: "quadratic"; start: Point; control: Point; end: Point; tStart: number; tEnd: number };
+
 export function createRouteMotionPath(points: readonly Point[]): RouteMotionPath {
   const start = points[0] ?? { x: 0, y: 0 };
-  const smoothedPoints: Point[] = [{ x: start.x, y: start.y }];
+  const entries: PathEntry[] = [{ x: start.x, y: start.y, totalDistance: 0 }];
 
   if (points.length < 2) {
     return {
       start,
       commands: [],
-      entries: createPathEntries(smoothedPoints),
+      entries,
     };
   }
 
@@ -46,11 +51,11 @@ export function createRouteMotionPath(points: readonly Point[]): RouteMotionPath
       ? nextTurn.entry
       : points[segmentIndex + 1];
 
-    appendLine(commands, smoothedPoints, current, segmentEnd);
+    appendLine(commands, entries, current, segmentEnd);
     current = segmentEnd;
 
     if (nextTurn?.index === segmentIndex + 1) {
-      appendQuadratic(commands, smoothedPoints, nextTurn.entry, nextTurn.control, nextTurn.exit);
+      appendQuadratic(commands, entries, nextTurn.entry, nextTurn.control, nextTurn.exit);
       current = nextTurn.exit;
       turnIndex += 1;
     }
@@ -59,7 +64,7 @@ export function createRouteMotionPath(points: readonly Point[]): RouteMotionPath
   return {
     start,
     commands,
-    entries: createPathEntries(smoothedPoints),
+    entries,
   };
 }
 
@@ -83,31 +88,150 @@ export function createPathEntries(points: Point[]): PathEntry[] {
   return entries;
 }
 
-export function createPathEntriesFromTail(spawnPoint: Point, source: readonly PathEntry[], tailStartIndex: number): PathEntry[] {
-  const firstTailIndex = Math.min(Math.max(0, tailStartIndex), source.length);
+export function createPathEntriesFromDistance(source: readonly PathEntry[], startDistance: number): PathEntry[] {
+  const pathLength = source[source.length - 1]?.totalDistance ?? 0;
+  const clampedDistance = Math.min(Math.max(0, startDistance), pathLength);
+  const spawnPoint = getPointAtDistance(source, clampedDistance);
   const entries: PathEntry[] = [{
     x: spawnPoint.x,
     y: spawnPoint.y,
     totalDistance: 0,
   }];
 
-  const firstTailEntry = source[firstTailIndex];
-  if (!firstTailEntry) {
+  const firstTailIndex = findPathIndexAtDistance(source, clampedDistance);
+  if (firstTailIndex >= source.length) {
     return entries;
   }
 
-  const firstSegmentLength = calculateDistance(spawnPoint.x, spawnPoint.y, firstTailEntry.x, firstTailEntry.y);
-  const sourceBaseDistance = firstTailEntry.totalDistance;
   for (let index = firstTailIndex; index < source.length; index += 1) {
     const entry = source[index];
+    const totalDistance = entry.totalDistance - clampedDistance;
+    if (totalDistance <= 0 && calculateDistance(spawnPoint.x, spawnPoint.y, entry.x, entry.y) <= 0) {
+      continue;
+    }
     entries.push({
       x: entry.x,
       y: entry.y,
-      totalDistance: firstSegmentLength + (entry.totalDistance - sourceBaseDistance),
+      totalDistance: Math.max(0, totalDistance),
+      heading: index === firstTailIndex
+        ? createTailHeading(source, entry, clampedDistance, firstTailIndex)
+        : cloneHeading(entry.heading),
     });
   }
 
   return entries;
+}
+
+export function getPointAtDistance(source: readonly PathEntry[], distance: number): Point {
+  if (source.length === 0) {
+    return { x: 0, y: 0 };
+  }
+
+  const first = source[0];
+  if (distance <= first.totalDistance) {
+    return { x: first.x, y: first.y };
+  }
+
+  for (let index = 1; index < source.length; index += 1) {
+    const end = source[index];
+    if (distance > end.totalDistance) {
+      continue;
+    }
+
+    const start = source[index - 1];
+    const span = end.totalDistance - start.totalDistance;
+    const ratio = span > 0 ? (distance - start.totalDistance) / span : 1;
+    return {
+      x: start.x + ((end.x - start.x) * ratio),
+      y: start.y + ((end.y - start.y) * ratio),
+    };
+  }
+
+  const last = source[source.length - 1];
+  return { x: last.x, y: last.y };
+}
+
+function findPathIndexAtDistance(source: readonly PathEntry[], distance: number): number {
+  for (let index = 0; index < source.length; index += 1) {
+    if (source[index].totalDistance >= distance) {
+      return index;
+    }
+  }
+
+  return source.length;
+}
+
+export function getPathHeadingAngle(path: readonly PathEntry[], distance: number, targetIndex: number): number {
+  if (path.length < 2) {
+    return 0;
+  }
+
+  const endIndex = findLocalPathIndexAtDistance(path, distance, targetIndex);
+  const start = path[endIndex - 1] ?? path[0];
+  const end = path[endIndex] ?? path[path.length - 1];
+  const heading = end.heading;
+  if (!heading) {
+    return angleBetween(start, end);
+  }
+
+  if (heading.kind === "line") {
+    return heading.angle;
+  }
+
+  const span = end.totalDistance - start.totalDistance;
+  const ratio = span > 0 ? (distance - start.totalDistance) / span : 1;
+  const t = heading.tStart + ((heading.tEnd - heading.tStart) * ratio);
+  return getQuadraticAngle(heading.start, heading.control, heading.end, t);
+}
+
+function createTailHeading(
+  source: readonly PathEntry[],
+  entry: PathEntry,
+  clampedDistance: number,
+  firstTailIndex: number,
+): PathEntryHeading | undefined {
+  const heading = entry.heading;
+  if (!heading || heading.kind === "line") {
+    return cloneHeading(heading);
+  }
+
+  const start = source[firstTailIndex - 1];
+  const span = entry.totalDistance - (start?.totalDistance ?? entry.totalDistance);
+  const ratio = span > 0 ? (clampedDistance - (start?.totalDistance ?? clampedDistance)) / span : 1;
+  return {
+    ...heading,
+    tStart: heading.tStart + ((heading.tEnd - heading.tStart) * ratio),
+  };
+}
+
+function cloneHeading(heading: PathEntryHeading | undefined): PathEntryHeading | undefined {
+  if (!heading) {
+    return undefined;
+  }
+
+  if (heading.kind === "line") {
+    return { ...heading };
+  }
+
+  return {
+    kind: "quadratic",
+    start: { ...heading.start },
+    control: { ...heading.control },
+    end: { ...heading.end },
+    tStart: heading.tStart,
+    tEnd: heading.tEnd,
+  };
+}
+
+function findLocalPathIndexAtDistance(path: readonly PathEntry[], distance: number, targetIndex: number): number {
+  let index = Math.min(Math.max(1, targetIndex), path.length - 1);
+  while (index > 1 && path[index - 1].totalDistance >= distance) {
+    index -= 1;
+  }
+  while (index < path.length - 1 && path[index].totalDistance < distance) {
+    index += 1;
+  }
+  return index;
 }
 
 function createRoundedTurns(points: readonly Point[]): RoundedTurn[] {
@@ -149,31 +273,22 @@ function pointToward(source: Point, target: Point, distance: number): Point {
   };
 }
 
-function appendLine(
-  commands: RoutePathCommand[],
-  points: Point[],
-  start: Point,
-  end: Point,
-): void {
+function appendLine(commands: RoutePathCommand[], entries: PathEntry[], start: Point, end: Point): void {
   const length = calculateDistance(start.x, start.y, end.x, end.y);
   if (length <= 0) {
     return;
   }
 
   commands.push({ kind: "line", point: end });
-  const steps = Math.max(1, Math.ceil(length / ROUTE_CURVE_SAMPLE_STEP));
-  for (let step = 1; step <= steps; step += 1) {
-    const ratio = step / steps;
-    appendPoint(points, {
-      x: start.x + ((end.x - start.x) * ratio),
-      y: start.y + ((end.y - start.y) * ratio),
-    });
-  }
+  appendPoint(entries, end, {
+    kind: "line",
+    angle: angleBetween(start, end),
+  });
 }
 
 function appendQuadratic(
   commands: RoutePathCommand[],
-  points: Point[],
+  entries: PathEntry[],
   start: Point,
   control: Point,
   end: Point,
@@ -185,19 +300,43 @@ function appendQuadratic(
 
   for (let step = 1; step <= steps; step += 1) {
     const t = step / steps;
+    const tStart = (step - 1) / steps;
     const inverse = 1 - t;
-    appendPoint(points, {
+    appendPoint(entries, {
       x: (inverse * inverse * start.x) + (2 * inverse * t * control.x) + (t * t * end.x),
       y: (inverse * inverse * start.y) + (2 * inverse * t * control.y) + (t * t * end.y),
+    }, {
+      kind: "quadratic",
+      start,
+      control,
+      end,
+      tStart,
+      tEnd: t,
     });
   }
 }
 
-function appendPoint(points: Point[], point: Point): void {
-  const previous = points[points.length - 1];
+function appendPoint(entries: PathEntry[], point: Point, heading: PathEntryHeading): void {
+  const previous = entries[entries.length - 1];
   if (calculateDistance(previous.x, previous.y, point.x, point.y) <= 0) {
     return;
   }
 
-  points.push(point);
+  entries.push({
+    x: point.x,
+    y: point.y,
+    totalDistance: previous.totalDistance + calculateDistance(previous.x, previous.y, point.x, point.y),
+    heading,
+  });
+}
+
+function angleBetween(start: Point, end: Point): number {
+  return Math.atan2(end.y - start.y, end.x - start.x);
+}
+
+function getQuadraticAngle(start: Point, control: Point, end: Point, t: number): number {
+  const inverse = 1 - t;
+  const dx = (2 * inverse * (control.x - start.x)) + (2 * t * (end.x - control.x));
+  const dy = (2 * inverse * (control.y - start.y)) + (2 * t * (end.y - control.y));
+  return Math.atan2(dy, dx);
 }
