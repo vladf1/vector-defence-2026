@@ -5,11 +5,13 @@ import type { Monster } from "./entities/monsters/monster";
 import type { Missile } from "./entities/projectiles/missile";
 import type { Projectile } from "./entities/projectiles/projectile";
 import type { Tower } from "./entities/towers/tower";
+import { createRouteMotionPath, type RouteMotionPath } from "./route-path";
 import type { LevelData, Point, TowerKind, WaveData } from "./types";
 import { compactInPlace } from "./utils";
 
 export class LevelRuntime {
   readonly level?: LevelData;
+  readonly routePath?: RouteMotionPath;
   money: number;
   escapesLeft: number;
   spawnDelay: number;
@@ -31,6 +33,7 @@ export class LevelRuntime {
 
   constructor(level?: LevelData) {
     this.level = level;
+    this.routePath = level ? createRouteMotionPath(level.points) : undefined;
     this.money = level?.startingMoney ?? STARTING_MONEY;
     this.escapesLeft = level?.allowEscape ?? 0;
     this.spawnDelay = level ? (level.waves?.[0]?.buildTime ?? 8) : 0;

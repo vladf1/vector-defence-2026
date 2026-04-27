@@ -8,10 +8,11 @@ import { SplitterMonster } from "../entities/monsters/splitter-monster";
 import { SquareMonster } from "../entities/monsters/square-monster";
 import { TankMonster } from "../entities/monsters/tank-monster";
 import { TriangleMonster } from "../entities/monsters/triangle-monster";
+import { createPathEntriesFromTail, type PathEntry } from "../route-path";
 import { MonsterKind, type Point } from "../types";
 import { calculateDistance, randomRange } from "../utils";
 
-export function createMonster(game: Game, kind: MonsterKind, path: Point[]): Monster {
+export function createMonster(game: Game, kind: MonsterKind, path: PathEntry[]): Monster {
   const monster = createBaseMonster(kind, path);
   const levelHitPointMultiplier = getLevelHitPointMultiplier(game);
   monster.hitPoints *= levelHitPointMultiplier;
@@ -51,7 +52,7 @@ export function createSplitterChildren(game: Game, monster: Monster): Monster[] 
       x: monster.x + (forwardX * forwardOffset),
       y: monster.y + (forwardY * forwardOffset),
     };
-    const childPath = [spawnPoint, ...monster.path.slice(monster.targetIndex)];
+    const childPath = createPathEntriesFromTail(spawnPoint, monster.path, monster.targetIndex);
     const child = createMonster(game, MonsterKind.Runner, childPath);
     const speedMultiplier = randomRange(minSpeedMultiplier, maxSpeedMultiplier);
     child.angle = splitAngle + randomRange(-0.12, 0.12);
@@ -69,7 +70,7 @@ export function createSplitterChildren(game: Game, monster: Monster): Monster[] 
   return children;
 }
 
-function createBaseMonster(kind: MonsterKind, path: Point[]): Monster {
+function createBaseMonster(kind: MonsterKind, path: PathEntry[]): Monster {
   switch (kind) {
     case MonsterKind.Ball:
       return new BallMonster(path);

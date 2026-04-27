@@ -1,5 +1,5 @@
 import { createBannerText } from "./banner-text";
-import { FIELD_HEIGHT, FIELD_WIDTH, TOWER_RADIUS } from "./constants";
+import { FIELD_HEIGHT, FIELD_WIDTH, ROAD_WIDTH, TOWER_RADIUS } from "./constants";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { GameState } from "./types";
 import type { Game } from "./game-engine";
@@ -41,6 +41,7 @@ export class GameRenderer {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   currentDpr = window.devicePixelRatio || 1;
+  isCompactLayout = false;
 
   constructor(
     backgroundCanvas: HTMLCanvasElement,
@@ -57,6 +58,7 @@ export class GameRenderer {
 
   resize(): void {
     this.currentDpr = window.devicePixelRatio || 1;
+    this.isCompactLayout = this.canvas.getBoundingClientRect().width <= COMPACT_CANVAS_WIDTH_THRESHOLD;
     this.backgroundCanvas.width = Math.round(FIELD_WIDTH * this.currentDpr);
     this.backgroundCanvas.height = Math.round(FIELD_HEIGHT * this.currentDpr);
     this.backgroundCtx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
@@ -75,7 +77,7 @@ export class GameRenderer {
     const runtime = this.game.runtime;
 
     this.ctx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
-    this.drawEscapeAllowance(this.ctx);
+    this.drawBanner(this.ctx);
 
     for (const link of runtime.links) {
       link.draw(this.ctx);
@@ -104,7 +106,7 @@ export class GameRenderer {
     this.drawPreview(this.ctx);
     this.drawUpgradeButton(this.ctx);
     this.drawPauseButton(this.ctx);
-    this.drawBanner(this.ctx);
+    this.drawEscapeAllowance(this.ctx);
   }
 
   getPauseButtonRect(): CanvasButtonRect | undefined {
@@ -139,7 +141,7 @@ export class GameRenderer {
 
     const width = this.getUpgradeButtonWidth();
     const height = this.getUpgradeButtonHeight();
-    const edgeGutter = this.isCompactCanvas() ? COMPACT_UPGRADE_BUTTON_EDGE_GUTTER : UPGRADE_BUTTON_EDGE_GUTTER;
+    const edgeGutter = this.isCompactLayout ? COMPACT_UPGRADE_BUTTON_EDGE_GUTTER : UPGRADE_BUTTON_EDGE_GUTTER;
     const centerX = Math.min(
       Math.max(selectedTower.x, edgeGutter),
       FIELD_WIDTH - edgeGutter,
@@ -193,18 +195,25 @@ export class GameRenderer {
       return;
     }
 
-    const first = this.game.currentLevel.points[0];
+    const routePath = this.game.runtime.routePath;
+    if (!routePath) {
+      return;
+    }
+
     const last = this.game.currentLevel.points[this.game.currentLevel.points.length - 1];
     context.save();
     context.lineJoin = "round";
     context.lineCap = "round";
     context.strokeStyle = ROAD_COLOR;
-    context.lineWidth = 21;
+    context.lineWidth = ROAD_WIDTH;
     context.beginPath();
-    context.moveTo(first.x, first.y);
-    for (let index = 1; index < this.game.currentLevel.points.length; index += 1) {
-      const point = this.game.currentLevel.points[index];
-      context.lineTo(point.x, point.y);
+    context.moveTo(routePath.start.x, routePath.start.y);
+    for (const command of routePath.commands) {
+      if (command.kind === "line") {
+        context.lineTo(command.point.x, command.point.y);
+      } else {
+        context.quadraticCurveTo(command.control.x, command.control.y, command.point.x, command.point.y);
+      }
     }
     context.stroke();
     context.fillStyle = ROAD_COLOR;
@@ -225,7 +234,7 @@ export class GameRenderer {
 
     context.save();
     context.fillStyle = "rgba(238, 255, 248, 0.86)";
-    context.font = "700 19px Inter, system-ui, sans-serif";
+    context.font = "700 19px \"Avenir Next\", \"Segoe UI\", sans-serif";
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(String(allowance), last.x, last.y + 1);
@@ -257,24 +266,20 @@ export class GameRenderer {
     context.restore();
   }
 
-  private isCompactCanvas(): boolean {
-    return this.canvas.getBoundingClientRect().width <= COMPACT_CANVAS_WIDTH_THRESHOLD;
-  }
-
   private getPauseButtonWidth(): number {
-    return this.isCompactCanvas() ? COMPACT_PAUSE_BUTTON_WIDTH : PAUSE_BUTTON_WIDTH;
+    return this.isCompactLayout ? COMPACT_PAUSE_BUTTON_WIDTH : PAUSE_BUTTON_WIDTH;
   }
 
   private getPauseButtonHeight(): number {
-    return this.isCompactCanvas() ? COMPACT_PAUSE_BUTTON_HEIGHT : PAUSE_BUTTON_HEIGHT;
+    return this.isCompactLayout ? COMPACT_PAUSE_BUTTON_HEIGHT : PAUSE_BUTTON_HEIGHT;
   }
 
   private getUpgradeButtonWidth(): number {
-    return this.isCompactCanvas() ? COMPACT_UPGRADE_BUTTON_WIDTH : UPGRADE_BUTTON_WIDTH;
+    return this.isCompactLayout ? COMPACT_UPGRADE_BUTTON_WIDTH : UPGRADE_BUTTON_WIDTH;
   }
 
   private getUpgradeButtonHeight(): number {
-    return this.isCompactCanvas() ? COMPACT_UPGRADE_BUTTON_HEIGHT : UPGRADE_BUTTON_HEIGHT;
+    return this.isCompactLayout ? COMPACT_UPGRADE_BUTTON_HEIGHT : UPGRADE_BUTTON_HEIGHT;
   }
 
   private drawPauseButton(context: CanvasRenderingContext2D): void {
@@ -293,7 +298,7 @@ export class GameRenderer {
     context.fill();
     context.stroke();
     context.fillStyle = "rgba(176, 255, 225, 0.96)";
-    const iconScale = this.isCompactCanvas() ? 1.45 : 1;
+    const iconScale = this.isCompactLayout ? 1.45 : 1;
     if (this.game.state === GameState.Paused) {
       this.drawPlayIcon(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2), iconScale);
     } else {
@@ -367,7 +372,7 @@ export class GameRenderer {
     context.stroke();
     context.shadowBlur = 0;
     context.fillStyle = "#effff7";
-    this.drawUpgradeArrow(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2), this.isCompactCanvas() ? 1.45 : 1);
+    this.drawUpgradeArrow(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2), this.isCompactLayout ? 1.45 : 1);
     context.restore();
   }
 

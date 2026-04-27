@@ -70,6 +70,40 @@ export function calculateDistanceToSegment(pointX: number, pointY: number, start
   return calculateDistance(pointX, pointY, x, y);
 }
 
+export function isWithinDistanceToSegment(
+  pointX: number,
+  pointY: number,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+  maxDistance: number,
+): boolean {
+  if (
+    pointX < Math.min(startX, endX) - maxDistance ||
+    pointX > Math.max(startX, endX) + maxDistance ||
+    pointY < Math.min(startY, endY) - maxDistance ||
+    pointY > Math.max(startY, endY) + maxDistance
+  ) {
+    return false;
+  }
+
+  const segmentX = endX - startX;
+  const segmentY = endY - startY;
+  const segmentLengthSquared = (segmentX * segmentX) + (segmentY * segmentY);
+  if (segmentLengthSquared === 0) {
+    return withinDistance(pointX, pointY, startX, startY, maxDistance);
+  }
+
+  const rawProjection = (((pointX - startX) * segmentX) + ((pointY - startY) * segmentY)) / segmentLengthSquared;
+  const projection = clamp(rawProjection, 0, 1);
+  const closestX = startX + (projection * segmentX);
+  const closestY = startY + (projection * segmentY);
+  const distanceX = closestX - pointX;
+  const distanceY = closestY - pointY;
+  return (distanceX * distanceX) + (distanceY * distanceY) <= (maxDistance * maxDistance);
+}
+
 export function randomRange(min: number, max: number): number {
   return min + (Math.random() * (max - min));
 }

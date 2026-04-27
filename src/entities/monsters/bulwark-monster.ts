@@ -1,4 +1,4 @@
-import type { Point } from "../../types";
+import type { PathEntry } from "../../route-path";
 import { hexWithAlpha } from "../../utils";
 import { Monster } from "./monster";
 
@@ -14,7 +14,7 @@ const MIN_CHIP_DAMAGE = 0.4;
 export class BulwarkMonster extends Monster {
   private shieldPulse = 0;
 
-  constructor(path: Point[]) {
+  constructor(path: PathEntry[]) {
     super(path, COLOR, SPEED_PER_SECOND, HIT_POINTS, BOUNTY, RADIUS);
   }
 

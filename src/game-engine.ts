@@ -202,8 +202,8 @@ export class Game {
   }
 
   spawnMonster(): void {
-    const { level } = this.runtime;
-    if (!level) {
+    const { level, routePath } = this.runtime;
+    if (!level || !routePath) {
       return;
     }
 
@@ -212,7 +212,7 @@ export class Game {
     this.runtime.spawnIndex = (this.runtime.spawnIndex + 1) % sequence.length;
     this.runtime.spawnedMonsters += 1;
     this.runtime.waveSpawnedMonsters += 1;
-    this.runtime.monsters.push(createMonster(this, code, level.points));
+    this.runtime.monsters.push(createMonster(this, code, routePath.entries));
   }
 
   onMonsterKilled(monster: Monster): void {
@@ -296,7 +296,7 @@ export class Game {
   }
 
   canPlaceTower(point: Point): boolean {
-    return canPlaceTower(point, this.currentLevel?.points, this.runtime.towers);
+    return canPlaceTower(point, this.runtime.routePath, this.runtime.towers);
   }
 
   placeTower(kind: TowerKind, point: Point): void {

@@ -6,11 +6,12 @@ import {
   TOWER_RADIUS,
 } from "./constants";
 import type { Tower } from "./entities/towers/tower";
+import type { RouteMotionPath } from "./route-path";
 import type { Point } from "./types";
-import { calculateDistanceToSegment, withinDistance } from "./utils";
+import { isWithinDistanceToSegment, withinDistance } from "./utils";
 
-export function canPlaceTower(point: Point, routePoints: readonly Point[] | undefined, towers: readonly Tower[]): boolean {
-  if (!routePoints) {
+export function canPlaceTower(point: Point, routePath: RouteMotionPath | undefined, towers: readonly Tower[]): boolean {
+  if (!routePath) {
     return false;
   }
 
@@ -30,10 +31,10 @@ export function canPlaceTower(point: Point, routePoints: readonly Point[] | unde
     }
   }
 
-  for (let index = 0; index < routePoints.length - 1; index += 1) {
-    const start = routePoints[index];
-    const end = routePoints[index + 1];
-    if (calculateDistanceToSegment(point.x, point.y, start.x, start.y, end.x, end.y) <= MIN_DISTANCE_TO_ROAD) {
+  for (let index = 0; index < routePath.entries.length - 1; index += 1) {
+    const start = routePath.entries[index];
+    const end = routePath.entries[index + 1];
+    if (isWithinDistanceToSegment(point.x, point.y, start.x, start.y, end.x, end.y, MIN_DISTANCE_TO_ROAD)) {
       return false;
     }
   }

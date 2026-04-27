@@ -1,5 +1,5 @@
-import type { Point } from "../../types";
-import { angleBetween, calculateDistance, hexWithAlpha, randomRange } from "../../utils";
+import type { PathEntry } from "../../route-path";
+import { angleBetween, hexWithAlpha, normalizeAngle, randomRange } from "../../utils";
 
 const DAMAGE_FLASH_BASE_ALPHA = 0.32;
 const DAMAGE_FLASH_EXTRA_ALPHA = 0.42;
@@ -19,16 +19,17 @@ export abstract class Monster extends EventTarget {
   bounty: number;
   radius: number;
   color: string;
-  path: Point[];
+  path: PathEntry[];
+  distanceAlongPath = 0;
   targetIndex = 1;
   rotation = randomRange(0, Math.PI * 2);
   angle = 0;
   damageFlash = 0;
   removed = false;
 
-  constructor(path: Point[], color: string, speedPerSecond: number, hitPoints: number, bounty: number, radius: number) {
+  constructor(path: PathEntry[], color: string, speedPerSecond: number, hitPoints: number, bounty: number, radius: number) {
     super();
-    const start = path[0];
+    const start = path[0] ?? { x: 0, y: 0 };
     this.x = start.x;
     this.y = start.y;
     this.maxSpeedPerSecond = speedPerSecond;
@@ -39,8 +40,7 @@ export abstract class Monster extends EventTarget {
     this.radius = radius;
     this.color = color;
     this.path = path;
-    const initialTarget = path[1] ?? path[0];
-    this.angle = angleBetween(start, initialTarget);
+    this.angle = angleBetween(start, path[1] ?? start);
     this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
     this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
   }
@@ -142,39 +142,52 @@ export abstract class Monster extends EventTarget {
   }
 
   private moveAlongPath(deltaSeconds: number): void {
-    let remainingStep = this.speedPerSecond * deltaSeconds;
-    while (remainingStep > 0 && !this.removed) {
-      const destination = this.path[this.targetIndex];
-      if (!destination) {
-        this.removed = true;
-        this.dispatchEvent(new Event("escaped"));
-        return;
-      }
-
-      const toTarget = calculateDistance(this.x, this.y, destination.x, destination.y);
-      if (toTarget <= remainingStep) {
-        this.x = destination.x;
-        this.y = destination.y;
-        this.targetIndex += 1;
-        const nextDestination = this.path[this.targetIndex];
-        if (!nextDestination) {
-          this.removed = true;
-          this.dispatchEvent(new Event("escaped"));
-          return;
-        }
-        this.angle = angleBetween({ x: this.x, y: this.y }, nextDestination);
-        this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
-        this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
-        remainingStep -= toTarget;
-      } else {
-        this.angle = angleBetween({ x: this.x, y: this.y }, destination);
-        this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
-        this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
-        this.x += this.velocityXPerSecond * (remainingStep / this.speedPerSecond);
-        this.y += this.velocityYPerSecond * (remainingStep / this.speedPerSecond);
-        remainingStep = 0;
-      }
+    this.distanceAlongPath += this.speedPerSecond * deltaSeconds;
+    const pathLength = getPathLength(this.path);
+    if (this.distanceAlongPath >= pathLength) {
+      const end = this.path[this.path.length - 1] ?? { x: this.x, y: this.y };
+      this.x = end.x;
+      this.y = end.y;
+      this.targetIndex = Math.max(0, this.path.length - 1);
+      this.angle = this.getAngleAtDistance(pathLength);
+      this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
+      this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
+      this.removed = true;
+      this.dispatchEvent(new Event("escaped"));
+      return;
     }
+
+    this.updatePositionAtDistance(this.distanceAlongPath);
+    this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
+    this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
+  }
+
+  private updatePositionAtDistance(distance: number): void {
+    while (this.targetIndex < this.path.length - 1 && this.path[this.targetIndex].totalDistance < distance) {
+      this.targetIndex += 1;
+    }
+
+    const end = this.path[this.targetIndex] ?? this.path[this.path.length - 1];
+    const startIndex = Math.max(0, this.targetIndex - 1);
+    const start = this.path[startIndex] ?? end;
+    const startDistance = start.totalDistance;
+    const endDistance = end.totalDistance;
+    const span = endDistance - startDistance;
+    const ratio = span > 0 ? (distance - startDistance) / span : 1;
+
+    this.x = start.x + ((end.x - start.x) * ratio);
+    this.y = start.y + ((end.y - start.y) * ratio);
+    this.angle = this.getAngleAtDistance(distance);
+  }
+
+  private getAngleAtDistance(distance: number): number {
+    const nextAngle = getSegmentAngle(this.path, this.targetIndex);
+    const previousAngle = getSegmentAngle(this.path, Math.max(1, this.targetIndex - 1));
+    const startDistance = this.path[Math.max(0, this.targetIndex - 1)]?.totalDistance ?? 0;
+    const endDistance = this.path[this.targetIndex]?.totalDistance ?? startDistance;
+    const span = endDistance - startDistance;
+    const ratio = span > 0 ? (distance - startDistance) / span : 1;
+    return normalizeAngle(previousAngle + (normalizeAngle(nextAngle - previousAngle) * ratio));
   }
 
   private drawHealthBar(context: CanvasRenderingContext2D): void {
@@ -196,4 +209,17 @@ export abstract class Monster extends EventTarget {
     const danger = 1 - (healthRatio * 2);
     return `rgb(255, ${Math.round(227 * (1 - danger))}, 79)`;
   }
+}
+
+function getPathLength(path: readonly PathEntry[]): number {
+  return path[path.length - 1]?.totalDistance ?? 0;
+}
+
+function getSegmentAngle(path: readonly PathEntry[], targetIndex: number): number {
+  const end = path[Math.min(Math.max(1, targetIndex), path.length - 1)];
+  const start = path[Math.max(0, Math.min(targetIndex - 1, path.length - 2))];
+  if (!start || !end || end.totalDistance === start.totalDistance) {
+    return 0;
+  }
+  return angleBetween(start, end);
 }

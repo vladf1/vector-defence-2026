@@ -1,4 +1,4 @@
-import type { Point } from "../../types";
+import type { PathEntry } from "../../route-path";
 import { Monster } from "./monster";
 
 const BASE_COLOR = "#ff7a4f";
@@ -14,7 +14,7 @@ const RADIUS = 8;
 export class BerserkerMonster extends Monster {
   private rageStage = 0;
 
-  constructor(path: Point[]) {
+  constructor(path: PathEntry[]) {
     super(path, BASE_COLOR, BASE_SPEED_PER_SECOND, HIT_POINTS, BOUNTY, RADIUS);
   }
 

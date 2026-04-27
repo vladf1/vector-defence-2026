@@ -1,4 +1,4 @@
-import type { Point } from "../../types";
+import type { PathEntry } from "../../route-path";
 import { Monster } from "./monster";
 
 const COLOR = "#ffba4f";
@@ -8,7 +8,7 @@ const BOUNTY = 30;
 const RADIUS = 7;
 
 export class TriangleMonster extends Monster {
-  constructor(path: Point[]) {
+  constructor(path: PathEntry[]) {
     super(path, COLOR, SPEED_PER_SECOND, HIT_POINTS, BOUNTY, RADIUS);
   }
 
