@@ -9,13 +9,13 @@
   <div class="nerd-grid">
     {#each [
       { label: "FPS", value: $hud.nerdStats.fps },
-      { label: "Frame", value: $hud.nerdStats.frameTime },
+      { label: "Frame Time", value: $hud.nerdStats.frameTime },
       { label: "Tracked", value: $hud.nerdStats.trackedObjects },
       { label: "Towers", value: $hud.nerdStats.towers },
       { label: "Hostiles", value: $hud.nerdStats.hostiles },
       { label: "Shots", value: $hud.nerdStats.shots },
       { label: "FX", value: $hud.nerdStats.effects },
-      { label: "Render", value: $hud.nerdStats.renderScale },
+      { label: "Pixel Ratio", value: $hud.nerdStats.pixelRatio },
     ] as stat (stat.label)}
       <div class="nerd-stat">
         <span>{stat.label}:</span>

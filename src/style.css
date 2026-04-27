@@ -572,22 +572,27 @@ textarea,
 }
 
 .nerd-panel {
-  background: rgba(8, 18, 15, 0.7);
+  background: none;
   border: 1px solid rgba(109, 240, 194, 0.14);
   border-radius: 10px;
   padding: 10px 12px 12px;
 }
 
 .nerd-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 20px;
+  row-gap: 8px;
 }
 
 .nerd-stat {
   min-width: 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 6px;
 }
 
@@ -597,12 +602,20 @@ textarea,
   letter-spacing: 0.08em;
   text-transform: uppercase;
   flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .nerd-stat strong {
   font-size: 0.95rem;
   font-weight: 500;
   white-space: nowrap;
+}
+
+@media (max-width: 1120px) {
+  .nerd-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 680px) {
