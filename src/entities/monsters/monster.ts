@@ -5,7 +5,6 @@ const DAMAGE_FLASH_BASE_ALPHA = 0.32;
 const DAMAGE_FLASH_EXTRA_ALPHA = 0.42;
 const DAMAGE_FLASH_BLUR = 10;
 const DAMAGE_FLASH_COLOR = "#fff2a8";
-const MOTION_TRAIL_LENGTH = 2.2;
 
 export abstract class Monster extends EventTarget {
   x: number;
@@ -78,7 +77,6 @@ export abstract class Monster extends EventTarget {
     const damageMix = this.damageFlash;
     context.save();
     context.translate(this.x, this.y);
-    this.drawMotionTrail(context, damageMix);
     this.drawDamageGlow(context, damageMix);
     this.drawCoreBody(context, damageMix);
     context.restore();
@@ -90,31 +88,6 @@ export abstract class Monster extends EventTarget {
   }
 
   protected abstract drawBody(context: CanvasRenderingContext2D): void;
-
-  private drawMotionTrail(context: CanvasRenderingContext2D, damageMix: number): void {
-    const speedRatio = Math.min(1.35, this.speedPerSecond / Math.max(1, this.maxSpeedPerSecond));
-    const trailLength = this.radius * MOTION_TRAIL_LENGTH * speedRatio;
-    const trailAlpha = 0.12 + (damageMix * 0.1);
-    const gradient = context.createLinearGradient(
-      -Math.cos(this.angle) * trailLength,
-      -Math.sin(this.angle) * trailLength,
-      0,
-      0,
-    );
-    gradient.addColorStop(0, hexWithAlpha(this.color, 0));
-    gradient.addColorStop(1, hexWithAlpha(this.color, trailAlpha));
-
-    context.save();
-    context.globalCompositeOperation = "lighter";
-    context.strokeStyle = gradient;
-    context.lineWidth = Math.max(5, this.radius * 1.15);
-    context.lineCap = "round";
-    context.beginPath();
-    context.moveTo(-Math.cos(this.angle) * trailLength, -Math.sin(this.angle) * trailLength);
-    context.lineTo(0, 0);
-    context.stroke();
-    context.restore();
-  }
 
   private drawDamageGlow(context: CanvasRenderingContext2D, damageMix: number): void {
     if (damageMix <= 0) {

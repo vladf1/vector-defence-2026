@@ -77,7 +77,7 @@ export class GameRenderer {
     const runtime = this.game.runtime;
 
     this.ctx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
-    this.drawBanner(this.ctx);
+    this.drawEscapeAllowance(this.ctx);
 
     for (const link of runtime.links) {
       link.draw(this.ctx);
@@ -106,7 +106,7 @@ export class GameRenderer {
     this.drawPreview(this.ctx);
     this.drawUpgradeButton(this.ctx);
     this.drawPauseButton(this.ctx);
-    this.drawEscapeAllowance(this.ctx);
+    this.drawBanner(this.ctx);
   }
 
   getPauseButtonRect(): CanvasButtonRect | undefined {
@@ -234,7 +234,7 @@ export class GameRenderer {
 
     context.save();
     context.fillStyle = "rgba(238, 255, 248, 0.86)";
-    context.font = "700 19px \"Avenir Next\", \"Segoe UI\", sans-serif";
+    context.font = "700 19px Inter, system-ui, sans-serif";
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(String(allowance), last.x, last.y + 1);
