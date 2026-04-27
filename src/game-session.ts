@@ -17,6 +17,7 @@ import { readonly, writable, type Readable } from "svelte/store";
 
 const MAX_FRAME_DELTA = 1 / 15;
 const NERD_STATS_SAMPLE_MS = 500;
+const TOWER_DRAG_THRESHOLD_PX = 6;
 
 interface GameWindow extends Window {
   __vectorDefence?: Game;
@@ -33,6 +34,7 @@ export interface GameSession {
   handleCanvasMove(event: PointerEvent): void;
   handleCanvasDown(event: PointerEvent): void;
   handleCanvasLeave(): void;
+  handleTowerButtonPointerDown(kind: TowerKind, event: PointerEvent): void;
   togglePause(): void;
   openMenu(): void;
   restart(): void;
@@ -56,6 +58,15 @@ export function createGameSession(): GameSession {
   let sampledFrameDurationMs = 0;
   let lastNerdStatsSampleTime = 0;
   let nerdStatsEnabled = false;
+  let towerDrag:
+    | {
+      kind: TowerKind;
+      pointerId: number;
+      startClientX: number;
+      startClientY: number;
+      active: boolean;
+    }
+    | null = null;
 
   const publish = (forceHud = false, forceModal = false): void => {
     if (!game) {
@@ -96,6 +107,18 @@ export function createGameSession(): GameSession {
       x: ((event.clientX - rect.left) / rect.width) * FIELD_WIDTH,
       y: ((event.clientY - rect.top) / rect.height) * FIELD_HEIGHT,
     };
+  };
+
+  const isPointerInsideCanvas = (event: PointerEvent): boolean => {
+    if (!canvas) {
+      return false;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    return event.clientX >= rect.left
+      && event.clientX <= rect.right
+      && event.clientY >= rect.top
+      && event.clientY <= rect.bottom;
   };
 
   const frame = (timestamp: number): void => {
@@ -162,6 +185,8 @@ export function createGameSession(): GameSession {
   };
 
   const destroy = (): void => {
+    endTowerDrag();
+
     if (frameId !== 0) {
       window.cancelAnimationFrame(frameId);
       frameId = 0;
@@ -290,6 +315,94 @@ export function createGameSession(): GameSession {
     }
   };
 
+  const endTowerDrag = (): void => {
+    window.removeEventListener("pointermove", handleTowerDragMove);
+    window.removeEventListener("pointerup", handleTowerDragEnd);
+    window.removeEventListener("pointercancel", handleTowerDragCancel);
+    towerDrag = null;
+  };
+
+  function handleTowerDragMove(event: PointerEvent): void {
+    if (!towerDrag || event.pointerId !== towerDrag.pointerId) {
+      return;
+    }
+
+    const distance = Math.hypot(event.clientX - towerDrag.startClientX, event.clientY - towerDrag.startClientY);
+    if (!towerDrag.active) {
+      if (distance < TOWER_DRAG_THRESHOLD_PX) {
+        return;
+      }
+
+      towerDrag.active = true;
+      withGame((currentGame) => {
+        currentGame.startTowerPlacement(towerDrag!.kind);
+      }, true);
+    }
+
+    event.preventDefault();
+    const point = toCanvasPoint(event);
+    if (!point || !isPointerInsideCanvas(event)) {
+      game?.setPointer();
+      return;
+    }
+
+    game?.setPointer(point);
+  }
+
+  function handleTowerDragEnd(event: PointerEvent): void {
+    if (!towerDrag || event.pointerId !== towerDrag.pointerId) {
+      return;
+    }
+
+    const wasActive = towerDrag.active;
+    const point = toCanvasPoint(event);
+    const isOnCanvas = isPointerInsideCanvas(event);
+
+    if (wasActive) {
+      event.preventDefault();
+      if (point && isOnCanvas) {
+        game?.setPointer(point);
+        withGame((currentGame) => {
+          currentGame.placeTower(towerDrag!.kind, point);
+        });
+      } else {
+        cancelBuild();
+        game?.setPointer();
+      }
+    }
+
+    endTowerDrag();
+  }
+
+  function handleTowerDragCancel(event: PointerEvent): void {
+    if (!towerDrag || event.pointerId !== towerDrag.pointerId) {
+      return;
+    }
+
+    if (towerDrag.active) {
+      cancelBuild();
+      game?.setPointer();
+    }
+    endTowerDrag();
+  }
+
+  const handleTowerButtonPointerDown = (kind: TowerKind, event: PointerEvent): void => {
+    if (event.button !== 0 && event.pointerType !== "touch") {
+      return;
+    }
+
+    towerDrag = {
+      kind,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      active: false,
+    };
+    window.addEventListener("pointermove", handleTowerDragMove, { passive: false });
+    window.addEventListener("pointerup", handleTowerDragEnd);
+    window.addEventListener("pointercancel", handleTowerDragCancel);
+  };
+
   const handleKeyDown = (event: KeyboardEvent): void => {
     if (event.defaultPrevented) {
       return;
@@ -334,6 +447,7 @@ export function createGameSession(): GameSession {
     handleCanvasMove,
     handleCanvasDown,
     handleCanvasLeave,
+    handleTowerButtonPointerDown,
     togglePause,
     openMenu,
     restart,

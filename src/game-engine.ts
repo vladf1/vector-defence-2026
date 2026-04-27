@@ -260,6 +260,16 @@ export class Game {
     this.requestHudSync();
   }
 
+  startTowerPlacement(kind: TowerKind): void {
+    if (!this.currentLevel || isModalState(this.state)) {
+      return;
+    }
+
+    this.runtime.selectedTower = undefined;
+    this.runtime.placingTower = kind;
+    this.requestHudSync();
+  }
+
   toggleTowerPlacement(kind: TowerKind): void {
     if (!this.currentLevel || isModalState(this.state)) {
       return;

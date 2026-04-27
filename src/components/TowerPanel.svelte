@@ -47,6 +47,12 @@
   function handleTowerButtonClick(event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }): void {
     session.toggleTowerPlacement(event.currentTarget.value as TowerKind);
   }
+
+  function handleTowerButtonPointerDown(
+    event: PointerEvent & { currentTarget: EventTarget & HTMLButtonElement },
+  ): void {
+    session.handleTowerButtonPointerDown(event.currentTarget.value as TowerKind, event);
+  }
 </script>
 
 <section class="controls-grid">
@@ -62,6 +68,7 @@
           aria-label={`${towerClass.label} tower for ${formatMoney(towerClass.baseCost)} (${formatShortcuts(towerClass.shortcuts)})`}
           disabled={$hud.towerButtonsDisabled}
           onclick={handleTowerButtonClick}
+          onpointerdown={handleTowerButtonPointerDown}
         >
           <div class="tower-button-meta">
             <span>{formatMoney(towerClass.baseCost)}</span>

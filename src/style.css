@@ -417,6 +417,8 @@ textarea,
   padding: 2px 5px 1px;
   border-radius: 8px;
   overflow: hidden;
+  touch-action: none;
+  user-select: none;
 }
 
 .tower-icon {
