@@ -52,6 +52,10 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   },
 };
 
+function formatTimingMs(value: number): string {
+  return `${value.toFixed(3)} ms`;
+}
+
 export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = INITIAL_RUNTIME_HUD_STATS): HudSnapshot {
   const currentLevel = game.currentLevel;
   const runtime = game.runtime;
@@ -107,8 +111,8 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     nerdStats: {
       fps: String(Math.max(0, Math.round(runtimeStats.fps))),
       frameTime: `${runtimeStats.frameTimeMs.toFixed(1)} ms`,
-      updateTime: `${runtimeStats.updateTimeMs.toFixed(2)} ms`,
-      drawTime: `${runtimeStats.drawTimeMs.toFixed(2)} ms`,
+      updateTime: formatTimingMs(runtimeStats.updateTimeMs),
+      drawTime: formatTimingMs(runtimeStats.drawTimeMs),
       trackedObjects: String(trackedObjects),
       towers: String(runtime.towers.length),
       hostiles: String(runtime.monsters.length),
