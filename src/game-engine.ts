@@ -37,6 +37,11 @@ export function isModalState(state: GameState): boolean {
   return state === GameState.Menu || state === GameState.Won || state === GameState.Lost || state === GameState.CampaignWon;
 }
 
+export interface GameFrameTimings {
+  updateMs: number;
+  drawMs: number;
+}
+
 const baseRoutes = normalizeLevels(levelsJson as LevelJsonData[]);
 
 export function createLevels(): LevelData[] {
@@ -420,7 +425,8 @@ export class Game {
     this.renderer.renderBackgroundLayer();
   }
 
-  update(deltaSeconds: number): void {
+  update(deltaSeconds: number, collectTimings = false): GameFrameTimings | undefined {
+    const updateStart = collectTimings ? performance.now() : 0;
     const previousPreWaveSecond = this.state === GameState.Playing && this.activeWave && this.runtime.spawnDelay > 0
       ? Math.ceil(this.runtime.spawnDelay)
       : -1;
@@ -434,8 +440,14 @@ export class Game {
     }
 
     if (this.state !== GameState.Playing) {
-      this.draw();
-      return;
+      const updateEnd = collectTimings ? performance.now() : 0;
+      const drawMs = this.drawForTiming(collectTimings);
+      return collectTimings
+        ? {
+            updateMs: updateEnd - updateStart,
+            drawMs,
+          }
+        : undefined;
     }
 
     const wave = this.activeWave;
@@ -493,10 +505,28 @@ export class Game {
       this.runtime.winDelay = 0;
     }
 
-    this.draw();
+    const updateEnd = collectTimings ? performance.now() : 0;
+    const drawMs = this.drawForTiming(collectTimings);
+    return collectTimings
+      ? {
+          updateMs: updateEnd - updateStart,
+          drawMs,
+        }
+      : undefined;
   }
 
   draw(): void {
     this.renderer.draw();
+  }
+
+  private drawForTiming(collectTimings: boolean): number {
+    if (!collectTimings) {
+      this.draw();
+      return 0;
+    }
+
+    const drawStart = performance.now();
+    this.draw();
+    return performance.now() - drawStart;
   }
 }

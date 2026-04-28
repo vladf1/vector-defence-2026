@@ -3,6 +3,7 @@ import { findTowerShortcut } from "./entities/towers/tower-registry";
 import {
   Game,
   createLevels,
+  type GameFrameTimings,
 } from "./game-engine";
 import {
   INITIAL_HUD_SNAPSHOT,
@@ -56,6 +57,8 @@ export function createGameSession(): GameSession {
   let runtimeStats: RuntimeHudStats = { ...INITIAL_RUNTIME_HUD_STATS };
   let sampledFrameCount = 0;
   let sampledFrameDurationMs = 0;
+  let sampledUpdateDurationMs = 0;
+  let sampledDrawDurationMs = 0;
   let lastNerdStatsSampleTime = 0;
   let nerdStatsEnabled = false;
   let towerDrag:
@@ -121,6 +124,14 @@ export function createGameSession(): GameSession {
       && event.clientY <= rect.bottom;
   };
 
+  const resetNerdStatsSamples = (): void => {
+    sampledFrameCount = 0;
+    sampledFrameDurationMs = 0;
+    sampledUpdateDurationMs = 0;
+    sampledDrawDurationMs = 0;
+    lastNerdStatsSampleTime = 0;
+  };
+
   const frame = (timestamp: number): void => {
     if (!game) {
       return;
@@ -136,19 +147,29 @@ export function createGameSession(): GameSession {
 
       if (lastNerdStatsSampleTime === 0) {
         lastNerdStatsSampleTime = timestamp;
-      } else if (timestamp - lastNerdStatsSampleTime >= NERD_STATS_SAMPLE_MS && sampledFrameDurationMs > 0) {
+      }
+    }
+
+    const frameTimings = game.update(deltaSeconds, nerdStatsEnabled && previousFrameTime !== 0);
+    if (nerdStatsEnabled && frameTimings) {
+      sampledUpdateDurationMs += frameTimings.updateMs;
+      sampledDrawDurationMs += frameTimings.drawMs;
+
+      if (timestamp - lastNerdStatsSampleTime >= NERD_STATS_SAMPLE_MS && sampledFrameDurationMs > 0) {
         runtimeStats = {
           fps: (sampledFrameCount * 1000) / sampledFrameDurationMs,
           frameTimeMs: sampledFrameDurationMs / sampledFrameCount,
+          updateTimeMs: sampledUpdateDurationMs / sampledFrameCount,
+          drawTimeMs: sampledDrawDurationMs / sampledFrameCount,
         };
         sampledFrameCount = 0;
         sampledFrameDurationMs = 0;
+        sampledUpdateDurationMs = 0;
+        sampledDrawDurationMs = 0;
         lastNerdStatsSampleTime = timestamp;
         game.requestHudSync();
       }
     }
-
-    game.update(deltaSeconds);
     publish();
     frameId = window.requestAnimationFrame(frame);
     previousFrameTime = timestamp;
@@ -176,9 +197,7 @@ export function createGameSession(): GameSession {
     game.resize();
     game.draw();
     runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
-    sampledFrameCount = 0;
-    sampledFrameDurationMs = 0;
-    lastNerdStatsSampleTime = 0;
+    resetNerdStatsSamples();
     publish(true, true);
     previousFrameTime = 0;
     frameId = window.requestAnimationFrame(frame);
@@ -198,9 +217,7 @@ export function createGameSession(): GameSession {
 
     previousFrameTime = 0;
     runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
-    sampledFrameCount = 0;
-    sampledFrameDurationMs = 0;
-    lastNerdStatsSampleTime = 0;
+    resetNerdStatsSamples();
     canvas = null;
     game = null;
   };
@@ -210,16 +227,12 @@ export function createGameSession(): GameSession {
 
     if (!enabled) {
       runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
-      sampledFrameCount = 0;
-      sampledFrameDurationMs = 0;
-      lastNerdStatsSampleTime = 0;
+      resetNerdStatsSamples();
       publish(true, false);
       return;
     }
 
-    sampledFrameCount = 0;
-    sampledFrameDurationMs = 0;
-    lastNerdStatsSampleTime = 0;
+    resetNerdStatsSamples();
   };
 
   const handleResize = (): void => {

@@ -97,6 +97,8 @@ export interface HudSnapshot {
 export interface NerdStatsSnapshot {
   fps: string;
   frameTime: string;
+  updateTime: string;
+  drawTime: string;
   trackedObjects: string;
   towers: string;
   hostiles: string;

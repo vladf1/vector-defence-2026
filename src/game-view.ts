@@ -16,11 +16,15 @@ import {
 export interface RuntimeHudStats {
   fps: number;
   frameTimeMs: number;
+  updateTimeMs: number;
+  drawTimeMs: number;
 }
 
 export const INITIAL_RUNTIME_HUD_STATS: RuntimeHudStats = {
   fps: 0,
   frameTimeMs: 0,
+  updateTimeMs: 0,
+  drawTimeMs: 0,
 };
 
 export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
@@ -37,6 +41,8 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   nerdStats: {
     fps: "0",
     frameTime: "0.0 ms",
+    updateTime: "0.0 ms",
+    drawTime: "0.0 ms",
     trackedObjects: "0",
     towers: "0",
     hostiles: "0",
@@ -101,6 +107,8 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     nerdStats: {
       fps: String(Math.max(0, Math.round(runtimeStats.fps))),
       frameTime: `${runtimeStats.frameTimeMs.toFixed(1)} ms`,
+      updateTime: `${runtimeStats.updateTimeMs.toFixed(2)} ms`,
+      drawTime: `${runtimeStats.drawTimeMs.toFixed(2)} ms`,
       trackedObjects: String(trackedObjects),
       towers: String(runtime.towers.length),
       hostiles: String(runtime.monsters.length),

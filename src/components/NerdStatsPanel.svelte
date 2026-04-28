@@ -10,6 +10,8 @@
     {#each [
       { label: "FPS", value: $hud.nerdStats.fps },
       { label: "Frame Time", value: $hud.nerdStats.frameTime },
+      { label: "Update Avg", value: $hud.nerdStats.updateTime },
+      { label: "Draw Avg", value: $hud.nerdStats.drawTime },
       { label: "Tracked", value: $hud.nerdStats.trackedObjects },
       { label: "Towers", value: $hud.nerdStats.towers },
       { label: "Hostiles", value: $hud.nerdStats.hostiles },
