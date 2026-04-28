@@ -47,18 +47,11 @@ Preview the production build locally:
 npm run preview
 ```
 
-Create a single-file build:
-
-```bash
-npm run build:single
-```
-
 Useful validation commands:
 
 ```bash
 npm run build
 npm run build:pages
-npm run build:single
 npm run dev
 ```
 

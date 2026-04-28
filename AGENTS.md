@@ -101,7 +101,6 @@ To run the browser version:
 Useful validation commands:
 
 - `npm run build`
-- `npm run build:single`
 - `npm run dev`
 
 Maintenance preferences:

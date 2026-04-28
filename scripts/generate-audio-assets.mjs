@@ -1,5 +1,7 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 
 const sampleRate = 24_000;
 const outputDir = resolve(process.cwd(), "src", "assets", "audio");
@@ -283,9 +285,42 @@ function encodeWav(samples) {
 
 mkdirSync(outputDir, { recursive: true });
 
+const tempDir = mkdtempSync(resolve(tmpdir(), "vector-defence-audio-"));
+
+function commandExists(command, args = ["-version"]) {
+  const result = spawnSync(command, args, { stdio: "ignore" });
+  return !result.error;
+}
+
+const encoder =
+  commandExists("afconvert", ["-h"])
+    ? (inputPath, outputPath) => spawnSync("afconvert", ["-f", "m4af", "-d", "aac", "-b", "64000", inputPath, outputPath], {
+        stdio: "inherit",
+      })
+    : commandExists("ffmpeg")
+      ? (inputPath, outputPath) => spawnSync("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", "-i", inputPath, "-c:a", "aac", "-b:a", "64k", outputPath], {
+          stdio: "inherit",
+        })
+      : undefined;
+
+if (!encoder) {
+  console.error("Audio generation requires afconvert or ffmpeg to encode 64 kbps AAC assets.");
+  rmSync(tempDir, { recursive: true, force: true });
+  process.exit(1);
+}
+
 for (const [name, cue] of Object.entries(cues)) {
   const samples = renderCue(name, cue);
-  writeFileSync(resolve(outputDir, `${name}.wav`), encodeWav(samples));
+  const wavPath = resolve(tempDir, `${name}.wav`);
+  const m4aPath = resolve(outputDir, `${name}.m4a`);
+  writeFileSync(wavPath, encodeWav(samples));
+  const result = encoder(wavPath, m4aPath);
+  if (result.status !== 0) {
+    rmSync(tempDir, { recursive: true, force: true });
+    process.exit(result.status ?? 1);
+  }
 }
+
+rmSync(tempDir, { recursive: true, force: true });
 
 console.log(`Wrote ${Object.keys(cues).length} audio assets to ${outputDir}`);
