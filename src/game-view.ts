@@ -57,8 +57,8 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
   const wave = currentLevel
     ? (activeWave
         ? (game.state === GameState.Playing && runtime.spawnDelay > 0
-            ? `Wave ${runtime.currentWaveIndex + 1}/${runtime.waveTotal}`
-            : `Wave ${runtime.currentWaveIndex + 1}/${runtime.waveTotal} · ${Math.min(runtime.waveSpawnedMonsters, activeWave.count)}/${activeWave.count}`)
+            ? `${runtime.currentWaveIndex + 1}/${runtime.waveTotal}`
+            : `${runtime.currentWaveIndex + 1}/${runtime.waveTotal} · ${Math.min(runtime.waveSpawnedMonsters, activeWave.count)}/${activeWave.count}`)
         : `All ${game.waveTotal} waves cleared`)
     : "Idle";
   const banner = createBannerText(game);

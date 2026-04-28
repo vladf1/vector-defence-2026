@@ -363,7 +363,11 @@ export function createGameSession(): GameSession {
       if (point && isOnCanvas) {
         game?.setPointer(point);
         withGame((currentGame) => {
-          currentGame.placeTower(towerDrag!.kind, point);
+          if (currentGame.canPlaceTower(point)) {
+            currentGame.placeTower(towerDrag!.kind, point);
+          } else {
+            currentGame.cancelTowerPlacement();
+          }
         });
       } else {
         cancelBuild();
