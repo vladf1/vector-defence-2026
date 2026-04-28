@@ -4,7 +4,8 @@ import { angleBetween, hexWithAlpha, randomRange } from "../../utils";
 const DAMAGE_FLASH_BASE_ALPHA = 0.32;
 const DAMAGE_FLASH_EXTRA_ALPHA = 0.42;
 const DAMAGE_FLASH_BLUR = 10;
-const DAMAGE_FLASH_COLOR = "#fff2a8";
+const DAMAGE_FLASH_COLOR = "#ff405c";
+const DAMAGE_FLASH_FADE_PER_SECOND = 4.5;
 
 export abstract class Monster extends EventTarget {
   x: number;
@@ -70,7 +71,7 @@ export abstract class Monster extends EventTarget {
 
     this.moveAlongPath(deltaSeconds);
     this.updateSpecial(deltaSeconds);
-    this.damageFlash = Math.max(0, this.damageFlash - (1.8 * deltaSeconds));
+    this.damageFlash = Math.max(0, this.damageFlash - (DAMAGE_FLASH_FADE_PER_SECOND * deltaSeconds));
   }
 
   draw(context: CanvasRenderingContext2D): void {
