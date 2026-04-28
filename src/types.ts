@@ -31,6 +31,30 @@ export const TowerKind = {
 
 export type TowerKind = typeof TowerKind[keyof typeof TowerKind];
 
+export const AudioCue = {
+  EscapeBurst: { id: "escape-burst", cooldownSeconds: 0.16, gain: 0.52, rateVariation: 0 },
+  GunFire: { id: "gun-fire", cooldownSeconds: 0.026, gain: 0.58, rateVariation: 0.035 },
+  LaserFire: { id: "laser-fire", cooldownSeconds: 0.18, gain: 0.45, rateVariation: 0 },
+  LevelLoss: { id: "level-loss", cooldownSeconds: 0.8, gain: 0.46, rateVariation: 0 },
+  LevelStart: { id: "level-start", cooldownSeconds: 0.25, gain: 0.36, rateVariation: 0 },
+  LevelWin: { id: "level-win", cooldownSeconds: 0.8, gain: 0.42, rateVariation: 0 },
+  MissileExplosion: { id: "missile-explosion", cooldownSeconds: 0.08, gain: 0.82, rateVariation: 0 },
+  MissileLaunch: { id: "missile-launch", cooldownSeconds: 0.08, gain: 0.54, rateVariation: 0.025 },
+  MonsterHeavyDeath: { id: "monster-heavy-death", cooldownSeconds: 0.08, gain: 0.7, rateVariation: 0 },
+  MonsterPop: { id: "monster-pop", cooldownSeconds: 0.035, gain: 0.44, rateVariation: 0.06 },
+  MonsterShatter: { id: "monster-shatter", cooldownSeconds: 0.045, gain: 0.42, rateVariation: 0.04 },
+  ProjectileImpact: { id: "projectile-impact", cooldownSeconds: 0.018, gain: 0.34, rateVariation: 0.06 },
+  SlowPulse: { id: "slow-pulse", cooldownSeconds: 0.11, gain: 0.34, rateVariation: 0 },
+  SplitterBurst: { id: "splitter-burst", cooldownSeconds: 0.1, gain: 0.5, rateVariation: 0 },
+  TowerPlace: { id: "tower-place", cooldownSeconds: 0.05, gain: 0.44, rateVariation: 0 },
+  TowerSell: { id: "tower-sell", cooldownSeconds: 0.08, gain: 0.34, rateVariation: 0 },
+  TowerUpgrade: { id: "tower-upgrade", cooldownSeconds: 0.08, gain: 0.38, rateVariation: 0 },
+  WaveClear: { id: "wave-clear", cooldownSeconds: 0.5, gain: 0.34, rateVariation: 0 },
+} as const;
+
+export type AudioCue = typeof AudioCue[keyof typeof AudioCue];
+export type AudioCueId = AudioCue["id"];
+
 export const ModalAction = {
   Resume: "resume",
   PlayUnlocked: "play-unlocked",

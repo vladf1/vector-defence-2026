@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve, dirname, extname } from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -15,6 +15,10 @@ const buildResult = spawnSync(
   [viteBin, "build", "--outDir", tempDir],
   {
     cwd: rootDir,
+    env: {
+      ...process.env,
+      VECTOR_DEFENCE_SINGLE_FILE: "1",
+    },
     stdio: "inherit",
   },
 );
@@ -51,11 +55,13 @@ const toDataUri = (filePath) => {
             : extension === ".woff"
               ? "font/woff"
               : extension === ".woff2"
-                ? "font/woff2"
-                : extension === ".ttf"
-                  ? "font/ttf"
-                  : extension === ".otf"
-                    ? "font/otf"
+              ? "font/woff2"
+              : extension === ".ttf"
+                ? "font/ttf"
+                : extension === ".otf"
+                  ? "font/otf"
+                  : extension === ".wav"
+                    ? "audio/wav"
                     : "application/octet-stream";
 
   return `data:${mimeType};base64,${content.toString("base64")}`;
@@ -75,6 +81,24 @@ const inlineCssUrls = (cssText) =>
     return `url(${quote}${toDataUri(resolveBuiltAsset(assetPath))}${quote})`;
   });
 
+const inlineJsAssetUrls = (jsText) => {
+  const assetsDir = resolve(tempDir, "assets");
+  const assetNames = readdirSync(assetsDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .filter((name) => !name.endsWith(".js") && !name.endsWith(".css"));
+
+  let nextText = jsText;
+  for (const assetName of assetNames) {
+    const dataUri = toDataUri(resolve(assetsDir, assetName));
+    nextText = nextText
+      .replaceAll(`"/assets/${assetName}"`, `"${dataUri}"`)
+      .replaceAll(`'/assets/${assetName}'`, `'${dataUri}'`)
+      .replaceAll(`\`/assets/${assetName}\``, `\`${dataUri}\``);
+  }
+  return nextText;
+};
+
 html = html.replace(
   /<link\b([^>]*?)rel=["']stylesheet["']([^>]*?)href=["']([^"']+)["']([^>]*?)>/g,
   (_match, _beforeRel, _betweenRelAndHref, href, _afterHref) => {
@@ -88,7 +112,7 @@ html = html.replace(
   /<script\b([^>]*?)src=["']([^"']+)["']([^>]*)><\/script>/g,
   (_match, beforeSrc, src, afterSrc) => {
     const jsPath = resolveBuiltAsset(src);
-    const jsText = readFileSync(jsPath, "utf8");
+    const jsText = inlineJsAssetUrls(readFileSync(jsPath, "utf8"));
     const inlineAttrs = `${beforeSrc} ${afterSrc}`
       .replace(/\s*crossorigin(?:=(?:"[^"]*"|'[^']*'))?/gi, "")
       .replace(/\s+/g, " ")

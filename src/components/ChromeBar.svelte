@@ -2,7 +2,7 @@
   import { getGameSessionContext } from "../game-context";
 
   const session = getGameSessionContext();
-  const { hud } = session;
+  const { hud, soundEnabled } = session;
 </script>
 
 <header class="topbar">
@@ -22,6 +22,16 @@
     {/each}
   </section>
   <div class="actions">
+    <button
+      class="chrome-button sound-button"
+      type="button"
+      aria-label={$soundEnabled ? "Mute sound" : "Unmute sound"}
+      aria-pressed={$soundEnabled}
+      title={$soundEnabled ? "Mute sound" : "Unmute sound"}
+      onclick={session.toggleSound}
+    >
+      <span class="sound-icon" aria-hidden="true">{$soundEnabled ? "🔊" : "🔇"}</span>
+    </button>
     <button class="chrome-button" type="button" onclick={session.openMenu}>Campaign</button>
     <button class="chrome-button" type="button" onclick={session.restart}>Restart</button>
   </div>

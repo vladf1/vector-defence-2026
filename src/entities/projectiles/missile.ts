@@ -1,6 +1,7 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
 import { createMissileExplosionEffect } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
+import { AudioCue } from "../../types";
 import type { Point } from "../../types";
 import { angleBetween, calculateDistance, randomRange, withinDistance } from "../../utils";
 import { Particle } from "../effects/particle";
@@ -72,6 +73,7 @@ export class Missile {
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         this.removed = true;
         createMissileExplosionEffect(game, this.x, this.y, this.angle);
+        game.playSound(AudioCue.MissileExplosion, this.x, 1.1);
         for (const nearby of game.runtime.getActiveMonsters()) {
           const dist = calculateDistance(this.x, this.y, nearby.x, nearby.y);
           if (dist <= this.effectRadius) {

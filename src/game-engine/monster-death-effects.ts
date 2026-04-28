@@ -13,6 +13,7 @@ import { SquareMonster } from "../entities/monsters/square-monster";
 import { TankMonster } from "../entities/monsters/tank-monster";
 import { TriangleMonster } from "../entities/monsters/triangle-monster";
 import type { Game } from "../game-engine";
+import { AudioCue } from "../types";
 import { randomRange } from "../utils";
 import { createExplosionEffect } from "./combat-effects";
 import {
@@ -25,6 +26,8 @@ import {
 } from "./death-effect-geometry";
 
 export function createMonsterDeathEffect(game: Game, monster: Monster): void {
+  playMonsterDeathSound(game, monster);
+
   if (monster instanceof BallMonster) {
     createBallShatterExplosion(game, monster);
   } else if (monster instanceof RunnerMonster) {
@@ -44,6 +47,20 @@ export function createMonsterDeathEffect(game: Game, monster: Monster): void {
   } else {
     createExplosionEffect(game, monster.x, monster.y, 30, randomRange(1.5, 4), monster.color, 2.5);
   }
+}
+
+function playMonsterDeathSound(game: Game, monster: Monster): void {
+  if (monster instanceof TankMonster || monster instanceof BulwarkMonster || monster instanceof BerserkerMonster) {
+    game.playSound(AudioCue.MonsterHeavyDeath, monster.x, monster instanceof TankMonster ? 1.25 : 1.05);
+    return;
+  }
+
+  if (monster instanceof RunnerMonster || monster instanceof SplitterMonster) {
+    game.playSound(AudioCue.MonsterPop, monster.x, monster instanceof SplitterMonster ? 1.1 : 0.85);
+    return;
+  }
+
+  game.playSound(AudioCue.MonsterShatter, monster.x);
 }
 
 function createBallShatterExplosion(game: Game, monster: BallMonster): void {

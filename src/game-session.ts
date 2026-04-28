@@ -1,5 +1,6 @@
 import { FIELD_HEIGHT, FIELD_WIDTH } from "./constants";
 import { findTowerShortcut } from "./entities/towers/tower-registry";
+import { GameAudio } from "./game-audio";
 import {
   Game,
   createLevels,
@@ -27,6 +28,8 @@ interface GameWindow extends Window {
 export interface GameSession {
   hud: Readable<HudSnapshot>;
   modal: Readable<ModalView | null>;
+  soundEnabled: Readable<boolean>;
+  toggleSound(): void;
   setNerdStatsEnabled(enabled: boolean): void;
   mount(backgroundCanvas: HTMLCanvasElement, gameCanvas: HTMLCanvasElement): void;
   destroy(): void;
@@ -50,8 +53,11 @@ export interface GameSession {
 export function createGameSession(): GameSession {
   const hudStore = writable(INITIAL_HUD_SNAPSHOT);
   const modalStore = writable<ModalView | null>(null);
+  const soundEnabledStore = writable(true);
+  const audio = new GameAudio();
   let canvas: HTMLCanvasElement | null = null;
   let game: Game | null = null;
+  let soundEnabled = true;
   let frameId = 0;
   let previousFrameTime = 0;
   let runtimeStats: RuntimeHudStats = { ...INITIAL_RUNTIME_HUD_STATS };
@@ -92,6 +98,7 @@ export function createGameSession(): GameSession {
       return;
     }
 
+    audio.unlock();
     action(game);
     publish(force, force);
   };
@@ -192,7 +199,7 @@ export function createGameSession(): GameSession {
       throw new Error("Canvas context unavailable.");
     }
 
-    game = new Game(createLevels(), nextBackgroundCanvas, backgroundCtx, canvas, ctx);
+    game = new Game(createLevels(), nextBackgroundCanvas, backgroundCtx, canvas, ctx, audio);
     (window as GameWindow).__vectorDefence = game;
     game.resize();
     game.draw();
@@ -233,6 +240,14 @@ export function createGameSession(): GameSession {
     }
 
     resetNerdStatsSamples();
+  };
+
+  const toggleSound = (): void => {
+    soundEnabled = audio.toggle();
+    if (soundEnabled) {
+      audio.unlock();
+    }
+    soundEnabledStore.set(soundEnabled);
   };
 
   const handleResize = (): void => {
@@ -456,6 +471,8 @@ export function createGameSession(): GameSession {
   return {
     hud: readonly(hudStore),
     modal: readonly(modalStore),
+    soundEnabled: readonly(soundEnabledStore),
+    toggleSound,
     setNerdStatsEnabled,
     mount,
     destroy,

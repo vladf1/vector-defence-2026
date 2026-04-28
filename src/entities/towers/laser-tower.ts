@@ -1,5 +1,5 @@
 import type { Game } from "../../game-engine";
-import { TowerKind } from "../../types";
+import { AudioCue, TowerKind } from "../../types";
 import { angleBetween, calculateDistanceToSegment, randomRange, turnAngleTowards } from "../../utils";
 import { Tower } from "./tower";
 
@@ -46,6 +46,7 @@ export class LaserTower extends Tower {
     const alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle);
     if (alignedToTarget && this.ready()) {
       this.beamAlpha = 1;
+      game.playSound(AudioCue.LaserFire, this.x, 0.9 + (this.level * 0.1));
       this.resetCooldown(1.5);
     }
 

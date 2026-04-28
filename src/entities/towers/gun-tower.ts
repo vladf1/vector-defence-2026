@@ -1,6 +1,6 @@
 import { TOWER_RADIUS } from "../../constants";
 import type { Game } from "../../game-engine";
-import { TowerKind } from "../../types";
+import { AudioCue, TowerKind } from "../../types";
 import { angleBetween, randomRange, turnAngleTowards } from "../../utils";
 import { Projectile } from "../projectiles/projectile";
 import { Tower } from "./tower";
@@ -44,6 +44,7 @@ export class GunTower extends Tower {
       };
       game.runtime.projectiles.push(new Projectile(actualSource, target, 10 + this.level, 3 + (this.level / 2)));
       this.muzzleFlashSeconds = 0.055;
+      game.playSound(AudioCue.GunFire, actualSource.x, 0.92 + (this.level * 0.08));
       this.resetCooldown(0.2);
     }
   }

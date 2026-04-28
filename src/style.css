@@ -169,6 +169,20 @@ textarea,
   padding: 7px 10px;
 }
 
+.sound-button {
+  width: 40px;
+  min-width: 40px;
+  padding-inline: 0;
+  display: inline-grid;
+  place-items: center;
+}
+
+.sound-icon {
+  display: block;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
 .board-card {
   position: relative;
   background: var(--panel-strong);

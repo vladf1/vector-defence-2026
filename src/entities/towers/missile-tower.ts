@@ -1,5 +1,5 @@
 import type { Game } from "../../game-engine";
-import { TowerKind } from "../../types";
+import { AudioCue, TowerKind } from "../../types";
 import { angleBetween, turnAngleTowards } from "../../utils";
 import { Missile } from "../projectiles/missile";
 import { Tower } from "./tower";
@@ -42,6 +42,7 @@ export class MissileTower extends Tower {
       };
       game.runtime.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeedPerSecond));
       this.muzzleFlashSeconds = 0.12;
+      game.playSound(AudioCue.MissileLaunch, source.x, 1 + (this.level * 0.09));
       this.resetCooldown(2 - (0.2 * this.level));
     }
   }

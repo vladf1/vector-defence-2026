@@ -1,6 +1,6 @@
 import { TOWER_RADIUS } from "../../constants";
 import type { Game } from "../../game-engine";
-import { TowerKind } from "../../types";
+import { AudioCue, TowerKind } from "../../types";
 import { withinDistance } from "../../utils";
 import { LinkEffect } from "../effects/link-effect";
 import { Tower } from "./tower";
@@ -46,6 +46,7 @@ export class SlowTower extends Tower {
     }
 
     this.resetCooldown(1);
+    game.playSound(AudioCue.SlowPulse, this.x, 0.85 + (affected * 0.1));
   }
 
   private getOrbitSpeedPerSecond(): number {

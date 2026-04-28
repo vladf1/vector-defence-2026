@@ -1,5 +1,6 @@
 import levelsJson from "../game-levels.json";
 import { createGameLevels, createRandomChallengeLevel, getCampaignLevelCount } from "./campaign";
+import type { GameAudio } from "./game-audio";
 import { createEscapeBurstEffect } from "./game-engine/combat-effects";
 import { createMonsterDeathEffect } from "./game-engine/monster-death-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
@@ -19,8 +20,10 @@ import {
 } from "./utils";
 import {
   GameState,
+  AudioCue,
   TowerKind,
   MonsterKind,
+  type AudioCue as AudioCueValue,
   type LevelData,
   type LevelJsonData,
   type Point,
@@ -51,6 +54,7 @@ export function createLevels(): LevelData[] {
 export class Game {
   levels: LevelData[];
   renderer: GameRenderer;
+  audio: GameAudio;
   currentLevelIndex = -1;
   highestUnlockedLevelIndex = 0;
   campaignCleared = false;
@@ -69,8 +73,10 @@ export class Game {
     backgroundCtx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D,
+    audio: GameAudio,
   ) {
     this.levels = levelList;
+    this.audio = audio;
     this.renderer = new GameRenderer(backgroundCanvas, backgroundCtx, canvas, ctx, this);
   }
 
@@ -100,6 +106,10 @@ export class Game {
     if (this.runtime.links.length < MAX_LINKS) {
       this.runtime.links.push(link);
     }
+  }
+
+  playSound(cue: AudioCueValue, panX?: number, intensity?: number): void {
+    this.audio.play(cue, { panX, intensity });
   }
 
   requestHudSync(): void {
@@ -140,6 +150,7 @@ export class Game {
     this.menuReturnState = undefined;
     this.setBanner(`Level ${level.levelNumber ?? "?"}: ${level.name}`, 2.4);
     this.setState(GameState.Playing);
+    this.playSound(AudioCue.LevelStart);
     this.renderBackgroundLayer();
     this.requestModalSync();
     this.requestHudSync();
@@ -234,10 +245,12 @@ export class Game {
     for (const child of createSplitterChildren(this, monster)) {
       this.runtime.monsters.push(child);
     }
+    this.playSound(AudioCue.SplitterBurst, monster.x);
     this.setBanner("Splitter burst", 1.2);
   }
 
   onMonsterEscaped(monster: Monster): void {
+    this.playSound(AudioCue.EscapeBurst, monster.x);
     createEscapeBurstEffect(this, monster.x, monster.y);
     this.runtime.escapesLeft = Math.max(0, this.runtime.escapesLeft - 1);
     if (this.runtime.escapesLeft === 0) {
@@ -247,6 +260,7 @@ export class Game {
       this.setState(GameState.Lost);
       this.menuReturnState = undefined;
       this.setBanner("Defeat", 5);
+      this.playSound(AudioCue.LevelLoss);
       this.requestModalSync();
     }
     this.requestHudSync();
@@ -323,6 +337,7 @@ export class Game {
     this.runtime.towers.push(tower);
     this.runtime.selectedTower = tower;
     this.runtime.placingTower = undefined;
+    this.playSound(AudioCue.TowerPlace, point.x);
     this.requestHudSync();
   }
 
@@ -342,6 +357,7 @@ export class Game {
       return;
     }
     this.runtime.money += selectedTower.resaleValue;
+    this.playSound(AudioCue.TowerSell, selectedTower.x);
     selectedTower.removed = true;
     this.runtime.towers = this.runtime.towers.filter((tower) => tower !== selectedTower);
     this.runtime.selectedTower = undefined;
@@ -358,6 +374,7 @@ export class Game {
     }
     this.runtime.money -= selectedTower.upgradeCost;
     selectedTower.upgrade();
+    this.playSound(AudioCue.TowerUpgrade, selectedTower.x);
     this.requestHudSync();
   }
 
@@ -390,6 +407,7 @@ export class Game {
       this.runtime.spawnDelay = 0;
       this.setBanner(`Final wave cleared · +${formatMoney(wave.reward)}`, 2.6);
     }
+    this.playSound(AudioCue.WaveClear);
   }
 
   finishLevel(): void {
@@ -407,12 +425,14 @@ export class Game {
       this.highestUnlockedLevelIndex = finalCampaignLevelIndex;
       this.setState(GameState.CampaignWon);
       this.setBanner("Campaign Complete", 5.5);
+      this.playSound(AudioCue.LevelWin, undefined, 1.25);
     } else {
       if (!isChallenge) {
         this.highestUnlockedLevelIndex = Math.max(this.highestUnlockedLevelIndex, this.currentLevelIndex + 1);
       }
       this.setState(GameState.Won);
       this.setBanner(isChallenge ? "Challenge Clear" : "Level Clear", 5);
+      this.playSound(AudioCue.LevelWin);
     }
     this.requestModalSync();
   }
