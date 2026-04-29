@@ -1,4 +1,4 @@
-import { TOWER_RADIUS } from "../../constants";
+import { TOWER_RADIUS, TOWER_UPGRADE_RING_GROWTH, TOWER_UPGRADE_RING_OFFSET } from "../../constants";
 import type { Game } from "../../game-engine";
 import { AudioCue, TowerKind } from "../../types";
 import { angleBetween, randomRange, turnAngleTowards } from "../../utils";
@@ -64,7 +64,7 @@ export class GunTower extends Tower {
       context.strokeStyle = `rgba(255, 226, 122, ${0.22 + (this.level * 0.02)})`;
       context.lineWidth = 0.9 + (this.level * 0.08);
       context.beginPath();
-      context.arc(0, 0, TOWER_RADIUS + 1.2 + (this.level * 0.22), 0, Math.PI * 2);
+      context.arc(0, 0, TOWER_RADIUS + TOWER_UPGRADE_RING_OFFSET + (this.level * TOWER_UPGRADE_RING_GROWTH), 0, Math.PI * 2);
       context.stroke();
     }
 

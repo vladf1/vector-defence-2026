@@ -1,4 +1,4 @@
-import { MAX_TOWER_LEVEL, UPGRADE_COST } from "../../constants";
+import { MAX_TOWER_LEVEL, TOWER_RANGE_UPGRADE_STEP, UPGRADE_COST } from "../../constants";
 import type { Point } from "../../types";
 import type { TowerKind } from "../../types";
 import { normalizeAngle } from "../../utils";
@@ -65,7 +65,7 @@ export abstract class Tower {
     }
     this.level += 1;
     this.cost += UPGRADE_COST;
-    this.range += this.level * 4;
+    this.range += this.level * TOWER_RANGE_UPGRADE_STEP;
     this.onUpgrade();
   }
 
