@@ -11,9 +11,13 @@ Key paths:
 - Svelte/game bridge: `src/game-session.ts`
 - Browser HUD/modal view-models: `src/game-view.ts`
 - Browser simulation engine: `src/game-engine.ts`
+- Browser level runtime state: `src/level-runtime.ts`
+- Browser route geometry/motion samples: `src/route-path.ts`
 - Browser placement geometry/tower hit-testing: `src/placement-rules.ts`
 - Browser renderer/canvas orchestration: `src/game-renderer.ts`
 - Browser gameplay entities: `src/entities/`
+- Browser gameplay engine helpers: `src/game-engine/`
+- Browser audio orchestration: `src/game-audio.ts`
 - Tower metadata/shortcuts/previews: `src/entities/towers/tower-registry.ts`
 - Browser campaign builder: `src/campaign.ts`
 - Procedural route generator used by the unlocked random challenge: `src/level-generator.ts`
@@ -23,6 +27,8 @@ Key paths:
 - Browser styles: `src/style.css`
 - Browser package/scripts: `package.json`
 - Browser level data: `game-levels.json`
+- Audio asset generation script: `scripts/generate-audio-assets.mjs`
+- Tower render sheet script: `scripts/render-towers.mjs`
 
 Repository notes:
 
@@ -35,18 +41,22 @@ Current code structure:
 
 - `src/main.ts` owns Svelte app bootstrapping.
 - `src/App.svelte` wires the main shell and creates the shared game session context.
-- `src/components/ChromeBar.svelte`, `src/components/GameBoard.svelte`, `src/components/GameModal.svelte`, and `src/components/TowerPanel.svelte` own the declarative UI around the canvas.
+- `src/components/ChromeBar.svelte`, `src/components/GameBoard.svelte`, `src/components/GameModal.svelte`, `src/components/TowerPanel.svelte`, and `src/components/NerdStatsPanel.svelte` own the declarative UI around the canvas.
 - `src/game-context.ts` owns the Svelte context helpers for the shared `GameSession`.
 - `src/game-session.ts` bridges Svelte stores/events to the imperative game runtime, handles keyboard/pointer input, and publishes HUD/modal snapshots.
 - `src/game-engine.ts` owns gameplay state, campaign progression, and simulation orchestration.
+- `src/level-runtime.ts` owns per-level mutable runtime collections such as monsters, towers, projectiles, particles, links, placement state, money, wave counters, and route path.
+- `src/game-engine/monster-factory.ts` owns monster class lookup, level hit-point scaling, splitter child creation, and monster lifecycle event wiring into `Game`.
+- `src/game-engine/monster-death-effects.ts`, `src/game-engine/death-effect-geometry.ts`, and `src/game-engine/combat-effects.ts` own effect helpers used by the engine and entities.
 - `src/placement-rules.ts` owns tower placement geometry and board hit-testing through explicit route/tower inputs; it should not import `Game`.
+- `src/route-path.ts` owns route drawing commands plus the sampled motion path entries used by monster movement.
 - `src/game-renderer.ts` owns canvas sizing, background caching, board rendering, placement previews, and orchestration of entity drawing.
 - `src/game-view.ts` owns HUD/modal view-model generation for Svelte.
-- `src/entities/` owns active gameplay entities split by concern: towers, monsters, projectiles, effects, and entity-local game access.
+- `src/entities/` owns active gameplay entities split by concern: towers, monsters, projectiles, and effects.
 - `src/entities/monsters/monster.ts` owns shared monster movement, damage, slow recovery, lifecycle event emission, and health-bar rendering.
 - Concrete monster classes live under `src/entities/monsters/` and own monster-specific base stats, body rendering, and special behavior (`berserker` ramps speed as it loses health; `bulwark` mitigates incoming damage).
 - Projectile classes live under `src/entities/projectiles/`; import the concrete `projectile.ts` or `missile.ts` file directly.
-- Effect classes live under `src/entities/effects/`; import the concrete `particle.ts` or `link-effect.ts` file directly.
+- Effect classes live under `src/entities/effects/`; import the concrete effect file directly.
 - Tower classes live under `src/entities/towers/`; `Tower` in `tower.ts` owns shared targeting/upgrade/selection behavior.
 - `src/entities/towers/tower-registry.ts` is the source of truth for tower class lookup, keyboard shortcuts, and tower preview instances used by the Svelte toolbar.
 - Towers and projectiles operate against `Game` directly; keep their gameplay interactions narrow and rooted in the active level runtime where possible.
@@ -73,9 +83,9 @@ Data / naming conventions:
 - Monster constructors pass private named constants to `Monster` with `super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS)`.
 - Monster constructor stats use `hitPoints`, not `hp`.
 - `hitPoints` is current monster health. `maxHitPoints` is the full-health denominator used by the health bar.
-- Monster constructors take the concrete `Point[]` path they should follow, not `LevelData`.
-- For unusual spawn positions, build a new path array that starts at the custom spawn point and continues through the remaining route.
-- Monsters expose lifecycle event handlers such as `onKilled` and `onEscaped`; wire those handlers in `Game.createMonster(...)`.
+- Monster constructors take the concrete `PathEntry[]` path they should follow, not `LevelData`.
+- For unusual spawn positions, build a new `PathEntry[]` with route-path helpers such as `createPathEntriesFromDistance(...)` instead of passing raw level points to monsters.
+- Monsters dispatch lifecycle events such as `killed` and `escaped`; wire those listeners in `src/game-engine/monster-factory.ts`.
 - Concrete monster classes should not import `Game` or call game orchestration methods directly.
 - Monster instances do not carry `MonsterKind`; use `MonsterKind` for level/campaign data and `instanceof` for runtime class-specific behavior.
 
@@ -85,9 +95,9 @@ Gameplay / UI notes:
 - Level 10 is the unlocked random challenge and does not count toward campaign completion.
 - Initial build time is campaign-driven, not a fixed global delay: early levels start around 10 seconds and later ones reach 14 seconds.
 - Intermission build windows between later waves are shorter and are generated per wave in `src/campaign.ts` (roughly 2.5 to 5.5 seconds).
-- Level 1 introduces `splitter` monsters in later waves. Splitters burst into weakened runner children when killed.
+- Level 1 uses a showcase sequence that includes the full current monster roster across waves. Splitters burst into weakened runner children when killed.
 - Later campaign waves and the random challenge also introduce `bulwark` and `berserker` monsters; do not assume the early handcrafted `game-levels.json` sequences cover the full runtime enemy roster.
-- Monster spawning and lifecycle event wiring are centralized in `Game.createMonster(...)`; tower creation is centralized in `Game.createTower(...)`.
+- Monster spawning is orchestrated by `Game.spawnMonster(...)`, but monster construction and lifecycle event wiring are centralized in `src/game-engine/monster-factory.ts`; tower creation is centralized in `Game.createTower(...)`.
 - Monster classes should own their own body rendering. Shared monster rendering concerns belong in `Monster`.
 - Tower classes should own their own drawing and attack behavior. Shared tower rendering/selection concerns belong in `Tower`.
 - Svelte components should consume `HudSnapshot` and `ModalView` data rather than reaching into the `Game` object directly.
@@ -103,10 +113,24 @@ Useful validation commands:
 - `npm run build`
 - `npm run dev`
 
+Tower render sheet:
+
+- `npm run render:towers` generates `artifacts/tower-render.png`.
+- The script starts a temporary Vite server, opens it with Playwright, imports the real tower classes, upgrades each tower from level 1 through 7, and calls the actual canvas `draw()` methods.
+- Use a fresh artifact filename when comparing visual variants so the app does not show a cached old image, for example `npm run render:towers -- artifacts/tower-render-laser-test.png`.
+- Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
+
+Audio asset generation:
+
+- `npm run generate:audio` runs `scripts/generate-audio-assets.mjs` and rewrites the generated `.m4a` files in `src/assets/audio/`.
+- The script synthesizes the cue waveforms in Node, then encodes 64 kbps AAC with `afconvert` when available or `ffmpeg` as a fallback.
+- Treat this as a source-asset regeneration step: review the resulting `src/assets/audio/*.m4a` diff before committing.
+
 Maintenance preferences:
 
 - Prefer named imports from `src/constants.ts` and `src/types.ts` so call sites show their dependencies clearly.
 - Keep Svelte UI declarative and thin; put formatting and modal/HUD derivation in `src/game-view.ts`.
 - Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in Svelte components.
-- When adding monsters, add a `MonsterKind` value, a concrete monster class, a `Game.createMonster(...)` branch, and campaign/level-generator usage as needed.
+- When changing tower drawing code, run `npm run render:towers -- artifacts/<fresh-name>.png` and inspect the generated sheet before calling the visuals done.
+- When adding monsters, add a `MonsterKind` value, a concrete monster class, a `createBaseMonster(...)` branch in `src/game-engine/monster-factory.ts`, and campaign/level-generator usage as needed.
 - When adding towers, add a `TowerKind` value, tower class, shortcut entry, and `Game.createTower(...)` branch.
