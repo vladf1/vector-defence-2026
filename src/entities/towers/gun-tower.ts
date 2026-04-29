@@ -74,28 +74,38 @@ export class GunTower extends Tower {
       context.fillStyle = "#ffe27a";
       const pipCount = Math.min(6, this.level);
       for (let i = 0; i < pipCount; i += 1) {
+        const pipSpacing = 0.28;
+        const pipSpread = pipSpacing * (pipCount - 1);
+        const pipAngle = pipCount === 1
+          ? Math.PI
+          : Math.PI - (pipSpread / 2) + ((pipSpread * i) / (pipCount - 1));
+        const pipRadius = 7.6 + (this.level * 0.24);
         context.beginPath();
-        context.arc(-7 + (i * 2.8), -6.4, 1, 0, Math.PI * 2);
+        context.arc(Math.cos(pipAngle) * pipRadius, Math.sin(pipAngle) * pipRadius, 1, 0, Math.PI * 2);
         context.fill();
       }
 
       context.strokeStyle = "#9dffd7";
       context.lineWidth = 1.2;
       context.lineCap = "round";
+      const powerbankStartX = -4 + (this.level * 0.22);
+      const powerbankEndX = 4.6 + (this.level * 1.05);
       context.beginPath();
-      context.moveTo(-3, -4.5 - (this.level * 0.2));
-      context.lineTo(8 + (this.level * 0.45), -3.5 - (this.level * 0.15));
-      context.moveTo(-3, 4.5 + (this.level * 0.2));
-      context.lineTo(8 + (this.level * 0.45), 3.5 + (this.level * 0.15));
+      context.moveTo(powerbankStartX, -4.25 - (this.level * 0.2));
+      context.lineTo(powerbankEndX, -3.65 - (this.level * 0.13));
+      context.moveTo(powerbankStartX, 4.25 + (this.level * 0.2));
+      context.lineTo(powerbankEndX, 3.65 + (this.level * 0.13));
       context.stroke();
     }
 
     context.strokeStyle = "#ffffff";
     context.lineWidth = 2 + (this.level / 2);
     context.lineCap = "butt";
+    const barrelBackX = -(this.level * 0.55);
+    const barrelFrontX = 16 + (this.level * 0.9);
     context.beginPath();
-    context.moveTo(0, 0);
-    context.lineTo(16 + (this.level * 0.9), 0);
+    context.moveTo(barrelBackX, 0);
+    context.lineTo(barrelFrontX, 0);
     context.stroke();
 
     if (this.muzzleFlashSeconds > 0) {
@@ -106,7 +116,7 @@ export class GunTower extends Tower {
       context.shadowColor = "#ffe27a";
       context.shadowBlur = 8;
       context.beginPath();
-      context.moveTo(16 + (this.level * 0.9), 0);
+      context.moveTo(barrelFrontX, 0);
       context.lineTo(22 + (this.level * 1.2), -3.4);
       context.lineTo(25 + (this.level * 1.35), 0);
       context.lineTo(22 + (this.level * 1.2), 3.4);
