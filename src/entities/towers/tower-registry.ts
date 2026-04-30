@@ -9,8 +9,8 @@ const PREVIEW_CENTER = 30;
 
 export const TOWER_TOOLBAR_PREVIEWS = [
   Object.assign(new GunTower(PREVIEW_CENTER, PREVIEW_CENTER), { angle: -Math.PI / 4 }),
-  Object.assign(new LaserTower(PREVIEW_CENTER, PREVIEW_CENTER), { angle: -Math.PI / 10 }),
-  Object.assign(new MissileTower(PREVIEW_CENTER, PREVIEW_CENTER), { angle: -Math.PI / 6 }),
+  Object.assign(new LaserTower(PREVIEW_CENTER, PREVIEW_CENTER), { angle: -Math.PI / 4 }),
+  Object.assign(new MissileTower(PREVIEW_CENTER, PREVIEW_CENTER), { angle: -Math.PI / 4 }),
   Object.assign(new SlowTower(PREVIEW_CENTER, PREVIEW_CENTER), { pulse: Math.PI / 2 }),
 ] as const satisfies readonly Tower[];
 

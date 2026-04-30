@@ -1,7 +1,7 @@
 import { TOWER_RADIUS, TOWER_UPGRADE_RING_GROWTH, TOWER_UPGRADE_RING_OFFSET } from "../../constants";
 import type { Game } from "../../game-engine";
 import { AudioCue, TowerKind } from "../../types";
-import { angleBetween, turnAngleTowards } from "../../utils";
+import { angleBetween, randomRange, turnAngleTowards } from "../../utils";
 import { Missile } from "../projectiles/missile";
 import { Tower } from "./tower";
 
@@ -13,7 +13,7 @@ export class MissileTower extends Tower {
   static readonly baseRange = 150;
   static readonly shortcuts = ["3", "r"] as const;
 
-  angle = Math.PI / 4;
+  angle = randomRange(-Math.PI, Math.PI);
   missileDamage = 50;
   turnSpeedPerSecond = 3.6;
   muzzleFlashSeconds = 0;
@@ -77,49 +77,77 @@ export class MissileTower extends Tower {
 
     context.save();
     context.rotate(this.angle);
-    context.fillStyle = "#202b35";
-    context.strokeStyle = "#ffffff";
-    context.fillRect(-10.5 - (this.level * 0.25), -4.5, 10 + (this.level * 0.45), 9);
-    context.strokeRect(-10.5 - (this.level * 0.25), -4.5, 10 + (this.level * 0.45), 9);
-    context.fillStyle = this.ready() ? "#ffe27a" : "#78838b";
-    context.fillRect(-7.5, -8, 11, 3.5);
-    context.strokeRect(-7.5, -8, 11, 3.5);
-    context.fillRect(-7.5, 4.5, 11, 3.5);
-    context.strokeRect(-7.5, 4.5, 11, 3.5);
-    context.beginPath();
-    context.moveTo(3.5, -8);
-    context.lineTo(8, -6.25);
-    context.lineTo(3.5, -4.5);
-    context.closePath();
-    context.fill();
-    context.stroke();
-    context.beginPath();
-    context.moveTo(3.5, 4.5);
-    context.lineTo(8, 6.25);
-    context.lineTo(3.5, 8);
-    context.closePath();
-    context.fill();
-    context.stroke();
+    const upgradePipCount = Math.max(0, this.level - 2);
 
-    if (this.level > 0) {
-      context.fillStyle = "#ffe27a";
-      const pipCount = Math.min(6, this.level);
-      for (let i = 0; i < pipCount; i += 1) {
-        context.beginPath();
-        context.arc(-7.5 + (i * 3), 9.2, 1, 0, Math.PI * 2);
-        context.fill();
-      }
+    const rocketYs = [
+      [0],
+      [-3.1, 3.1],
+      [-4.5, 0, 4.5],
+    ][Math.min(2, this.level)];
 
-      context.fillStyle = this.ready() ? "#ff9d5c" : "#78838b";
-      context.fillRect(-6.5, -2, 9 + (this.level * 0.45), 4);
-      context.strokeRect(-6.5, -2, 9 + (this.level * 0.45), 4);
+    for (const [index, rocketY] of rocketYs.entries()) {
+      const accentRocket = index === 1 && rocketYs.length === 3;
+      const extendedRocket = rocketYs.length === 1 || accentRocket;
+      const shortenedSideRocket = rocketYs.length === 3 && !accentRocket;
+      const rocketLengthBonus = extendedRocket ? 3.2 : shortenedSideRocket ? -1.7 : 0;
+      const rocketBodyFrontX = 3.4 + rocketLengthBonus;
+      const rocketNoseTipX = 8.9 + rocketLengthBonus;
+      const rocketColor = this.ready() ? accentRocket ? "#ff9d5c" : "#ffe27a" : "#78838b";
+      const noseColor = this.ready() ? accentRocket ? "#ffe27a" : "#fff1ac" : "#a1abb2";
+      const rocketOffsetX = 1.8;
+      context.fillStyle = rocketColor;
+      context.strokeStyle = "#06100f";
+      context.lineWidth = 0.8;
       context.beginPath();
-      context.moveTo(2.5 + (this.level * 0.45), -2);
-      context.lineTo(7 + (this.level * 0.45), 0);
-      context.lineTo(2.5 + (this.level * 0.45), 2);
+      context.rect(-7.8 + rocketOffsetX, rocketY - 1.65, 11.2 + rocketLengthBonus, 3.3);
+      context.fill();
+      context.stroke();
+
+      context.fillStyle = noseColor;
+      context.beginPath();
+      context.moveTo(rocketBodyFrontX + rocketOffsetX, rocketY - 1.9);
+      context.lineTo(rocketNoseTipX + rocketOffsetX, rocketY);
+      context.lineTo(rocketBodyFrontX + rocketOffsetX, rocketY + 1.9);
       context.closePath();
       context.fill();
       context.stroke();
+
+      context.fillStyle = "#ff9d5c";
+      context.beginPath();
+      context.moveTo(-7.8 + rocketOffsetX, rocketY - 1.65);
+      context.lineTo(-9.8 + rocketOffsetX, rocketY - 2.45);
+      context.lineTo(-9.2 + rocketOffsetX, rocketY - 0.6);
+      context.lineTo(-7.8 + rocketOffsetX, rocketY);
+      context.closePath();
+      context.fill();
+      context.beginPath();
+      context.moveTo(-7.8 + rocketOffsetX, rocketY + 1.65);
+      context.lineTo(-9.8 + rocketOffsetX, rocketY + 2.45);
+      context.lineTo(-9.2 + rocketOffsetX, rocketY + 0.6);
+      context.lineTo(-7.8 + rocketOffsetX, rocketY);
+      context.closePath();
+      context.fill();
+
+      context.fillStyle = "#ffe27a";
+      context.beginPath();
+      context.arc(-9.4 + rocketOffsetX, rocketY, 0.85, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+    }
+
+    if (upgradePipCount > 0) {
+      const pipPositions = [
+        [{ x: -1.6, y: 8.2 }],
+        [{ x: -1.6, y: 8.2 }, { x: 1.6, y: 8.2 }],
+        [{ x: -1.6, y: 8.2 }, { x: 1.6, y: 8.2 }, { x: 0, y: -8.2 }],
+        [{ x: -1.6, y: 8.2 }, { x: 1.6, y: 8.2 }, { x: -1.6, y: -8.2 }, { x: 1.6, y: -8.2 }],
+      ][upgradePipCount - 1];
+      context.fillStyle = "#ffe27a";
+      for (const pip of pipPositions) {
+        context.beginPath();
+        context.arc(pip.x, pip.y, 1.25, 0, Math.PI * 2);
+        context.fill();
+      }
     }
 
     if (this.muzzleFlashSeconds > 0) {
@@ -130,7 +158,7 @@ export class MissileTower extends Tower {
       context.shadowColor = "#ff9d5c";
       context.shadowBlur = 10;
       context.beginPath();
-      context.arc(10 + (this.level * 0.45), 0, 3.5 + (4 * flashAlpha), 0, Math.PI * 2);
+      context.arc(11.8, 0, 3.5 + (4 * flashAlpha), 0, Math.PI * 2);
       context.fill();
       context.restore();
     }

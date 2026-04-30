@@ -35,9 +35,9 @@ const html = String.raw`
       import { SlowTower } from "/src/entities/towers/slow-tower.ts";
 
       const towerRows = [
-        { label: "Gun", TowerClass: GunTower, angle: -Math.PI / 5 },
-        { label: "Laser", TowerClass: LaserTower, angle: -Math.PI / 16 },
-        { label: "Missile", TowerClass: MissileTower, angle: -Math.PI / 7 },
+        { label: "Gun", TowerClass: GunTower, angle: -Math.PI / 4 },
+        { label: "Laser", TowerClass: LaserTower, angle: -Math.PI / 4 },
+        { label: "Missile", TowerClass: MissileTower, angle: -Math.PI / 4 },
         { label: "Slow", TowerClass: SlowTower, pulse: Math.PI / 2 },
       ];
 
