@@ -1,6 +1,6 @@
 import "./style.css";
-import { mount } from "svelte";
-import App from "./App.svelte";
+import { mountApp } from "./app-dom";
+import { createGameSession } from "./game-session";
 
 const target = document.querySelector<HTMLDivElement>("#app");
 
@@ -8,6 +8,4 @@ if (!target) {
   throw new Error("Missing app root.");
 }
 
-mount(App, {
-  target,
-});
+mountApp(target, createGameSession());

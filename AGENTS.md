@@ -5,10 +5,9 @@ Active browser implementation lives in this repo root.
 Key paths:
 
 - Browser app entry: `src/main.ts`
-- Root Svelte component: `src/App.svelte`
-- Svelte components: `src/components/`
-- Svelte session context: `src/game-context.ts`
-- Svelte/game bridge: `src/game-session.ts`
+- Browser DOM shell/templates: `index.html`
+- Browser DOM binding/controller: `src/app-dom.ts`
+- Browser game bridge: `src/game-session.ts`
 - Browser HUD/modal view-models: `src/game-view.ts`
 - Browser simulation engine: `src/game-engine.ts`
 - Browser level runtime state: `src/level-runtime.ts`
@@ -34,16 +33,15 @@ Repository notes:
 
 - The project root is the active browser app repo.
 - The browser app in `src/` is the active implementation.
-- The browser app is a Svelte 5 + Vite app. Avoid reintroducing hand-built DOM/UI glue when a small Svelte component or view model is the cleaner boundary.
+- The browser app is a vanilla TypeScript + Vite app. Keep DOM binding small and structured; prefer static HTML/templates for markup and view-model helpers for derived UI text.
 - `window.__vectorDefence` is intentionally populated by `src/game-session.ts` for browser/dev smoke checks.
 
 Current code structure:
 
-- `src/main.ts` owns Svelte app bootstrapping.
-- `src/App.svelte` wires the main shell and creates the shared game session context.
-- `src/components/ChromeBar.svelte`, `src/components/GameBoard.svelte`, `src/components/GameModal.svelte`, `src/components/TowerPanel.svelte`, and `src/components/NerdStatsPanel.svelte` own the declarative UI around the canvas.
-- `src/game-context.ts` owns the Svelte context helpers for the shared `GameSession`.
-- `src/game-session.ts` bridges Svelte stores/events to the imperative game runtime, handles keyboard/pointer input, and publishes HUD/modal snapshots.
+- `src/main.ts` owns app bootstrapping.
+- `index.html` owns the static shell and reusable HTML templates.
+- `src/app-dom.ts` binds DOM elements/templates to the shared game session and owns browser UI event wiring.
+- `src/game-session.ts` bridges lightweight stores/events to the imperative game runtime, handles keyboard/pointer input, and publishes HUD/modal snapshots.
 - `src/game-engine.ts` owns gameplay state, campaign progression, and simulation orchestration.
 - `src/level-runtime.ts` owns per-level mutable runtime collections such as monsters, towers, projectiles, particles, links, placement state, money, wave counters, and route path.
 - `src/game-engine/monster-factory.ts` owns monster class lookup, level hit-point scaling, splitter child creation, and monster lifecycle event wiring into `Game`.
@@ -51,14 +49,14 @@ Current code structure:
 - `src/placement-rules.ts` owns tower placement geometry and board hit-testing through explicit route/tower inputs; it should not import `Game`.
 - `src/route-path.ts` owns route drawing commands plus the sampled motion path entries used by monster movement.
 - `src/game-renderer.ts` owns canvas sizing, background caching, board rendering, placement previews, and orchestration of entity drawing.
-- `src/game-view.ts` owns HUD/modal view-model generation for Svelte.
+- `src/game-view.ts` owns HUD/modal view-model generation for the DOM shell.
 - `src/entities/` owns active gameplay entities split by concern: towers, monsters, projectiles, and effects.
 - `src/entities/monsters/monster.ts` owns shared monster movement, damage, slow recovery, lifecycle event emission, and health-bar rendering.
 - Concrete monster classes live under `src/entities/monsters/` and own monster-specific base stats, body rendering, and special behavior (`berserker` ramps speed as it loses health; `bulwark` mitigates incoming damage).
 - Projectile classes live under `src/entities/projectiles/`; import the concrete `projectile.ts` or `missile.ts` file directly.
 - Effect classes live under `src/entities/effects/`; import the concrete effect file directly.
 - Tower classes live under `src/entities/towers/`; `Tower` in `tower.ts` owns shared targeting/upgrade/selection behavior.
-- `src/entities/towers/tower-registry.ts` is the source of truth for tower class lookup, keyboard shortcuts, and tower preview instances used by the Svelte toolbar.
+- `src/entities/towers/tower-registry.ts` is the source of truth for tower class lookup, keyboard shortcuts, and tower preview instances used by the tower toolbar.
 - Towers and projectiles operate against `Game` directly; keep their gameplay interactions narrow and rooted in the active level runtime where possible.
 - `src/campaign.ts` turns the nine authored routes into the campaign and appends the unlocked random challenge.
 - `src/level-generator.ts` creates the route for the random challenge only.
@@ -100,7 +98,7 @@ Gameplay / UI notes:
 - Monster spawning is orchestrated by `Game.spawnMonster(...)`, but monster construction and lifecycle event wiring are centralized in `src/game-engine/monster-factory.ts`; tower creation is centralized in `Game.createTower(...)`.
 - Monster classes should own their own body rendering. Shared monster rendering concerns belong in `Monster`.
 - Tower classes should own their own drawing and attack behavior. Shared tower rendering/selection concerns belong in `Tower`.
-- Svelte components should consume `HudSnapshot` and `ModalView` data rather than reaching into the `Game` object directly.
+- DOM views should consume `HudSnapshot` and `ModalView` data rather than reaching into the `Game` object directly.
 - The HUD selection card supports upgrade, sell, and cancel-build actions; keep those interactions flowing through `GameSession` and the HUD snapshot rather than binding components directly to `Game`.
 - The campaign modal doubles as the map screen, win/loss screen, and resume flow.
 
@@ -129,8 +127,8 @@ Audio asset generation:
 Maintenance preferences:
 
 - Prefer named imports from `src/constants.ts` and `src/types.ts` so call sites show their dependencies clearly.
-- Keep Svelte UI declarative and thin; put formatting and modal/HUD derivation in `src/game-view.ts`.
-- Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in Svelte components.
+- Keep DOM UI binding thin; put formatting and modal/HUD derivation in `src/game-view.ts`.
+- Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in DOM binding code.
 - When changing tower drawing code, run `npm run render:towers -- artifacts/<fresh-name>.png` and inspect the generated sheet before calling the visuals done.
 - When adding monsters, add a `MonsterKind` value, a concrete monster class, a `createBaseMonster(...)` branch in `src/game-engine/monster-factory.ts`, and campaign/level-generator usage as needed.
 - When adding towers, add a `TowerKind` value, tower class, shortcut entry, and `Game.createTower(...)` branch.

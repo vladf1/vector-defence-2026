@@ -15,7 +15,6 @@ import {
   type RuntimeHudStats,
 } from "./game-view";
 import type { HudSnapshot, ModalAction, ModalView, Point, TowerKind } from "./types";
-import { readonly, writable, type Readable } from "svelte/store";
 
 const MAX_FRAME_DELTA = 1 / 15;
 const NERD_STATS_SAMPLE_MS = 500;
@@ -25,10 +24,42 @@ interface GameWindow extends Window {
   __vectorDefence?: Game;
 }
 
+export type Unsubscribe = () => void;
+
+export interface ReadableStore<T> {
+  subscribe(listener: (value: T) => void): Unsubscribe;
+}
+
+interface WritableStore<T> extends ReadableStore<T> {
+  set(value: T): void;
+}
+
+function createStore<T>(initialValue: T): WritableStore<T> {
+  let value = initialValue;
+  const listeners = new Set<(value: T) => void>();
+
+  return {
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(value);
+
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    set(nextValue) {
+      value = nextValue;
+      for (const listener of listeners) {
+        listener(value);
+      }
+    },
+  };
+}
+
 export interface GameSession {
-  hud: Readable<HudSnapshot>;
-  modal: Readable<ModalView | null>;
-  soundEnabled: Readable<boolean>;
+  hud: ReadableStore<HudSnapshot>;
+  modal: ReadableStore<ModalView | null>;
+  soundEnabled: ReadableStore<boolean>;
   toggleSound(): void;
   setNerdStatsEnabled(enabled: boolean): void;
   mount(backgroundCanvas: HTMLCanvasElement, gameCanvas: HTMLCanvasElement): void;
@@ -51,9 +82,9 @@ export interface GameSession {
 }
 
 export function createGameSession(): GameSession {
-  const hudStore = writable(INITIAL_HUD_SNAPSHOT);
-  const modalStore = writable<ModalView | null>(null);
-  const soundEnabledStore = writable(true);
+  const hudStore = createStore(INITIAL_HUD_SNAPSHOT);
+  const modalStore = createStore<ModalView | null>(null);
+  const soundEnabledStore = createStore(true);
   const audio = new GameAudio();
   let canvas: HTMLCanvasElement | null = null;
   let game: Game | null = null;
@@ -469,9 +500,9 @@ export function createGameSession(): GameSession {
   };
 
   return {
-    hud: readonly(hudStore),
-    modal: readonly(modalStore),
-    soundEnabled: readonly(soundEnabledStore),
+    hud: hudStore,
+    modal: modalStore,
+    soundEnabled: soundEnabledStore,
     toggleSound,
     setNerdStatsEnabled,
     mount,

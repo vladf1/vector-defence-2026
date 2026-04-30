@@ -7,7 +7,130 @@
     <title>Vector Defence</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div class="shell">
+        <header class="topbar">
+          <div class="title-block">
+            <h1>Vector Defence</h1>
+          </div>
+          <section class="hud">
+            <div class="stat-card level-stat">
+              <span>Level</span>
+              <strong data-hud-level></strong>
+            </div>
+            <div class="stat-card money-stat">
+              <span>Money</span>
+              <strong data-hud-money></strong>
+            </div>
+            <div class="stat-card wave-stat">
+              <span>Wave</span>
+              <strong data-hud-wave></strong>
+            </div>
+          </section>
+          <div class="actions">
+            <button class="chrome-button sound-button" type="button" data-sound-toggle>
+              <span class="sound-icon" aria-hidden="true"></span>
+            </button>
+            <button class="chrome-button" type="button" data-open-menu>Campaign</button>
+            <button class="chrome-button" type="button" data-restart>Restart</button>
+          </div>
+        </header>
+
+        <section class="board-card">
+          <div class="board-frame">
+            <div class="board-stage" data-board-stage>
+              <canvas
+                class="board-canvas board-background"
+                width="960"
+                height="540"
+                aria-hidden="true"
+                data-background-canvas
+              ></canvas>
+              <canvas
+                class="board-canvas board-game"
+                id="game"
+                width="960"
+                height="540"
+                data-game-canvas
+              ></canvas>
+            </div>
+            <div data-modal-root></div>
+          </div>
+        </section>
+
+        <section class="controls-grid">
+          <div class="tower-strip-card">
+            <div class="tower-strip" data-tower-strip></div>
+          </div>
+
+          <div class="control-card selection-card">
+            <div class="selection-header">
+              <div class="selection-copy">
+                <strong data-selection-title></strong>
+                <span data-selection-body></span>
+              </div>
+              <button class="action-button sell selection-sell-button hidden" type="button" data-sell-tower>
+                Sell
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <p class="footnote">
+          Tip: press <strong data-number-shortcuts></strong> or <strong data-letter-shortcuts></strong> for towers,
+          <strong>U</strong> to upgrade, <strong>Esc</strong> to cancel build mode, and <strong>Space</strong> to pause or resume.
+          <button class="footnote-link" type="button" data-toggle-nerd-stats>Show stats for nerds</button>
+        </p>
+
+        <section class="nerd-panel hidden" data-nerd-panel>
+          <div class="nerd-grid">
+            <div class="nerd-stat"><span>FPS:</span><strong data-nerd-stat="fps"></strong></div>
+            <div class="nerd-stat"><span>Frame Time:</span><strong data-nerd-stat="frameTime"></strong></div>
+            <div class="nerd-stat"><span>Update Avg:</span><strong data-nerd-stat="updateTime"></strong></div>
+            <div class="nerd-stat"><span>Draw Avg:</span><strong data-nerd-stat="drawTime"></strong></div>
+            <div class="nerd-stat"><span>Tracked:</span><strong data-nerd-stat="trackedObjects"></strong></div>
+            <div class="nerd-stat"><span>Towers:</span><strong data-nerd-stat="towers"></strong></div>
+            <div class="nerd-stat"><span>Hostiles:</span><strong data-nerd-stat="hostiles"></strong></div>
+            <div class="nerd-stat"><span>Shots:</span><strong data-nerd-stat="shots"></strong></div>
+            <div class="nerd-stat"><span>FX:</span><strong data-nerd-stat="effects"></strong></div>
+            <div class="nerd-stat"><span>Pixel Ratio:</span><strong data-nerd-stat="pixelRatio"></strong></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <template id="tower-button-template">
+      <button class="tower-button" type="button">
+        <div class="tower-button-meta">
+          <span data-tower-cost></span>
+          <span class="shortcut-chip" data-tower-shortcuts></span>
+        </div>
+        <canvas class="tower-icon" aria-hidden="true"></canvas>
+      </button>
+    </template>
+
+    <template id="modal-template">
+      <div class="modal">
+        <div class="modal-panel">
+          <div data-modal-copy>
+            <h2 data-modal-title></h2>
+            <p data-modal-description></p>
+            <div class="selection-actions" data-modal-actions></div>
+          </div>
+          <div class="level-grid" data-level-grid></div>
+        </div>
+      </div>
+    </template>
+
+    <template id="level-card-template">
+      <button class="level-card" type="button">
+        <span class="level-pill" data-level-status></span>
+        <strong data-level-title></strong>
+        <span data-level-subtitle></span>
+        <small data-level-details></small>
+      </button>
+    </template>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
   </html>
