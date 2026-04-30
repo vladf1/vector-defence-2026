@@ -60,22 +60,22 @@
     <div class="tower-strip">
       {#each TOWER_TOOLBAR_PREVIEWS as tower (tower.kind)}
         {@const towerClass = tower.towerClass}
+        {@const shortcutText = formatShortcuts(towerClass.shortcuts)}
         <button
           class={`tower-button${$hud.placingTower === tower.kind ? " active" : ""}`}
           type="button"
           value={tower.kind}
-          title={`${towerClass.label} tower (${formatShortcuts(towerClass.shortcuts)})`}
-          aria-label={`${towerClass.label} tower for ${formatMoney(towerClass.baseCost)} (${formatShortcuts(towerClass.shortcuts)})`}
+          title={`${towerClass.label} tower: ${towerClass.summary}`}
+          aria-label={`${towerClass.label} tower for ${formatMoney(towerClass.baseCost)}. ${towerClass.summary} Shortcuts ${shortcutText}.`}
           disabled={$hud.towerButtonsDisabled}
           onclick={handleTowerButtonClick}
           onpointerdown={handleTowerButtonPointerDown}
         >
           <div class="tower-button-meta">
             <span>{formatMoney(towerClass.baseCost)}</span>
-            <span class="shortcut-chip">{formatShortcuts(towerClass.shortcuts)}</span>
+            <span class="shortcut-chip">{shortcutText}</span>
           </div>
           <canvas use:towerIcon={tower} class="tower-icon" aria-hidden="true"></canvas>
-          <strong class="tower-button-label">{towerClass.label}</strong>
         </button>
       {/each}
     </div>
@@ -84,7 +84,9 @@
   <div class="control-card selection-card">
     <div class="selection-header">
       <div class="selection-copy">
-        <strong>{$hud.selectionTitle}</strong>
+        {#if $hud.selectionTitle}
+          <strong>{$hud.selectionTitle}</strong>
+        {/if}
         <span>{$hud.selectionBody}</span>
       </div>
       {#if $hud.hasSelectedTower}

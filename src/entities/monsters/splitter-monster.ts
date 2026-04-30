@@ -4,7 +4,7 @@ import { Monster } from "./monster";
 const COLOR = "#ff8bd5";
 const SPEED_PER_SECOND = 73;
 const HIT_POINTS = 253;
-const BOUNTY = 28;
+const BOUNTY = 3;
 const RADIUS = 8.5;
 
 export class SplitterMonster extends Monster {

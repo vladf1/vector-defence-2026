@@ -1,5 +1,6 @@
 import { STARTING_MONEY } from "./constants";
 import { createBannerText } from "./banner-text";
+import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { isModalState } from "./game-engine";
 import { formatMoney } from "./utils";
@@ -32,8 +33,8 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   money: formatMoney(STARTING_MONEY),
   wave: "Idle",
   banner: "Awaiting orders",
-  selectionTitle: "No tower selected",
-  selectionBody: "Choose a build from the toolbar.",
+  selectionTitle: "",
+  selectionBody: "Select a tower to view upgrades, range, and sell value.",
   upgradeDisabled: true,
   hasSelectedTower: false,
   sellDisabled: true,
@@ -73,23 +74,21 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     : "Idle";
   const banner = createBannerText(game);
 
-  let selectionTitle = "No tower selected";
-  let selectionBody = "Choose a build from the toolbar.";
+  let selectionTitle = "";
+  let selectionBody = "Select a tower to view upgrades, range, and sell value.";
 
   if (selected) {
     selectionTitle = `${getTowerClass(selected.kind).label} Tower · Level ${selected.level + 1}`;
     selectionBody = [
       `Range ${Math.round(selected.range)}`,
       selected.canUpgrade() ? `Upgrade ${formatMoney(selected.upgradeCost)}` : undefined,
+      selected instanceof LaserTower ? (selected.directionLocked ? "Locked" : "Unlocked") : undefined,
       `Sell ${formatMoney(selected.resaleValue)}`,
     ].filter((item) => item !== undefined).join(" · ");
   } else if (runtime.placingTower) {
     const towerClass = getTowerClass(runtime.placingTower);
-    selectionTitle = `Placing ${towerClass.label}`;
+    selectionTitle = `Placing ${towerClass.label} Tower`;
     selectionBody = towerClass.summary;
-  } else if (currentLevel) {
-    selectionTitle = currentLevel.name;
-    selectionBody = currentLevel.subtitle ?? "Hold the route and keep your towers overlapping.";
   }
 
   const shotsTracked = runtime.projectiles.length + runtime.missiles.length;

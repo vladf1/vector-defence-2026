@@ -8,7 +8,7 @@ const BASE_SPEED_PER_SECOND = 62;
 const ENRAGED_SPEED_PER_SECOND = 100;
 const FRENZIED_SPEED_PER_SECOND = 138;
 const HIT_POINTS = 286;
-const BOUNTY = 38;
+const BOUNTY = 4;
 const RADIUS = 8;
 
 export class BerserkerMonster extends Monster {

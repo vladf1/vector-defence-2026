@@ -55,7 +55,7 @@ export function createSplitterChildren(game: Game, monster: Monster): Monster[] 
     child.velocityYPerSecond = Math.sin(child.angle) * child.speedPerSecond;
     child.hitPoints = Math.round(child.maxHitPoints * 0.72);
     child.maxHitPoints = child.hitPoints;
-    child.bounty = Math.max(8, Math.round(child.bounty * 0.55));
+    child.bounty = Math.max(1, Math.round(child.bounty * 0.55));
     child.radius *= 0.86;
     children.push(child);
   }

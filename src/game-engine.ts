@@ -9,6 +9,7 @@ import { MAX_LINKS, MAX_PARTICLES } from "./constants";
 import { LinkEffect } from "./entities/effects/link-effect";
 import { Particle } from "./entities/effects/particle";
 import type { Monster } from "./entities/monsters/monster";
+import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { Tower } from "./entities/towers/tower";
 import { LevelRuntime } from "./level-runtime";
@@ -316,6 +317,11 @@ export class Game {
       return;
     }
 
+    if (this.renderer.isPointInLaserLockButton(point)) {
+      this.toggleSelectedLaserLock();
+      return;
+    }
+
     if (this.runtime.placingTower) {
       this.placeTower(this.runtime.placingTower, point);
       return;
@@ -384,6 +390,16 @@ export class Game {
       && selectedTower.canUpgrade()
       && this.runtime.money >= selectedTower.upgradeCost
       && !isModalState(this.state);
+  }
+
+  toggleSelectedLaserLock(): void {
+    const { selectedTower } = this.runtime;
+    if (!(selectedTower instanceof LaserTower) || isModalState(this.state)) {
+      return;
+    }
+
+    selectedTower.toggleDirectionLock();
+    this.requestHudSync();
   }
 
   completeCurrentWave(): void {

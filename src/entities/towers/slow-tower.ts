@@ -9,7 +9,7 @@ export class SlowTower extends Tower {
   static readonly kind = TowerKind.Slow;
   static readonly label = "Slow";
   static readonly summary = "Freezes clusters so the rest can clean up.";
-  static readonly baseCost = 30;
+  static readonly baseCost = 3;
   static readonly baseRange = 70;
   static readonly shortcuts = ["4", "s"] as const;
 

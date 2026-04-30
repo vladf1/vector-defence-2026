@@ -9,7 +9,7 @@ export class GunTower extends Tower {
   static readonly kind = TowerKind.Gun;
   static readonly label = "Gun";
   static readonly summary = "Fast, cheap, accurate lead shots.";
-  static readonly baseCost = 20;
+  static readonly baseCost = 2;
   static readonly baseRange = 60;
   static readonly shortcuts = ["1", "g"] as const;
 

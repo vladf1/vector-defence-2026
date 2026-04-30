@@ -9,7 +9,7 @@ export class MissileTower extends Tower {
   static readonly kind = TowerKind.Missile;
   static readonly label = "Missile";
   static readonly summary = "Slow launcher with splash damage.";
-  static readonly baseCost = 50;
+  static readonly baseCost = 5;
   static readonly baseRange = 150;
   static readonly shortcuts = ["3", "r"] as const;
 

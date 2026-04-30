@@ -17,7 +17,7 @@ const CAMPAIGN_NOTES = [
 
 const LEVEL_BUILD_TIMES = [10, 10, 11, 11, 12, 12, 13, 13, 14] as const;
 const LEVEL_ESCAPES = [15, 15, 14, 13, 12, 12, 11, 10, 8] as const;
-const LEVEL_STARTING_MONEY = [320, 335, 350, 365, 380, 395, 415, 435, 465] as const;
+const LEVEL_STARTING_MONEY = [32, 34, 35, 37, 38, 40, 42, 44, 47] as const;
 const LEVEL_WAVE_TOTALS = [4, 4, 5, 5, 5, 6, 6, 6, 7] as const;
 const LEVEL_ONE_SHOWCASE_SEQUENCE = [
   MonsterKind.Ball,
@@ -144,7 +144,7 @@ function buildWave(levelIndex: number, waveIndex: number, waveTotal: number, bas
     spawnIntervalMin,
     spawnIntervalMax,
     buildTime: waveIndex === 0 ? initialBuildTime : intermission,
-    reward: 65 + (levelIndex * 10) + (waveIndex * 14),
+    reward: Math.round((65 + (levelIndex * 10) + (waveIndex * 14)) / 10),
     label: labelPool[Math.min(labelPool.length - 1, waveIndex)] ?? `Wave ${waveIndex + 1}`,
   };
 }
@@ -192,7 +192,7 @@ export function createRandomChallengeLevel(campaignLevelCount: number): LevelDat
     name: "Random",
     subtitle: "A fresh crossing route with diagonal cuts, vertical runs, and no lock.",
     allowEscape: 9,
-    startingMoney: 470,
+    startingMoney: 47,
     waves,
     monsterCount: waves.reduce((total, wave) => total + wave.count, 0),
     monsterSequence: waves.flatMap((wave) => wave.monsterSequence),

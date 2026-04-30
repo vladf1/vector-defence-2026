@@ -4,7 +4,7 @@ import { Monster } from "./monster";
 const COLOR = "#ffba4f";
 const SPEED_PER_SECOND = 95;
 const HIT_POINTS = 110;
-const BOUNTY = 30;
+const BOUNTY = 3;
 const RADIUS = 7;
 
 export class TriangleMonster extends Monster {

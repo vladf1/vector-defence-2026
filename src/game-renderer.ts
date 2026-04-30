@@ -1,5 +1,6 @@
 import { createBannerText } from "./banner-text";
 import { FIELD_HEIGHT, FIELD_WIDTH, ROAD_WIDTH, TOWER_RADIUS } from "./constants";
+import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { GameState } from "./types";
 import type { Game } from "./game-engine";
@@ -15,6 +16,8 @@ const UPGRADE_BUTTON_WIDTH = 32;
 const UPGRADE_BUTTON_HEIGHT = 26;
 const COMPACT_UPGRADE_BUTTON_WIDTH = 84;
 const COMPACT_UPGRADE_BUTTON_HEIGHT = 54;
+const COMPACT_GROUPED_ACTION_BUTTON_WIDTH = 54;
+const TOWER_ACTION_BUTTON_GAP = 6;
 const UPGRADE_BUTTON_EDGE_GUTTER = 42;
 const COMPACT_UPGRADE_BUTTON_EDGE_GUTTER = 58;
 const UPGRADE_BUTTON_BELOW_OFFSET = 22;
@@ -105,6 +108,7 @@ export class GameRenderer {
 
     this.drawPreview(this.ctx);
     this.drawUpgradeButton(this.ctx);
+    this.drawLaserLockButton(this.ctx);
     this.drawPauseButton(this.ctx);
     this.drawBanner(this.ctx);
   }
@@ -134,13 +138,32 @@ export class GameRenderer {
   }
 
   getUpgradeButtonRect(): CanvasButtonRect | undefined {
+    return this.getSelectedTowerActionButtonRect(0);
+  }
+
+  getLaserLockButtonRect(): CanvasButtonRect | undefined {
+    const selectedTower = this.game.runtime.selectedTower;
+    if (!(selectedTower instanceof LaserTower)) {
+      return undefined;
+    }
+
+    return this.getSelectedTowerActionButtonRect(1);
+  }
+
+  private getSelectedTowerActionButtonRect(index: number): CanvasButtonRect | undefined {
     const selectedTower = this.game.runtime.selectedTower;
     if (!selectedTower) {
       return undefined;
     }
 
-    const width = this.getUpgradeButtonWidth();
+    const actionCount = selectedTower instanceof LaserTower ? 2 : 1;
+    if (index >= actionCount) {
+      return undefined;
+    }
+
+    const width = this.getUpgradeButtonWidth(actionCount);
     const height = this.getUpgradeButtonHeight();
+    const groupWidth = (width * actionCount) + (TOWER_ACTION_BUTTON_GAP * (actionCount - 1));
     const edgeGutter = this.isCompactLayout ? COMPACT_UPGRADE_BUTTON_EDGE_GUTTER : UPGRADE_BUTTON_EDGE_GUTTER;
     const centerX = Math.min(
       Math.max(selectedTower.x, edgeGutter),
@@ -152,7 +175,7 @@ export class GameRenderer {
       : selectedTower.y + UPGRADE_BUTTON_BELOW_OFFSET;
 
     return {
-      x: centerX - (width / 2),
+      x: centerX - (groupWidth / 2) + (index * (width + TOWER_ACTION_BUTTON_GAP)),
       y: top,
       width,
       height,
@@ -161,6 +184,15 @@ export class GameRenderer {
 
   isPointInUpgradeButton(point: { x: number; y: number }): boolean {
     const rect = this.getUpgradeButtonRect();
+    return rect !== undefined
+      && point.x >= rect.x
+      && point.x <= rect.x + rect.width
+      && point.y >= rect.y
+      && point.y <= rect.y + rect.height;
+  }
+
+  isPointInLaserLockButton(point: { x: number; y: number }): boolean {
+    const rect = this.getLaserLockButtonRect();
     return rect !== undefined
       && point.x >= rect.x
       && point.x <= rect.x + rect.width
@@ -274,8 +306,12 @@ export class GameRenderer {
     return this.isCompactLayout ? COMPACT_PAUSE_BUTTON_HEIGHT : PAUSE_BUTTON_HEIGHT;
   }
 
-  private getUpgradeButtonWidth(): number {
-    return this.isCompactLayout ? COMPACT_UPGRADE_BUTTON_WIDTH : UPGRADE_BUTTON_WIDTH;
+  private getUpgradeButtonWidth(actionCount = 1): number {
+    if (!this.isCompactLayout) {
+      return UPGRADE_BUTTON_WIDTH;
+    }
+
+    return actionCount > 1 ? COMPACT_GROUPED_ACTION_BUTTON_WIDTH : COMPACT_UPGRADE_BUTTON_WIDTH;
   }
 
   private getUpgradeButtonHeight(): number {
@@ -374,6 +410,45 @@ export class GameRenderer {
     context.fillStyle = "#effff7";
     this.drawUpgradeArrow(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2), this.isCompactLayout ? 1.45 : 1);
     context.restore();
+  }
+
+  private drawLaserLockButton(context: CanvasRenderingContext2D): void {
+    const rect = this.getLaserLockButtonRect();
+    const selectedTower = this.game.runtime.selectedTower;
+    if (!rect || !(selectedTower instanceof LaserTower)) {
+      return;
+    }
+
+    const disabled = this.isModalState();
+    const hovered = this.game.runtime.pointer ? this.isPointInLaserLockButton(this.game.runtime.pointer) : false;
+
+    context.save();
+    context.globalAlpha = disabled ? 0.4 : 1;
+    context.fillStyle = hovered && !disabled ? "rgba(33, 57, 50, 0.52)" : "rgba(18, 35, 30, 0.82)";
+    context.strokeStyle = hovered && !disabled ? "rgba(255, 255, 255, 0.34)" : "rgba(255, 255, 255, 0.2)";
+    context.lineWidth = 1;
+    context.shadowColor = disabled ? "transparent" : "rgba(0, 0, 0, 0.22)";
+    context.shadowBlur = hovered && !disabled ? 9 : 6;
+    context.beginPath();
+    context.roundRect(rect.x, rect.y, rect.width, rect.height, 7);
+    context.fill();
+    context.stroke();
+    context.shadowBlur = 0;
+    context.fillStyle = "#effff7";
+    context.font = `${this.isCompactLayout ? 22 : 15}px "Apple Color Emoji", "Segoe UI Emoji", system-ui, sans-serif`;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    const icon = selectedTower.directionLocked ? "🔓" : "🔒";
+    const yOffset = selectedTower.directionLocked ? -1 : 0;
+    context.fillText(icon, rect.x + (rect.width / 2), rect.y + (rect.height / 2) + yOffset);
+    context.restore();
+  }
+
+  private isModalState(): boolean {
+    return this.game.state === GameState.Menu
+      || this.game.state === GameState.Won
+      || this.game.state === GameState.Lost
+      || this.game.state === GameState.CampaignWon;
   }
 
   private drawUpgradeArrow(context: CanvasRenderingContext2D, centerX: number, centerY: number, scale = 1): void {
