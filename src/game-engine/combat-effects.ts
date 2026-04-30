@@ -18,6 +18,20 @@ export function createHitImpactEffect(game: Game, x: number, y: number, color: s
   }
 }
 
+export function createLaserImpactEffect(game: Game, x: number, y: number, beamAngle: number, color: string): void {
+  const particleCount = Math.min(4, Math.max(0, MAX_PARTICLES - game.runtime.particles.length));
+  for (let index = 0; index < particleCount; index += 1) {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const angle = beamAngle + (side * (Math.PI / 2)) + randomRange(-0.55, 0.55);
+    const sparkColor = index === 0 ? "#f6f0ff" : (index === 1 ? "#ffe36f" : color);
+    game.addParticle(new Particle(x, y, randomRange(0.7, 1.45), sparkColor, randomRange(3.4, 5.2), {
+      speedPerSecond: randomRange(45, 145),
+      offset: randomRange(1.5, 4),
+      angle,
+    }));
+  }
+}
+
 export function createExplosionEffect(game: Game, x: number, y: number, count: number, size: number, color: string, alphaFadePerSecond: number): void {
   const particleCount = Math.min(count, Math.max(0, MAX_PARTICLES - game.runtime.particles.length));
   for (let index = 0; index < particleCount; index += 1) {

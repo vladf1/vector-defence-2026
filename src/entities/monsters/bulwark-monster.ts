@@ -34,7 +34,7 @@ export class BulwarkMonster extends Monster {
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
 
-    const glow = 0.3 + (Math.sin(this.shieldPulse) * 0.12) + (this.damageFlash * 0.25);
+    const glow = 0.3 + (Math.sin(this.shieldPulse) * 0.12);
     const halfHeight = this.radius * 0.8;
 
     context.beginPath();

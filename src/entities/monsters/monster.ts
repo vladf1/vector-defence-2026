@@ -1,11 +1,7 @@
 import { getPathHeadingAngle, type PathEntry } from "../../route-path";
-import { angleBetween, hexWithAlpha, randomRange } from "../../utils";
+import { angleBetween, randomRange } from "../../utils";
 
-const DAMAGE_FLASH_BASE_ALPHA = 0.32;
-const DAMAGE_FLASH_EXTRA_ALPHA = 0.42;
-const DAMAGE_FLASH_BLUR = 10;
-const DAMAGE_FLASH_COLOR = "#ff405c";
-const DAMAGE_FLASH_FADE_PER_SECOND = 4.5;
+const MONSTER_STROKE_WIDTH = 1.5;
 
 export abstract class Monster extends EventTarget {
   x: number;
@@ -24,7 +20,6 @@ export abstract class Monster extends EventTarget {
   targetIndex = 1;
   rotation = randomRange(0, Math.PI * 2);
   angle = 0;
-  damageFlash = 0;
   removed = false;
 
   constructor(path: PathEntry[], color: string, speedPerSecond: number, hitPoints: number, bounty: number, radius: number) {
@@ -47,7 +42,6 @@ export abstract class Monster extends EventTarget {
 
   takeDamage(amount: number): void {
     this.hitPoints = Math.max(0, this.hitPoints - amount);
-    this.damageFlash = 1;
   }
 
   slowDown(factor: number): void {
@@ -71,15 +65,12 @@ export abstract class Monster extends EventTarget {
 
     this.moveAlongPath(deltaSeconds);
     this.updateSpecial(deltaSeconds);
-    this.damageFlash = Math.max(0, this.damageFlash - (DAMAGE_FLASH_FADE_PER_SECOND * deltaSeconds));
   }
 
   draw(context: CanvasRenderingContext2D): void {
-    const damageMix = this.damageFlash;
     context.save();
     context.translate(this.x, this.y);
-    this.drawDamageGlow(context, damageMix);
-    this.drawCoreBody(context, damageMix);
+    this.drawCoreBody(context);
     context.restore();
 
     this.drawHealthBar(context);
@@ -90,27 +81,11 @@ export abstract class Monster extends EventTarget {
 
   protected abstract drawBody(context: CanvasRenderingContext2D): void;
 
-  private drawDamageGlow(context: CanvasRenderingContext2D, damageMix: number): void {
-    if (damageMix <= 0) {
-      return;
-    }
-
+  private drawCoreBody(context: CanvasRenderingContext2D): void {
     context.save();
-    context.globalCompositeOperation = "lighter";
-    context.shadowColor = DAMAGE_FLASH_COLOR;
-    context.shadowBlur = DAMAGE_FLASH_BLUR + (damageMix * 10);
-    context.strokeStyle = hexWithAlpha(DAMAGE_FLASH_COLOR, DAMAGE_FLASH_BASE_ALPHA + (damageMix * DAMAGE_FLASH_EXTRA_ALPHA));
-    context.fillStyle = hexWithAlpha(this.color, 0.12);
-    context.lineWidth = 3.2 + (damageMix * 1.2);
-    this.drawBody(context);
-    context.restore();
-  }
-
-  private drawCoreBody(context: CanvasRenderingContext2D, damageMix: number): void {
-    context.save();
-    context.strokeStyle = damageMix > 0 ? hexWithAlpha(DAMAGE_FLASH_COLOR, 0.5 + (damageMix * 0.5)) : this.color;
+    context.strokeStyle = this.color;
     context.fillStyle = "#050908";
-    context.lineWidth = 1.5 + (damageMix * 0.9);
+    context.lineWidth = MONSTER_STROKE_WIDTH;
     this.drawBody(context);
     context.restore();
   }

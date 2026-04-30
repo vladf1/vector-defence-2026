@@ -1,7 +1,8 @@
 import { TOWER_RADIUS, TOWER_UPGRADE_RING_GROWTH, TOWER_UPGRADE_RING_OFFSET } from "../../constants";
+import { createLaserImpactEffect } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
 import { AudioCue, TowerKind } from "../../types";
-import { angleBetween, calculateDistanceToSegment, randomRange, turnAngleTowards } from "../../utils";
+import { angleBetween, calculateDistanceToSegment, clamp, randomRange, turnAngleTowards } from "../../utils";
 import { Tower } from "./tower";
 
 const LASER_COLORS = [
@@ -27,6 +28,7 @@ export class LaserTower extends Tower {
   beamTarget = { x: 0, y: 0 };
   damagePerSecond = 60;
   directionLocked = false;
+  laserSparkCooldownSeconds = 0;
   turnSpeedPerSecond = 4.8;
 
   constructor(x: number, y: number) {
@@ -35,6 +37,7 @@ export class LaserTower extends Tower {
 
   protected onUpdate(game: Game, deltaSeconds: number): void {
     this.beamAlpha = Math.max(0, this.beamAlpha - (0.9 * deltaSeconds));
+    this.laserSparkCooldownSeconds = Math.max(0, this.laserSparkCooldownSeconds - deltaSeconds);
 
     this.beamTarget = {
       x: this.x + (Math.cos(this.angle) * 1000),
@@ -72,12 +75,24 @@ export class LaserTower extends Tower {
       x: this.x + (Math.cos(this.angle) * muzzleOffset),
       y: this.y + (Math.sin(this.angle) * muzzleOffset),
     };
+    const shouldCreateSparks = this.laserSparkCooldownSeconds <= 0;
+    let sparkBurstsCreated = 0;
+    const colors = this.getLaserColors();
 
     for (const monster of game.runtime.getActiveMonsters()) {
       const distanceToBeam = calculateDistanceToSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
       if (distanceToBeam <= monster.radius) {
         monster.takeDamage(this.damagePerSecond * deltaSeconds * this.beamAlpha);
+        if (shouldCreateSparks && sparkBurstsCreated < 2) {
+          const impact = getClosestPointOnSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
+          createLaserImpactEffect(game, impact.x, impact.y, this.angle, colors.accent);
+          sparkBurstsCreated += 1;
+        }
       }
+    }
+
+    if (sparkBurstsCreated > 0) {
+      this.laserSparkCooldownSeconds = 0.055;
     }
   }
 
@@ -238,4 +253,19 @@ export class LaserTower extends Tower {
     context.lineTo(tailX, -halfHeight);
     context.closePath();
   }
+}
+
+function getClosestPointOnSegment(pointX: number, pointY: number, startX: number, startY: number, endX: number, endY: number): { x: number; y: number } {
+  const segmentX = endX - startX;
+  const segmentY = endY - startY;
+  const segmentLengthSquared = (segmentX * segmentX) + (segmentY * segmentY);
+  if (segmentLengthSquared === 0) {
+    return { x: startX, y: startY };
+  }
+
+  const projection = clamp((((pointX - startX) * segmentX) + ((pointY - startY) * segmentY)) / segmentLengthSquared, 0, 1);
+  return {
+    x: startX + (projection * segmentX),
+    y: startY + (projection * segmentY),
+  };
 }
