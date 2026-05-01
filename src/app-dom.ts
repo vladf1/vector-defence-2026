@@ -67,7 +67,7 @@ export function mountApp(root: HTMLElement, session: GameSession): MountedApp {
   renderTowerButtons(dom, session);
   renderNerdStats(dom);
   renderShortcutTip(dom);
-  bindStaticActions(dom, session);
+  unsubs.push(bindStaticActions(dom, session));
 
   unsubs.push(session.hud.subscribe((hud) => renderHud(dom, hud)));
   unsubs.push(session.modal.subscribe((modal) => renderModal(dom, session, modal)));
@@ -136,11 +136,18 @@ function getAppDom(root: HTMLElement): AppDom {
   };
 }
 
-function bindStaticActions(dom: AppDom, session: GameSession): void {
+function bindStaticActions(dom: AppDom, session: GameSession): Unsubscribe {
   dom.soundToggle.addEventListener("click", session.toggleSound);
   dom.openMenu.addEventListener("click", session.openMenu);
   dom.restart.addEventListener("click", session.restart);
   dom.sellTower.addEventListener("click", session.sellSelectedTower);
+
+  return () => {
+    dom.soundToggle.removeEventListener("click", session.toggleSound);
+    dom.openMenu.removeEventListener("click", session.openMenu);
+    dom.restart.removeEventListener("click", session.restart);
+    dom.sellTower.removeEventListener("click", session.sellSelectedTower);
+  };
 }
 
 function renderShortcutTip(dom: AppDom): void {
