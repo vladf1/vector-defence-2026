@@ -26,6 +26,7 @@ interface AppDom {
   gameCanvas: HTMLCanvasElement;
   modalRoot: HTMLElement;
   towerStrip: HTMLElement;
+  towerButtons: HTMLButtonElement[];
   level: HTMLElement;
   money: HTMLElement;
   wave: HTMLElement;
@@ -113,6 +114,7 @@ function getAppDom(root: HTMLElement): AppDom {
     gameCanvas: getRequiredElement(root, "[data-game-canvas]", HTMLCanvasElement),
     modalRoot: getRequiredElement(root, "[data-modal-root]", HTMLElement),
     towerStrip: getRequiredElement(root, "[data-tower-strip]", HTMLElement),
+    towerButtons: [],
     level: getRequiredElement(root, "[data-hud-level]", HTMLElement),
     money: getRequiredElement(root, "[data-hud-money]", HTMLElement),
     wave: getRequiredElement(root, "[data-hud-wave]", HTMLElement),
@@ -161,6 +163,7 @@ function renderShortcutTip(dom: AppDom): void {
 
 function renderTowerButtons(dom: AppDom, session: GameSession): void {
   dom.towerStrip.replaceChildren();
+  dom.towerButtons = [];
 
   for (const preview of TOWER_TOOLBAR_PREVIEWS) {
     const button = cloneTemplateElement(dom.towerButtonTemplate, HTMLButtonElement);
@@ -177,6 +180,7 @@ function renderTowerButtons(dom: AppDom, session: GameSession): void {
 
     button.addEventListener("click", () => session.toggleTowerPlacement(preview.kind));
     button.addEventListener("pointerdown", (event) => session.handleTowerButtonPointerDown(preview.kind, event));
+    dom.towerButtons.push(button);
     dom.towerStrip.append(button);
   }
 }
@@ -205,7 +209,7 @@ function renderHud(dom: AppDom, hud: HudSnapshot): void {
   dom.sellTower.disabled = hud.sellDisabled;
   dom.sellTower.classList.toggle("hidden", !hud.hasSelectedTower);
 
-  for (const button of dom.towerStrip.querySelectorAll<HTMLButtonElement>(".tower-button")) {
+  for (const button of dom.towerButtons) {
     const kind = button.value as TowerKind;
     button.disabled = hud.towerButtonsDisabled;
     button.classList.toggle("active", hud.placingTower === kind);
