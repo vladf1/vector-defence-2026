@@ -255,11 +255,7 @@ function renderModal(dom: AppDom, session: GameSession, modal: ModalView | null)
       setText(cardButton, "[data-level-status]", card.status);
       setText(cardButton, "[data-level-title]", `Level ${card.level.levelNumber ?? "?"}: ${card.level.name}`);
       setText(cardButton, "[data-level-subtitle]", card.level.subtitle ?? "Hold the route.");
-      setText(
-        cardButton,
-        "[data-level-details]",
-        `${card.level.waves?.length ?? 1} waves · ${card.level.monsterCount} enemies · ${card.level.allowEscape} leaks`,
-      );
+      setText(cardButton, "[data-level-details]", `${card.level.waves?.length ?? 1} waves · ${card.level.monsterCount} enemies · ${card.level.allowEscape} leaks`);
       cardButton.addEventListener("click", () => session.selectLevel(card.index));
       levelGrid.append(cardButton);
     }
