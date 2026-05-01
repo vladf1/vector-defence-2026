@@ -83,18 +83,7 @@
         </p>
 
         <section class="nerd-panel hidden" data-nerd-panel>
-          <div class="nerd-grid">
-            <div class="nerd-stat"><span>FPS:</span><strong data-nerd-stat="fps"></strong></div>
-            <div class="nerd-stat"><span>Frame Time:</span><strong data-nerd-stat="frameTime"></strong></div>
-            <div class="nerd-stat"><span>Update Avg:</span><strong data-nerd-stat="updateTime"></strong></div>
-            <div class="nerd-stat"><span>Draw Avg:</span><strong data-nerd-stat="drawTime"></strong></div>
-            <div class="nerd-stat"><span>Tracked:</span><strong data-nerd-stat="trackedObjects"></strong></div>
-            <div class="nerd-stat"><span>Towers:</span><strong data-nerd-stat="towers"></strong></div>
-            <div class="nerd-stat"><span>Hostiles:</span><strong data-nerd-stat="hostiles"></strong></div>
-            <div class="nerd-stat"><span>Shots:</span><strong data-nerd-stat="shots"></strong></div>
-            <div class="nerd-stat"><span>FX:</span><strong data-nerd-stat="effects"></strong></div>
-            <div class="nerd-stat"><span>Pixel Ratio:</span><strong data-nerd-stat="pixelRatio"></strong></div>
-          </div>
+          <div class="nerd-grid" data-nerd-grid></div>
         </section>
       </div>
     </div>
@@ -107,6 +96,13 @@
         </div>
         <canvas class="tower-icon" aria-hidden="true"></canvas>
       </button>
+    </template>
+
+    <template id="nerd-stat-template">
+      <div class="nerd-stat">
+        <span data-nerd-label></span>
+        <strong></strong>
+      </div>
     </template>
 
     <template id="modal-template">

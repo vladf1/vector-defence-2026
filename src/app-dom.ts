@@ -6,6 +6,18 @@ import type { HudSnapshot, ModalAction, ModalView, NerdStatsSnapshot, TowerKind 
 import { formatMoney } from "./utils";
 
 const TOWER_ICON_SIZE = 60;
+const NERD_STAT_ITEMS = [
+  { key: "fps", label: "FPS:" },
+  { key: "frameTime", label: "Frame Time:" },
+  { key: "updateTime", label: "Update Avg:" },
+  { key: "drawTime", label: "Draw Avg:" },
+  { key: "trackedObjects", label: "Tracked:" },
+  { key: "towers", label: "Towers:" },
+  { key: "hostiles", label: "Hostiles:" },
+  { key: "shots", label: "Shots:" },
+  { key: "effects", label: "FX:" },
+  { key: "pixelRatio", label: "Pixel Ratio:" },
+] as const satisfies readonly { key: keyof NerdStatsSnapshot; label: string }[];
 
 interface AppDom {
   root: HTMLElement;
@@ -28,8 +40,10 @@ interface AppDom {
   letterShortcuts: HTMLElement;
   nerdToggle: HTMLButtonElement;
   nerdPanel: HTMLElement;
+  nerdGrid: HTMLElement;
   nerdStats: Record<keyof NerdStatsSnapshot, HTMLElement>;
   towerButtonTemplate: HTMLTemplateElement;
+  nerdStatTemplate: HTMLTemplateElement;
   modalTemplate: HTMLTemplateElement;
   levelCardTemplate: HTMLTemplateElement;
 }
@@ -51,6 +65,7 @@ export function mountApp(root: HTMLElement, session: GameSession): MountedApp {
   dom.gameCanvas.height = FIELD_HEIGHT;
 
   renderTowerButtons(dom, session);
+  renderNerdStats(dom);
   renderShortcutTip(dom);
   bindStaticActions(dom, session);
 
@@ -112,19 +127,10 @@ function getAppDom(root: HTMLElement): AppDom {
     letterShortcuts: getRequiredElement(root, "[data-letter-shortcuts]", HTMLElement),
     nerdToggle: getRequiredElement(root, "[data-toggle-nerd-stats]", HTMLButtonElement),
     nerdPanel: getRequiredElement(root, "[data-nerd-panel]", HTMLElement),
-    nerdStats: {
-      fps: getRequiredElement(root, '[data-nerd-stat="fps"]', HTMLElement),
-      frameTime: getRequiredElement(root, '[data-nerd-stat="frameTime"]', HTMLElement),
-      updateTime: getRequiredElement(root, '[data-nerd-stat="updateTime"]', HTMLElement),
-      drawTime: getRequiredElement(root, '[data-nerd-stat="drawTime"]', HTMLElement),
-      trackedObjects: getRequiredElement(root, '[data-nerd-stat="trackedObjects"]', HTMLElement),
-      towers: getRequiredElement(root, '[data-nerd-stat="towers"]', HTMLElement),
-      hostiles: getRequiredElement(root, '[data-nerd-stat="hostiles"]', HTMLElement),
-      shots: getRequiredElement(root, '[data-nerd-stat="shots"]', HTMLElement),
-      effects: getRequiredElement(root, '[data-nerd-stat="effects"]', HTMLElement),
-      pixelRatio: getRequiredElement(root, '[data-nerd-stat="pixelRatio"]', HTMLElement),
-    },
+    nerdGrid: getRequiredElement(root, "[data-nerd-grid]", HTMLElement),
+    nerdStats: {} as Record<keyof NerdStatsSnapshot, HTMLElement>,
     towerButtonTemplate: getRequiredElement(document, "#tower-button-template", HTMLTemplateElement),
+    nerdStatTemplate: getRequiredElement(document, "#nerd-stat-template", HTMLTemplateElement),
     modalTemplate: getRequiredElement(document, "#modal-template", HTMLTemplateElement),
     levelCardTemplate: getRequiredElement(document, "#level-card-template", HTMLTemplateElement),
   };
@@ -165,6 +171,20 @@ function renderTowerButtons(dom: AppDom, session: GameSession): void {
     button.addEventListener("click", () => session.toggleTowerPlacement(preview.kind));
     button.addEventListener("pointerdown", (event) => session.handleTowerButtonPointerDown(preview.kind, event));
     dom.towerStrip.append(button);
+  }
+}
+
+function renderNerdStats(dom: AppDom): void {
+  dom.nerdGrid.replaceChildren();
+
+  for (const item of NERD_STAT_ITEMS) {
+    const stat = cloneTemplateElement(dom.nerdStatTemplate, HTMLDivElement);
+    const value = getRequiredElement(stat, "strong", HTMLElement);
+
+    setText(stat, "[data-nerd-label]", item.label);
+    value.dataset.nerdStat = item.key;
+    dom.nerdStats[item.key] = value;
+    dom.nerdGrid.append(stat);
   }
 }
 
