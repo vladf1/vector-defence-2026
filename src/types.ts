@@ -91,12 +91,18 @@ export interface LevelData {
   levelNumber?: number;
   isChallenge?: boolean;
   subtitle?: string;
+  initialBuildTime?: number;
   startingMoney?: number;
+  waveCount?: number;
   waves?: WaveData[];
 }
 
 export interface LevelJsonData {
   name: string;
+  subtitle?: string;
+  initialBuildTime?: number;
+  startingMoney?: number;
+  waveCount?: number;
   monsterCount: number;
   allowEscape: number;
   monsterSequence: string[];

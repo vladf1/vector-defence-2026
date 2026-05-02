@@ -3,33 +3,6 @@ import { createProceduralLevel } from "./level-generator";
 import { MonsterKind, type LevelData, type WaveData } from "./types";
 import { clamp } from "./utils";
 
-const CAMPAIGN_NOTES = [
-  "Warm up on a forgiving route and learn the shape of the field.",
-  "Faster side-lanes start to punish weak coverage.",
-  "The path opens up and asks for better crossfire.",
-  "Split pressure starts appearing from wave to wave.",
-  "Long corners reward towers that can hold a lane.",
-  "Bruisers begin arriving in real numbers.",
-  "Diagonal cuts and crossings make tower placement matter.",
-  "Dense mixed waves force you to balance single-target and splash.",
-  "The final route is a siege through crossing roads.",
-] as const;
-
-const LEVEL_BUILD_TIMES = [10, 10, 11, 11, 12, 12, 13, 13, 14] as const;
-const LEVEL_ESCAPES = [15, 15, 14, 13, 12, 12, 11, 10, 8] as const;
-const LEVEL_STARTING_MONEY = [32, 34, 35, 37, 38, 40, 42, 44, 47] as const;
-const LEVEL_WAVE_TOTALS = [4, 4, 5, 5, 5, 6, 6, 6, 7] as const;
-const LEVEL_ONE_SHOWCASE_SEQUENCE = [
-  MonsterKind.Ball,
-  MonsterKind.Runner,
-  MonsterKind.Square,
-  MonsterKind.Triangle,
-  MonsterKind.Splitter,
-  MonsterKind.Berserker,
-  MonsterKind.Bulwark,
-  MonsterKind.Tank,
-] as const;
-
 function uniqueSequence(sequence: MonsterKind[]): MonsterKind[] {
   const seen = new Set<MonsterKind>();
   const result: MonsterKind[] = [];
@@ -44,7 +17,7 @@ function uniqueSequence(sequence: MonsterKind[]): MonsterKind[] {
 
 function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, waveIndex: number): MonsterKind[] {
   if (levelIndex === 0) {
-    return buildLevelOneShowcaseSequence(waveIndex);
+    return buildLevelOneShowcaseSequence(baseSequence, waveIndex);
   }
 
   const pressure = (levelIndex * 0.85) + (waveIndex * 0.9);
@@ -116,11 +89,12 @@ function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, wave
   return sequence;
 }
 
-function buildLevelOneShowcaseSequence(waveIndex: number): MonsterKind[] {
+function buildLevelOneShowcaseSequence(baseSequence: MonsterKind[], waveIndex: number): MonsterKind[] {
+  const source = baseSequence.length > 0 ? baseSequence : [MonsterKind.Ball];
   const sequence: MonsterKind[] = [];
-  for (let index = 0; index < LEVEL_ONE_SHOWCASE_SEQUENCE.length + 2; index += 1) {
+  for (let index = 0; index < source.length + 2; index += 1) {
     sequence.push(
-      LEVEL_ONE_SHOWCASE_SEQUENCE[(index + waveIndex) % LEVEL_ONE_SHOWCASE_SEQUENCE.length]
+      source[(index + waveIndex) % source.length]
       ?? MonsterKind.Ball,
     );
   }
@@ -151,8 +125,8 @@ function buildWave(levelIndex: number, waveIndex: number, waveTotal: number, bas
 
 export function createCampaignLevels(routes: LevelData[]): LevelData[] {
   return routes.map((route, levelIndex) => {
-    const waveTotal = LEVEL_WAVE_TOTALS[levelIndex] ?? LEVEL_WAVE_TOTALS[LEVEL_WAVE_TOTALS.length - 1];
-    const buildTime = LEVEL_BUILD_TIMES[levelIndex] ?? LEVEL_BUILD_TIMES[LEVEL_BUILD_TIMES.length - 1];
+    const waveTotal = route.waveCount ?? 6;
+    const buildTime = route.initialBuildTime ?? 12;
     const waves = Array.from({ length: waveTotal }, (_, waveIndex) =>
       buildWave(levelIndex, waveIndex, waveTotal, route.monsterSequence, buildTime),
     );
@@ -161,9 +135,8 @@ export function createCampaignLevels(routes: LevelData[]): LevelData[] {
       ...route,
       id: `campaign-${levelIndex + 1}`,
       levelNumber: levelIndex + 1,
-      subtitle: CAMPAIGN_NOTES[levelIndex] ?? "Hold the route and keep scaling your defense.",
-      allowEscape: LEVEL_ESCAPES[levelIndex] ?? 8,
-      startingMoney: LEVEL_STARTING_MONEY[levelIndex] ?? STARTING_MONEY,
+      subtitle: route.subtitle ?? "Hold the route and keep scaling your defense.",
+      startingMoney: route.startingMoney ?? STARTING_MONEY,
       waves,
       monsterCount: waves.reduce((total, wave) => total + wave.count, 0),
       monsterSequence: waves.flatMap((wave) => wave.monsterSequence),

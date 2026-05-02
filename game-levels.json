@@ -1,9 +1,13 @@
 [
   {
     "name": "Bellevue",
+    "subtitle": "Warm up on a forgiving route and learn the shape of the field.",
+    "waveCount": 4,
+    "initialBuildTime": 10,
+    "startingMoney": 32,
     "monsterCount": 96,
-    "allowEscape": 10,
-    "monsterSequence": ["ball", "runner", "ball", "square", "triangle", "runner", "square", "tank", "triangle", "runner"],
+    "allowEscape": 15,
+    "monsterSequence": ["ball", "runner", "square", "triangle", "splitter", "berserker", "bulwark", "tank"],
     "points": [
       { "x": 103, "y": 0 },
       { "x": 103, "y": 240 },
@@ -18,8 +22,12 @@
   },
   {
     "name": "Everett",
+    "subtitle": "Faster side-lanes start to punish weak coverage.",
+    "waveCount": 4,
+    "initialBuildTime": 10,
+    "startingMoney": 34,
     "monsterCount": 84,
-    "allowEscape": 10,
+    "allowEscape": 15,
     "monsterSequence": ["ball", "runner", "square", "runner", "triangle", "square", "tank"],
     "points": [
       { "x": 137, "y": 0 },
@@ -35,8 +43,12 @@
   },
   {
     "name": "Seattle",
+    "subtitle": "The path opens up and asks for better crossfire.",
+    "waveCount": 5,
+    "initialBuildTime": 11,
+    "startingMoney": 35,
     "monsterCount": 88,
-    "allowEscape": 10,
+    "allowEscape": 14,
     "monsterSequence": ["runner", "ball", "square", "runner", "triangle", "tank", "square"],
     "points": [
       { "x": 103, "y": 0 },
@@ -50,8 +62,12 @@
   },
   {
     "name": "Tacoma",
+    "subtitle": "Split pressure starts appearing from wave to wave.",
+    "waveCount": 5,
+    "initialBuildTime": 11,
+    "startingMoney": 37,
     "monsterCount": 78,
-    "allowEscape": 10,
+    "allowEscape": 13,
     "monsterSequence": ["runner", "triangle", "ball", "runner", "triangle", "square", "tank"],
     "points": [
       { "x": 251, "y": 0 },
@@ -67,8 +83,12 @@
   },
   {
     "name": "Olympia",
+    "subtitle": "Long corners reward towers that can hold a lane.",
+    "waveCount": 5,
+    "initialBuildTime": 12,
+    "startingMoney": 38,
     "monsterCount": 54,
-    "allowEscape": 3,
+    "allowEscape": 12,
     "monsterSequence": ["ball", "runner", "square", "triangle", "runner", "ball", "square", "tank"],
     "points": [
       { "x": 400, "y": 0 },
@@ -84,8 +104,12 @@
   },
   {
     "name": "Spokane",
+    "subtitle": "Bruisers begin arriving in real numbers.",
+    "waveCount": 6,
+    "initialBuildTime": 12,
+    "startingMoney": 40,
     "monsterCount": 108,
-    "allowEscape": 8,
+    "allowEscape": 12,
     "monsterSequence": ["ball", "runner", "square", "triangle", "runner", "square", "tank", "ball", "runner", "triangle", "square"],
     "points": [
       { "x": 91, "y": 0 },
@@ -101,8 +125,12 @@
   },
   {
     "name": "Redmond",
+    "subtitle": "Diagonal cuts and crossings make tower placement matter.",
+    "waveCount": 6,
+    "initialBuildTime": 13,
+    "startingMoney": 42,
     "monsterCount": 126,
-    "allowEscape": 8,
+    "allowEscape": 11,
     "monsterSequence": ["runner", "square", "splitter", "triangle", "tank", "runner", "berserker", "square", "bulwark", "triangle", "splitter"],
     "points": [
       { "x": 46, "y": 410 },
@@ -117,8 +145,12 @@
   },
   {
     "name": "Kirkland",
+    "subtitle": "Dense mixed waves force you to balance single-target and splash.",
+    "waveCount": 6,
+    "initialBuildTime": 13,
+    "startingMoney": 44,
     "monsterCount": 138,
-    "allowEscape": 7,
+    "allowEscape": 10,
     "monsterSequence": ["square", "runner", "triangle", "splitter", "tank", "bulwark", "runner", "berserker", "triangle", "tank", "splitter", "bulwark"],
     "points": [
       { "x": 40, "y": 75 },
@@ -133,8 +165,12 @@
   },
   {
     "name": "Bellingham",
+    "subtitle": "The final route is a siege through crossing roads.",
+    "waveCount": 7,
+    "initialBuildTime": 14,
+    "startingMoney": 47,
     "monsterCount": 152,
-    "allowEscape": 6,
+    "allowEscape": 8,
     "monsterSequence": ["runner", "splitter", "square", "tank", "bulwark", "triangle", "berserker", "runner", "tank", "splitter", "bulwark", "berserker"],
     "points": [
       { "x": 91, "y": 430 },
