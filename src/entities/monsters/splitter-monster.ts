@@ -1,5 +1,9 @@
+import { GlassShardParticle } from "../effects/glass-shard-particle";
 import type { PathEntry } from "../../route-path";
-import { Monster } from "./monster";
+import { AudioCue } from "../../types";
+import { randomRange } from "../../utils";
+import { buildShards, createBurstParticle } from "./death-effect-helpers";
+import { Monster, type MonsterDeathEffect } from "./monster";
 
 const COLOR = "#ff8bd5";
 const SPEED_PER_SECOND = 73;
@@ -19,11 +23,9 @@ export class SplitterMonster extends Monster {
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.rotation);
     context.beginPath();
-    for (let index = 0; index < 6; index += 1) {
-      const angle = (Math.PI / 3) * index;
-      const radius = index % 2 === 0 ? this.radius * 1.15 : this.radius * 0.72;
-      const x = Math.cos(angle) * radius;
-      const y = Math.sin(angle) * radius;
+    const outline = this.createOutline();
+    for (let index = 0; index < outline.length; index += 1) {
+      const { x, y } = outline[index];
       if (index === 0) {
         context.moveTo(x, y);
       } else {
@@ -38,5 +40,57 @@ export class SplitterMonster extends Monster {
     context.lineTo(0, this.radius * 0.2);
     context.lineTo(this.radius * 0.58, -this.radius * 0.18);
     context.stroke();
+  }
+
+  override createDeathEffect(): MonsterDeathEffect {
+    const pivot = {
+      x: randomRange(-this.radius * 0.14, this.radius * 0.14),
+      y: randomRange(-this.radius * 0.14, this.radius * 0.14),
+    };
+    const particles: MonsterDeathEffect["particles"] = buildShards(
+      this.createOutline(),
+      pivot,
+      Math.round(randomRange(6, 9)),
+    ).map(
+      (shardVertices) =>
+        new GlassShardParticle(
+          this.x,
+          this.y,
+          this.color,
+          shardVertices,
+          this.rotation,
+          randomRange(110, 185),
+        ),
+    );
+
+    for (let index = 0; index < 7; index += 1) {
+      particles.push(
+        createBurstParticle(
+          this.x,
+          this.y,
+          index % 2 === 0 ? "#ffd9f2" : "#ffffff",
+          randomRange(0.9, 1.9),
+          randomRange(3, 4.1),
+          randomRange(-Math.PI, Math.PI),
+          randomRange(95, 175),
+        ),
+      );
+    }
+
+    return {
+      sound: { cue: AudioCue.MonsterPop, intensity: 1.1 },
+      particles,
+    };
+  }
+
+  private createOutline() {
+    return Array.from({ length: 6 }, (_, index) => {
+      const angle = (Math.PI / 3) * index;
+      const radius = index % 2 === 0 ? this.radius * 1.15 : this.radius * 0.72;
+      return {
+        x: Math.cos(angle) * radius,
+        y: Math.sin(angle) * radius,
+      };
+    });
   }
 }

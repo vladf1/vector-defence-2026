@@ -1,5 +1,9 @@
+import { GlassShardParticle } from "../effects/glass-shard-particle";
 import type { PathEntry } from "../../route-path";
-import { Monster } from "./monster";
+import { AudioCue } from "../../types";
+import { randomRange } from "../../utils";
+import { buildShards, createBurstParticle } from "./death-effect-helpers";
+import { Monster, type MonsterDeathEffect } from "./monster";
 
 const BASE_COLOR = "#ff7a4f";
 const ENRAGED_COLOR = "#ff5a36";
@@ -45,14 +49,11 @@ export class BerserkerMonster extends Monster {
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
     context.beginPath();
-    context.moveTo(this.radius * 1.55, 0);
-    context.lineTo(this.radius * 0.4, -this.radius * 0.8);
-    context.lineTo(-this.radius * 0.1, -this.radius * 1.08);
-    context.lineTo(-this.radius * 1.28, -this.radius * 0.44);
-    context.lineTo(-this.radius * 0.72, 0);
-    context.lineTo(-this.radius * 1.28, this.radius * 0.44);
-    context.lineTo(-this.radius * 0.1, this.radius * 1.08);
-    context.lineTo(this.radius * 0.4, this.radius * 0.8);
+    const outline = this.createOutline();
+    context.moveTo(outline[0].x, outline[0].y);
+    for (let index = 1; index < outline.length; index += 1) {
+      context.lineTo(outline[index].x, outline[index].y);
+    }
     context.closePath();
     context.fill();
     context.stroke();
@@ -75,6 +76,61 @@ export class BerserkerMonster extends Monster {
     }
   }
 
+  override createDeathEffect(): MonsterDeathEffect {
+    const pivot = {
+      x: randomRange(-this.radius * 0.15, this.radius * 0.22),
+      y: randomRange(-this.radius * 0.15, this.radius * 0.15),
+    };
+    const particles: MonsterDeathEffect["particles"] = buildShards(
+      this.createOutline(),
+      pivot,
+      Math.round(randomRange(6, 10)),
+    ).map(
+      (shardVertices) =>
+        new GlassShardParticle(
+          this.x,
+          this.y,
+          this.color,
+          shardVertices,
+          this.angle,
+          randomRange(140, 230),
+        ),
+    );
+
+    for (let index = 0; index < 8; index += 1) {
+      particles.push(
+        createBurstParticle(
+          this.x,
+          this.y,
+          index % 3 === 0 ? "#ffd1a3" : this.color,
+          randomRange(1.2, 2.6),
+          randomRange(2.6, 3.7),
+          this.angle + randomRange(-0.55, 0.55),
+          randomRange(145, 260),
+        ),
+      );
+    }
+
+    for (let index = 0; index < 5; index += 1) {
+      particles.push(
+        createBurstParticle(
+          this.x,
+          this.y,
+          "#ffffff",
+          randomRange(0.8, 1.6),
+          randomRange(3.6, 5),
+          this.angle + randomRange(-0.18, 0.18),
+          randomRange(190, 295),
+        ),
+      );
+    }
+
+    return {
+      sound: { cue: AudioCue.MonsterHeavyDeath, intensity: 1.05 },
+      particles,
+    };
+  }
+
   private getStageColor(): string {
     if (this.rageStage === 2) {
       return FRENZIED_COLOR;
@@ -93,5 +149,18 @@ export class BerserkerMonster extends Monster {
       return ENRAGED_SPEED_PER_SECOND;
     }
     return BASE_SPEED_PER_SECOND;
+  }
+
+  private createOutline() {
+    return [
+      { x: this.radius * 1.55, y: 0 },
+      { x: this.radius * 0.4, y: -this.radius * 0.8 },
+      { x: -this.radius * 0.1, y: -this.radius * 1.08 },
+      { x: -this.radius * 1.28, y: -this.radius * 0.44 },
+      { x: -this.radius * 0.72, y: 0 },
+      { x: -this.radius * 1.28, y: this.radius * 0.44 },
+      { x: -this.radius * 0.1, y: this.radius * 1.08 },
+      { x: this.radius * 0.4, y: this.radius * 0.8 },
+    ];
   }
 }

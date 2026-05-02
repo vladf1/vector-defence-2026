@@ -1,12 +1,17 @@
-import type { Point } from "../types";
-import { randomRange } from "../utils";
+import { Particle } from "../effects/particle";
+import type { Point } from "../../types";
+import { randomRange } from "../../utils";
 
 export interface CircleArc {
   startAngle: number;
   sweepAngle: number;
 }
 
-export function buildShards(outline: Point[], pivot: Point, shardCount: number): Point[][] {
+export function buildShards(
+  outline: Point[],
+  pivot: Point,
+  shardCount: number,
+): Point[][] {
   const perimeterPoints = samplePolygonPerimeter(outline, shardCount);
   const shards: Point[][] = [];
   for (let index = 0; index < shardCount; index += 1) {
@@ -24,15 +29,15 @@ export function randomPointInsideTriangle(a: Point, b: Point, c: Point): Point {
   }
   const weightC = 1 - weightA - weightB;
   return {
-    x: (a.x * weightA) + (b.x * weightB) + (c.x * weightC),
-    y: (a.y * weightA) + (b.y * weightB) + (c.y * weightC),
+    x: a.x * weightA + b.x * weightB + c.x * weightC,
+    y: a.y * weightA + b.y * weightB + c.y * weightC,
   };
 }
 
 export function rotatePoint(point: Point, angle: number): Point {
   return {
-    x: (point.x * Math.cos(angle)) - (point.y * Math.sin(angle)),
-    y: (point.x * Math.sin(angle)) + (point.y * Math.cos(angle)),
+    x: point.x * Math.cos(angle) - point.y * Math.sin(angle),
+    y: point.x * Math.sin(angle) + point.y * Math.cos(angle),
   };
 }
 
@@ -43,23 +48,65 @@ export function pointOnRadius(angle: number, radius: number): Point {
   };
 }
 
-export function createCoreShardVertices(center: Point, radius: number): Point[] {
+export function createCoreShardVertices(
+  center: Point,
+  radius: number,
+): Point[] {
   const vertexCount = Math.round(randomRange(3, 5));
   const vertices: Point[] = [];
   const startAngle = randomRange(-Math.PI, Math.PI);
   for (let index = 0; index < vertexCount; index += 1) {
-    const angle = startAngle + ((Math.PI * 2 * index) / vertexCount) + randomRange(-0.18, 0.18);
+    const angle =
+      startAngle +
+      (Math.PI * 2 * index) / vertexCount +
+      randomRange(-0.18, 0.18);
     const distance = radius * randomRange(0.55, 1);
     vertices.push({
-      x: center.x + (Math.cos(angle) * distance),
-      y: center.y + (Math.sin(angle) * distance),
+      x: center.x + Math.cos(angle) * distance,
+      y: center.y + Math.sin(angle) * distance,
     });
   }
   return vertices;
 }
 
+export function createBurstParticle(
+  x: number,
+  y: number,
+  color: string,
+  size: number,
+  alphaFadePerSecond: number,
+  angle: number,
+  speedPerSecond: number,
+): Particle {
+  const particle = new Particle(x, y, size, color, alphaFadePerSecond, {
+    speedPerSecond: 0,
+    offset: 0,
+  });
+  particle.velocityXPerSecond = Math.cos(angle) * speedPerSecond;
+  particle.velocityYPerSecond = Math.sin(angle) * speedPerSecond;
+  particle.x = x;
+  particle.y = y;
+  return particle;
+}
+
+export function createSimpleExplosionParticles(
+  x: number,
+  y: number,
+  count: number,
+  size: number,
+  color: string,
+  alphaFadePerSecond: number,
+): Particle[] {
+  return Array.from(
+    { length: count },
+    () => new Particle(x, y, size, color, alphaFadePerSecond),
+  );
+}
+
 export function sampleCircleArcs(arcCount: number): CircleArc[] {
-  const weights = Array.from({ length: arcCount }, () => randomRange(0.65, 1.45));
+  const weights = Array.from({ length: arcCount }, () =>
+    randomRange(0.65, 1.45),
+  );
   const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
   const startAngleOffset = randomRange(-Math.PI, Math.PI);
   const arcs: CircleArc[] = [];
@@ -72,7 +119,10 @@ export function sampleCircleArcs(arcCount: number): CircleArc[] {
   return arcs;
 }
 
-function samplePolygonPerimeter(outline: Point[], sampleCount: number): Point[] {
+function samplePolygonPerimeter(
+  outline: Point[],
+  sampleCount: number,
+): Point[] {
   const edgeLengths: number[] = [];
   let perimeterLength = 0;
   for (let index = 0; index < outline.length; index += 1) {
@@ -83,13 +133,21 @@ function samplePolygonPerimeter(outline: Point[], sampleCount: number): Point[] 
     perimeterLength += length;
   }
 
-  const distances = Array.from({ length: sampleCount }, () => randomRange(0, perimeterLength)).sort((left, right) => left - right);
-  const points = distances.map((distance) => samplePointOnPolygonPerimeter(outline, edgeLengths, distance));
+  const distances = Array.from({ length: sampleCount }, () =>
+    randomRange(0, perimeterLength),
+  ).sort((left, right) => left - right);
+  const points = distances.map((distance) =>
+    samplePointOnPolygonPerimeter(outline, edgeLengths, distance),
+  );
   points.push(points[0]);
   return points;
 }
 
-function samplePointOnPolygonPerimeter(outline: Point[], edgeLengths: number[], distance: number): Point {
+function samplePointOnPolygonPerimeter(
+  outline: Point[],
+  edgeLengths: number[],
+  distance: number,
+): Point {
   let traversed = 0;
   for (let index = 0; index < outline.length; index += 1) {
     const edgeLength = edgeLengths[index];
@@ -98,8 +156,8 @@ function samplePointOnPolygonPerimeter(outline: Point[], edgeLengths: number[], 
       const end = outline[(index + 1) % outline.length];
       const ratio = edgeLength === 0 ? 0 : (distance - traversed) / edgeLength;
       return {
-        x: start.x + ((end.x - start.x) * ratio),
-        y: start.y + ((end.y - start.y) * ratio),
+        x: start.x + (end.x - start.x) * ratio,
+        y: start.y + (end.y - start.y) * ratio,
       };
     }
     traversed += edgeLength;

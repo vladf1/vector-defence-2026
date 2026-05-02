@@ -2,7 +2,6 @@ import levelsJson from "../game-levels.json";
 import { createGameLevels, createRandomChallengeLevel, getCampaignLevelCount } from "./campaign";
 import type { GameAudio } from "./game-audio";
 import { createEscapeBurstEffect } from "./game-engine/combat-effects";
-import { createMonsterDeathEffect } from "./game-engine/monster-death-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { GameRenderer } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
@@ -234,7 +233,11 @@ export class Game {
 
   onMonsterKilled(monster: Monster): void {
     this.runtime.money += monster.bounty;
-    createMonsterDeathEffect(this, monster);
+    const effect = monster.createDeathEffect();
+    this.playSound(effect.sound.cue, monster.x, effect.sound.intensity);
+    for (const particle of effect.particles) {
+      this.addParticle(particle);
+    }
     this.requestHudSync();
   }
 

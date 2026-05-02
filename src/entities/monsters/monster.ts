@@ -1,7 +1,19 @@
+import type { Particle } from "../effects/particle";
 import { getPathHeadingAngle, type PathEntry } from "../../route-path";
+import type { AudioCue as AudioCueValue } from "../../types";
 import { angleBetween, randomRange } from "../../utils";
 
 const MONSTER_STROKE_WIDTH = 1.5;
+
+export interface MonsterDeathSound {
+  cue: AudioCueValue;
+  intensity?: number;
+}
+
+export interface MonsterDeathEffect {
+  sound: MonsterDeathSound;
+  particles: Particle[];
+}
 
 export abstract class Monster extends EventTarget {
   x: number;
@@ -80,6 +92,8 @@ export abstract class Monster extends EventTarget {
   }
 
   protected abstract drawBody(context: CanvasRenderingContext2D): void;
+
+  abstract createDeathEffect(): MonsterDeathEffect;
 
   private drawCoreBody(context: CanvasRenderingContext2D): void {
     context.save();
