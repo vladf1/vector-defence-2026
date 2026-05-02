@@ -461,8 +461,8 @@ export class Game {
     this.renderer.renderBackgroundLayer();
   }
 
-  update(deltaSeconds: number, collectTimings = false): GameFrameTimings | undefined {
-    const updateStart = collectTimings ? performance.now() : 0;
+  update(deltaSeconds: number): GameFrameTimings {
+    const updateStart = performance.now();
     const previousPreWaveSecond = this.state === GameState.Playing && this.activeWave && this.runtime.spawnDelay > 0
       ? Math.ceil(this.runtime.spawnDelay)
       : -1;
@@ -475,94 +475,73 @@ export class Game {
       }
     }
 
-    if (this.state !== GameState.Playing) {
-      const updateEnd = collectTimings ? performance.now() : 0;
-      const drawMs = this.drawForTiming(collectTimings);
-      return collectTimings
-        ? {
-            updateMs: updateEnd - updateStart,
-            drawMs,
-          }
-        : undefined;
-    }
-
-    const wave = this.activeWave;
-    if (wave && this.runtime.spawnDelay > 0) {
-      this.runtime.spawnDelay = Math.max(0, this.runtime.spawnDelay - deltaSeconds);
-      const nextPreWaveSecond = this.activeWave && this.runtime.spawnDelay > 0 ? Math.ceil(this.runtime.spawnDelay) : -1;
-      if (previousPreWaveSecond !== nextPreWaveSecond) {
-        this.requestHudSync();
-      }
-    } else if (wave && this.runtime.waveSpawnedMonsters < wave.count) {
-      this.runtime.spawnCooldown -= deltaSeconds;
-      if (this.runtime.spawnCooldown <= 0) {
-        this.spawnMonster();
-        this.runtime.spawnCooldown = randomRange(wave.spawnIntervalMin, wave.spawnIntervalMax);
-        this.requestHudSync();
-      }
-    }
-
-    for (const monster of this.runtime.monsters) {
-      monster.update(deltaSeconds);
-    }
-
-    for (const projectile of this.runtime.projectiles) {
-      projectile.update(this, deltaSeconds);
-    }
-
-    for (const missile of this.runtime.missiles) {
-      missile.update(this, deltaSeconds);
-    }
-
-    for (const particle of this.runtime.particles) {
-      particle.update(deltaSeconds);
-    }
-
-    for (const link of this.runtime.links) {
-      link.update(deltaSeconds);
-    }
-
-    for (const tower of this.runtime.towers) {
-      tower.update(this, deltaSeconds);
-    }
-
-    this.runtime.compactRemoved();
-
-    if (wave && this.runtime.waveSpawnedMonsters >= wave.count && this.runtime.monsters.length === 0) {
-      this.completeCurrentWave();
-    }
-
-    if (!this.activeWave && this.currentLevel && this.runtime.spawnedMonsters >= this.currentLevel.monsterCount && this.runtime.monsters.length === 0) {
-      this.runtime.winDelay += deltaSeconds;
-      if (this.runtime.winDelay >= 0.6 && this.state === GameState.Playing) {
-        this.finishLevel();
-      }
-    } else {
-      this.runtime.winDelay = 0;
-    }
-
-    const updateEnd = collectTimings ? performance.now() : 0;
-    const drawMs = this.drawForTiming(collectTimings);
-    return collectTimings
-      ? {
-          updateMs: updateEnd - updateStart,
-          drawMs,
+    if (this.state === GameState.Playing) {
+      const wave = this.activeWave;
+      if (wave && this.runtime.spawnDelay > 0) {
+        this.runtime.spawnDelay = Math.max(0, this.runtime.spawnDelay - deltaSeconds);
+        const nextPreWaveSecond = this.activeWave && this.runtime.spawnDelay > 0 ? Math.ceil(this.runtime.spawnDelay) : -1;
+        if (previousPreWaveSecond !== nextPreWaveSecond) {
+          this.requestHudSync();
         }
-      : undefined;
+      } else if (wave && this.runtime.waveSpawnedMonsters < wave.count) {
+        this.runtime.spawnCooldown -= deltaSeconds;
+        if (this.runtime.spawnCooldown <= 0) {
+          this.spawnMonster();
+          this.runtime.spawnCooldown = randomRange(wave.spawnIntervalMin, wave.spawnIntervalMax);
+          this.requestHudSync();
+        }
+      }
+
+      for (const monster of this.runtime.monsters) {
+        monster.update(deltaSeconds);
+      }
+
+      for (const projectile of this.runtime.projectiles) {
+        projectile.update(this, deltaSeconds);
+      }
+
+      for (const missile of this.runtime.missiles) {
+        missile.update(this, deltaSeconds);
+      }
+
+      for (const particle of this.runtime.particles) {
+        particle.update(deltaSeconds);
+      }
+
+      for (const link of this.runtime.links) {
+        link.update(deltaSeconds);
+      }
+
+      for (const tower of this.runtime.towers) {
+        tower.update(this, deltaSeconds);
+      }
+
+      this.runtime.compactRemoved();
+
+      if (wave && this.runtime.waveSpawnedMonsters >= wave.count && this.runtime.monsters.length === 0) {
+        this.completeCurrentWave();
+      }
+
+      if (!this.activeWave && this.currentLevel && this.runtime.spawnedMonsters >= this.currentLevel.monsterCount && this.runtime.monsters.length === 0) {
+        this.runtime.winDelay += deltaSeconds;
+        if (this.runtime.winDelay >= 0.6 && this.state === GameState.Playing) {
+          this.finishLevel();
+        }
+      } else {
+        this.runtime.winDelay = 0;
+      }
+    }
+
+    const updateEnd = performance.now();
+    const drawStart = performance.now();
+    this.draw();
+    return {
+      updateMs: updateEnd - updateStart,
+      drawMs: performance.now() - drawStart,
+    };
   }
 
   draw(): void {
     this.renderer.draw();
-  }
-
-  private drawForTiming(collectTimings: boolean): number {
-    if (!collectTimings) {
-      this.draw();
-      return 0;
-    }
-
-    const drawStart = performance.now();
-    this.draw();
-    return performance.now() - drawStart;
   }
 }

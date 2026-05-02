@@ -4,7 +4,6 @@ import { GameAudio } from "./game-audio";
 import {
   Game,
   createLevels,
-  type GameFrameTimings,
 } from "./game-engine";
 import {
   INITIAL_HUD_SNAPSHOT,
@@ -21,8 +20,9 @@ const MAX_FRAME_DELTA = 1 / 15;
 const NERD_STATS_SAMPLE_MS = 500;
 const TOWER_DRAG_THRESHOLD_PX = 6;
 
-interface GameWindow extends Window {
-  __vectorDefence?: Game;
+interface VectorDefenceWindow extends Window {
+  // Exposes the live game instance for browser/dev smoke checks.
+  vectorDefenceGame?: Game;
 }
 
 export interface GameSession {
@@ -157,8 +157,8 @@ export function createGameSession(): GameSession {
       }
     }
 
-    const frameTimings = game.update(deltaSeconds, nerdStatsEnabled && previousFrameTime !== 0);
-    if (nerdStatsEnabled && frameTimings) {
+    const frameTimings = game.update(deltaSeconds);
+    if (nerdStatsEnabled && previousFrameTime !== 0) {
       sampledUpdateDurationMs += frameTimings.updateMs;
       sampledDrawDurationMs += frameTimings.drawMs;
 
@@ -200,7 +200,7 @@ export function createGameSession(): GameSession {
     }
 
     game = new Game(createLevels(), nextBackgroundCanvas, backgroundCtx, canvas, ctx, audio);
-    (window as GameWindow).__vectorDefence = game;
+    (window as VectorDefenceWindow).vectorDefenceGame = game;
     game.resize();
     game.draw();
     runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
@@ -218,8 +218,8 @@ export function createGameSession(): GameSession {
       frameId = 0;
     }
 
-    if ((window as GameWindow).__vectorDefence === game) {
-      delete (window as GameWindow).__vectorDefence;
+    if ((window as VectorDefenceWindow).vectorDefenceGame === game) {
+      delete (window as VectorDefenceWindow).vectorDefenceGame;
     }
 
     previousFrameTime = 0;
