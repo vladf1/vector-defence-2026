@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>Vector Defence Soundboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #10151c;
+        color: #f4f7fb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(circle at 20% 0%, rgba(50, 127, 116, 0.22), transparent 30rem),
+          linear-gradient(135deg, #111820 0%, #20262d 48%, #171b21 100%);
+      }
+
+      main {
+        width: min(1120px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 32px 0 40px;
+      }
+
+      header {
+        margin-bottom: 22px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 12px;
+      }
+
+      button {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 12px;
+        min-height: 70px;
+        padding: 14px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 8px;
+        color: #f9fbff;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+        cursor: pointer;
+        font: inherit;
+        text-align: left;
+      }
+
+      button:hover {
+        border-color: rgba(94, 216, 186, 0.55);
+        background: rgba(94, 216, 186, 0.16);
+      }
+
+      button:focus-visible {
+        outline: 3px solid rgba(94, 216, 186, 0.72);
+        outline-offset: 2px;
+      }
+
+      button.playing {
+        border-color: rgba(255, 212, 94, 0.72);
+        background: rgba(255, 212, 94, 0.18);
+      }
+
+      .label {
+        overflow-wrap: anywhere;
+        font-size: 1.03rem;
+        font-weight: 800;
+      }
+
+      .play-icon {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 50%;
+        color: #10151c;
+        background: #5ed8ba;
+        font-size: 0.9rem;
+        font-weight: 900;
+      }
+
+      .status {
+        min-height: 1.4em;
+        margin-top: 18px;
+        color: rgba(244, 247, 251, 0.75);
+        font-weight: 700;
+      }
+
+      audio {
+        display: none;
+      }
+
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Soundboard</h1>
+      </header>
+
+      <section class="board" aria-label="Game sound effects">
+        <button type="button" data-audio-id="escape-burst">
+          <span class="label">Escape Burst</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="gun-fire">
+          <span class="label">Gun Fire</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="laser-fire">
+          <span class="label">Laser Fire</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="level-loss">
+          <span class="label">Level Loss</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="level-start">
+          <span class="label">Level Start</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="level-win">
+          <span class="label">Level Win</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="missile-explosion">
+          <span class="label">Missile Explosion</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="missile-launch">
+          <span class="label">Missile Launch</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="monster-heavy-death">
+          <span class="label">Monster Heavy Death</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="monster-pop">
+          <span class="label">Monster Pop</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="monster-shatter">
+          <span class="label">Monster Shatter</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="projectile-impact">
+          <span class="label">Projectile Impact</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="slow-pulse">
+          <span class="label">Slow Pulse</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="splitter-burst">
+          <span class="label">Splitter Burst</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="tower-place">
+          <span class="label">Tower Place</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="tower-sell">
+          <span class="label">Tower Sell</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="tower-upgrade">
+          <span class="label">Tower Upgrade</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+        <button type="button" data-audio-id="wave-clear">
+          <span class="label">Wave Clear</span>
+          <span class="play-icon" aria-hidden="true">▶</span>
+        </button>
+      </section>
+
+      <p class="status" role="status" aria-live="polite"></p>
+    </main>
+
+    <audio id="escape-burst" preload="auto" src="./src/assets/audio/escape-burst.m4a"></audio>
+    <audio id="gun-fire" preload="auto" src="./src/assets/audio/gun-fire.m4a"></audio>
+    <audio id="laser-fire" preload="auto" src="./src/assets/audio/laser-fire.m4a"></audio>
+    <audio id="level-loss" preload="auto" src="./src/assets/audio/level-loss.m4a"></audio>
+    <audio id="level-start" preload="auto" src="./src/assets/audio/level-start.m4a"></audio>
+    <audio id="level-win" preload="auto" src="./src/assets/audio/level-win.m4a"></audio>
+    <audio id="missile-explosion" preload="auto" src="./src/assets/audio/missile-explosion.m4a"></audio>
+    <audio id="missile-launch" preload="auto" src="./src/assets/audio/missile-launch.m4a"></audio>
+    <audio id="monster-heavy-death" preload="auto" src="./src/assets/audio/monster-heavy-death.m4a"></audio>
+    <audio id="monster-pop" preload="auto" src="./src/assets/audio/monster-pop.m4a"></audio>
+    <audio id="monster-shatter" preload="auto" src="./src/assets/audio/monster-shatter.m4a"></audio>
+    <audio id="projectile-impact" preload="auto" src="./src/assets/audio/projectile-impact.m4a"></audio>
+    <audio id="slow-pulse" preload="auto" src="./src/assets/audio/slow-pulse.m4a"></audio>
+    <audio id="splitter-burst" preload="auto" src="./src/assets/audio/splitter-burst.m4a"></audio>
+    <audio id="tower-place" preload="auto" src="./src/assets/audio/tower-place.m4a"></audio>
+    <audio id="tower-sell" preload="auto" src="./src/assets/audio/tower-sell.m4a"></audio>
+    <audio id="tower-upgrade" preload="auto" src="./src/assets/audio/tower-upgrade.m4a"></audio>
+    <audio id="wave-clear" preload="auto" src="./src/assets/audio/wave-clear.m4a"></audio>
+
+    <script>
+      const buttons = Array.from(document.querySelectorAll("[data-audio-id]"));
+      const status = document.querySelector(".status");
+      const audioVersion = Date.now().toString(36);
+      let activeButton;
+
+      for (const audio of document.querySelectorAll("audio")) {
+        const sourceUrl = new URL(audio.getAttribute("src"), document.baseURI);
+        sourceUrl.searchParams.set("v", audioVersion);
+        audio.src = sourceUrl.href;
+      }
+
+      function setStatus(message) {
+        status.textContent = message;
+      }
+
+      function resetActiveButton() {
+        if (activeButton) {
+          activeButton.classList.remove("playing");
+          activeButton = undefined;
+        }
+      }
+
+      for (const button of buttons) {
+        const audio = document.getElementById(button.dataset.audioId);
+        const label = button.querySelector(".label").textContent;
+
+        audio.addEventListener("ended", resetActiveButton);
+        audio.addEventListener("error", () => {
+          setStatus(`Could not load ${label}.`);
+          resetActiveButton();
+        });
+
+        button.addEventListener("click", async () => {
+          resetActiveButton();
+          for (const otherAudio of document.querySelectorAll("audio")) {
+            if (otherAudio !== audio) {
+              otherAudio.pause();
+              otherAudio.currentTime = 0;
+            }
+          }
+
+          audio.currentTime = 0;
+          activeButton = button;
+          button.classList.add("playing");
+          setStatus(`Playing ${label}`);
+
+          try {
+            await audio.play();
+          } catch {
+            setStatus(`Browser blocked ${label}. Try the button again.`);
+            resetActiveButton();
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -27,7 +27,7 @@ Key paths:
 - Browser styles: `src/style.css`
 - Browser package/scripts: `package.json`
 - Browser level data: `game-levels.json`
-- Audio asset generation script: `scripts/generate-audio-assets.mjs`
+- Browser audio assets: `src/assets/audio/`
 - Tower render sheet script: `scripts/render-towers.mjs`
 
 Repository notes:
@@ -120,11 +120,11 @@ Tower render sheet:
 - Use a fresh artifact filename when comparing visual variants so the app does not show a cached old image, for example `npm run render:towers -- artifacts/tower-render-laser-test.png`.
 - Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
 
-Audio asset generation:
+Audio assets:
 
-- `npm run generate:audio` runs `scripts/generate-audio-assets.mjs` and rewrites the generated `.m4a` files in `src/assets/audio/`.
-- The script synthesizes the cue waveforms in Node, then encodes 64 kbps AAC with `afconvert` when available or `ffmpeg` as a fallback.
-- Treat this as a source-asset regeneration step: review the resulting `src/assets/audio/*.m4a` diff before committing.
+- The committed `.m4a` files in `src/assets/audio/` are the source of truth for game sound effects.
+- The old procedural audio generator has been retired; do not recreate `npm run generate:audio` unless there is a clear reason to replace the current asset workflow.
+- When replacing audio, overwrite the relevant `.m4a` files directly and verify the soundboard/build before committing.
 
 Maintenance preferences:
 
