@@ -3,12 +3,15 @@
 
   const session = getGameSessionContext();
   const { hud, soundEnabled } = session;
+  const profile = session.profile;
 </script>
 
 <header class="topbar">
-  <div class="title-block">
-    <h1>Vector Defence</h1>
-  </div>
+  {#if profile.ui.showTitle}
+    <div class="title-block">
+      <h1>Vector Defence</h1>
+    </div>
+  {/if}
   <section class="hud">
     {#each [
       { label: "Level", value: $hud.levelName, className: "level-stat" },
@@ -32,7 +35,20 @@
     >
       <span class="sound-icon" aria-hidden="true">{$soundEnabled ? "🔊" : "🔇"}</span>
     </button>
+    {#if profile.mode === "mobile"}
+      <button
+        class="chrome-button pause-button"
+        type="button"
+        aria-label={$hud.paused ? "Resume" : "Pause"}
+        disabled={!$hud.canTogglePause}
+        onclick={session.togglePause}
+      >
+        {$hud.paused ? ">" : "||"}
+      </button>
+    {/if}
     <button class="chrome-button" type="button" onclick={session.openMenu}>Campaign</button>
-    <button class="chrome-button" type="button" onclick={session.restart}>Restart</button>
+    {#if profile.ui.showChromeRestart}
+      <button class="chrome-button" type="button" onclick={session.restart}>Restart</button>
+    {/if}
   </div>
 </header>

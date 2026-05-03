@@ -1,5 +1,7 @@
 export const FIELD_WIDTH = 800;
 export const FIELD_HEIGHT = 450;
+export const EFFECT_FIELD_WIDTH = 800;
+export const EFFECT_FIELD_HEIGHT = 560;
 export const FIELD_ASPECT_RATIO = `${FIELD_WIDTH} / ${FIELD_HEIGHT}`;
 export const FIELD_ASPECT_SCALE = FIELD_WIDTH / FIELD_HEIGHT;
 export const TOWER_RADIUS = 12;

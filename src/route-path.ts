@@ -1,4 +1,3 @@
-import { ROAD_TURN_RADIUS, ROUTE_CURVE_SAMPLE_STEP } from "./constants";
 import type { Point } from "./types";
 import { calculateDistance } from "./utils";
 
@@ -28,7 +27,7 @@ type PathEntryHeading =
   | { kind: "line"; angle: number }
   | { kind: "quadratic"; start: Point; control: Point; end: Point; tStart: number; tEnd: number };
 
-export function createRouteMotionPath(points: readonly Point[]): RouteMotionPath {
+export function createRouteMotionPath(points: readonly Point[], roadTurnRadius: number, routeCurveSampleStep: number): RouteMotionPath {
   const start = points[0] ?? { x: 0, y: 0 };
   const entries: PathEntry[] = [{ x: start.x, y: start.y, totalDistance: 0 }];
 
@@ -40,7 +39,7 @@ export function createRouteMotionPath(points: readonly Point[]): RouteMotionPath
     };
   }
 
-  const turns = createRoundedTurns(points);
+  const turns = createRoundedTurns(points, roadTurnRadius);
   const commands: RoutePathCommand[] = [];
   let current = start;
   let turnIndex = 0;
@@ -55,7 +54,7 @@ export function createRouteMotionPath(points: readonly Point[]): RouteMotionPath
     current = segmentEnd;
 
     if (nextTurn?.index === segmentIndex + 1) {
-      appendQuadratic(commands, entries, nextTurn.entry, nextTurn.control, nextTurn.exit);
+      appendQuadratic(commands, entries, nextTurn.entry, nextTurn.control, nextTurn.exit, routeCurveSampleStep);
       current = nextTurn.exit;
       turnIndex += 1;
     }
@@ -234,7 +233,7 @@ function findLocalPathIndexAtDistance(path: readonly PathEntry[], distance: numb
   return index;
 }
 
-function createRoundedTurns(points: readonly Point[]): RoundedTurn[] {
+function createRoundedTurns(points: readonly Point[], roadTurnRadius: number): RoundedTurn[] {
   const turns: RoundedTurn[] = [];
 
   for (let index = 1; index < points.length - 1; index += 1) {
@@ -243,7 +242,7 @@ function createRoundedTurns(points: readonly Point[]): RoundedTurn[] {
     const next = points[index + 1];
     const previousLength = calculateDistance(previous.x, previous.y, control.x, control.y);
     const nextLength = calculateDistance(control.x, control.y, next.x, next.y);
-    const turnDistance = Math.min(ROAD_TURN_RADIUS, previousLength * 0.45, nextLength * 0.45);
+    const turnDistance = Math.min(roadTurnRadius, previousLength * 0.45, nextLength * 0.45);
 
     if (turnDistance <= 1) {
       continue;
@@ -292,11 +291,12 @@ function appendQuadratic(
   start: Point,
   control: Point,
   end: Point,
+  routeCurveSampleStep: number,
 ): void {
   commands.push({ kind: "quadratic", control, point: end });
   const estimatedLength = calculateDistance(start.x, start.y, control.x, control.y)
     + calculateDistance(control.x, control.y, end.x, end.y);
-  const steps = Math.max(4, Math.ceil(estimatedLength / ROUTE_CURVE_SAMPLE_STEP));
+  const steps = Math.max(4, Math.ceil(estimatedLength / routeCurveSampleStep));
 
   for (let step = 1; step <= steps; step += 1) {
     const t = step / steps;

@@ -32,6 +32,9 @@ export class GameAudio {
   private buffers = new Map<AudioCueValue, AudioBuffer>();
   private enabled = true;
 
+  constructor(private readonly fieldWidth = FIELD_WIDTH) {
+  }
+
   get isEnabled(): boolean {
     return this.enabled;
   }
@@ -183,7 +186,7 @@ export class GameAudio {
 
     if (panX !== undefined && "createStereoPanner" in context) {
       const panner = context.createStereoPanner();
-      panner.pan.value = clamp((panX / FIELD_WIDTH) * 1.5 - 0.75, -0.75, 0.75);
+      panner.pan.value = clamp((panX / this.fieldWidth) * 1.5 - 0.75, -0.75, 0.75);
       gain.connect(panner);
       panner.connect(this.output);
       window.setTimeout(() => {

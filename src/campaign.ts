@@ -1,5 +1,5 @@
 import { STARTING_MONEY } from "./constants";
-import { createProceduralLevel } from "./level-generator";
+import { createProceduralLevel, type ProceduralRouteConfig } from "./level-generator";
 import { MonsterKind, type LevelData, type WaveData } from "./types";
 import { clamp } from "./utils";
 
@@ -101,14 +101,24 @@ function buildLevelOneShowcaseSequence(baseSequence: MonsterKind[], waveIndex: n
   return sequence;
 }
 
-function buildWave(levelIndex: number, waveIndex: number, waveTotal: number, baseSequence: MonsterKind[], initialBuildTime: number): WaveData {
+function buildWave(
+  levelIndex: number,
+  waveIndex: number,
+  waveTotal: number,
+  baseSequence: MonsterKind[],
+  initialBuildTime: number,
+  mobile: boolean,
+): WaveData {
   const countBase = 13 + (levelIndex * 1.6);
   const countStep = 4 + Math.floor(levelIndex / 3);
   const lastWaveBonus = waveIndex === waveTotal - 1 ? 4 + Math.round(levelIndex * 0.8) : 0;
-  const count = Math.round(countBase + (waveIndex * countStep) + lastWaveBonus);
+  const countScale = mobile ? 0.68 : 1;
+  const count = Math.round((countBase + (waveIndex * countStep) + lastWaveBonus) * countScale);
   const pressure = (levelIndex * 0.65) + (waveIndex * 0.55);
-  const spawnIntervalMin = clamp(0.82 - (pressure * 0.07), 0.24, 0.82);
-  const spawnIntervalMax = clamp(spawnIntervalMin + 0.34 - (Math.min(levelIndex, 6) * 0.01), spawnIntervalMin + 0.12, 1.08);
+  const mobileSpawnScale = mobile ? 1.08 : 1;
+  const baseSpawnIntervalMin = clamp(0.82 - (pressure * 0.07), 0.24, 0.82);
+  const spawnIntervalMin = baseSpawnIntervalMin * mobileSpawnScale;
+  const spawnIntervalMax = clamp(baseSpawnIntervalMin + 0.34 - (Math.min(levelIndex, 6) * 0.01), baseSpawnIntervalMin + 0.12, 1.08) * mobileSpawnScale;
   const intermission = clamp(5.75 - (levelIndex * 0.18) - (waveIndex * 0.32), 2.5, 5.5);
   const labelPool = ["Probe", "Push", "Break", "Surge", "Anvil", "Siege", "Overrun"];
 
@@ -123,12 +133,12 @@ function buildWave(levelIndex: number, waveIndex: number, waveTotal: number, bas
   };
 }
 
-export function createCampaignLevels(routes: LevelData[]): LevelData[] {
+export function createCampaignLevels(routes: LevelData[], mobile: boolean): LevelData[] {
   return routes.map((route, levelIndex) => {
     const waveTotal = route.waveCount ?? 6;
     const buildTime = route.initialBuildTime ?? 12;
     const waves = Array.from({ length: waveTotal }, (_, waveIndex) =>
-      buildWave(levelIndex, waveIndex, waveTotal, route.monsterSequence, buildTime),
+      buildWave(levelIndex, waveIndex, waveTotal, route.monsterSequence, buildTime, mobile),
     );
 
     return {
@@ -148,13 +158,13 @@ export function getCampaignLevelCount(levels: readonly LevelData[]): number {
   return levels.filter((level) => !level.isChallenge).length;
 }
 
-export function createRandomChallengeLevel(campaignLevelCount: number): LevelData {
-  const route = createProceduralLevel();
+export function createRandomChallengeLevel(campaignLevelCount: number, mobile: boolean, proceduralRoute: ProceduralRouteConfig): LevelData {
+  const route = createProceduralLevel(proceduralRoute);
   const challengeIndex = campaignLevelCount;
   const waveTotal = 7;
   const buildTime = 14;
   const waves = Array.from({ length: waveTotal }, (_, waveIndex) =>
-    buildWave(challengeIndex, waveIndex, waveTotal, route.monsterSequence, buildTime),
+    buildWave(challengeIndex, waveIndex, waveTotal, route.monsterSequence, buildTime, mobile),
   );
 
   return {
@@ -172,11 +182,11 @@ export function createRandomChallengeLevel(campaignLevelCount: number): LevelDat
   };
 }
 
-export function createGameLevels(routes: LevelData[]): LevelData[] {
-  const campaignLevels = createCampaignLevels(routes);
+export function createGameLevels(routes: LevelData[], mobile: boolean, proceduralRoute: ProceduralRouteConfig): LevelData[] {
+  const campaignLevels = createCampaignLevels(routes, mobile);
 
   return [
     ...campaignLevels,
-    createRandomChallengeLevel(campaignLevels.length),
+    createRandomChallengeLevel(campaignLevels.length, mobile, proceduralRoute),
   ];
 }

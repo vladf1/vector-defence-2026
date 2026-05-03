@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { FIELD_ASPECT_RATIO, FIELD_ASPECT_SCALE, FIELD_HEIGHT, FIELD_WIDTH } from "../constants";
   import { getGameSessionContext } from "../game-context";
   import GameModal from "./GameModal.svelte";
 
   const session = getGameSessionContext();
+  const profile = session.profile;
   let backgroundCanvas: HTMLCanvasElement;
   let gameCanvas: HTMLCanvasElement;
 
@@ -23,21 +23,21 @@
   <div class="board-frame">
     <div
       class="board-stage"
-      style={`--field-aspect-ratio: ${FIELD_ASPECT_RATIO}; --field-aspect-scale: ${FIELD_ASPECT_SCALE};`}
+      style={`--field-aspect-ratio: ${profile.fieldAspectRatio}; --field-aspect-scale: ${profile.fieldAspectScale};`}
     >
       <canvas
         bind:this={backgroundCanvas}
         class="board-canvas board-background"
-        width={FIELD_WIDTH}
-        height={FIELD_HEIGHT}
+        width={profile.fieldWidth}
+        height={profile.fieldHeight}
         aria-hidden="true"
       ></canvas>
       <canvas
         bind:this={gameCanvas}
         class="board-canvas board-game"
         id="game"
-        width={FIELD_WIDTH}
-        height={FIELD_HEIGHT}
+        width={profile.fieldWidth}
+        height={profile.fieldHeight}
         onpointermove={session.handleCanvasMove}
         onpointerleave={session.handleCanvasLeave}
         onpointerdown={session.handleCanvasDown}

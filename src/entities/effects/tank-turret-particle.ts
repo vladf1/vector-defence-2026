@@ -1,4 +1,4 @@
-import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
+import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "../../constants";
 import { hexWithAlpha, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
@@ -41,8 +41,8 @@ export class TankTurretParticle extends Particle {
       this.alpha <= 0 ||
       this.x < -34 ||
       this.y < -34 ||
-      this.x > FIELD_WIDTH + 34 ||
-      this.y > FIELD_HEIGHT + 34
+      this.x > EFFECT_FIELD_WIDTH + 34 ||
+      this.y > EFFECT_FIELD_HEIGHT + 34
     ) {
       this.removed = true;
     }

@@ -121,6 +121,7 @@ export interface LevelJsonData {
   allowEscape: number;
   monsterSequence: string[];
   points: Point[];
+  mobile?: Partial<Omit<LevelJsonData, "mobile">>;
 }
 
 export interface HudSnapshot {
@@ -132,7 +133,13 @@ export interface HudSnapshot {
   selectionBody: string;
   upgradeDisabled: boolean;
   hasSelectedTower: boolean;
+  hasLaserLockAction: boolean;
+  laserLocked: boolean;
   sellDisabled: boolean;
+  cancelBuildDisabled: boolean;
+  canTogglePause: boolean;
+  paused: boolean;
+  dragOnlyTowerPlacement: boolean;
   placingTower?: TowerKind;
   towerButtonsDisabled: boolean;
   nerdStats: NerdStatsSnapshot;

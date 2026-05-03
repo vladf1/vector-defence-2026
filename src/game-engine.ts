@@ -1,5 +1,7 @@
 import levelsJson from "../game-levels.json";
 import { createGameLevels, createRandomChallengeLevel, getCampaignLevelCount } from "./campaign";
+import { GameMode, type GameMode as GameModeValue, type GameProfile } from "./game-profile";
+import type { ProceduralRouteConfig } from "./level-generator";
 import type { GameAudio } from "./game-audio";
 import { createEscapeBurstEffect } from "./game-engine/combat-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
@@ -45,10 +47,8 @@ export interface GameFrameTimings {
   drawMs: number;
 }
 
-const baseRoutes = normalizeLevels(levelsJson as LevelJsonData[]);
-
-export function createLevels(): LevelData[] {
-  return createGameLevels(baseRoutes);
+export function createLevels(gameMode: GameModeValue, proceduralRoute: ProceduralRouteConfig): LevelData[] {
+  return createGameLevels(normalizeLevels(levelsJson as LevelJsonData[], gameMode), gameMode === GameMode.Mobile, proceduralRoute);
 }
 
 export class Game {
@@ -66,6 +66,7 @@ export class Game {
   bannerTimer = 0;
   hudDirty = true;
   modalDirty = true;
+  readonly profile: GameProfile;
 
   constructor(
     levelList: LevelData[],
@@ -74,9 +75,11 @@ export class Game {
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D,
     audio: GameAudio,
+    profile: GameProfile,
   ) {
     this.levels = levelList;
     this.audio = audio;
+    this.profile = profile;
     this.renderer = new GameRenderer(backgroundCanvas, backgroundCtx, canvas, ctx, this);
   }
 
@@ -146,7 +149,7 @@ export class Game {
 
   startLevel(level: LevelData): void {
     this.currentLevelIndex = this.levels.findIndex((candidate) => candidate.id === level.id || candidate === level);
-    this.runtime = new LevelRuntime(level);
+    this.runtime = new LevelRuntime(level, this.profile.roadTurnRadius, this.profile.routeCurveSampleStep);
     this.menuReturnState = undefined;
     this.setBanner(`Level ${level.levelNumber ?? "?"}: ${level.name}`, 2.4);
     this.setState(GameState.Playing);
@@ -162,7 +165,11 @@ export class Game {
       return;
     }
     if (level.isChallenge) {
-      level = createRandomChallengeLevel(this.campaignLevelCount);
+      level = createRandomChallengeLevel(
+        this.campaignLevelCount,
+        this.profile.mode === GameMode.Mobile,
+        this.profile.proceduralRoute,
+      );
       this.levels[index] = level;
     } else if (!this.campaignCleared && index > this.highestUnlockedLevelIndex) {
       this.playSound(AudioCue.InvalidAction);
@@ -345,7 +352,7 @@ export class Game {
   }
 
   canPlaceTower(point: Point): boolean {
-    return canPlaceTower(point, this.runtime.routePath, this.runtime.towers);
+    return canPlaceTower(point, this.runtime.routePath, this.runtime.towers, this.profile.placement);
   }
 
   placeTower(kind: TowerKind, point: Point): void {
@@ -364,11 +371,18 @@ export class Game {
 
   createTower(kind: TowerKind, point: Point): Tower {
     const TowerClass = getTowerClass(kind);
-    return new TowerClass(point.x, point.y);
+    const tower = new TowerClass(point.x, point.y);
+    tower.range = Math.round(tower.range * this.profile.towerRangeScale);
+    return tower;
   }
 
   selectTowerAt(point: Point): void {
-    this.runtime.selectedTower = findTowerAtPoint(point, this.runtime.towers);
+    this.runtime.selectedTower = findTowerAtPoint(
+      point,
+      this.runtime.towers,
+      this.profile.towerRadius,
+      this.profile.towerSelectionPadding,
+    );
     if (this.runtime.selectedTower) {
       this.playSound(AudioCue.TowerSelect, this.runtime.selectedTower.x);
     }
@@ -408,6 +422,10 @@ export class Game {
       && selectedTower.canUpgrade()
       && this.runtime.money >= selectedTower.upgradeCost
       && !isModalState(this.state);
+  }
+
+  canAffordTower(kind: TowerKind): boolean {
+    return this.runtime.money >= getTowerClass(kind).baseCost;
   }
 
   toggleSelectedLaserLock(): void {

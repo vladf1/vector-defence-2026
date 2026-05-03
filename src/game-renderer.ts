@@ -1,5 +1,4 @@
 import { createBannerText } from "./banner-text";
-import { FIELD_HEIGHT, FIELD_WIDTH, ROAD_WIDTH, TOWER_RADIUS } from "./constants";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { GameState } from "./types";
@@ -59,27 +58,35 @@ export class GameRenderer {
     this.ctx = ctx;
   }
 
+  private get fieldWidth(): number {
+    return this.game.profile.fieldWidth;
+  }
+
+  private get fieldHeight(): number {
+    return this.game.profile.fieldHeight;
+  }
+
   resize(): void {
     this.currentDpr = window.devicePixelRatio || 1;
     this.isCompactLayout = this.canvas.getBoundingClientRect().width <= COMPACT_CANVAS_WIDTH_THRESHOLD;
-    this.backgroundCanvas.width = Math.round(FIELD_WIDTH * this.currentDpr);
-    this.backgroundCanvas.height = Math.round(FIELD_HEIGHT * this.currentDpr);
+    this.backgroundCanvas.width = Math.round(this.fieldWidth * this.currentDpr);
+    this.backgroundCanvas.height = Math.round(this.fieldHeight * this.currentDpr);
     this.backgroundCtx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
-    this.canvas.width = Math.round(FIELD_WIDTH * this.currentDpr);
-    this.canvas.height = Math.round(FIELD_HEIGHT * this.currentDpr);
+    this.canvas.width = Math.round(this.fieldWidth * this.currentDpr);
+    this.canvas.height = Math.round(this.fieldHeight * this.currentDpr);
     this.ctx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
     this.renderBackgroundLayer();
   }
 
   renderBackgroundLayer(): void {
-    this.backgroundCtx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+    this.backgroundCtx.clearRect(0, 0, this.fieldWidth, this.fieldHeight);
     this.drawBackground(this.backgroundCtx);
   }
 
   draw(): void {
     const runtime = this.game.runtime;
 
-    this.ctx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+    this.ctx.clearRect(0, 0, this.fieldWidth, this.fieldHeight);
     this.drawEscapeAllowance(this.ctx);
 
     for (const link of runtime.links) {
@@ -114,14 +121,14 @@ export class GameRenderer {
   }
 
   getPauseButtonRect(): CanvasButtonRect | undefined {
-    if (!this.canTogglePause()) {
+    if (!this.game.profile.ui.drawCanvasPauseButton || !this.canTogglePause()) {
       return undefined;
     }
 
     const width = this.getPauseButtonWidth();
     const height = this.getPauseButtonHeight();
     return {
-      x: FIELD_WIDTH - PAUSE_BUTTON_RIGHT - width,
+      x: this.fieldWidth - PAUSE_BUTTON_RIGHT - width,
       y: PAUSE_BUTTON_TOP,
       width,
       height,
@@ -138,10 +145,18 @@ export class GameRenderer {
   }
 
   getUpgradeButtonRect(): CanvasButtonRect | undefined {
+    if (!this.game.profile.ui.drawCanvasTowerActions) {
+      return undefined;
+    }
+
     return this.getSelectedTowerActionButtonRect(0);
   }
 
   getLaserLockButtonRect(): CanvasButtonRect | undefined {
+    if (!this.game.profile.ui.drawCanvasTowerActions) {
+      return undefined;
+    }
+
     const selectedTower = this.game.runtime.selectedTower;
     if (!(selectedTower instanceof LaserTower)) {
       return undefined;
@@ -167,9 +182,9 @@ export class GameRenderer {
     const edgeGutter = this.isCompactLayout ? COMPACT_UPGRADE_BUTTON_EDGE_GUTTER : UPGRADE_BUTTON_EDGE_GUTTER;
     const centerX = Math.min(
       Math.max(selectedTower.x, edgeGutter),
-      FIELD_WIDTH - edgeGutter,
+      this.fieldWidth - edgeGutter,
     );
-    const placeAbove = selectedTower.y > FIELD_HEIGHT - UPGRADE_BUTTON_ABOVE_THRESHOLD - (height - UPGRADE_BUTTON_HEIGHT);
+    const placeAbove = selectedTower.y > this.fieldHeight - UPGRADE_BUTTON_ABOVE_THRESHOLD - (height - UPGRADE_BUTTON_HEIGHT);
     const top = placeAbove
       ? selectedTower.y - UPGRADE_BUTTON_ABOVE_OFFSET - height
       : selectedTower.y + UPGRADE_BUTTON_BELOW_OFFSET;
@@ -201,24 +216,24 @@ export class GameRenderer {
   }
 
   private drawBackground(context: CanvasRenderingContext2D): void {
-    const fieldGradient = context.createLinearGradient(0, 0, 0, FIELD_HEIGHT);
+    const fieldGradient = context.createLinearGradient(0, 0, 0, this.fieldHeight);
     fieldGradient.addColorStop(0, "#010302");
     fieldGradient.addColorStop(1, "#050d0a");
     context.fillStyle = fieldGradient;
-    context.fillRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+    context.fillRect(0, 0, this.fieldWidth, this.fieldHeight);
 
     context.save();
     context.strokeStyle = "rgba(255, 255, 255, 0.04)";
-    for (let x = 0; x <= FIELD_WIDTH; x += 35) {
+    for (let x = 0; x <= this.fieldWidth; x += 35) {
       context.beginPath();
       context.moveTo(x, 0);
-      context.lineTo(x, FIELD_HEIGHT);
+      context.lineTo(x, this.fieldHeight);
       context.stroke();
     }
-    for (let y = 0; y <= FIELD_HEIGHT; y += 35) {
+    for (let y = 0; y <= this.fieldHeight; y += 35) {
       context.beginPath();
       context.moveTo(0, y);
-      context.lineTo(FIELD_WIDTH, y);
+      context.lineTo(this.fieldWidth, y);
       context.stroke();
     }
     context.restore();
@@ -237,7 +252,7 @@ export class GameRenderer {
     context.lineJoin = "round";
     context.lineCap = "round";
     context.strokeStyle = ROAD_COLOR;
-    context.lineWidth = ROAD_WIDTH;
+    context.lineWidth = this.game.profile.roadWidth;
     context.beginPath();
     context.moveTo(routePath.start.x, routePath.start.y);
     for (const command of routePath.commands) {
@@ -285,7 +300,7 @@ export class GameRenderer {
     context.textBaseline = "middle";
     const textWidth = this.measureSpacedText(context, text, BANNER_LETTER_SPACING);
     const width = Math.ceil(textWidth) + (BANNER_PADDING_X * 2);
-    const left = (FIELD_WIDTH - width) / 2;
+    const left = (this.fieldWidth - width) / 2;
     context.fillStyle = "rgba(8, 16, 13, 0.86)";
     context.strokeStyle = "rgba(255, 255, 255, 0.16)";
     context.lineWidth = 1;
@@ -294,7 +309,7 @@ export class GameRenderer {
     context.fill();
     context.stroke();
     context.fillStyle = "rgba(176, 255, 225, 0.96)";
-    this.fillSpacedText(context, text, FIELD_WIDTH / 2, BANNER_TOP + (BANNER_HEIGHT / 2) + 1, BANNER_LETTER_SPACING);
+    this.fillSpacedText(context, text, this.fieldWidth / 2, BANNER_TOP + (BANNER_HEIGHT / 2) + 1, BANNER_LETTER_SPACING);
     context.restore();
   }
 
@@ -388,7 +403,7 @@ export class GameRenderer {
 
   private drawUpgradeButton(context: CanvasRenderingContext2D): void {
     const rect = this.getUpgradeButtonRect();
-    if (!rect) {
+    if (!this.game.profile.ui.drawCanvasTowerActions || !rect) {
       return;
     }
 
@@ -415,7 +430,7 @@ export class GameRenderer {
   private drawLaserLockButton(context: CanvasRenderingContext2D): void {
     const rect = this.getLaserLockButtonRect();
     const selectedTower = this.game.runtime.selectedTower;
-    if (!rect || !(selectedTower instanceof LaserTower)) {
+    if (!this.game.profile.ui.drawCanvasTowerActions || !rect || !(selectedTower instanceof LaserTower)) {
       return;
     }
 
@@ -475,19 +490,19 @@ export class GameRenderer {
     context.setLineDash([6, 6]);
     context.beginPath();
     context.moveTo(runtime.pointer.x, 0);
-    context.lineTo(runtime.pointer.x, FIELD_HEIGHT);
+    context.lineTo(runtime.pointer.x, this.fieldHeight);
     context.moveTo(0, runtime.pointer.y);
-    context.lineTo(FIELD_WIDTH, runtime.pointer.y);
+    context.lineTo(this.fieldWidth, runtime.pointer.y);
     context.stroke();
     context.setLineDash([]);
     context.strokeStyle = valid ? "rgba(92, 255, 158, 0.3)" : "rgba(255, 120, 120, 0.32)";
     context.fillStyle = valid ? "rgba(92, 255, 158, 0.08)" : "rgba(255, 120, 120, 0.08)";
     context.beginPath();
-    context.arc(runtime.pointer.x, runtime.pointer.y, towerClass.baseRange, 0, Math.PI * 2);
+    context.arc(runtime.pointer.x, runtime.pointer.y, towerClass.baseRange * this.game.profile.towerRangeScale, 0, Math.PI * 2);
     context.fill();
     context.stroke();
     context.beginPath();
-    context.arc(runtime.pointer.x, runtime.pointer.y, TOWER_RADIUS, 0, Math.PI * 2);
+    context.arc(runtime.pointer.x, runtime.pointer.y, this.game.profile.towerRadius, 0, Math.PI * 2);
     context.stroke();
     context.restore();
   }

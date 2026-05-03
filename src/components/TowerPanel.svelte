@@ -8,10 +8,19 @@
 
   const ICON_SIZE = 60;
   const session = getGameSessionContext();
+  const profile = session.profile;
   const hud = session.hud;
 
   function formatShortcuts(shortcuts: readonly string[]): string {
     return shortcuts.map((shortcut) => shortcut.toUpperCase()).join("/");
+  }
+
+  function formatMobileSelectionBody(body: string): string {
+    return body.split(" · ")[0] ?? body;
+  }
+
+  function formatMobileSelectionTitle(title: string): string {
+    return title.replace(" Tower · Level ", " - ");
   }
 
   function drawTowerPreview(canvas: HTMLCanvasElement, tower: Tower): void {
@@ -45,6 +54,10 @@
   };
 
   function handleTowerButtonClick(event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }): void {
+    if (profile.ui.dragOnlyTowerPlacement) {
+      return;
+    }
+
     session.toggleTowerPlacement(event.currentTarget.value as TowerKind);
   }
 
@@ -73,7 +86,9 @@
         >
           <div class="tower-button-meta">
             <span>{formatMoney(towerClass.baseCost)}</span>
-            <span class="shortcut-chip">{shortcutText}</span>
+            {#if profile.ui.showShortcutLabels}
+              <span class="shortcut-chip">{shortcutText}</span>
+            {/if}
           </div>
           <canvas use:towerIcon={tower} class="tower-icon" aria-hidden="true"></canvas>
         </button>
@@ -85,11 +100,11 @@
     <div class="selection-header">
       <div class="selection-copy">
         {#if $hud.selectionTitle}
-          <strong>{$hud.selectionTitle}</strong>
+          <strong>{profile.mode === "mobile" ? formatMobileSelectionTitle($hud.selectionTitle) : $hud.selectionTitle}</strong>
         {/if}
-        <span>{$hud.selectionBody}</span>
+        <span>{profile.mode === "mobile" && $hud.hasSelectedTower ? formatMobileSelectionBody($hud.selectionBody) : $hud.selectionBody}</span>
       </div>
-      {#if $hud.hasSelectedTower}
+      {#if $hud.hasSelectedTower && profile.mode !== "mobile"}
         <button
           class="action-button sell selection-sell-button"
           type="button"
@@ -100,5 +115,45 @@
         </button>
       {/if}
     </div>
+    {#if profile.mode === "mobile" && ($hud.hasSelectedTower || $hud.placingTower)}
+      <div class="mobile-selection-actions">
+        {#if $hud.hasSelectedTower}
+          <button
+            class="action-button"
+            type="button"
+            onclick={session.upgradeSelectedTower}
+            disabled={$hud.upgradeDisabled}
+          >
+            Upgrade
+          </button>
+          {#if $hud.hasLaserLockAction}
+            <button
+              class="action-button"
+              type="button"
+              onclick={session.toggleSelectedLaserLock}
+            >
+              {$hud.laserLocked ? "Unlock" : "Lock"}
+            </button>
+          {/if}
+          <button
+            class="action-button sell"
+            type="button"
+            onclick={session.sellSelectedTower}
+            disabled={$hud.sellDisabled}
+          >
+            Sell
+          </button>
+        {:else if $hud.placingTower}
+          <button
+            class="action-button"
+            type="button"
+            onclick={session.cancelBuild}
+            disabled={$hud.cancelBuildDisabled}
+          >
+            Cancel
+          </button>
+        {/if}
+      </div>
+    {/if}
   </div>
 </section>

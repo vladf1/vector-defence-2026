@@ -31,9 +31,18 @@ export class LevelRuntime {
   pointer?: Point;
   winDelay = 0;
 
-  constructor(level?: LevelData) {
+  constructor();
+  constructor(level: LevelData, roadTurnRadius: number, routeCurveSampleStep: number);
+  constructor(level?: LevelData, roadTurnRadius?: number, routeCurveSampleStep?: number) {
     this.level = level;
-    this.routePath = level ? createRouteMotionPath(level.points) : undefined;
+    if (!level) {
+      this.routePath = undefined;
+    } else {
+      if (roadTurnRadius === undefined || routeCurveSampleStep === undefined) {
+        throw new Error("Route geometry is required when creating a level runtime.");
+      }
+      this.routePath = createRouteMotionPath(level.points, roadTurnRadius, routeCurveSampleStep);
+    }
     this.money = level?.startingMoney ?? STARTING_MONEY;
     this.escapesLeft = level?.allowEscape ?? 0;
     this.spawnDelay = level ? (level.waves?.[0]?.buildTime ?? 8) : 0;

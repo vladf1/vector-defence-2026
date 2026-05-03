@@ -1,4 +1,4 @@
-import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
+import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "../../constants";
 import { hexWithAlpha, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
@@ -45,8 +45,8 @@ export class GlassShardParticle extends Particle {
       this.alpha <= 0 ||
       this.x < -28 ||
       this.y < -28 ||
-      this.x > FIELD_WIDTH + 28 ||
-      this.y > FIELD_HEIGHT + 28
+      this.x > EFFECT_FIELD_WIDTH + 28 ||
+      this.y > EFFECT_FIELD_HEIGHT + 28
     ) {
       this.removed = true;
     }

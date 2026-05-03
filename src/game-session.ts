@@ -1,5 +1,5 @@
-import { FIELD_HEIGHT, FIELD_WIDTH } from "./constants";
 import { findTowerShortcut } from "./entities/towers/tower-registry";
+import { type GameProfile } from "./game-profile";
 import { GameAudio } from "./game-audio";
 import {
   Game,
@@ -26,6 +26,7 @@ interface VectorDefenceWindow extends Window {
 }
 
 export interface GameSession {
+  profile: GameProfile;
   hud: Readable<HudSnapshot>;
   modal: Readable<ModalView | null>;
   soundEnabled: Readable<boolean>;
@@ -43,6 +44,7 @@ export interface GameSession {
   openMenu(): void;
   restart(): void;
   upgradeSelectedTower(): void;
+  toggleSelectedLaserLock(): void;
   sellSelectedTower(): void;
   cancelBuild(): void;
   toggleTowerPlacement(kind: TowerKind): void;
@@ -50,11 +52,11 @@ export interface GameSession {
   selectLevel(levelIndex: number): void;
 }
 
-export function createGameSession(): GameSession {
+export function createGameSession(profile: GameProfile): GameSession {
   const hudStore = writable(INITIAL_HUD_SNAPSHOT);
   const modalStore = writable<ModalView | null>(null);
   const soundEnabledStore = writable(true);
-  const audio = new GameAudio();
+  const audio = new GameAudio(profile.fieldWidth);
   let canvas: HTMLCanvasElement | null = null;
   let game: Game | null = null;
   let soundEnabled = true;
@@ -114,8 +116,8 @@ export function createGameSession(): GameSession {
     }
 
     return {
-      x: ((event.clientX - rect.left) / rect.width) * FIELD_WIDTH,
-      y: ((event.clientY - rect.top) / rect.height) * FIELD_HEIGHT,
+      x: ((event.clientX - rect.left) / rect.width) * profile.fieldWidth,
+      y: ((event.clientY - rect.top) / rect.height) * profile.fieldHeight,
     };
   };
 
@@ -199,7 +201,15 @@ export function createGameSession(): GameSession {
       throw new Error("Canvas context unavailable.");
     }
 
-    game = new Game(createLevels(), nextBackgroundCanvas, backgroundCtx, canvas, ctx, audio);
+    game = new Game(
+      createLevels(profile.mode, profile.proceduralRoute),
+      nextBackgroundCanvas,
+      backgroundCtx,
+      canvas,
+      ctx,
+      audio,
+      profile,
+    );
     (window as VectorDefenceWindow).vectorDefenceGame = game;
     game.resize();
     game.draw();
@@ -286,6 +296,12 @@ export function createGameSession(): GameSession {
     });
   };
 
+  const toggleSelectedLaserLock = (): void => {
+    withGame((currentGame) => {
+      currentGame.toggleSelectedLaserLock();
+    });
+  };
+
   const sellSelectedTower = (): void => {
     withGame((currentGame) => {
       currentGame.sellSelectedTower();
@@ -299,6 +315,10 @@ export function createGameSession(): GameSession {
   };
 
   const toggleTowerPlacement = (kind: TowerKind): void => {
+    if (profile.ui.dragOnlyTowerPlacement) {
+      return;
+    }
+
     withGame((currentGame) => {
       currentGame.toggleTowerPlacement(kind);
     });
@@ -391,14 +411,17 @@ export function createGameSession(): GameSession {
     const wasActive = towerDrag.active;
     const point = toCanvasPoint(event);
     const isOnCanvas = isPointerInsideCanvas(event);
+    const releasePoint = point && isOnCanvas
+      ? point
+      : game?.runtime.pointer;
 
     if (wasActive) {
       event.preventDefault();
-      if (point && isOnCanvas) {
-        game?.setPointer(point);
+      if (releasePoint) {
+        game?.setPointer(releasePoint);
         withGame((currentGame) => {
-          if (currentGame.canPlaceTower(point)) {
-            currentGame.placeTower(towerDrag!.kind, point);
+          if (currentGame.canPlaceTower(releasePoint) && currentGame.canAffordTower(towerDrag!.kind)) {
+            currentGame.placeTower(towerDrag!.kind, releasePoint);
           } else {
             currentGame.cancelTowerPlacement();
           }
@@ -429,6 +452,10 @@ export function createGameSession(): GameSession {
       return;
     }
 
+    if (profile.ui.dragOnlyTowerPlacement) {
+      event.preventDefault();
+    }
+
     towerDrag = {
       kind,
       pointerId: event.pointerId,
@@ -442,6 +469,10 @@ export function createGameSession(): GameSession {
   };
 
   const handleKeyDown = (event: KeyboardEvent): void => {
+    if (profile.ui.dragOnlyTowerPlacement) {
+      return;
+    }
+
     if (event.defaultPrevented) {
       return;
     }
@@ -475,6 +506,7 @@ export function createGameSession(): GameSession {
   };
 
   return {
+    profile,
     hud: readonly(hudStore),
     modal: readonly(modalStore),
     soundEnabled: readonly(soundEnabledStore),
@@ -492,6 +524,7 @@ export function createGameSession(): GameSession {
     openMenu,
     restart,
     upgradeSelectedTower,
+    toggleSelectedLaserLock,
     sellSelectedTower,
     cancelBuild,
     toggleTowerPlacement,
