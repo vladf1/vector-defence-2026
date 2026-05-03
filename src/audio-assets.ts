@@ -1,5 +1,3 @@
-import buildModeCancelUrl from "./assets/audio/build-mode-cancel.m4a";
-import buildModeOnUrl from "./assets/audio/build-mode-on.m4a";
 import campaignCompleteUrl from "./assets/audio/campaign-complete.m4a";
 import escapeBurstUrl from "./assets/audio/escape-burst.m4a";
 import gunFireUrl from "./assets/audio/gun-fire.m4a";
@@ -36,8 +34,6 @@ import {
 } from "./types";
 
 export const AUDIO_ASSET_URLS = {
-  [AudioCue.BuildModeCancel.id]: buildModeCancelUrl,
-  [AudioCue.BuildModeOn.id]: buildModeOnUrl,
   [AudioCue.CampaignComplete.id]: campaignCompleteUrl,
   [AudioCue.EscapeBurst.id]: escapeBurstUrl,
   [AudioCue.GunFire.id]: gunFireUrl,

@@ -292,7 +292,6 @@ export class Game {
     }
 
     this.runtime.placingTower = undefined;
-    this.playSound(AudioCue.BuildModeCancel);
     this.requestHudSync();
   }
 
@@ -303,7 +302,6 @@ export class Game {
 
     this.runtime.selectedTower = undefined;
     this.runtime.placingTower = kind;
-    this.playSound(AudioCue.BuildModeOn);
     this.requestHudSync();
   }
 
@@ -315,7 +313,6 @@ export class Game {
     const isCanceling = this.runtime.placingTower === kind;
     this.runtime.selectedTower = undefined;
     this.runtime.placingTower = isCanceling ? undefined : kind;
-    this.playSound(isCanceling ? AudioCue.BuildModeCancel : AudioCue.BuildModeOn);
     this.requestHudSync();
   }
 
