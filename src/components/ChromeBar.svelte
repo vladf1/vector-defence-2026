@@ -35,20 +35,15 @@
     >
       <span class="sound-icon" aria-hidden="true">{$soundEnabled ? "🔊" : "🔇"}</span>
     </button>
-    {#if profile.mode === "mobile"}
-      <button
-        class="chrome-button pause-button"
-        type="button"
-        aria-label={$hud.paused ? "Resume" : "Pause"}
-        disabled={!$hud.canTogglePause}
-        onclick={session.togglePause}
-      >
-        {$hud.paused ? ">" : "||"}
-      </button>
-    {/if}
+    <button
+      class="chrome-button pause-button"
+      type="button"
+      aria-label={$hud.paused ? "Resume" : "Pause"}
+      disabled={!$hud.canTogglePause}
+      onclick={session.togglePause}
+    >
+      {$hud.paused ? ">" : "||"}
+    </button>
     <button class="chrome-button" type="button" onclick={session.openMenu}>Campaign</button>
-    {#if profile.ui.showChromeRestart}
-      <button class="chrome-button" type="button" onclick={session.restart}>Restart</button>
-    {/if}
   </div>
 </header>
