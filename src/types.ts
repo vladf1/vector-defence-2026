@@ -32,8 +32,6 @@ export const TowerKind = {
 export type TowerKind = typeof TowerKind[keyof typeof TowerKind];
 
 export const AudioCue = {
-  BuildModeCancel: { id: "build-mode-cancel", cooldownSeconds: 0.08, gain: 0.34, rateVariation: 0 },
-  BuildModeOn: { id: "build-mode-on", cooldownSeconds: 0.08, gain: 0.34, rateVariation: 0 },
   CampaignComplete: { id: "campaign-complete", cooldownSeconds: 0.8, gain: 0.48, rateVariation: 0 },
   EscapeBurst: { id: "escape-burst", cooldownSeconds: 0.16, gain: 0.52, rateVariation: 0 },
   GunFire: { id: "gun-fire", cooldownSeconds: 0.026, gain: 0.58, rateVariation: 0.035 },
