@@ -140,6 +140,7 @@ export interface HudSnapshot {
   dragOnlyTowerPlacement: boolean;
   placingTower?: TowerKind;
   towerButtonsDisabled: boolean;
+  affordableTowers: Record<TowerKind, boolean>;
   nerdStats: NerdStatsSnapshot;
 }
 

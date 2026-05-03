@@ -74,12 +74,13 @@
       {#each TOWER_TOOLBAR_PREVIEWS as tower (tower.kind)}
         {@const towerClass = tower.towerClass}
         {@const shortcutText = formatShortcuts(towerClass.shortcuts)}
+        {@const canAffordTower = $hud.affordableTowers[tower.kind]}
         <button
-          class={`tower-button${$hud.placingTower === tower.kind ? " active" : ""}`}
+          class={`tower-button${$hud.placingTower === tower.kind ? " active" : ""}${canAffordTower ? "" : " unaffordable"}`}
           type="button"
           value={tower.kind}
-          title={`${towerClass.label} tower: ${towerClass.summary}`}
-          aria-label={`${towerClass.label} tower for ${formatMoney(towerClass.baseCost)}. ${towerClass.summary} Shortcuts ${shortcutText}.`}
+          title={`${towerClass.label} tower: ${canAffordTower ? towerClass.summary : `need ${formatMoney(towerClass.baseCost)}`}`}
+          aria-label={`${towerClass.label} tower for ${formatMoney(towerClass.baseCost)}. ${canAffordTower ? towerClass.summary : "Not enough money yet."} Shortcuts ${shortcutText}.`}
           disabled={$hud.towerButtonsDisabled}
           onclick={handleTowerButtonClick}
           onpointerdown={handleTowerButtonPointerDown}

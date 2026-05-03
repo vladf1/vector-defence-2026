@@ -8,6 +8,7 @@ import type { Game } from "./game-engine";
 import {
   GameState,
   ModalAction,
+  TowerKind,
   type HudSnapshot,
   type ModalActionView,
   type ModalLevelCardView,
@@ -45,6 +46,12 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   paused: false,
   dragOnlyTowerPlacement: false,
   towerButtonsDisabled: true,
+  affordableTowers: {
+    [TowerKind.Gun]: false,
+    [TowerKind.Laser]: false,
+    [TowerKind.Missile]: false,
+    [TowerKind.Slow]: false,
+  },
   nerdStats: {
     fps: "0",
     frameTime: "0.0 ms",
@@ -119,6 +126,12 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     dragOnlyTowerPlacement: game.profile.ui.dragOnlyTowerPlacement,
     placingTower: runtime.placingTower,
     towerButtonsDisabled: isModalState(game.state),
+    affordableTowers: {
+      [TowerKind.Gun]: runtime.money >= getTowerClass(TowerKind.Gun).baseCost,
+      [TowerKind.Laser]: runtime.money >= getTowerClass(TowerKind.Laser).baseCost,
+      [TowerKind.Missile]: runtime.money >= getTowerClass(TowerKind.Missile).baseCost,
+      [TowerKind.Slow]: runtime.money >= getTowerClass(TowerKind.Slow).baseCost,
+    },
     nerdStats: {
       fps: String(Math.max(0, Math.round(runtimeStats.fps))),
       frameTime: `${runtimeStats.frameTimeMs.toFixed(1)} ms`,

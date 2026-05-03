@@ -130,9 +130,9 @@ export const MOBILE_GAME_PROFILE = createProfile({
   towerRangeScale: 0.82,
   minDistanceToOtherTowers: 27,
   towerSelectionPadding: 12,
-  roadTurnRadius: 18,
+  roadTurnRadius: 34,
   roadWidth: 28,
-  routeCurveSampleStep: 6,
+  routeCurveSampleStep: 4,
   randomRouteBaseWidth: 390,
   randomRouteMargin: 24,
   ui: {

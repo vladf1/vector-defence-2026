@@ -24,6 +24,10 @@
       {/if}
 
       {#if $modal.levelCards}
+        <div class="level-map-header">
+          <h2>{$modal.title}</h2>
+          <p>{$modal.description}</p>
+        </div>
         <div class="level-grid">
           {#each $modal.levelCards as item}
             <button
@@ -32,8 +36,10 @@
               disabled={!item.unlocked}
               onclick={() => session.selectLevel(item.index)}
             >
-              <span class="level-pill">{item.status}</span>
-              <strong>Level {item.level.levelNumber ?? "?"}: {item.level.name}</strong>
+              <div class="level-card-heading">
+                <strong>Level {item.level.levelNumber ?? "?"}: {item.level.name}</strong>
+                <span class="level-pill">{item.status}</span>
+              </div>
               <span>{item.level.subtitle ?? "Hold the route."}</span>
               <small>{item.level.waves?.length ?? 1} waves · {item.level.monsterCount} enemies · {item.level.allowEscape} leaks</small>
             </button>
