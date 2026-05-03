@@ -127,11 +127,11 @@ export const MOBILE_GAME_PROFILE = createProfile({
   fieldWidth: 390,
   fieldHeight: 560,
   towerRadius: TOWER_RADIUS,
-  towerRangeScale: 0.82,
+  towerRangeScale: 0.9,
   minDistanceToOtherTowers: 27,
   towerSelectionPadding: 12,
   roadTurnRadius: 34,
-  roadWidth: 28,
+  roadWidth: 25,
   routeCurveSampleStep: 4,
   randomRouteBaseWidth: 390,
   randomRouteMargin: 24,
@@ -151,10 +151,12 @@ export function selectStartupGameProfile(viewport: Window): GameProfile {
   const coarsePointer = viewport.matchMedia("(hover: none) and (pointer: coarse)").matches;
   const shortestSide = Math.min(viewport.innerWidth, viewport.innerHeight);
   const longestSide = Math.max(viewport.innerWidth, viewport.innerHeight);
+  const portrait = viewport.innerHeight >= viewport.innerWidth;
   const iPhoneSized = shortestSide <= 480 && longestSide <= 940;
   const touchCapable = viewport.navigator.maxTouchPoints > 0;
+  const iPhoneLikeViewport = portrait && iPhoneSized;
 
-  return coarsePointer && touchCapable && iPhoneSized
+  return (coarsePointer && touchCapable && iPhoneSized) || iPhoneLikeViewport
     ? MOBILE_GAME_PROFILE
     : DESKTOP_GAME_PROFILE;
 }

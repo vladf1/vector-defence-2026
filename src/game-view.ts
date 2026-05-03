@@ -2,7 +2,7 @@ import { STARTING_MONEY } from "./constants";
 import { createBannerText } from "./banner-text";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
-import { isModalState } from "./game-engine";
+import { TEMPORARILY_UNLOCK_ALL_LEVELS, isModalState } from "./game-engine";
 import { formatMoney } from "./utils";
 import type { Game } from "./game-engine";
 import {
@@ -258,7 +258,7 @@ function assertNever(value: never): never {
 
 function createModalLevelCards(game: Game): ModalLevelCardView[] {
   return game.levels.map((level, index) => {
-    const unlocked = level.isChallenge || game.campaignCleared || index <= game.highestUnlockedLevelIndex;
+    const unlocked = TEMPORARILY_UNLOCK_ALL_LEVELS || level.isChallenge || game.campaignCleared || index <= game.highestUnlockedLevelIndex;
     const cleared = !level.isChallenge && (game.campaignCleared || index < game.highestUnlockedLevelIndex);
     const current = game.currentLevelIndex === index && !!game.currentLevel;
     const status = level.isChallenge

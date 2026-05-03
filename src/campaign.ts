@@ -115,7 +115,7 @@ function buildWave(
   const countScale = mobile ? 0.68 : 1;
   const count = Math.round((countBase + (waveIndex * countStep) + lastWaveBonus) * countScale);
   const pressure = (levelIndex * 0.65) + (waveIndex * 0.55);
-  const mobileSpawnScale = mobile ? 1.08 : 1;
+  const mobileSpawnScale = mobile ? 1.15 : 1;
   const baseSpawnIntervalMin = clamp(0.82 - (pressure * 0.07), 0.24, 0.82);
   const spawnIntervalMin = baseSpawnIntervalMin * mobileSpawnScale;
   const spawnIntervalMax = clamp(baseSpawnIntervalMin + 0.34 - (Math.min(levelIndex, 6) * 0.01), baseSpawnIntervalMin + 0.12, 1.08) * mobileSpawnScale;

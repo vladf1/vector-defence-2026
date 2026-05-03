@@ -47,6 +47,8 @@ export interface GameFrameTimings {
   drawMs: number;
 }
 
+export const TEMPORARILY_UNLOCK_ALL_LEVELS = true;
+
 export function createLevels(gameMode: GameModeValue, proceduralRoute: ProceduralRouteConfig): LevelData[] {
   return createGameLevels(normalizeLevels(levelsJson as LevelJsonData[], gameMode), gameMode === GameMode.Mobile, proceduralRoute);
 }
@@ -171,7 +173,7 @@ export class Game {
         this.profile.proceduralRoute,
       );
       this.levels[index] = level;
-    } else if (!this.campaignCleared && index > this.highestUnlockedLevelIndex) {
+    } else if (!TEMPORARILY_UNLOCK_ALL_LEVELS && !this.campaignCleared && index > this.highestUnlockedLevelIndex) {
       this.playSound(AudioCue.InvalidAction);
       return;
     }
