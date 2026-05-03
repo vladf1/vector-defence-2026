@@ -113,6 +113,11 @@ Useful validation commands:
 - `npm run build`
 - `npm run dev`
 
+GitHub Pages branch publishing:
+
+- To publish a non-main branch for testing, use the existing `Deploy GitHub Pages` workflow with `workflow_dispatch` on that branch. If the `github-pages` environment blocks the branch, temporarily add a deployment branch policy for that exact branch, run the workflow, then remove the temporary policy after the deploy succeeds.
+- Do not create or push a `gh-pages` branch for branch testing. The Pages publish path for this repo is the Actions artifact workflow, not a deploy branch workaround.
+
 Tower render sheet:
 
 - `npm run render:towers` generates `artifacts/tower-render.png`.
