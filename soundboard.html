@@ -118,113 +118,72 @@
         <h1>Soundboard</h1>
       </header>
 
-      <section class="board" aria-label="Game sound effects">
-        <button type="button" data-audio-id="escape-burst">
-          <span class="label">Escape Burst</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="gun-fire">
-          <span class="label">Gun Fire</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="laser-fire">
-          <span class="label">Laser Fire</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="level-loss">
-          <span class="label">Level Loss</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="level-start">
-          <span class="label">Level Start</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="level-win">
-          <span class="label">Level Win</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="missile-explosion">
-          <span class="label">Missile Explosion</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="missile-launch">
-          <span class="label">Missile Launch</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="monster-heavy-death">
-          <span class="label">Monster Heavy Death</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="monster-pop">
-          <span class="label">Monster Pop</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="monster-shatter">
-          <span class="label">Monster Shatter</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="projectile-impact">
-          <span class="label">Projectile Impact</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="slow-pulse">
-          <span class="label">Slow Pulse</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="splitter-burst">
-          <span class="label">Splitter Burst</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="tower-place">
-          <span class="label">Tower Place</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="tower-sell">
-          <span class="label">Tower Sell</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="tower-upgrade">
-          <span class="label">Tower Upgrade</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-        <button type="button" data-audio-id="wave-clear">
-          <span class="label">Wave Clear</span>
-          <span class="play-icon" aria-hidden="true">▶</span>
-        </button>
-      </section>
+      <section class="board" aria-label="Game sound effects"></section>
 
       <p class="status" role="status" aria-live="polite"></p>
     </main>
 
-    <audio id="escape-burst" preload="auto" src="./src/assets/audio/escape-burst.m4a"></audio>
-    <audio id="gun-fire" preload="auto" src="./src/assets/audio/gun-fire.m4a"></audio>
-    <audio id="laser-fire" preload="auto" src="./src/assets/audio/laser-fire.m4a"></audio>
-    <audio id="level-loss" preload="auto" src="./src/assets/audio/level-loss.m4a"></audio>
-    <audio id="level-start" preload="auto" src="./src/assets/audio/level-start.m4a"></audio>
-    <audio id="level-win" preload="auto" src="./src/assets/audio/level-win.m4a"></audio>
-    <audio id="missile-explosion" preload="auto" src="./src/assets/audio/missile-explosion.m4a"></audio>
-    <audio id="missile-launch" preload="auto" src="./src/assets/audio/missile-launch.m4a"></audio>
-    <audio id="monster-heavy-death" preload="auto" src="./src/assets/audio/monster-heavy-death.m4a"></audio>
-    <audio id="monster-pop" preload="auto" src="./src/assets/audio/monster-pop.m4a"></audio>
-    <audio id="monster-shatter" preload="auto" src="./src/assets/audio/monster-shatter.m4a"></audio>
-    <audio id="projectile-impact" preload="auto" src="./src/assets/audio/projectile-impact.m4a"></audio>
-    <audio id="slow-pulse" preload="auto" src="./src/assets/audio/slow-pulse.m4a"></audio>
-    <audio id="splitter-burst" preload="auto" src="./src/assets/audio/splitter-burst.m4a"></audio>
-    <audio id="tower-place" preload="auto" src="./src/assets/audio/tower-place.m4a"></audio>
-    <audio id="tower-sell" preload="auto" src="./src/assets/audio/tower-sell.m4a"></audio>
-    <audio id="tower-upgrade" preload="auto" src="./src/assets/audio/tower-upgrade.m4a"></audio>
-    <audio id="wave-clear" preload="auto" src="./src/assets/audio/wave-clear.m4a"></audio>
+    <audio id="build-mode-cancel" data-label="Build Mode Cancel" preload="auto" src="./src/assets/audio/build-mode-cancel.m4a"></audio>
+    <audio id="build-mode-on" data-label="Build Mode On" preload="auto" src="./src/assets/audio/build-mode-on.m4a"></audio>
+    <audio id="campaign-complete" data-label="Campaign Complete" preload="auto" src="./src/assets/audio/campaign-complete.m4a"></audio>
+    <audio id="escape-burst" data-label="Escape Burst" preload="auto" src="./src/assets/audio/escape-burst.m4a"></audio>
+    <audio id="gun-fire" data-label="Gun Fire" preload="auto" src="./src/assets/audio/gun-fire.m4a"></audio>
+    <audio id="invalid-action" data-label="Invalid Action" preload="auto" src="./src/assets/audio/invalid-action.m4a"></audio>
+    <audio id="laser-fire" data-label="Laser Fire" preload="auto" src="./src/assets/audio/laser-fire.m4a"></audio>
+    <audio id="laser-lock-off" data-label="Laser Lock Off" preload="auto" src="./src/assets/audio/laser-lock-off.m4a"></audio>
+    <audio id="laser-lock-on" data-label="Laser Lock On" preload="auto" src="./src/assets/audio/laser-lock-on.m4a"></audio>
+    <audio id="level-loss" data-label="Level Loss" preload="auto" src="./src/assets/audio/level-loss.m4a"></audio>
+    <audio id="level-start" data-label="Level Start" preload="auto" src="./src/assets/audio/level-start.m4a"></audio>
+    <audio id="level-win" data-label="Level Win" preload="auto" src="./src/assets/audio/level-win.m4a"></audio>
+    <audio id="menu-open" data-label="Menu Open" preload="auto" src="./src/assets/audio/menu-open.m4a"></audio>
+    <audio id="missile-explosion" data-label="Missile Explosion" preload="auto" src="./src/assets/audio/missile-explosion.m4a"></audio>
+    <audio id="missile-launch" data-label="Missile Launch" preload="auto" src="./src/assets/audio/missile-launch.m4a"></audio>
+    <audio id="monster-heavy-death" data-label="Monster Heavy Death" preload="auto" src="./src/assets/audio/monster-heavy-death.m4a"></audio>
+    <audio id="monster-pop" data-label="Monster Pop" preload="auto" src="./src/assets/audio/monster-pop.m4a"></audio>
+    <audio id="monster-shatter" data-label="Monster Shatter" preload="auto" src="./src/assets/audio/monster-shatter.m4a"></audio>
+    <audio id="pause" data-label="Pause" preload="auto" src="./src/assets/audio/pause.m4a"></audio>
+    <audio id="projectile-impact" data-label="Projectile Impact" preload="auto" src="./src/assets/audio/projectile-impact.m4a"></audio>
+    <audio id="resume" data-label="Resume" preload="auto" src="./src/assets/audio/resume.m4a"></audio>
+    <audio id="slow-pulse" data-label="Slow Pulse" preload="auto" src="./src/assets/audio/slow-pulse.m4a"></audio>
+    <audio id="sound-toggle" data-label="Sound Toggle" preload="auto" src="./src/assets/audio/sound-toggle.m4a"></audio>
+    <audio id="splitter-burst" data-label="Splitter Burst" preload="auto" src="./src/assets/audio/splitter-burst.m4a"></audio>
+    <audio id="tower-place" data-label="Tower Place" preload="auto" src="./src/assets/audio/tower-place.m4a"></audio>
+    <audio id="tower-select" data-label="Tower Select" preload="auto" src="./src/assets/audio/tower-select.m4a"></audio>
+    <audio id="tower-sell" data-label="Tower Sell" preload="auto" src="./src/assets/audio/tower-sell.m4a"></audio>
+    <audio id="tower-upgrade" data-label="Tower Upgrade" preload="auto" src="./src/assets/audio/tower-upgrade.m4a"></audio>
+    <audio id="ui-click" data-label="UI Click" preload="auto" src="./src/assets/audio/ui-click.m4a"></audio>
+    <audio id="ui-confirm" data-label="UI Confirm" preload="auto" src="./src/assets/audio/ui-confirm.m4a"></audio>
+    <audio id="wave-clear" data-label="Wave Clear" preload="auto" src="./src/assets/audio/wave-clear.m4a"></audio>
+    <audio id="wave-start" data-label="Wave Start" preload="auto" src="./src/assets/audio/wave-start.m4a"></audio>
 
     <script>
-      const buttons = Array.from(document.querySelectorAll("[data-audio-id]"));
+      const board = document.querySelector(".board");
+      const audioElements = Array.from(document.querySelectorAll("audio"));
       const status = document.querySelector(".status");
       const audioVersion = Date.now().toString(36);
       let activeButton;
 
-      for (const audio of document.querySelectorAll("audio")) {
+      for (const audio of audioElements) {
         const sourceUrl = new URL(audio.getAttribute("src"), document.baseURI);
         sourceUrl.searchParams.set("v", audioVersion);
         audio.src = sourceUrl.href;
+      }
+
+      for (const audio of audioElements) {
+        const button = document.createElement("button");
+        const label = document.createElement("span");
+        const icon = document.createElement("span");
+
+        button.type = "button";
+        button.dataset.audioId = audio.id;
+        label.className = "label";
+        label.textContent = audio.dataset.label;
+        icon.className = "play-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = "▶";
+
+        button.append(label, icon);
+        board.append(button);
       }
 
       function setStatus(message) {
@@ -238,9 +197,9 @@
         }
       }
 
-      for (const button of buttons) {
+      for (const button of document.querySelectorAll("[data-audio-id]")) {
         const audio = document.getElementById(button.dataset.audioId);
-        const label = button.querySelector(".label").textContent;
+        const label = audio.dataset.label;
 
         audio.addEventListener("ended", resetActiveButton);
         audio.addEventListener("error", () => {
@@ -250,7 +209,7 @@
 
         button.addEventListener("click", async () => {
           resetActiveButton();
-          for (const otherAudio of document.querySelectorAll("audio")) {
+          for (const otherAudio of audioElements) {
             if (otherAudio !== audio) {
               otherAudio.pause();
               otherAudio.currentTime = 0;

@@ -13,7 +13,7 @@ import {
   performModalAction,
   type RuntimeHudStats,
 } from "./game-view";
-import type { HudSnapshot, ModalAction, ModalView, Point, TowerKind } from "./types";
+import { AudioCue, type HudSnapshot, type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
 import { readonly, writable, type Readable } from "svelte/store";
 
 const MAX_FRAME_DELTA = 1 / 15;
@@ -243,9 +243,13 @@ export function createGameSession(): GameSession {
   };
 
   const toggleSound = (): void => {
+    if (soundEnabled) {
+      audio.play(AudioCue.SoundToggle);
+    }
     soundEnabled = audio.toggle();
     if (soundEnabled) {
       audio.unlock();
+      audio.play(AudioCue.SoundToggle);
     }
     soundEnabledStore.set(soundEnabled);
   };
@@ -271,6 +275,7 @@ export function createGameSession(): GameSession {
 
   const restart = (): void => {
     withGame((currentGame) => {
+      currentGame.playSound(AudioCue.UiClick);
       currentGame.restart();
     }, true);
   };
@@ -301,6 +306,7 @@ export function createGameSession(): GameSession {
 
   const handleModalAction = (action: ModalAction): void => {
     withGame((currentGame) => {
+      currentGame.playSound(AudioCue.UiConfirm);
       performModalAction(currentGame, action);
     }, true);
   };

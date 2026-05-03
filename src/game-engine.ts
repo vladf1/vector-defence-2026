@@ -165,6 +165,7 @@ export class Game {
       level = createRandomChallengeLevel(this.campaignLevelCount);
       this.levels[index] = level;
     } else if (!this.campaignCleared && index > this.highestUnlockedLevelIndex) {
+      this.playSound(AudioCue.InvalidAction);
       return;
     }
     this.startLevel(level);
@@ -195,6 +196,7 @@ export class Game {
 
   openMenu(): void {
     this.menuReturnState = isBattleState(this.state) ? this.state : undefined;
+    this.playSound(AudioCue.MenuOpen);
     this.setState(GameState.Menu);
     this.requestModalSync();
   }
@@ -205,14 +207,17 @@ export class Game {
     }
     this.setState(this.menuReturnState);
     this.menuReturnState = undefined;
+    this.playSound(AudioCue.Resume);
     this.requestModalSync();
   }
 
   togglePause(): void {
     if (this.state === GameState.Playing) {
       this.setState(GameState.Paused);
+      this.playSound(AudioCue.Pause);
     } else if (this.state === GameState.Paused) {
       this.setState(GameState.Playing);
+      this.playSound(AudioCue.Resume);
     }
     this.requestModalSync();
   }
@@ -280,6 +285,7 @@ export class Game {
     }
 
     this.runtime.placingTower = undefined;
+    this.playSound(AudioCue.BuildModeCancel);
     this.requestHudSync();
   }
 
@@ -290,6 +296,7 @@ export class Game {
 
     this.runtime.selectedTower = undefined;
     this.runtime.placingTower = kind;
+    this.playSound(AudioCue.BuildModeOn);
     this.requestHudSync();
   }
 
@@ -298,8 +305,10 @@ export class Game {
       return;
     }
 
+    const isCanceling = this.runtime.placingTower === kind;
     this.runtime.selectedTower = undefined;
-    this.runtime.placingTower = this.runtime.placingTower === kind ? undefined : kind;
+    this.runtime.placingTower = isCanceling ? undefined : kind;
+    this.playSound(isCanceling ? AudioCue.BuildModeCancel : AudioCue.BuildModeOn);
     this.requestHudSync();
   }
 
@@ -316,6 +325,8 @@ export class Game {
     if (this.renderer.isPointInUpgradeButton(point)) {
       if (this.canUpgradeSelectedTower()) {
         this.upgradeSelectedTower();
+      } else {
+        this.playSound(AudioCue.InvalidAction);
       }
       return;
     }
@@ -340,6 +351,7 @@ export class Game {
   placeTower(kind: TowerKind, point: Point): void {
     const tower = this.createTower(kind, point);
     if (this.runtime.money < tower.cost || !this.canPlaceTower(point)) {
+      this.playSound(AudioCue.InvalidAction, point.x);
       return;
     }
     this.runtime.money -= tower.cost;
@@ -357,6 +369,9 @@ export class Game {
 
   selectTowerAt(point: Point): void {
     this.runtime.selectedTower = findTowerAtPoint(point, this.runtime.towers);
+    if (this.runtime.selectedTower) {
+      this.playSound(AudioCue.TowerSelect, this.runtime.selectedTower.x);
+    }
     this.requestHudSync();
   }
 
@@ -398,10 +413,12 @@ export class Game {
   toggleSelectedLaserLock(): void {
     const { selectedTower } = this.runtime;
     if (!(selectedTower instanceof LaserTower) || isModalState(this.state)) {
+      this.playSound(AudioCue.InvalidAction);
       return;
     }
 
     selectedTower.toggleDirectionLock();
+    this.playSound(selectedTower.directionLocked ? AudioCue.LaserLockOn : AudioCue.LaserLockOff, selectedTower.x);
     this.requestHudSync();
   }
 
@@ -444,7 +461,7 @@ export class Game {
       this.highestUnlockedLevelIndex = finalCampaignLevelIndex;
       this.setState(GameState.CampaignWon);
       this.setBanner("Campaign Complete", 5.5);
-      this.playSound(AudioCue.LevelWin, undefined, 1.25);
+      this.playSound(AudioCue.CampaignComplete);
     } else {
       if (!isChallenge) {
         this.highestUnlockedLevelIndex = Math.max(this.highestUnlockedLevelIndex, this.currentLevelIndex + 1);
@@ -482,6 +499,9 @@ export class Game {
       const wave = this.activeWave;
       if (wave && this.runtime.spawnDelay > 0) {
         this.runtime.spawnDelay = Math.max(0, this.runtime.spawnDelay - deltaSeconds);
+        if (this.runtime.spawnDelay === 0) {
+          this.playSound(AudioCue.WaveStart);
+        }
         const nextPreWaveSecond = this.activeWave && this.runtime.spawnDelay > 0 ? Math.ceil(this.runtime.spawnDelay) : -1;
         if (previousPreWaveSecond !== nextPreWaveSecond) {
           this.requestHudSync();
