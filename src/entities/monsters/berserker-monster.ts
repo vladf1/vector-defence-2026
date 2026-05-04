@@ -18,8 +18,8 @@ const RADIUS = 8;
 export class BerserkerMonster extends Monster {
   private rageStage = 0;
 
-  constructor(path: PathEntry[]) {
-    super(path, BASE_COLOR, BASE_SPEED_PER_SECOND, HIT_POINTS, BOUNTY, RADIUS);
+  constructor(path: PathEntry[], private readonly speedScale: number) {
+    super(path, BASE_COLOR, BASE_SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
   protected updateSpecial(deltaSeconds: number): void {
@@ -37,7 +37,10 @@ export class BerserkerMonster extends Monster {
     this.color = this.getStageColor();
 
     if (this.speedPerSecond < this.maxSpeedPerSecond) {
-      this.speedPerSecond = Math.min(this.maxSpeedPerSecond, this.speedPerSecond + ((50.4 + (this.rageStage * 43.2)) * deltaSeconds));
+      this.speedPerSecond = Math.min(
+        this.maxSpeedPerSecond,
+        this.speedPerSecond + ((50.4 + (this.rageStage * 43.2)) * this.speedScale * deltaSeconds),
+      );
     } else if (this.speedPerSecond > this.maxSpeedPerSecond) {
       this.speedPerSecond = this.maxSpeedPerSecond;
     }
@@ -143,12 +146,12 @@ export class BerserkerMonster extends Monster {
 
   private getStageSpeedPerSecond(): number {
     if (this.rageStage === 2) {
-      return FRENZIED_SPEED_PER_SECOND;
+      return FRENZIED_SPEED_PER_SECOND * this.speedScale;
     }
     if (this.rageStage === 1) {
-      return ENRAGED_SPEED_PER_SECOND;
+      return ENRAGED_SPEED_PER_SECOND * this.speedScale;
     }
-    return BASE_SPEED_PER_SECOND;
+    return BASE_SPEED_PER_SECOND * this.speedScale;
   }
 
   private createOutline() {

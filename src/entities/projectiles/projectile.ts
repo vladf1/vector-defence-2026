@@ -1,4 +1,3 @@
-import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
 import { createHitImpactEffect } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
 import { AudioCue } from "../../types";
@@ -27,7 +26,7 @@ export class Projectile {
   update(game: Game, deltaSeconds: number): void {
     this.x += this.velocityXPerSecond * deltaSeconds;
     this.y += this.velocityYPerSecond * deltaSeconds;
-    if (this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
+    if (this.x < -20 || this.y < -20 || this.x > game.profile.fieldWidth + 20 || this.y > game.profile.fieldHeight + 20) {
       this.removed = true;
       return;
     }

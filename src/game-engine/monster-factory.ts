@@ -16,7 +16,7 @@ const MIN_SPLITTER_CHILD_OFFSET_DISTANCE = 10;
 const MAX_SPLITTER_CHILD_OFFSET_DISTANCE = 18;
 
 export function createMonster(game: Game, kind: MonsterKind, path: PathEntry[]): Monster {
-  const monster = createBaseMonster(kind, path);
+  const monster = createBaseMonster(kind, path, game.profile.monsterSpeedScale);
   const levelHitPointMultiplier = getLevelHitPointMultiplier(game);
   monster.hitPoints *= levelHitPointMultiplier;
   monster.maxHitPoints *= levelHitPointMultiplier;
@@ -86,24 +86,24 @@ function createRandomOffsetInDirection(distanceAlongPath: number, pathLength: nu
   return offsetDistance * direction;
 }
 
-function createBaseMonster(kind: MonsterKind, path: PathEntry[]): Monster {
+function createBaseMonster(kind: MonsterKind, path: PathEntry[], speedScale: number): Monster {
   switch (kind) {
     case MonsterKind.Ball:
-      return new BallMonster(path);
+      return new BallMonster(path, speedScale);
     case MonsterKind.Berserker:
-      return new BerserkerMonster(path);
+      return new BerserkerMonster(path, speedScale);
     case MonsterKind.Bulwark:
-      return new BulwarkMonster(path);
+      return new BulwarkMonster(path, speedScale);
     case MonsterKind.Square:
-      return new SquareMonster(path);
+      return new SquareMonster(path, speedScale);
     case MonsterKind.Triangle:
-      return new TriangleMonster(path);
+      return new TriangleMonster(path, speedScale);
     case MonsterKind.Tank:
-      return new TankMonster(path);
+      return new TankMonster(path, speedScale);
     case MonsterKind.Splitter:
-      return new SplitterMonster(path);
+      return new SplitterMonster(path, speedScale);
     default:
-      return new RunnerMonster(path);
+      return new RunnerMonster(path, speedScale);
   }
 }
 

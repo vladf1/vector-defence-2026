@@ -17,8 +17,8 @@ const RADIUS = 7;
 const OUTLINE_RADIUS = 6;
 
 export class TriangleMonster extends Monster {
-  constructor(path: PathEntry[]) {
-    super(path, COLOR, SPEED_PER_SECOND, HIT_POINTS, BOUNTY, RADIUS);
+  constructor(path: PathEntry[], speedScale: number) {
+    super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
   protected drawBody(context: CanvasRenderingContext2D): void {

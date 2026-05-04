@@ -1,5 +1,7 @@
 import levelsJson from "../game-levels.json";
 import { createGameLevels, createRandomChallengeLevel, getCampaignLevelCount } from "./campaign";
+import { GameMode, type GameMode as GameModeValue, type GameProfile } from "./game-profile";
+import type { ProceduralRouteConfig } from "./level-generator";
 import type { GameAudio } from "./game-audio";
 import { createEscapeBurstEffect } from "./game-engine/combat-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
@@ -45,10 +47,10 @@ export interface GameFrameTimings {
   drawMs: number;
 }
 
-const baseRoutes = normalizeLevels(levelsJson as LevelJsonData[]);
+export const TEMPORARILY_UNLOCK_ALL_LEVELS = true;
 
-export function createLevels(): LevelData[] {
-  return createGameLevels(baseRoutes);
+export function createLevels(gameMode: GameModeValue, proceduralRoute: ProceduralRouteConfig): LevelData[] {
+  return createGameLevels(normalizeLevels(levelsJson as LevelJsonData[], gameMode), gameMode === GameMode.Mobile, proceduralRoute);
 }
 
 export class Game {
@@ -66,6 +68,7 @@ export class Game {
   bannerTimer = 0;
   hudDirty = true;
   modalDirty = true;
+  readonly profile: GameProfile;
 
   constructor(
     levelList: LevelData[],
@@ -74,9 +77,11 @@ export class Game {
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D,
     audio: GameAudio,
+    profile: GameProfile,
   ) {
     this.levels = levelList;
     this.audio = audio;
+    this.profile = profile;
     this.renderer = new GameRenderer(backgroundCanvas, backgroundCtx, canvas, ctx, this);
   }
 
@@ -120,6 +125,10 @@ export class Game {
     this.modalDirty = true;
   }
 
+  canPerformBattleAction(): boolean {
+    return this.state === GameState.Playing;
+  }
+
   setBanner(text: string, duration = 1.6): void {
     this.bannerText = text;
     this.bannerTimer = duration;
@@ -146,7 +155,7 @@ export class Game {
 
   startLevel(level: LevelData): void {
     this.currentLevelIndex = this.levels.findIndex((candidate) => candidate.id === level.id || candidate === level);
-    this.runtime = new LevelRuntime(level);
+    this.runtime = new LevelRuntime(level, this.profile.roadTurnRadius, this.profile.routeCurveSampleStep);
     this.menuReturnState = undefined;
     this.setBanner(`Level ${level.levelNumber ?? "?"}: ${level.name}`, 2.4);
     this.setState(GameState.Playing);
@@ -162,9 +171,13 @@ export class Game {
       return;
     }
     if (level.isChallenge) {
-      level = createRandomChallengeLevel(this.campaignLevelCount);
+      level = createRandomChallengeLevel(
+        this.campaignLevelCount,
+        this.profile.mode === GameMode.Mobile,
+        this.profile.proceduralRoute,
+      );
       this.levels[index] = level;
-    } else if (!this.campaignCleared && index > this.highestUnlockedLevelIndex) {
+    } else if (!TEMPORARILY_UNLOCK_ALL_LEVELS && !this.campaignCleared && index > this.highestUnlockedLevelIndex) {
       this.playSound(AudioCue.InvalidAction);
       return;
     }
@@ -213,6 +226,7 @@ export class Game {
 
   togglePause(): void {
     if (this.state === GameState.Playing) {
+      this.clearTowerPlacement();
       this.setState(GameState.Paused);
       this.playSound(AudioCue.Pause);
     } else if (this.state === GameState.Paused) {
@@ -255,7 +269,6 @@ export class Game {
       this.runtime.monsters.push(child);
     }
     this.playSound(AudioCue.SplitterBurst, monster.x);
-    this.setBanner("Splitter burst", 1.2);
   }
 
   onMonsterEscaped(monster: Monster): void {
@@ -279,7 +292,7 @@ export class Game {
     this.runtime.pointer = point;
   }
 
-  cancelTowerPlacement(): void {
+  private clearTowerPlacement(): void {
     if (!this.runtime.placingTower) {
       return;
     }
@@ -288,8 +301,16 @@ export class Game {
     this.requestHudSync();
   }
 
+  cancelTowerPlacement(): void {
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
+    this.clearTowerPlacement();
+  }
+
   startTowerPlacement(kind: TowerKind): void {
-    if (!this.currentLevel || isModalState(this.state)) {
+    if (!this.currentLevel || !this.canPerformBattleAction()) {
       return;
     }
 
@@ -299,7 +320,7 @@ export class Game {
   }
 
   toggleTowerPlacement(kind: TowerKind): void {
-    if (!this.currentLevel || isModalState(this.state)) {
+    if (!this.currentLevel || !this.canPerformBattleAction()) {
       return;
     }
 
@@ -319,6 +340,10 @@ export class Game {
       return;
     }
 
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
     if (this.renderer.isPointInUpgradeButton(point)) {
       if (this.canUpgradeSelectedTower()) {
         this.upgradeSelectedTower();
@@ -334,6 +359,17 @@ export class Game {
     }
 
     if (this.runtime.placingTower) {
+      if (findTowerAtPoint(
+        point,
+        this.runtime.towers,
+        this.profile.towerRadius,
+        this.profile.towerSelectionPadding,
+      )) {
+        this.runtime.placingTower = undefined;
+        this.selectTowerAt(point);
+        return;
+      }
+
       this.placeTower(this.runtime.placingTower, point);
       return;
     }
@@ -342,10 +378,19 @@ export class Game {
   }
 
   canPlaceTower(point: Point): boolean {
-    return canPlaceTower(point, this.runtime.routePath, this.runtime.towers);
+    return canPlaceTower(
+      point,
+      this.runtime.routePath,
+      this.runtime.towers,
+      { ...this.profile.placement, ...this.renderer.getVisibleFieldBounds() },
+    );
   }
 
   placeTower(kind: TowerKind, point: Point): void {
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
     const tower = this.createTower(kind, point);
     if (this.runtime.money < tower.cost || !this.canPlaceTower(point)) {
       this.playSound(AudioCue.InvalidAction, point.x);
@@ -361,11 +406,22 @@ export class Game {
 
   createTower(kind: TowerKind, point: Point): Tower {
     const TowerClass = getTowerClass(kind);
-    return new TowerClass(point.x, point.y);
+    const tower = new TowerClass(point.x, point.y);
+    tower.range = Math.round(tower.range * this.profile.towerRangeScale);
+    return tower;
   }
 
   selectTowerAt(point: Point): void {
-    this.runtime.selectedTower = findTowerAtPoint(point, this.runtime.towers);
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
+    this.runtime.selectedTower = findTowerAtPoint(
+      point,
+      this.runtime.towers,
+      this.profile.towerRadius,
+      this.profile.towerSelectionPadding,
+    );
     if (this.runtime.selectedTower) {
       this.playSound(AudioCue.TowerSelect, this.runtime.selectedTower.x);
     }
@@ -373,6 +429,10 @@ export class Game {
   }
 
   sellSelectedTower(): void {
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
     const { selectedTower } = this.runtime;
     if (!selectedTower) {
       return;
@@ -386,6 +446,10 @@ export class Game {
   }
 
   upgradeSelectedTower(): void {
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
     const { selectedTower } = this.runtime;
     if (!this.canUpgradeSelectedTower()) {
       return;
@@ -404,12 +468,20 @@ export class Game {
     return selectedTower !== undefined
       && selectedTower.canUpgrade()
       && this.runtime.money >= selectedTower.upgradeCost
-      && !isModalState(this.state);
+      && this.canPerformBattleAction();
+  }
+
+  canAffordTower(kind: TowerKind): boolean {
+    return this.runtime.money >= getTowerClass(kind).baseCost;
   }
 
   toggleSelectedLaserLock(): void {
     const { selectedTower } = this.runtime;
-    if (!(selectedTower instanceof LaserTower) || isModalState(this.state)) {
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
+    if (!(selectedTower instanceof LaserTower)) {
       this.playSound(AudioCue.InvalidAction);
       return;
     }

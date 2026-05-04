@@ -1,4 +1,4 @@
-import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
+import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "../../constants";
 import { hexWithAlpha, randomRange } from "../../utils";
 
 interface ParticleOptions {
@@ -45,7 +45,7 @@ export class Particle {
     this.x += this.velocityXPerSecond * deltaSeconds;
     this.y += this.velocityYPerSecond * deltaSeconds;
     this.alpha -= this.alphaFadePerSecond * deltaSeconds;
-    if (this.alpha <= 0 || this.x < -20 || this.y < -20 || this.x > FIELD_WIDTH + 20 || this.y > FIELD_HEIGHT + 20) {
+    if (this.alpha <= 0 || this.x < -20 || this.y < -20 || this.x > EFFECT_FIELD_WIDTH + 20 || this.y > EFFECT_FIELD_HEIGHT + 20) {
       this.removed = true;
     }
   }

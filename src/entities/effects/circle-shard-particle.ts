@@ -1,4 +1,4 @@
-import { FIELD_HEIGHT, FIELD_WIDTH } from "../../constants";
+import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "../../constants";
 import type { Point } from "../../types";
 import { hexWithAlpha, randomRange } from "../../utils";
 import { Particle } from "./particle";
@@ -54,8 +54,8 @@ export class CircleShardParticle extends Particle {
       this.alpha <= 0 ||
       this.x < -24 ||
       this.y < -24 ||
-      this.x > FIELD_WIDTH + 24 ||
-      this.y > FIELD_HEIGHT + 24
+      this.x > EFFECT_FIELD_WIDTH + 24 ||
+      this.y > EFFECT_FIELD_HEIGHT + 24
     ) {
       this.removed = true;
     }

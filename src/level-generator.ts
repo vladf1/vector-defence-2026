@@ -1,14 +1,15 @@
-import { FIELD_HEIGHT, FIELD_WIDTH } from "./constants";
 import { MonsterKind, type LevelData, type Point } from "./types";
 import { calculateDistance, calculateDistanceToSegment, clamp, randomRange } from "./utils";
 
-type RouteTemplate = () => Point[];
+export interface ProceduralRouteConfig {
+  fieldWidth: number;
+  fieldHeight: number;
+  randomRouteBaseWidth: number;
+  randomRouteMargin: number;
+}
 
-const BASE_FIELD_WIDTH = 700;
-const ENTRY_X = 36;
-const EXIT_X = FIELD_WIDTH - 36;
-const MIN_Y = 44;
-const MAX_Y = FIELD_HEIGHT - 44;
+type RouteTemplate = (config: ProceduralRouteConfig) => Point[];
+
 const MIN_TURN_ROAD_CLEARANCE = 72;
 const MIN_CROSSING_TURN_CLEARANCE = 84;
 const ROUTE_ATTEMPTS = 80;
@@ -17,18 +18,18 @@ function randomInt(min: number, max: number): number {
   return Math.floor(randomRange(min, max + 1));
 }
 
-function xFromBase(x: number): number {
-  return (x / BASE_FIELD_WIDTH) * FIELD_WIDTH;
+function xFromBase(x: number, config: ProceduralRouteConfig): number {
+  return (x / config.randomRouteBaseWidth) * config.fieldWidth;
 }
 
 function pick<T>(items: readonly T[]): T {
   return items[randomInt(0, items.length - 1)];
 }
 
-function point(x: number, y: number): Point {
+function point(x: number, y: number, config: ProceduralRouteConfig): Point {
   return {
-    x: Math.round(clamp(x, 24, FIELD_WIDTH - 24)),
-    y: Math.round(clamp(y, MIN_Y, MAX_Y)),
+    x: Math.round(clamp(x, config.randomRouteMargin, config.fieldWidth - config.randomRouteMargin)),
+    y: Math.round(clamp(y, config.randomRouteMargin + 8, config.fieldHeight - config.randomRouteMargin - 8)),
   };
 }
 
@@ -36,14 +37,16 @@ function jitter(value: number, amount: number): number {
   return value + randomRange(-amount, amount);
 }
 
-function yAt(ratio: number): number {
-  return MIN_Y + ((MAX_Y - MIN_Y) * ratio);
+function yAt(ratio: number, config: ProceduralRouteConfig): number {
+  const minY = config.randomRouteMargin + 8;
+  const maxY = config.fieldHeight - config.randomRouteMargin - 8;
+  return minY + ((maxY - minY) * ratio);
 }
 
-function oppositeY(y: number): number {
-  return y < FIELD_HEIGHT / 2
-    ? randomRange(yAt(0.68), yAt(0.95))
-    : randomRange(yAt(0.05), yAt(0.32));
+function oppositeY(y: number, config: ProceduralRouteConfig): number {
+  return y < config.fieldHeight / 2
+    ? randomRange(yAt(0.68, config), yAt(0.95, config))
+    : randomRange(yAt(0.05, config), yAt(0.32, config));
 }
 
 function buildMonsterSequence(): MonsterKind[] {
@@ -73,80 +76,88 @@ function buildMonsterSequence(): MonsterKind[] {
   return sequence;
 }
 
-function crossingSwitchbackRoute(): Point[] {
-  const lowStart = randomRange(yAt(0.72), yAt(0.94));
-  const high = randomRange(yAt(0.08), yAt(0.28));
-  const low = randomRange(yAt(0.66), yAt(0.9));
-  const center = randomRange(yAt(0.38), yAt(0.62));
-  const verticalX = randomRange(xFromBase(285), xFromBase(350));
+function crossingSwitchbackRoute(config: ProceduralRouteConfig): Point[] {
+  const lowStart = randomRange(yAt(0.72, config), yAt(0.94, config));
+  const high = randomRange(yAt(0.08, config), yAt(0.28, config));
+  const low = randomRange(yAt(0.66, config), yAt(0.9, config));
+  const center = randomRange(yAt(0.38, config), yAt(0.62, config));
+  const verticalX = randomRange(xFromBase(285, config), xFromBase(350, config));
+  const entryX = config.randomRouteMargin;
+  const exitX = config.fieldWidth - config.randomRouteMargin;
 
   return [
-    point(ENTRY_X, lowStart),
-    point(jitter(xFromBase(178), xFromBase(20)), high),
-    point(jitter(xFromBase(178), xFromBase(20)), low),
-    point(jitter(xFromBase(438), xFromBase(24)), high + randomRange(-8, 34)),
-    point(verticalX, high + randomRange(-4, 18)),
-    point(verticalX, low + randomRange(-18, 18)),
-    point(jitter(xFromBase(560), xFromBase(22)), center),
-    point(EXIT_X, oppositeY(center)),
+    point(entryX, lowStart, config),
+    point(jitter(xFromBase(178, config), xFromBase(20, config)), high, config),
+    point(jitter(xFromBase(178, config), xFromBase(20, config)), low, config),
+    point(jitter(xFromBase(438, config), xFromBase(24, config)), high + randomRange(-8, 34), config),
+    point(verticalX, high + randomRange(-4, 18), config),
+    point(verticalX, low + randomRange(-18, 18), config),
+    point(jitter(xFromBase(560, config), xFromBase(22, config)), center, config),
+    point(exitX, oppositeY(center, config), config),
   ];
 }
 
-function verticalGateRoute(): Point[] {
-  const start = randomRange(yAt(0.1), yAt(0.36));
-  const firstLow = randomRange(yAt(0.7), yAt(0.94));
-  const secondHigh = randomRange(yAt(0.05), yAt(0.24));
-  const end = randomRange(yAt(0.56), yAt(0.88));
-  const firstX = randomRange(xFromBase(210), xFromBase(260));
-  const secondX = randomRange(xFromBase(455), xFromBase(520));
+function verticalGateRoute(config: ProceduralRouteConfig): Point[] {
+  const start = randomRange(yAt(0.1, config), yAt(0.36, config));
+  const firstLow = randomRange(yAt(0.7, config), yAt(0.94, config));
+  const secondHigh = randomRange(yAt(0.05, config), yAt(0.24, config));
+  const end = randomRange(yAt(0.56, config), yAt(0.88, config));
+  const firstX = randomRange(xFromBase(210, config), xFromBase(260, config));
+  const secondX = randomRange(xFromBase(455, config), xFromBase(520, config));
+  const entryX = config.randomRouteMargin;
+  const exitX = config.fieldWidth - config.randomRouteMargin;
 
   return [
-    point(ENTRY_X, start),
-    point(firstX, firstLow),
-    point(firstX, secondHigh),
-    point(secondX, firstLow + randomRange(-28, 18)),
-    point(secondX, secondHigh + randomRange(-12, 28)),
-    point(jitter(xFromBase(172), xFromBase(28)), yAt(0.52)),
-    point(jitter(xFromBase(552), xFromBase(24)), yAt(0.52) + randomRange(-24, 24)),
-    point(EXIT_X, end),
+    point(entryX, start, config),
+    point(firstX, firstLow, config),
+    point(firstX, secondHigh, config),
+    point(secondX, firstLow + randomRange(-28, 18), config),
+    point(secondX, secondHigh + randomRange(-12, 28), config),
+    point(jitter(xFromBase(172, config), xFromBase(28, config)), yAt(0.52, config), config),
+    point(jitter(xFromBase(552, config), xFromBase(24, config)), yAt(0.52, config) + randomRange(-24, 24), config),
+    point(exitX, end, config),
   ];
 }
 
-function hourglassRoute(): Point[] {
-  const top = randomRange(yAt(0.05), yAt(0.24));
-  const bottom = randomRange(yAt(0.74), yAt(0.95));
-  const center = randomRange(yAt(0.43), yAt(0.57));
-  const leftPost = randomRange(xFromBase(138), xFromBase(190));
-  const rightPost = randomRange(xFromBase(500), xFromBase(565));
+function hourglassRoute(config: ProceduralRouteConfig): Point[] {
+  const top = randomRange(yAt(0.05, config), yAt(0.24, config));
+  const bottom = randomRange(yAt(0.74, config), yAt(0.95, config));
+  const center = randomRange(yAt(0.43, config), yAt(0.57, config));
+  const leftPost = randomRange(xFromBase(138, config), xFromBase(190, config));
+  const rightPost = randomRange(xFromBase(500, config), xFromBase(565, config));
+  const entryX = config.randomRouteMargin;
+  const exitX = config.fieldWidth - config.randomRouteMargin;
 
   return [
-    point(ENTRY_X, bottom),
-    point(leftPost, bottom),
-    point(rightPost, top),
-    point(rightPost, bottom),
-    point(leftPost + randomRange(xFromBase(60), xFromBase(100)), top),
-    point(leftPost + randomRange(xFromBase(60), xFromBase(100)), bottom - randomRange(18, 52)),
-    point(jitter(xFromBase(420), xFromBase(34)), center),
-    point(EXIT_X, top + randomRange(40, 130)),
+    point(entryX, bottom, config),
+    point(leftPost, bottom, config),
+    point(rightPost, top, config),
+    point(rightPost, bottom, config),
+    point(leftPost + randomRange(xFromBase(60, config), xFromBase(100, config)), top, config),
+    point(leftPost + randomRange(xFromBase(60, config), xFromBase(100, config)), bottom - randomRange(18, 52), config),
+    point(jitter(xFromBase(420, config), xFromBase(34, config)), center, config),
+    point(exitX, top + randomRange(40, 130), config),
   ];
 }
 
-function centerSpineRoute(): Point[] {
-  const spineX = randomRange(xFromBase(320), xFromBase(380));
-  const start = randomRange(yAt(0.12), yAt(0.36));
-  const top = randomRange(yAt(0.05), yAt(0.18));
-  const bottom = randomRange(yAt(0.78), yAt(0.95));
-  const exit = randomRange(yAt(0.34), yAt(0.72));
+function centerSpineRoute(config: ProceduralRouteConfig): Point[] {
+  const spineX = randomRange(xFromBase(320, config), xFromBase(380, config));
+  const start = randomRange(yAt(0.12, config), yAt(0.36, config));
+  const top = randomRange(yAt(0.05, config), yAt(0.18, config));
+  const bottom = randomRange(yAt(0.78, config), yAt(0.95, config));
+  const exit = randomRange(yAt(0.34, config), yAt(0.72, config));
+  const entryX = config.randomRouteMargin;
+  const exitX = config.fieldWidth - config.randomRouteMargin;
 
   return [
-    point(ENTRY_X, start),
-    point(jitter(xFromBase(260), xFromBase(30)), bottom),
-    point(spineX, bottom),
-    point(spineX, top),
-    point(jitter(xFromBase(150), xFromBase(28)), top + randomRange(70, 130)),
-    point(jitter(xFromBase(505), xFromBase(26)), bottom - randomRange(42, 92)),
-    point(jitter(xFromBase(505), xFromBase(26)), top + randomRange(16, 56)),
-    point(EXIT_X, exit),
+    point(entryX, start, config),
+    point(jitter(xFromBase(260, config), xFromBase(30, config)), bottom, config),
+    point(spineX, bottom, config),
+    point(spineX, top, config),
+    point(jitter(xFromBase(150, config), xFromBase(28, config)), top + randomRange(70, 130), config),
+    point(jitter(xFromBase(505, config), xFromBase(26, config)), bottom - randomRange(42, 92), config),
+    point(jitter(xFromBase(505, config), xFromBase(26, config)), top + randomRange(16, 56), config),
+    point(exitX, exit, config),
   ];
 }
 
@@ -239,11 +250,11 @@ function hasCrowdedTurns(points: Point[]): boolean {
   return false;
 }
 
-function buildRoutePoints(): Point[] {
-  let fallback = pick(ROUTE_TEMPLATES)();
+function buildRoutePoints(config: ProceduralRouteConfig): Point[] {
+  let fallback = pick(ROUTE_TEMPLATES)(config);
 
   for (let attempt = 0; attempt < ROUTE_ATTEMPTS; attempt += 1) {
-    const route = pick(ROUTE_TEMPLATES)();
+    const route = pick(ROUTE_TEMPLATES)(config);
     if (!hasCrowdedTurns(route)) {
       return route;
     }
@@ -253,12 +264,12 @@ function buildRoutePoints(): Point[] {
   return fallback;
 }
 
-export function createProceduralLevel(): LevelData {
+export function createProceduralLevel(config: ProceduralRouteConfig): LevelData {
   return {
     name: "Random",
     monsterCount: randomInt(156, 190),
     allowEscape: randomInt(8, 10),
     monsterSequence: buildMonsterSequence(),
-    points: buildRoutePoints(),
+    points: buildRoutePoints(config),
   };
 }

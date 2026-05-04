@@ -1,3 +1,4 @@
+import { GameMode, type GameMode as GameModeValue } from "./game-profile";
 import { MonsterKind, type LevelData, type LevelJsonData, type Point } from "./types";
 
 export function must<T>(value: T | null, message: string): T {
@@ -11,11 +12,20 @@ function isMonsterKind(value: string): value is MonsterKind {
   return Object.values(MonsterKind).includes(value as MonsterKind);
 }
 
-export function normalizeLevels(data: LevelJsonData[]): LevelData[] {
-  return data.map((level) => ({
-    ...level,
-    monsterSequence: level.monsterSequence.filter(isMonsterKind),
-  }));
+export function normalizeLevels(data: LevelJsonData[], gameMode: GameModeValue): LevelData[] {
+  return data.map((level) => {
+    const overrides = gameMode === GameMode.Mobile ? level.mobile : undefined;
+    const normalized = {
+      ...level,
+      ...overrides,
+    };
+    delete normalized.mobile;
+
+    return {
+      ...normalized,
+      monsterSequence: normalized.monsterSequence.filter(isMonsterKind),
+    };
+  });
 }
 
 export function clamp(value: number, min: number, max: number): number {

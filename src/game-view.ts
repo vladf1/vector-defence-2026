@@ -2,12 +2,13 @@ import { STARTING_MONEY } from "./constants";
 import { createBannerText } from "./banner-text";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
-import { isModalState } from "./game-engine";
+import { TEMPORARILY_UNLOCK_ALL_LEVELS } from "./game-engine";
 import { formatMoney } from "./utils";
 import type { Game } from "./game-engine";
 import {
   GameState,
   ModalAction,
+  TowerKind,
   type HudSnapshot,
   type ModalActionView,
   type ModalLevelCardView,
@@ -32,13 +33,27 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   levelName: "Campaign Map",
   money: formatMoney(STARTING_MONEY),
   wave: "Idle",
+  monsters: "",
   banner: "Awaiting orders",
   selectionTitle: "",
   selectionBody: "Select a tower to view upgrades, range, and sell value.",
   upgradeDisabled: true,
   hasSelectedTower: false,
+  hasLaserLockAction: false,
+  laserLocked: false,
+  laserLockDisabled: true,
   sellDisabled: true,
+  cancelBuildDisabled: true,
+  canTogglePause: false,
+  paused: false,
+  dragOnlyTowerPlacement: false,
   towerButtonsDisabled: true,
+  affordableTowers: {
+    [TowerKind.Gun]: false,
+    [TowerKind.Laser]: false,
+    [TowerKind.Missile]: false,
+    [TowerKind.Slow]: false,
+  },
   nerdStats: {
     fps: "0",
     frameTime: "0.0 ms",
@@ -62,16 +77,22 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
   const runtime = game.runtime;
   const selected = runtime.selectedTower;
   const activeWave = runtime.activeWave;
+  const battleActionsDisabled = !game.canPerformBattleAction();
   const levelName = currentLevel
     ? `${currentLevel.levelNumber ?? "?"} · ${currentLevel.name}`
     : "Campaign Map";
   const wave = currentLevel
     ? (activeWave
-        ? (game.state === GameState.Playing && runtime.spawnDelay > 0
+        ? (game.profile.mode === "desktop"
+            ? `${runtime.currentWaveIndex + 1} of ${runtime.waveTotal}`
+            : game.state === GameState.Playing && runtime.spawnDelay > 0
             ? `${runtime.currentWaveIndex + 1}/${runtime.waveTotal}`
             : `${runtime.currentWaveIndex + 1}/${runtime.waveTotal} · ${Math.min(runtime.waveSpawnedMonsters, activeWave.count)}/${activeWave.count}`)
         : `All ${game.waveTotal} waves cleared`)
     : "Idle";
+  const monsters = activeWave
+    ? `${Math.min(runtime.waveSpawnedMonsters, activeWave.count)} of ${activeWave.count}`
+    : "";
   const banner = createBannerText(game);
 
   let selectionTitle = "";
@@ -99,14 +120,28 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     levelName,
     money: formatMoney(runtime.money),
     wave,
+    monsters,
     banner,
     selectionTitle,
     selectionBody,
-    upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || isModalState(game.state),
+    upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || battleActionsDisabled,
     hasSelectedTower: selected !== undefined,
-    sellDisabled: !selected || isModalState(game.state),
+    hasLaserLockAction: selected instanceof LaserTower,
+    laserLocked: selected instanceof LaserTower && selected.directionLocked,
+    laserLockDisabled: !(selected instanceof LaserTower) || battleActionsDisabled,
+    sellDisabled: !selected || battleActionsDisabled,
+    cancelBuildDisabled: !runtime.placingTower || battleActionsDisabled,
+    canTogglePause: game.state === GameState.Playing || game.state === GameState.Paused,
+    paused: game.state === GameState.Paused,
+    dragOnlyTowerPlacement: game.profile.ui.dragOnlyTowerPlacement,
     placingTower: runtime.placingTower,
-    towerButtonsDisabled: isModalState(game.state),
+    towerButtonsDisabled: battleActionsDisabled,
+    affordableTowers: {
+      [TowerKind.Gun]: runtime.money >= getTowerClass(TowerKind.Gun).baseCost,
+      [TowerKind.Laser]: runtime.money >= getTowerClass(TowerKind.Laser).baseCost,
+      [TowerKind.Missile]: runtime.money >= getTowerClass(TowerKind.Missile).baseCost,
+      [TowerKind.Slow]: runtime.money >= getTowerClass(TowerKind.Slow).baseCost,
+    },
     nerdStats: {
       fps: String(Math.max(0, Math.round(runtimeStats.fps))),
       frameTime: `${runtimeStats.frameTimeMs.toFixed(1)} ms`,
@@ -233,11 +268,11 @@ function assertNever(value: never): never {
 
 function createModalLevelCards(game: Game): ModalLevelCardView[] {
   return game.levels.map((level, index) => {
-    const unlocked = level.isChallenge || game.campaignCleared || index <= game.highestUnlockedLevelIndex;
+    const unlocked = TEMPORARILY_UNLOCK_ALL_LEVELS || level.isChallenge || game.campaignCleared || index <= game.highestUnlockedLevelIndex;
     const cleared = !level.isChallenge && (game.campaignCleared || index < game.highestUnlockedLevelIndex);
     const current = game.currentLevelIndex === index && !!game.currentLevel;
     const status = level.isChallenge
-      ? (current ? "Current" : "Random")
+      ? (current ? "Current" : "Ready")
       : (!unlocked ? "Locked" : (cleared ? "Cleared" : (index === Math.min(game.highestUnlockedLevelIndex, game.campaignLevelCount - 1) ? "Next" : "Ready")));
 
     return {

@@ -1,5 +1,4 @@
 import { createBannerText } from "./banner-text";
-import { FIELD_HEIGHT, FIELD_WIDTH, ROAD_WIDTH, TOWER_RADIUS } from "./constants";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { GameState } from "./types";
@@ -38,6 +37,51 @@ export interface CanvasButtonRect {
   height: number;
 }
 
+export interface FieldBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+export interface CenteredFieldViewport {
+  width: number;
+  height: number;
+  fieldOffsetX: number;
+  fieldOffsetY: number;
+}
+
+export function getCenteredFieldViewport(
+  cssWidth: number,
+  cssHeight: number,
+  fieldWidth: number,
+  fieldHeight: number,
+): CenteredFieldViewport {
+  if (cssWidth <= 0 || cssHeight <= 0) {
+    return { width: fieldWidth, height: fieldHeight, fieldOffsetX: 0, fieldOffsetY: 0 };
+  }
+
+  const visibleAspect = cssWidth / cssHeight;
+  const fieldAspect = fieldWidth / fieldHeight;
+  if (visibleAspect > fieldAspect) {
+    const width = fieldHeight * visibleAspect;
+    return {
+      width,
+      height: fieldHeight,
+      fieldOffsetX: (width - fieldWidth) / 2,
+      fieldOffsetY: 0,
+    };
+  }
+
+  const height = fieldWidth / visibleAspect;
+  return {
+    width: fieldWidth,
+    height,
+    fieldOffsetX: 0,
+    fieldOffsetY: (height - fieldHeight) / 2,
+  };
+}
+
 export class GameRenderer {
   backgroundCanvas: HTMLCanvasElement;
   backgroundCtx: CanvasRenderingContext2D;
@@ -45,6 +89,10 @@ export class GameRenderer {
   ctx: CanvasRenderingContext2D;
   currentDpr = window.devicePixelRatio || 1;
   isCompactLayout = false;
+  private viewportWidth = 0;
+  private viewportHeight = 0;
+  private fieldOffsetX = 0;
+  private fieldOffsetY = 0;
 
   constructor(
     backgroundCanvas: HTMLCanvasElement,
@@ -59,27 +107,49 @@ export class GameRenderer {
     this.ctx = ctx;
   }
 
+  private get fieldWidth(): number {
+    return this.game.profile.fieldWidth;
+  }
+
+  private get fieldHeight(): number {
+    return this.game.profile.fieldHeight;
+  }
+
   resize(): void {
     this.currentDpr = window.devicePixelRatio || 1;
-    this.isCompactLayout = this.canvas.getBoundingClientRect().width <= COMPACT_CANVAS_WIDTH_THRESHOLD;
-    this.backgroundCanvas.width = Math.round(FIELD_WIDTH * this.currentDpr);
-    this.backgroundCanvas.height = Math.round(FIELD_HEIGHT * this.currentDpr);
+    const rect = this.canvas.getBoundingClientRect();
+    const viewport = getCenteredFieldViewport(rect.width, rect.height, this.fieldWidth, this.fieldHeight);
+    this.viewportWidth = viewport.width;
+    this.viewportHeight = viewport.height;
+    this.fieldOffsetX = viewport.fieldOffsetX;
+    this.fieldOffsetY = this.getCenteredLevelOffsetY(viewport.height, viewport.fieldOffsetY);
+    this.isCompactLayout = rect.width <= COMPACT_CANVAS_WIDTH_THRESHOLD;
+    this.backgroundCanvas.width = Math.round(this.viewportWidth * this.currentDpr);
+    this.backgroundCanvas.height = Math.round(this.viewportHeight * this.currentDpr);
     this.backgroundCtx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
-    this.canvas.width = Math.round(FIELD_WIDTH * this.currentDpr);
-    this.canvas.height = Math.round(FIELD_HEIGHT * this.currentDpr);
+    this.canvas.width = Math.round(this.viewportWidth * this.currentDpr);
+    this.canvas.height = Math.round(this.viewportHeight * this.currentDpr);
     this.ctx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
     this.renderBackgroundLayer();
   }
 
   renderBackgroundLayer(): void {
-    this.backgroundCtx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+    this.fieldOffsetY = this.getCenteredLevelOffsetY(this.viewportHeight, this.fieldOffsetY);
+    this.backgroundCtx.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
+    this.drawCanvasBackdrop(this.backgroundCtx);
+    this.backgroundCtx.save();
+    this.backgroundCtx.translate(this.fieldOffsetX, this.fieldOffsetY);
     this.drawBackground(this.backgroundCtx);
+    this.backgroundCtx.restore();
   }
 
   draw(): void {
     const runtime = this.game.runtime;
 
-    this.ctx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+    this.fieldOffsetY = this.getCenteredLevelOffsetY(this.viewportHeight, this.fieldOffsetY);
+    this.ctx.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
+    this.ctx.save();
+    this.ctx.translate(this.fieldOffsetX, this.fieldOffsetY);
     this.drawEscapeAllowance(this.ctx);
 
     for (const link of runtime.links) {
@@ -110,18 +180,19 @@ export class GameRenderer {
     this.drawUpgradeButton(this.ctx);
     this.drawLaserLockButton(this.ctx);
     this.drawPauseButton(this.ctx);
+    this.ctx.restore();
     this.drawBanner(this.ctx);
   }
 
   getPauseButtonRect(): CanvasButtonRect | undefined {
-    if (!this.canTogglePause()) {
+    if (!this.game.profile.ui.drawCanvasPauseButton || !this.canTogglePause()) {
       return undefined;
     }
 
     const width = this.getPauseButtonWidth();
     const height = this.getPauseButtonHeight();
     return {
-      x: FIELD_WIDTH - PAUSE_BUTTON_RIGHT - width,
+      x: this.fieldWidth - PAUSE_BUTTON_RIGHT - width,
       y: PAUSE_BUTTON_TOP,
       width,
       height,
@@ -138,10 +209,18 @@ export class GameRenderer {
   }
 
   getUpgradeButtonRect(): CanvasButtonRect | undefined {
+    if (!this.game.profile.ui.drawCanvasTowerActions) {
+      return undefined;
+    }
+
     return this.getSelectedTowerActionButtonRect(0);
   }
 
   getLaserLockButtonRect(): CanvasButtonRect | undefined {
+    if (!this.game.profile.ui.drawCanvasTowerActions) {
+      return undefined;
+    }
+
     const selectedTower = this.game.runtime.selectedTower;
     if (!(selectedTower instanceof LaserTower)) {
       return undefined;
@@ -167,9 +246,9 @@ export class GameRenderer {
     const edgeGutter = this.isCompactLayout ? COMPACT_UPGRADE_BUTTON_EDGE_GUTTER : UPGRADE_BUTTON_EDGE_GUTTER;
     const centerX = Math.min(
       Math.max(selectedTower.x, edgeGutter),
-      FIELD_WIDTH - edgeGutter,
+      this.fieldWidth - edgeGutter,
     );
-    const placeAbove = selectedTower.y > FIELD_HEIGHT - UPGRADE_BUTTON_ABOVE_THRESHOLD - (height - UPGRADE_BUTTON_HEIGHT);
+    const placeAbove = selectedTower.y > this.fieldHeight - UPGRADE_BUTTON_ABOVE_THRESHOLD - (height - UPGRADE_BUTTON_HEIGHT);
     const top = placeAbove
       ? selectedTower.y - UPGRADE_BUTTON_ABOVE_OFFSET - height
       : selectedTower.y + UPGRADE_BUTTON_BELOW_OFFSET;
@@ -201,24 +280,24 @@ export class GameRenderer {
   }
 
   private drawBackground(context: CanvasRenderingContext2D): void {
-    const fieldGradient = context.createLinearGradient(0, 0, 0, FIELD_HEIGHT);
+    const fieldGradient = context.createLinearGradient(0, 0, 0, this.fieldHeight);
     fieldGradient.addColorStop(0, "#010302");
     fieldGradient.addColorStop(1, "#050d0a");
     context.fillStyle = fieldGradient;
-    context.fillRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+    context.fillRect(0, 0, this.fieldWidth, this.fieldHeight);
 
     context.save();
-    context.strokeStyle = "rgba(255, 255, 255, 0.04)";
-    for (let x = 0; x <= FIELD_WIDTH; x += 35) {
+    context.strokeStyle = "rgba(255, 255, 255, 0.06)";
+    for (let x = 0; x <= this.fieldWidth; x += 35) {
       context.beginPath();
       context.moveTo(x, 0);
-      context.lineTo(x, FIELD_HEIGHT);
+      context.lineTo(x, this.fieldHeight);
       context.stroke();
     }
-    for (let y = 0; y <= FIELD_HEIGHT; y += 35) {
+    for (let y = 0; y <= this.fieldHeight; y += 35) {
       context.beginPath();
       context.moveTo(0, y);
-      context.lineTo(FIELD_WIDTH, y);
+      context.lineTo(this.fieldWidth, y);
       context.stroke();
     }
     context.restore();
@@ -237,7 +316,7 @@ export class GameRenderer {
     context.lineJoin = "round";
     context.lineCap = "round";
     context.strokeStyle = ROAD_COLOR;
-    context.lineWidth = ROAD_WIDTH;
+    context.lineWidth = this.game.profile.roadWidth;
     context.beginPath();
     context.moveTo(routePath.start.x, routePath.start.y);
     for (const command of routePath.commands) {
@@ -253,6 +332,65 @@ export class GameRenderer {
     context.arc(last.x, last.y, 18, 0, Math.PI * 2);
     context.fill();
     context.restore();
+  }
+
+  private drawCanvasBackdrop(context: CanvasRenderingContext2D): void {
+    const fieldGradient = context.createLinearGradient(0, 0, 0, this.viewportHeight);
+    fieldGradient.addColorStop(0, "#010302");
+    fieldGradient.addColorStop(1, "#050d0a");
+    context.fillStyle = fieldGradient;
+    context.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
+
+    context.save();
+    context.strokeStyle = "rgba(255, 255, 255, 0.055)";
+    for (let x = 0; x <= this.viewportWidth; x += 35) {
+      context.beginPath();
+      context.moveTo(x, 0);
+      context.lineTo(x, this.viewportHeight);
+      context.stroke();
+    }
+    for (let y = 0; y <= this.viewportHeight; y += 35) {
+      context.beginPath();
+      context.moveTo(0, y);
+      context.lineTo(this.viewportWidth, y);
+      context.stroke();
+    }
+    context.restore();
+  }
+
+  toFieldPoint(point: { x: number; y: number }): { x: number; y: number } {
+    return {
+      x: point.x - this.fieldOffsetX,
+      y: point.y - this.fieldOffsetY,
+    };
+  }
+
+  getVisibleFieldBounds(): FieldBounds {
+    return {
+      minX: -this.fieldOffsetX,
+      minY: -this.fieldOffsetY,
+      maxX: this.viewportWidth - this.fieldOffsetX,
+      maxY: this.viewportHeight - this.fieldOffsetY,
+    };
+  }
+
+  private getCenteredLevelOffsetY(viewportHeight: number, fallbackOffsetY: number): number {
+    const level = this.game.currentLevel;
+    if (!level || level.points.length === 0 || viewportHeight <= this.fieldHeight) {
+      return fallbackOffsetY;
+    }
+
+    const halfRoadWidth = this.game.profile.roadWidth / 2;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const point of level.points) {
+      minY = Math.min(minY, point.y - halfRoadWidth);
+      maxY = Math.max(maxY, point.y + halfRoadWidth);
+    }
+
+    const levelCenterY = (minY + maxY) / 2;
+    const centeredOffsetY = (viewportHeight / 2) - levelCenterY;
+    return Math.max(0, Math.min(viewportHeight - this.fieldHeight, centeredOffsetY));
   }
 
   private drawEscapeAllowance(context: CanvasRenderingContext2D): void {
@@ -285,7 +423,8 @@ export class GameRenderer {
     context.textBaseline = "middle";
     const textWidth = this.measureSpacedText(context, text, BANNER_LETTER_SPACING);
     const width = Math.ceil(textWidth) + (BANNER_PADDING_X * 2);
-    const left = (FIELD_WIDTH - width) / 2;
+    const centerX = this.viewportWidth / 2;
+    const left = centerX - (width / 2);
     context.fillStyle = "rgba(8, 16, 13, 0.86)";
     context.strokeStyle = "rgba(255, 255, 255, 0.16)";
     context.lineWidth = 1;
@@ -294,7 +433,7 @@ export class GameRenderer {
     context.fill();
     context.stroke();
     context.fillStyle = "rgba(176, 255, 225, 0.96)";
-    this.fillSpacedText(context, text, FIELD_WIDTH / 2, BANNER_TOP + (BANNER_HEIGHT / 2) + 1, BANNER_LETTER_SPACING);
+    this.fillSpacedText(context, text, centerX, BANNER_TOP + (BANNER_HEIGHT / 2) + 1, BANNER_LETTER_SPACING);
     context.restore();
   }
 
@@ -388,7 +527,7 @@ export class GameRenderer {
 
   private drawUpgradeButton(context: CanvasRenderingContext2D): void {
     const rect = this.getUpgradeButtonRect();
-    if (!rect) {
+    if (!this.game.profile.ui.drawCanvasTowerActions || !rect) {
       return;
     }
 
@@ -415,11 +554,11 @@ export class GameRenderer {
   private drawLaserLockButton(context: CanvasRenderingContext2D): void {
     const rect = this.getLaserLockButtonRect();
     const selectedTower = this.game.runtime.selectedTower;
-    if (!rect || !(selectedTower instanceof LaserTower)) {
+    if (!this.game.profile.ui.drawCanvasTowerActions || !rect || !(selectedTower instanceof LaserTower)) {
       return;
     }
 
-    const disabled = this.isModalState();
+    const disabled = !this.game.canPerformBattleAction();
     const hovered = this.game.runtime.pointer ? this.isPointInLaserLockButton(this.game.runtime.pointer) : false;
 
     context.save();
@@ -444,13 +583,6 @@ export class GameRenderer {
     context.restore();
   }
 
-  private isModalState(): boolean {
-    return this.game.state === GameState.Menu
-      || this.game.state === GameState.Won
-      || this.game.state === GameState.Lost
-      || this.game.state === GameState.CampaignWon;
-  }
-
   private drawUpgradeArrow(context: CanvasRenderingContext2D, centerX: number, centerY: number, scale = 1): void {
     const halfWidth = 7 * scale;
     const halfHeight = 6 * scale;
@@ -470,24 +602,25 @@ export class GameRenderer {
 
     const towerClass = getTowerClass(runtime.placingTower);
     const valid = this.game.canPlaceTower(runtime.pointer) && runtime.money >= towerClass.baseCost;
+    const bounds = this.getVisibleFieldBounds();
     context.save();
     context.strokeStyle = valid ? "rgba(255, 255, 255, 0.35)" : "rgba(255, 120, 120, 0.45)";
     context.setLineDash([6, 6]);
     context.beginPath();
-    context.moveTo(runtime.pointer.x, 0);
-    context.lineTo(runtime.pointer.x, FIELD_HEIGHT);
-    context.moveTo(0, runtime.pointer.y);
-    context.lineTo(FIELD_WIDTH, runtime.pointer.y);
+    context.moveTo(runtime.pointer.x, bounds.minY);
+    context.lineTo(runtime.pointer.x, bounds.maxY);
+    context.moveTo(bounds.minX, runtime.pointer.y);
+    context.lineTo(bounds.maxX, runtime.pointer.y);
     context.stroke();
     context.setLineDash([]);
     context.strokeStyle = valid ? "rgba(92, 255, 158, 0.3)" : "rgba(255, 120, 120, 0.32)";
     context.fillStyle = valid ? "rgba(92, 255, 158, 0.08)" : "rgba(255, 120, 120, 0.08)";
     context.beginPath();
-    context.arc(runtime.pointer.x, runtime.pointer.y, towerClass.baseRange, 0, Math.PI * 2);
+    context.arc(runtime.pointer.x, runtime.pointer.y, towerClass.baseRange * this.game.profile.towerRangeScale, 0, Math.PI * 2);
     context.fill();
     context.stroke();
     context.beginPath();
-    context.arc(runtime.pointer.x, runtime.pointer.y, TOWER_RADIUS, 0, Math.PI * 2);
+    context.arc(runtime.pointer.x, runtime.pointer.y, this.game.profile.towerRadius, 0, Math.PI * 2);
     context.stroke();
     context.restore();
   }
