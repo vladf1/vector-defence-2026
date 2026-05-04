@@ -264,7 +264,6 @@ export class Game {
       this.runtime.monsters.push(child);
     }
     this.playSound(AudioCue.SplitterBurst, monster.x);
-    this.setBanner("Splitter burst", 1.2);
   }
 
   onMonsterEscaped(monster: Monster): void {
@@ -343,6 +342,17 @@ export class Game {
     }
 
     if (this.runtime.placingTower) {
+      if (findTowerAtPoint(
+        point,
+        this.runtime.towers,
+        this.profile.towerRadius,
+        this.profile.towerSelectionPadding,
+      )) {
+        this.runtime.placingTower = undefined;
+        this.selectTowerAt(point);
+        return;
+      }
+
       this.placeTower(this.runtime.placingTower, point);
       return;
     }
@@ -351,7 +361,12 @@ export class Game {
   }
 
   canPlaceTower(point: Point): boolean {
-    return canPlaceTower(point, this.runtime.routePath, this.runtime.towers, this.profile.placement);
+    return canPlaceTower(
+      point,
+      this.runtime.routePath,
+      this.runtime.towers,
+      { ...this.profile.placement, ...this.renderer.getVisibleFieldBounds() },
+    );
   }
 
   placeTower(kind: TowerKind, point: Point): void {

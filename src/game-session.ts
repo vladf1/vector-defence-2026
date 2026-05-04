@@ -1,6 +1,7 @@
 import { findTowerShortcut } from "./entities/towers/tower-registry";
 import { type GameProfile } from "./game-profile";
 import { GameAudio } from "./game-audio";
+import { getCenteredFieldViewport } from "./game-renderer";
 import {
   Game,
   createLevels,
@@ -69,6 +70,7 @@ export function createGameSession(profile: GameProfile): GameSession {
   let sampledDrawDurationMs = 0;
   let lastNerdStatsSampleTime = 0;
   let nerdStatsEnabled = false;
+  let canvasResizeObserver: ResizeObserver | null = null;
   let towerDrag:
     | {
       kind: TowerKind;
@@ -115,9 +117,14 @@ export function createGameSession(profile: GameProfile): GameSession {
       return null;
     }
 
-    return {
-      x: ((event.clientX - rect.left) / rect.width) * profile.fieldWidth,
-      y: ((event.clientY - rect.top) / rect.height) * profile.fieldHeight,
+    const viewport = getCenteredFieldViewport(rect.width, rect.height, profile.fieldWidth, profile.fieldHeight);
+    const viewportPoint = {
+      x: ((event.clientX - rect.left) / rect.width) * viewport.width,
+      y: ((event.clientY - rect.top) / rect.height) * viewport.height,
+    };
+    return game?.renderer.toFieldPoint(viewportPoint) ?? {
+      x: viewportPoint.x - viewport.fieldOffsetX,
+      y: viewportPoint.y - viewport.fieldOffsetY,
     };
   };
 
@@ -213,6 +220,15 @@ export function createGameSession(profile: GameProfile): GameSession {
     (window as VectorDefenceWindow).vectorDefenceGame = game;
     game.resize();
     game.draw();
+    canvasResizeObserver = new ResizeObserver(() => {
+      if (!game) {
+        return;
+      }
+
+      game.resize();
+      game.draw();
+    });
+    canvasResizeObserver.observe(canvas);
     runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
     resetNerdStatsSamples();
     publish(true, true);
@@ -227,6 +243,9 @@ export function createGameSession(profile: GameProfile): GameSession {
       window.cancelAnimationFrame(frameId);
       frameId = 0;
     }
+
+    canvasResizeObserver?.disconnect();
+    canvasResizeObserver = null;
 
     if ((window as VectorDefenceWindow).vectorDefenceGame === game) {
       delete (window as VectorDefenceWindow).vectorDefenceGame;

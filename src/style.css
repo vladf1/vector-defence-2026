@@ -101,7 +101,6 @@ textarea,
   padding: 8px 13px;
   cursor: pointer;
   transition:
-    transform 120ms ease,
     border-color 120ms ease,
     box-shadow 120ms ease,
     background 120ms ease;
@@ -111,7 +110,6 @@ textarea,
 .tower-button:hover,
 .modal-button:hover,
 .action-button:hover {
-  transform: translateY(-1px);
   border-color: rgba(255, 255, 255, 0.28);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
@@ -179,7 +177,8 @@ textarea,
   padding: 7px 10px;
 }
 
-.sound-button {
+.sound-button,
+.campaign-button {
   width: 40px;
   min-width: 40px;
   padding-inline: 0;
@@ -606,11 +605,22 @@ textarea,
   gap: 6px;
 }
 
-.mobile-shell .hud {
-  grid-area: hud;
-  justify-content: flex-start;
-  gap: 5px 8px;
-}
+  .mobile-shell .hud {
+    grid-area: hud;
+    justify-content: flex-start;
+    gap: 5px 0;
+  }
+
+  .mobile-shell .stat-card + .stat-card::before {
+    content: "|";
+    color: var(--muted);
+    font-weight: 500;
+    margin-inline: 8px;
+  }
+
+  .mobile-shell .wave-stat {
+    display: flex;
+  }
 
 .mobile-shell .actions {
   grid-area: actions;
@@ -624,6 +634,7 @@ textarea,
 }
 
 .mobile-shell .sound-button,
+.mobile-shell .campaign-button,
 .mobile-shell .pause-button {
   width: 36px;
   min-width: 36px;
@@ -779,6 +790,10 @@ textarea,
     display: none;
   }
 
+  .mobile-shell .wave-stat {
+    display: flex;
+  }
+
   .actions {
     flex-wrap: wrap;
   }
@@ -877,6 +892,10 @@ textarea,
 
   .wave-stat {
     display: none;
+  }
+
+  .mobile-shell .wave-stat {
+    display: flex;
   }
 
   .stat-card strong {
@@ -1130,20 +1149,26 @@ textarea,
   .mobile-shell .board-card {
     min-height: 0;
     align-self: stretch;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .mobile-shell .board-frame {
     height: 100%;
     background: #030806;
+    border-radius: 0;
   }
 
   .mobile-shell .board-stage {
-    width: min(100%, calc((100dvh - 178px) * var(--field-aspect-scale)));
-    max-height: 100%;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
     overflow: hidden;
-    border-radius: 8px;
-    outline: 1px solid rgba(109, 240, 194, 0.28);
-    outline-offset: -1px;
+    border-radius: 0;
+    outline: 0;
   }
 
   .mobile-shell .controls-grid {
@@ -1375,7 +1400,8 @@ textarea,
   }
 
   .mobile-shell .board-stage {
-    width: min(100%, calc((100dvh - 214px) * var(--field-aspect-scale)));
+    width: 100%;
+    height: 100%;
   }
 
   .mobile-shell .tower-strip {

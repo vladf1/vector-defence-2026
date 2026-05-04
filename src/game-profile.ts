@@ -134,7 +134,7 @@ export const MOBILE_GAME_PROFILE = createProfile({
   randomRouteBaseWidth: 390,
   randomRouteMargin: 24,
   ui: {
-    dragOnlyTowerPlacement: true,
+    dragOnlyTowerPlacement: false,
     drawCanvasTowerActions: false,
     drawCanvasPauseButton: false,
     showShortcutLabels: false,

@@ -43,7 +43,7 @@ export const AudioCue = {
   LevelStart: { id: "level-start", cooldownSeconds: 0.25, gain: 0.36, rateVariation: 0 },
   LevelWin: { id: "level-win", cooldownSeconds: 0.8, gain: 0.42, rateVariation: 0 },
   MenuOpen: { id: "menu-open", cooldownSeconds: 0.12, gain: 0.32, rateVariation: 0 },
-  MissileExplosion: { id: "missile-explosion", cooldownSeconds: 0.08, gain: 0.82, rateVariation: 0 },
+  MissileExplosion: { id: "missile-explosion", cooldownSeconds: 0.08, gain: 0.4, rateVariation: 0 },
   MissileLaunch: { id: "missile-launch", cooldownSeconds: 0.08, gain: 0.54, rateVariation: 0.025 },
   MonsterHeavyDeath: { id: "monster-heavy-death", cooldownSeconds: 0.08, gain: 0.7, rateVariation: 0 },
   MonsterPop: { id: "monster-pop", cooldownSeconds: 0.035, gain: 0.44, rateVariation: 0.06 },
@@ -126,6 +126,7 @@ export interface HudSnapshot {
   levelName: string;
   money: string;
   wave: string;
+  monsters: string;
   banner: string;
   selectionTitle: string;
   selectionBody: string;

@@ -23,5 +23,9 @@ export function createBannerText(source: BannerTextSource): string {
     return source.bannerText;
   }
 
+  if (source.state === GameState.Playing) {
+    return "";
+  }
+
   return source.state === GameState.Menu ? "Awaiting orders" : source.statusText;
 }

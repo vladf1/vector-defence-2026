@@ -6,6 +6,10 @@ import { isWithinDistanceToSegment, withinDistance } from "./utils";
 export interface PlacementGeometry {
   fieldWidth: number;
   fieldHeight: number;
+  minX?: number;
+  minY?: number;
+  maxX?: number;
+  maxY?: number;
   towerRadius: number;
   towerSelectionPadding: number;
   minDistanceToOtherTowers: number;
@@ -22,11 +26,15 @@ export function canPlaceTower(
     return false;
   }
 
+  const minX = geometry.minX ?? 0;
+  const minY = geometry.minY ?? 0;
+  const maxX = geometry.maxX ?? geometry.fieldWidth;
+  const maxY = geometry.maxY ?? geometry.fieldHeight;
   const outsideBounds =
-    point.x < geometry.towerRadius ||
-    point.y < geometry.towerRadius ||
-    point.x > geometry.fieldWidth - geometry.towerRadius ||
-    point.y > geometry.fieldHeight - geometry.towerRadius;
+    point.x < minX + geometry.towerRadius ||
+    point.y < minY + geometry.towerRadius ||
+    point.x > maxX - geometry.towerRadius ||
+    point.y > maxY - geometry.towerRadius;
 
   if (outsideBounds) {
     return false;

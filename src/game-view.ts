@@ -33,6 +33,7 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   levelName: "Campaign Map",
   money: formatMoney(STARTING_MONEY),
   wave: "Idle",
+  monsters: "",
   banner: "Awaiting orders",
   selectionTitle: "",
   selectionBody: "Select a tower to view upgrades, range, and sell value.",
@@ -80,11 +81,16 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     : "Campaign Map";
   const wave = currentLevel
     ? (activeWave
-        ? (game.state === GameState.Playing && runtime.spawnDelay > 0
+        ? (game.profile.mode === "desktop"
+            ? `${runtime.currentWaveIndex + 1} of ${runtime.waveTotal}`
+            : game.state === GameState.Playing && runtime.spawnDelay > 0
             ? `${runtime.currentWaveIndex + 1}/${runtime.waveTotal}`
             : `${runtime.currentWaveIndex + 1}/${runtime.waveTotal} · ${Math.min(runtime.waveSpawnedMonsters, activeWave.count)}/${activeWave.count}`)
         : `All ${game.waveTotal} waves cleared`)
     : "Idle";
+  const monsters = activeWave
+    ? `${Math.min(runtime.waveSpawnedMonsters, activeWave.count)} of ${activeWave.count}`
+    : "";
   const banner = createBannerText(game);
 
   let selectionTitle = "";
@@ -112,6 +118,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     levelName,
     money: formatMoney(runtime.money),
     wave,
+    monsters,
     banner,
     selectionTitle,
     selectionBody,
