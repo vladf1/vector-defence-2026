@@ -125,6 +125,10 @@ export class Game {
     this.modalDirty = true;
   }
 
+  canPerformBattleAction(): boolean {
+    return this.state === GameState.Playing;
+  }
+
   setBanner(text: string, duration = 1.6): void {
     this.bannerText = text;
     this.bannerTimer = duration;
@@ -222,6 +226,7 @@ export class Game {
 
   togglePause(): void {
     if (this.state === GameState.Playing) {
+      this.clearTowerPlacement();
       this.setState(GameState.Paused);
       this.playSound(AudioCue.Pause);
     } else if (this.state === GameState.Paused) {
@@ -287,7 +292,7 @@ export class Game {
     this.runtime.pointer = point;
   }
 
-  cancelTowerPlacement(): void {
+  private clearTowerPlacement(): void {
     if (!this.runtime.placingTower) {
       return;
     }
@@ -296,8 +301,16 @@ export class Game {
     this.requestHudSync();
   }
 
+  cancelTowerPlacement(): void {
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
+    this.clearTowerPlacement();
+  }
+
   startTowerPlacement(kind: TowerKind): void {
-    if (!this.currentLevel || isModalState(this.state)) {
+    if (!this.currentLevel || !this.canPerformBattleAction()) {
       return;
     }
 
@@ -307,7 +320,7 @@ export class Game {
   }
 
   toggleTowerPlacement(kind: TowerKind): void {
-    if (!this.currentLevel || isModalState(this.state)) {
+    if (!this.currentLevel || !this.canPerformBattleAction()) {
       return;
     }
 
@@ -324,6 +337,10 @@ export class Game {
 
     if (this.renderer.isPointInPauseButton(point)) {
       this.togglePause();
+      return;
+    }
+
+    if (!this.canPerformBattleAction()) {
       return;
     }
 
@@ -370,6 +387,10 @@ export class Game {
   }
 
   placeTower(kind: TowerKind, point: Point): void {
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
     const tower = this.createTower(kind, point);
     if (this.runtime.money < tower.cost || !this.canPlaceTower(point)) {
       this.playSound(AudioCue.InvalidAction, point.x);
@@ -391,6 +412,10 @@ export class Game {
   }
 
   selectTowerAt(point: Point): void {
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
     this.runtime.selectedTower = findTowerAtPoint(
       point,
       this.runtime.towers,
@@ -404,6 +429,10 @@ export class Game {
   }
 
   sellSelectedTower(): void {
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
     const { selectedTower } = this.runtime;
     if (!selectedTower) {
       return;
@@ -417,6 +446,10 @@ export class Game {
   }
 
   upgradeSelectedTower(): void {
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
     const { selectedTower } = this.runtime;
     if (!this.canUpgradeSelectedTower()) {
       return;
@@ -435,7 +468,7 @@ export class Game {
     return selectedTower !== undefined
       && selectedTower.canUpgrade()
       && this.runtime.money >= selectedTower.upgradeCost
-      && !isModalState(this.state);
+      && this.canPerformBattleAction();
   }
 
   canAffordTower(kind: TowerKind): boolean {
@@ -444,7 +477,11 @@ export class Game {
 
   toggleSelectedLaserLock(): void {
     const { selectedTower } = this.runtime;
-    if (!(selectedTower instanceof LaserTower) || isModalState(this.state)) {
+    if (!this.canPerformBattleAction()) {
+      return;
+    }
+
+    if (!(selectedTower instanceof LaserTower)) {
       this.playSound(AudioCue.InvalidAction);
       return;
     }

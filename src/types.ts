@@ -134,6 +134,7 @@ export interface HudSnapshot {
   hasSelectedTower: boolean;
   hasLaserLockAction: boolean;
   laserLocked: boolean;
+  laserLockDisabled: boolean;
   sellDisabled: boolean;
   cancelBuildDisabled: boolean;
   canTogglePause: boolean;

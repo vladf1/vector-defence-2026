@@ -2,7 +2,7 @@ import { STARTING_MONEY } from "./constants";
 import { createBannerText } from "./banner-text";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
-import { TEMPORARILY_UNLOCK_ALL_LEVELS, isModalState } from "./game-engine";
+import { TEMPORARILY_UNLOCK_ALL_LEVELS } from "./game-engine";
 import { formatMoney } from "./utils";
 import type { Game } from "./game-engine";
 import {
@@ -41,6 +41,7 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   hasSelectedTower: false,
   hasLaserLockAction: false,
   laserLocked: false,
+  laserLockDisabled: true,
   sellDisabled: true,
   cancelBuildDisabled: true,
   canTogglePause: false,
@@ -76,6 +77,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
   const runtime = game.runtime;
   const selected = runtime.selectedTower;
   const activeWave = runtime.activeWave;
+  const battleActionsDisabled = !game.canPerformBattleAction();
   const levelName = currentLevel
     ? `${currentLevel.levelNumber ?? "?"} · ${currentLevel.name}`
     : "Campaign Map";
@@ -122,17 +124,18 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     banner,
     selectionTitle,
     selectionBody,
-    upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || isModalState(game.state),
+    upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || battleActionsDisabled,
     hasSelectedTower: selected !== undefined,
     hasLaserLockAction: selected instanceof LaserTower,
     laserLocked: selected instanceof LaserTower && selected.directionLocked,
-    sellDisabled: !selected || isModalState(game.state),
-    cancelBuildDisabled: !runtime.placingTower || isModalState(game.state),
+    laserLockDisabled: !(selected instanceof LaserTower) || battleActionsDisabled,
+    sellDisabled: !selected || battleActionsDisabled,
+    cancelBuildDisabled: !runtime.placingTower || battleActionsDisabled,
     canTogglePause: game.state === GameState.Playing || game.state === GameState.Paused,
     paused: game.state === GameState.Paused,
     dragOnlyTowerPlacement: game.profile.ui.dragOnlyTowerPlacement,
     placingTower: runtime.placingTower,
-    towerButtonsDisabled: isModalState(game.state),
+    towerButtonsDisabled: battleActionsDisabled,
     affordableTowers: {
       [TowerKind.Gun]: runtime.money >= getTowerClass(TowerKind.Gun).baseCost,
       [TowerKind.Laser]: runtime.money >= getTowerClass(TowerKind.Laser).baseCost,

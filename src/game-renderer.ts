@@ -558,7 +558,7 @@ export class GameRenderer {
       return;
     }
 
-    const disabled = this.isModalState();
+    const disabled = !this.game.canPerformBattleAction();
     const hovered = this.game.runtime.pointer ? this.isPointInLaserLockButton(this.game.runtime.pointer) : false;
 
     context.save();
@@ -581,13 +581,6 @@ export class GameRenderer {
     const yOffset = selectedTower.directionLocked ? -1 : 0;
     context.fillText(icon, rect.x + (rect.width / 2), rect.y + (rect.height / 2) + yOffset);
     context.restore();
-  }
-
-  private isModalState(): boolean {
-    return this.game.state === GameState.Menu
-      || this.game.state === GameState.Won
-      || this.game.state === GameState.Lost
-      || this.game.state === GameState.CampaignWon;
   }
 
   private drawUpgradeArrow(context: CanvasRenderingContext2D, centerX: number, centerY: number, scale = 1): void {

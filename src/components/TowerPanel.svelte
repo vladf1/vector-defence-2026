@@ -128,6 +128,7 @@
               aria-label={$hud.laserLocked ? "Unlock" : "Lock"}
               title={$hud.laserLocked ? "Unlock" : "Lock"}
               onclick={session.toggleSelectedLaserLock}
+              disabled={$hud.laserLockDisabled}
             >
               <span aria-hidden="true">{$hud.laserLocked ? "🔓" : "🔒"}</span>
             </button>

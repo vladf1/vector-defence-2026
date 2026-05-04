@@ -450,7 +450,7 @@ textarea,
 .controls-grid {
   --controls-row-height: 68px;
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
+  grid-template-columns: 1.48fr 1.12fr;
   grid-template-rows: var(--controls-row-height);
   gap: 10px;
   align-items: stretch;

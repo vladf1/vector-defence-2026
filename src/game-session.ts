@@ -293,6 +293,9 @@ export function createGameSession(profile: GameProfile): GameSession {
   const togglePause = (): void => {
     withGame((currentGame) => {
       currentGame.togglePause();
+      if (!currentGame.canPerformBattleAction()) {
+        endTowerDrag();
+      }
     }, true);
   };
 
@@ -400,6 +403,11 @@ export function createGameSession(profile: GameProfile): GameSession {
       return;
     }
 
+    if (!game?.canPerformBattleAction()) {
+      endTowerDrag();
+      return;
+    }
+
     const distance = Math.hypot(event.clientX - towerDrag.startClientX, event.clientY - towerDrag.startClientY);
     if (!towerDrag.active) {
       if (distance < TOWER_DRAG_THRESHOLD_PX) {
@@ -424,6 +432,11 @@ export function createGameSession(profile: GameProfile): GameSession {
 
   function handleTowerDragEnd(event: PointerEvent): void {
     if (!towerDrag || event.pointerId !== towerDrag.pointerId) {
+      return;
+    }
+
+    if (!game?.canPerformBattleAction()) {
+      endTowerDrag();
       return;
     }
 
@@ -471,6 +484,11 @@ export function createGameSession(profile: GameProfile): GameSession {
       return;
     }
 
+    if (!game?.canPerformBattleAction()) {
+      event.preventDefault();
+      return;
+    }
+
     if (profile.ui.dragOnlyTowerPlacement) {
       event.preventDefault();
     }
@@ -500,6 +518,10 @@ export function createGameSession(profile: GameProfile): GameSession {
     if (event.code === "Space") {
       event.preventDefault();
       togglePause();
+      return;
+    }
+
+    if (!game?.canPerformBattleAction()) {
       return;
     }
 
