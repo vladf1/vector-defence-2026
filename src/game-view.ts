@@ -269,7 +269,7 @@ function createModalLevelCards(game: Game): ModalLevelCardView[] {
     const cleared = !level.isChallenge && (game.campaignCleared || index < game.highestUnlockedLevelIndex);
     const current = game.currentLevelIndex === index && !!game.currentLevel;
     const status = level.isChallenge
-      ? (current ? "Current" : "Random")
+      ? (current ? "Current" : "Ready")
       : (!unlocked ? "Locked" : (cleared ? "Cleared" : (index === Math.min(game.highestUnlockedLevelIndex, game.campaignLevelCount - 1) ? "Next" : "Ready")));
 
     return {

@@ -21,8 +21,8 @@ const MIN_CHIP_DAMAGE = 0.4;
 export class BulwarkMonster extends Monster {
   private shieldPulse = 0;
 
-  constructor(path: PathEntry[]) {
-    super(path, COLOR, SPEED_PER_SECOND, HIT_POINTS, BOUNTY, RADIUS);
+  constructor(path: PathEntry[], speedScale: number) {
+    super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
   override takeDamage(amount: number): void {

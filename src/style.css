@@ -272,7 +272,7 @@ textarea,
   background:
     radial-gradient(circle at top, rgba(87, 175, 140, 0.14), transparent 38%),
     rgba(7, 15, 12, 0.96);
-  padding: clamp(18px, 3vw, 34px);
+  padding: clamp(12px, 2vw, 20px);
   overflow: visible;
 }
 
@@ -305,19 +305,22 @@ textarea,
 }
 
 .level-map-header {
-  display: grid;
-  gap: 5px;
-  margin-bottom: 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 12px;
 }
 
 .level-map-header h2,
 .level-map-header p {
   margin: 0;
+  text-align: right;
 }
 
 .level-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
   margin-top: 0;
 }
@@ -329,7 +332,7 @@ textarea,
 .level-card {
   position: relative;
   border-radius: 10px;
-  padding: 12px;
+  padding: 11px;
   text-align: left;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(11, 22, 18, 0.92);
@@ -368,6 +371,9 @@ textarea,
 
 .level-card-heading strong {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shortcut-chip {
@@ -416,14 +422,16 @@ textarea,
 
 .level-pill {
   flex: 0 0 auto;
-  justify-self: start;
-  align-self: start;
-  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0 8px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: #dfffee;
   font-size: 0.68rem;
-  line-height: 1.2;
+  line-height: 1;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -675,6 +683,17 @@ textarea,
   padding-inline: 12px;
 }
 
+.action-button > span[aria-hidden="true"] {
+  display: inline-block;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.action-placeholder {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .action-button.sell {
   border-color: rgba(255, 135, 124, 0.28);
   color: #ffd0cb;
@@ -866,7 +885,7 @@ textarea,
   .action-button {
     min-height: 40px;
     border-radius: 8px;
-    padding: 7px 10px;
+    padding: 3px 0 7px;
     font-size: 0.9rem;
   }
 
@@ -1019,6 +1038,11 @@ textarea,
     line-height: 1.12;
   }
 
+  .level-card-heading strong {
+    padding-right: 0;
+    white-space: normal;
+  }
+
   .level-card span {
     font-size: 0.82rem;
     line-height: 1.22;
@@ -1030,6 +1054,7 @@ textarea,
   }
 
   .level-pill {
+    position: static;
     padding: 0;
     border: 0;
     border-radius: 0;
@@ -1193,7 +1218,10 @@ textarea,
     column-gap: 10px;
     height: 68px;
     min-height: 68px;
-    padding: 7px 10px;
+    padding: 7px 0;
+    border: 0;
+    background: transparent;
+    backdrop-filter: none;
   }
 
   .mobile-shell .selection-header {

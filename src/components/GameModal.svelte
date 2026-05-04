@@ -3,6 +3,10 @@
 
   const session = getGameSessionContext();
   const { modal } = session;
+
+  function trimFinalPeriod(text: string): string {
+    return text.endsWith(".") ? text.slice(0, -1) : text;
+  }
 </script>
 
 {#if $modal}
@@ -10,7 +14,7 @@
     <div class={`modal-panel${$modal.centered ? " centered" : ""}`}>
       {#if !$modal.levelCards}
         <h2>{$modal.title}</h2>
-        <p>{$modal.description}</p>
+        <p>{trimFinalPeriod($modal.description)}</p>
 
         {#if $modal.actions.length > 0}
           <div class={`selection-actions ${$modal.actionClassName ?? ""}`.trim()}>
@@ -26,7 +30,7 @@
       {#if $modal.levelCards}
         <div class="level-map-header">
           <h2>{$modal.title}</h2>
-          <p>{$modal.description}</p>
+          <p>{trimFinalPeriod($modal.description)}</p>
         </div>
         <div class="level-grid">
           {#each $modal.levelCards as item}
@@ -37,11 +41,11 @@
               onclick={() => session.selectLevel(item.index)}
             >
               <div class="level-card-heading">
-                <strong>Level {item.level.levelNumber ?? "?"}: {item.level.name}</strong>
+                <strong>{item.level.levelNumber ?? "?"} - {item.level.name}</strong>
                 <span class="level-pill">{item.status}</span>
               </div>
-              <span>{item.level.subtitle ?? "Hold the route."}</span>
-              <small>{item.level.waves?.length ?? 1} waves · {item.level.monsterCount} enemies · {item.level.allowEscape} leaks</small>
+              <span>{trimFinalPeriod(item.level.subtitle ?? "Hold the route.")}</span>
+              <small>{item.level.waves?.length ?? 1} waves · {item.level.monsterCount} enemies</small>
             </button>
           {/each}
         </div>

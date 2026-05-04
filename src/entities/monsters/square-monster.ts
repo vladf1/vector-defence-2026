@@ -15,8 +15,8 @@ const BOUNTY = 3;
 const RADIUS = 6.5;
 
 export class SquareMonster extends Monster {
-  constructor(path: PathEntry[]) {
-    super(path, COLOR, SPEED_PER_SECOND, HIT_POINTS, BOUNTY, RADIUS);
+  constructor(path: PathEntry[], speedScale: number) {
+    super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
   protected updateSpecial(deltaSeconds: number): void {

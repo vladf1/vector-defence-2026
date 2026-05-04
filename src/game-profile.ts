@@ -29,6 +29,7 @@ export interface GameProfile {
   towerRadius: number;
   towerSelectionPadding: number;
   towerRangeScale: number;
+  monsterSpeedScale: number;
   roadTurnRadius: number;
   roadWidth: number;
   routeCurveSampleStep: number;
@@ -52,6 +53,7 @@ function createProfile(options: {
   towerRadius: number;
   towerSelectionPadding: number;
   towerRangeScale: number;
+  monsterSpeedScale: number;
   minDistanceToOtherTowers: number;
   roadTurnRadius: number;
   roadWidth: number;
@@ -82,6 +84,7 @@ function createProfile(options: {
     towerRadius: options.towerRadius,
     towerSelectionPadding: options.towerSelectionPadding,
     towerRangeScale: options.towerRangeScale,
+    monsterSpeedScale: options.monsterSpeedScale,
     roadTurnRadius: options.roadTurnRadius,
     roadWidth: options.roadWidth,
     routeCurveSampleStep: options.routeCurveSampleStep,
@@ -102,6 +105,7 @@ export const DESKTOP_GAME_PROFILE = createProfile({
   fieldHeight: FIELD_HEIGHT,
   towerRadius: TOWER_RADIUS,
   towerRangeScale: 1,
+  monsterSpeedScale: 1,
   minDistanceToOtherTowers: 32,
   towerSelectionPadding: 6,
   roadTurnRadius: ROAD_TURN_RADIUS,
@@ -126,6 +130,7 @@ export const MOBILE_GAME_PROFILE = createProfile({
   fieldHeight: 560,
   towerRadius: TOWER_RADIUS,
   towerRangeScale: 0.9,
+  monsterSpeedScale: 0.9,
   minDistanceToOtherTowers: 27,
   towerSelectionPadding: 12,
   roadTurnRadius: 34,

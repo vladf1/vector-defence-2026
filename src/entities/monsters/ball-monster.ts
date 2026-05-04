@@ -19,8 +19,8 @@ const RADIUS = 7.5;
 const MOUTH_ANGLE = Math.PI * 0.18;
 
 export class BallMonster extends Monster {
-  constructor(path: PathEntry[]) {
-    super(path, COLOR, SPEED_PER_SECOND, HIT_POINTS, BOUNTY, RADIUS);
+  constructor(path: PathEntry[], speedScale: number) {
+    super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
   protected drawBody(context: CanvasRenderingContext2D): void {

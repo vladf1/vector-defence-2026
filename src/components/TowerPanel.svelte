@@ -109,40 +109,50 @@
         <button
           class="action-button sell selection-sell-button"
           type="button"
+          aria-label="Sell"
+          title="Sell"
           onclick={session.sellSelectedTower}
           disabled={$hud.sellDisabled}
         >
-          Sell
+          <span aria-hidden="true">💰</span>
         </button>
       {/if}
     </div>
     {#if profile.mode === "mobile" && ($hud.hasSelectedTower || $hud.placingTower)}
       <div class="mobile-selection-actions">
         {#if $hud.hasSelectedTower}
-          <button
-            class="action-button"
-            type="button"
-            onclick={session.upgradeSelectedTower}
-            disabled={$hud.upgradeDisabled}
-          >
-            Upgrade
-          </button>
           {#if $hud.hasLaserLockAction}
             <button
               class="action-button"
               type="button"
+              aria-label={$hud.laserLocked ? "Unlock" : "Lock"}
+              title={$hud.laserLocked ? "Unlock" : "Lock"}
               onclick={session.toggleSelectedLaserLock}
             >
-              {$hud.laserLocked ? "Unlock" : "Lock"}
+              <span aria-hidden="true">{$hud.laserLocked ? "🔓" : "🔒"}</span>
             </button>
+          {:else}
+            <span class="action-button action-placeholder" aria-hidden="true"></span>
           {/if}
+          <button
+            class="action-button"
+            type="button"
+            aria-label="Upgrade"
+            title="Upgrade"
+            onclick={session.upgradeSelectedTower}
+            disabled={$hud.upgradeDisabled}
+          >
+            <span aria-hidden="true">▲</span>
+          </button>
           <button
             class="action-button sell"
             type="button"
+            aria-label="Sell"
+            title="Sell"
             onclick={session.sellSelectedTower}
             disabled={$hud.sellDisabled}
           >
-            Sell
+            <span aria-hidden="true">💰</span>
           </button>
         {:else if $hud.placingTower}
           <button
