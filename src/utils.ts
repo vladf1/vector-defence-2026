@@ -60,10 +60,8 @@ export function normalizeAngle(angle: number): number {
 
 export function turnAngleTowards(current: number, target: number, maxStep: number): number {
   const delta = normalizeAngle(target - current);
-  if (Math.abs(delta) <= maxStep) {
-    return target;
-  }
-  return normalizeAngle(current + (Math.sign(delta) * maxStep));
+  const step = clamp(delta, -maxStep, maxStep);
+  return normalizeAngle(current + step);
 }
 
 export function calculateDistanceToSegment(pointX: number, pointY: number, startX: number, startY: number, endX: number, endY: number): number {

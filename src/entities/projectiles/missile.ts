@@ -17,14 +17,14 @@ export class Missile {
   removed = false;
   trailTimer = 0;
 
-  constructor(source: Point, trackedMonster: Monster, damage: number, effectRadius: number, speedPerSecond: number) {
+  constructor(source: Point, trackedMonster: Monster, damage: number, effectRadius: number, speedPerSecond: number, initialAngle?: number) {
     this.x = source.x;
     this.y = source.y;
     this.trackedMonster = trackedMonster;
     this.damage = damage;
     this.effectRadius = effectRadius;
     this.speedPerSecond = speedPerSecond;
-    this.angle = angleBetween(source, { x: trackedMonster.x, y: trackedMonster.y });
+    this.angle = initialAngle ?? angleBetween(source, { x: trackedMonster.x, y: trackedMonster.y });
   }
 
   update(game: Game, deltaSeconds: number): void {

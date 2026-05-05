@@ -5,6 +5,8 @@ import { angleBetween, randomRange, turnAngleTowards } from "../../utils";
 import { Missile } from "../projectiles/missile";
 import { Tower } from "./tower";
 
+const MISSILE_FIRING_ANGLE_TOLERANCE = Math.PI / 12;
+
 export class MissileTower extends Tower {
   static readonly kind = TowerKind.Missile;
   static readonly label = "Missile";
@@ -31,7 +33,7 @@ export class MissileTower extends Tower {
     if (tracked) {
       const targetAngle = angleBetween({ x: this.x, y: this.y }, { x: tracked.x, y: tracked.y });
       this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
-      alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle);
+      alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle, MISSILE_FIRING_ANGLE_TOLERANCE);
     }
 
     if (tracked && alignedToTarget && this.ready()) {
@@ -41,7 +43,7 @@ export class MissileTower extends Tower {
         x: this.x + (Math.cos(this.angle) * 14),
         y: this.y + (Math.sin(this.angle) * 14),
       };
-      game.runtime.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeedPerSecond));
+      game.runtime.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeedPerSecond, this.angle));
       this.muzzleFlashSeconds = 0.12;
       game.playSound(AudioCue.MissileLaunch, source.x, 1 + (this.level * 0.09));
       this.resetCooldown(2 - (0.2 * this.level));

@@ -95,7 +95,7 @@ textarea,
 .modal-button,
 .action-button {
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: linear-gradient(180deg, rgba(30, 54, 47, 0.96), rgba(10, 20, 17, 0.96));
+  background: linear-gradient(180deg, rgba(8, 17, 14, 0.98), rgba(24, 43, 38, 0.96) 48%, rgba(8, 17, 14, 0.98));
   color: var(--text);
   border-radius: 10px;
   padding: 8px 13px;
@@ -494,12 +494,12 @@ textarea,
 .tower-button.active {
   border-color: rgba(255, 227, 111, 0.72);
   box-shadow: 0 0 0 1px rgba(255, 227, 111, 0.2);
-  background: linear-gradient(180deg, rgba(76, 68, 24, 0.98), rgba(26, 22, 10, 0.98));
+  background: linear-gradient(180deg, rgba(22, 18, 7, 0.98), rgba(58, 52, 19, 0.98) 48%, rgba(22, 18, 7, 0.98));
 }
 
 .tower-button.unaffordable {
   border-color: rgba(255, 135, 124, 0.34);
-  background: linear-gradient(180deg, rgba(24, 34, 31, 0.92), rgba(7, 12, 10, 0.96));
+  background: linear-gradient(180deg, rgba(5, 10, 8, 0.96), rgba(18, 27, 24, 0.92) 48%, rgba(5, 10, 8, 0.96));
 }
 
 .tower-button.unaffordable .tower-icon {
