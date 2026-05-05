@@ -5,6 +5,7 @@
 
   const session = getGameSessionContext();
   const profile = session.profile;
+  const hud = session.hud;
   let backgroundCanvas: HTMLCanvasElement;
   let gameCanvas: HTMLCanvasElement;
 
@@ -15,6 +16,11 @@
       session.destroy();
     };
   });
+
+  function handleSkipBreak(event: MouseEvent): void {
+    event.stopPropagation();
+    session.skipBreak();
+  }
 </script>
 
 <svelte:window onkeydown={session.handleKeyDown} onresize={session.handleResize} />
@@ -42,6 +48,23 @@
         onpointerleave={session.handleCanvasLeave}
         onpointerdown={session.handleCanvasDown}
       ></canvas>
+      {#if $hud.banner}
+        {#if $hud.canSkipBreak}
+          <button
+            type="button"
+            class="board-banner skippable"
+            aria-label="Start the next wave now"
+            onclick={handleSkipBreak}
+          >
+            <span class="board-banner-text">{$hud.banner}</span>
+            <span class="board-banner-action" aria-hidden="true">SKIP »</span>
+          </button>
+        {:else}
+          <div class="board-banner" role="status" aria-live="polite">
+            <span class="board-banner-text">{$hud.banner}</span>
+          </div>
+        {/if}
+      {/if}
     </div>
     <GameModal />
   </div>

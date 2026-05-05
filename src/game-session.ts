@@ -42,6 +42,7 @@ export interface GameSession {
   handleCanvasLeave(): void;
   handleTowerButtonPointerDown(kind: TowerKind, event: PointerEvent): void;
   togglePause(): void;
+  skipBreak(): void;
   openMenu(): void;
   restart(): void;
   upgradeSelectedTower(): void;
@@ -297,6 +298,12 @@ export function createGameSession(profile: GameProfile): GameSession {
         endTowerDrag();
       }
     }, true);
+  };
+
+  const skipBreak = (): void => {
+    withGame((currentGame) => {
+      currentGame.skipBuildBreak();
+    });
   };
 
   const openMenu = (): void => {
@@ -562,6 +569,7 @@ export function createGameSession(profile: GameProfile): GameSession {
     handleCanvasLeave,
     handleTowerButtonPointerDown,
     togglePause,
+    skipBreak,
     openMenu,
     restart,
     upgradeSelectedTower,

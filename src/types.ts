@@ -138,6 +138,7 @@ export interface HudSnapshot {
   sellDisabled: boolean;
   cancelBuildDisabled: boolean;
   canTogglePause: boolean;
+  canSkipBreak: boolean;
   paused: boolean;
   dragOnlyTowerPlacement: boolean;
   placingTower?: TowerKind;

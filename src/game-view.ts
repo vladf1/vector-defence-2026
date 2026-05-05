@@ -45,6 +45,7 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   sellDisabled: true,
   cancelBuildDisabled: true,
   canTogglePause: false,
+  canSkipBreak: false,
   paused: false,
   dragOnlyTowerPlacement: false,
   towerButtonsDisabled: true,
@@ -132,6 +133,10 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     sellDisabled: !selected || battleActionsDisabled,
     cancelBuildDisabled: !runtime.placingTower || battleActionsDisabled,
     canTogglePause: game.state === GameState.Playing || game.state === GameState.Paused,
+    canSkipBreak: game.state === GameState.Playing
+      && !!activeWave
+      && runtime.spawnDelay > 0
+      && !battleActionsDisabled,
     paused: game.state === GameState.Paused,
     dragOnlyTowerPlacement: game.profile.ui.dragOnlyTowerPlacement,
     placingTower: runtime.placingTower,
