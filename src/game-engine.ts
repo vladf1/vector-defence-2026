@@ -309,6 +309,18 @@ export class Game {
     this.clearTowerPlacement();
   }
 
+  skipBuildBreak(): void {
+    if (this.state !== GameState.Playing) {
+      return;
+    }
+    if (!this.activeWave || this.runtime.spawnDelay <= 0) {
+      return;
+    }
+    this.runtime.spawnDelay = 0;
+    this.playSound(AudioCue.WaveStart);
+    this.requestHudSync();
+  }
+
   startTowerPlacement(kind: TowerKind): void {
     if (!this.currentLevel || !this.canPerformBattleAction()) {
       return;

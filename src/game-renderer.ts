@@ -1,16 +1,9 @@
-import { createBannerText } from "./banner-text";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { GameState } from "./types";
 import type { Game } from "./game-engine";
 
 const ROAD_COLOR = "rgba(8, 40, 36, 0.96)";
-const BANNER_FONT_SIZE = 9;
-const BANNER_HEIGHT = 24;
-const BANNER_PADDING_X = 8;
-const BANNER_RADIUS = 8;
-const BANNER_TOP = 10;
-const BANNER_LETTER_SPACING = 1.5;
 const UPGRADE_BUTTON_WIDTH = 32;
 const UPGRADE_BUTTON_HEIGHT = 26;
 const COMPACT_UPGRADE_BUTTON_WIDTH = 84;
@@ -181,7 +174,6 @@ export class GameRenderer {
     this.drawLaserLockButton(this.ctx);
     this.drawPauseButton(this.ctx);
     this.ctx.restore();
-    this.drawBanner(this.ctx);
   }
 
   getPauseButtonRect(): CanvasButtonRect | undefined {
@@ -419,32 +411,6 @@ export class GameRenderer {
     context.restore();
   }
 
-  private drawBanner(context: CanvasRenderingContext2D): void {
-    const text = createBannerText(this.game).toUpperCase();
-    if (!text) {
-      return;
-    }
-
-    context.save();
-    context.font = `${BANNER_FONT_SIZE}px "Avenir Next", "Segoe UI", sans-serif`;
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    const textWidth = this.measureSpacedText(context, text, BANNER_LETTER_SPACING);
-    const width = Math.ceil(textWidth) + (BANNER_PADDING_X * 2);
-    const centerX = this.viewportWidth / 2;
-    const left = centerX - (width / 2);
-    context.fillStyle = "rgba(8, 16, 13, 0.86)";
-    context.strokeStyle = "rgba(255, 255, 255, 0.16)";
-    context.lineWidth = 1;
-    context.beginPath();
-    context.roundRect(left, BANNER_TOP, width, BANNER_HEIGHT, BANNER_RADIUS);
-    context.fill();
-    context.stroke();
-    context.fillStyle = "rgba(176, 255, 225, 0.96)";
-    this.fillSpacedText(context, text, centerX, BANNER_TOP + (BANNER_HEIGHT / 2) + 1, BANNER_LETTER_SPACING);
-    context.restore();
-  }
-
   private getPauseButtonWidth(): number {
     return this.isCompactLayout ? COMPACT_PAUSE_BUTTON_WIDTH : PAUSE_BUTTON_WIDTH;
   }
@@ -511,26 +477,6 @@ export class GameRenderer {
 
   private canTogglePause(): boolean {
     return this.game.state === GameState.Playing || this.game.state === GameState.Paused;
-  }
-
-  private measureSpacedText(context: CanvasRenderingContext2D, text: string, letterSpacing: number): number {
-    return context.measureText(text).width + (Math.max(0, text.length - 1) * letterSpacing);
-  }
-
-  private fillSpacedText(
-    context: CanvasRenderingContext2D,
-    text: string,
-    centerX: number,
-    centerY: number,
-    letterSpacing: number,
-  ): void {
-    let x = centerX - (this.measureSpacedText(context, text, letterSpacing) / 2);
-
-    context.textAlign = "left";
-    for (const character of text) {
-      context.fillText(character, x, centerY);
-      x += context.measureText(character).width + letterSpacing;
-    }
   }
 
   private drawUpgradeButton(context: CanvasRenderingContext2D): void {

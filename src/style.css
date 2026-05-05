@@ -248,6 +248,59 @@ textarea,
   touch-action: none;
 }
 
+.board-banner {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  margin: 0;
+  font: 400 13px/1 "Avenir Next", "Segoe UI", sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(176, 255, 225, 0.96);
+  background: rgba(8, 16, 13, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.board-banner.skippable {
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+
+.board-banner.skippable:hover,
+.board-banner.skippable:focus-visible {
+  background: rgba(33, 57, 50, 0.86);
+  border-color: rgba(255, 255, 255, 0.34);
+  outline: none;
+}
+
+.board-banner.skippable:active {
+  transform: translate(-50%, 1px);
+}
+
+.board-banner-action {
+  color: rgba(176, 255, 225, 0.7);
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  padding-left: 8px;
+}
+
+@media (min-width: 720px) {
+  .board-banner {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+}
+
 .modal {
   position: absolute;
   inset: 0;
