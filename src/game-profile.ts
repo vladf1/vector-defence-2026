@@ -152,13 +152,12 @@ export const MOBILE_GAME_PROFILE = createProfile({
 export function selectStartupGameProfile(viewport: Window): GameProfile {
   const coarsePointer = viewport.matchMedia("(hover: none) and (pointer: coarse)").matches;
   const shortestSide = Math.min(viewport.innerWidth, viewport.innerHeight);
-  const longestSide = Math.max(viewport.innerWidth, viewport.innerHeight);
   const portrait = viewport.innerHeight >= viewport.innerWidth;
-  const iPhoneSized = shortestSide <= 480 && longestSide <= 940;
+  const phoneWidth = shortestSide <= 480;
   const touchCapable = viewport.navigator.maxTouchPoints > 0;
-  const iPhoneLikeViewport = portrait && iPhoneSized;
+  const portraitPhoneViewport = portrait && phoneWidth;
 
-  return (coarsePointer && touchCapable && iPhoneSized) || iPhoneLikeViewport
+  return (coarsePointer && touchCapable && phoneWidth) || portraitPhoneViewport
     ? MOBILE_GAME_PROFILE
     : DESKTOP_GAME_PROFILE;
 }
