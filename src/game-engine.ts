@@ -317,6 +317,7 @@ export class Game {
       return;
     }
     this.runtime.spawnDelay = 0;
+    this.bannerTimer = 0;
     this.playSound(AudioCue.WaveStart);
     this.requestHudSync();
   }
