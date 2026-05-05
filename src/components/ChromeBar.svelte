@@ -8,7 +8,7 @@
   function formatMobileWave(wave: string): string {
     const [wavePart] = wave.split(" ");
     const [currentWave, waveTotal] = wavePart.split("/");
-    return currentWave && waveTotal ? `Wave ${currentWave} of ${waveTotal}` : wave;
+    return currentWave && waveTotal ? `${currentWave} of ${waveTotal}` : wave;
   }
 </script>
 

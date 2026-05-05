@@ -276,6 +276,12 @@ textarea,
   overflow: visible;
 }
 
+.modal-panel.level-map-panel {
+  background: rgba(7, 15, 12, 0.96);
+  border: 0;
+  border-radius: 0;
+}
+
 .modal-panel.centered {
   width: min(720px, 100%);
   min-height: 0;
@@ -331,10 +337,10 @@ textarea,
 
 .level-card {
   position: relative;
-  border-radius: 10px;
+  border-radius: 0;
   padding: 11px;
   text-align: left;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 0;
   background: rgba(11, 22, 18, 0.92);
   cursor: pointer;
   color: inherit;
@@ -358,8 +364,6 @@ textarea,
 }
 
 .level-card:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.24);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26);
 }
 
@@ -404,20 +408,15 @@ textarea,
 .level-card.locked {
   cursor: not-allowed;
   background: rgba(5, 10, 8, 0.96);
-  border-color: rgba(255, 255, 255, 0.08);
   color: rgba(205, 220, 213, 0.62);
 }
 
 .level-card.cleared {
-  border-color: rgba(109, 240, 194, 0.34);
   box-shadow: inset 0 0 0 1px rgba(109, 240, 194, 0.08);
 }
 
 .level-card.current {
-  border-color: rgba(255, 227, 111, 0.5);
-  background:
-    radial-gradient(circle at top left, rgba(255, 227, 111, 0.1), transparent 48%),
-    rgba(16, 24, 18, 0.96);
+  background: rgba(16, 24, 18, 0.96);
 }
 
 .level-pill {
@@ -975,6 +974,11 @@ textarea,
     text-align: left;
   }
 
+  .modal-panel.level-map-panel {
+    border: 0;
+    border-radius: 0;
+  }
+
   .modal-panel h2 {
     font-size: 1.45rem;
   }
@@ -1006,6 +1010,7 @@ textarea,
   .level-card {
     min-height: 0;
     padding: 13px 2px;
+    border-style: solid;
     border-width: 0 0 1px;
     border-radius: 0;
     border-color: rgba(140, 255, 192, 0.13);
@@ -1020,7 +1025,7 @@ textarea,
 
   .level-card.current {
     border-color: rgba(255, 227, 111, 0.24);
-    background: linear-gradient(90deg, rgba(255, 227, 111, 0.06), transparent 72%);
+    background: transparent;
   }
 
   .level-card.locked {

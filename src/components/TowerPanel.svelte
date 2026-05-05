@@ -20,7 +20,7 @@
   }
 
   function formatMobileSelectionTitle(title: string): string {
-    return title.replace(" Tower · Level ", " - ");
+    return title.replace(" Tower · Level ", " - lvl ");
   }
 
   function drawTowerPreview(canvas: HTMLCanvasElement, tower: Tower): void {

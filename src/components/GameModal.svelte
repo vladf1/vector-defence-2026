@@ -11,7 +11,7 @@
 
 {#if $modal}
   <div class={`modal${$modal.centered ? " centered" : ""}`}>
-    <div class={`modal-panel${$modal.centered ? " centered" : ""}`}>
+    <div class={`modal-panel${$modal.centered ? " centered" : ""}${$modal.levelCards ? " level-map-panel" : ""}`}>
       {#if !$modal.levelCards}
         <h2>{$modal.title}</h2>
         <p>{trimFinalPeriod($modal.description)}</p>
@@ -30,7 +30,6 @@
       {#if $modal.levelCards}
         <div class="level-map-header">
           <h2>{$modal.title}</h2>
-          <p>{trimFinalPeriod($modal.description)}</p>
         </div>
         <div class="level-grid">
           {#each $modal.levelCards as item}
