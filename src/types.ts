@@ -27,6 +27,7 @@ export const TowerKind = {
   Laser: "laser",
   Missile: "missile",
   Slow: "slow",
+  Lightning: "lightning",
 } as const;
 
 export type TowerKind = typeof TowerKind[keyof typeof TowerKind];
@@ -39,6 +40,7 @@ export const AudioCue = {
   LaserFire: { id: "laser-fire", cooldownSeconds: 0.18, gain: 0.45, rateVariation: 0 },
   LaserLockOff: { id: "laser-lock-off", cooldownSeconds: 0.08, gain: 0.34, rateVariation: 0 },
   LaserLockOn: { id: "laser-lock-on", cooldownSeconds: 0.08, gain: 0.34, rateVariation: 0 },
+  LightningShock: { id: "lightning-shock", cooldownSeconds: 0.09, gain: 0.34, rateVariation: 0.035 },
   LevelLoss: { id: "level-loss", cooldownSeconds: 0.8, gain: 0.46, rateVariation: 0 },
   LevelStart: { id: "level-start", cooldownSeconds: 0.25, gain: 0.36, rateVariation: 0 },
   LevelWin: { id: "level-win", cooldownSeconds: 0.8, gain: 0.42, rateVariation: 0 },

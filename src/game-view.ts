@@ -54,6 +54,7 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
     [TowerKind.Laser]: false,
     [TowerKind.Missile]: false,
     [TowerKind.Slow]: false,
+    [TowerKind.Lightning]: false,
   },
   nerdStats: {
     fps: "0",
@@ -146,6 +147,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
       [TowerKind.Laser]: runtime.money >= getTowerClass(TowerKind.Laser).baseCost,
       [TowerKind.Missile]: runtime.money >= getTowerClass(TowerKind.Missile).baseCost,
       [TowerKind.Slow]: runtime.money >= getTowerClass(TowerKind.Slow).baseCost,
+      [TowerKind.Lightning]: runtime.money >= getTowerClass(TowerKind.Lightning).baseCost,
     },
     nerdStats: {
       fps: String(Math.max(0, Math.round(runtimeStats.fps))),

@@ -30,13 +30,6 @@
     }
 
     const dpr = window.devicePixelRatio || 1;
-    const cssSize = `${ICON_SIZE}px`;
-
-    if (canvas.style.width !== cssSize) {
-      canvas.style.width = cssSize;
-      canvas.style.height = cssSize;
-    }
-
     const scaledSize = Math.round(ICON_SIZE * dpr);
     if (canvas.width !== scaledSize || canvas.height !== scaledSize) {
       canvas.width = scaledSize;

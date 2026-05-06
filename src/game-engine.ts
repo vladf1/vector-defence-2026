@@ -7,13 +7,12 @@ import { createEscapeBurstEffect } from "./game-engine/combat-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { GameRenderer } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
-import { LinkEffect } from "./entities/effects/link-effect";
 import { Particle } from "./entities/effects/particle";
 import type { Monster } from "./entities/monsters/monster";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { Tower } from "./entities/towers/tower";
-import { LevelRuntime } from "./level-runtime";
+import { LevelRuntime, type RuntimeLinkEffect } from "./level-runtime";
 import { canPlaceTower, findTowerAtPoint } from "./placement-rules";
 import {
   formatMoney,
@@ -107,7 +106,7 @@ export class Game {
     }
   }
 
-  addLink(link: LinkEffect): void {
+  addLink(link: RuntimeLinkEffect): void {
     if (this.runtime.links.length < MAX_LINKS) {
       this.runtime.links.push(link);
     }

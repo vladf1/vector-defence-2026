@@ -5,6 +5,7 @@ import invalidActionUrl from "./assets/audio/invalid-action.m4a";
 import laserFireUrl from "./assets/audio/laser-fire.m4a";
 import laserLockOffUrl from "./assets/audio/laser-lock-off.m4a";
 import laserLockOnUrl from "./assets/audio/laser-lock-on.m4a";
+import lightningShockUrl from "./assets/audio/lightning-shock.m4a";
 import levelLossUrl from "./assets/audio/level-loss.m4a";
 import levelStartUrl from "./assets/audio/level-start.m4a";
 import levelWinUrl from "./assets/audio/level-win.m4a";
@@ -41,6 +42,7 @@ export const AUDIO_ASSET_URLS = {
   [AudioCue.LaserFire.id]: laserFireUrl,
   [AudioCue.LaserLockOff.id]: laserLockOffUrl,
   [AudioCue.LaserLockOn.id]: laserLockOnUrl,
+  [AudioCue.LightningShock.id]: lightningShockUrl,
   [AudioCue.LevelLoss.id]: levelLossUrl,
   [AudioCue.LevelStart.id]: levelStartUrl,
   [AudioCue.LevelWin.id]: levelWinUrl,

@@ -1,4 +1,5 @@
 import { STARTING_MONEY } from "./constants";
+import type { LightningLinkEffect } from "./entities/effects/lightning-link-effect";
 import type { LinkEffect } from "./entities/effects/link-effect";
 import type { Particle } from "./entities/effects/particle";
 import type { Monster } from "./entities/monsters/monster";
@@ -8,6 +9,8 @@ import type { Tower } from "./entities/towers/tower";
 import { createRouteMotionPath, type RouteMotionPath } from "./route-path";
 import type { LevelData, Point, TowerKind, WaveData } from "./types";
 import { compactInPlace } from "./utils";
+
+export type RuntimeLinkEffect = LinkEffect | LightningLinkEffect;
 
 export class LevelRuntime {
   readonly level?: LevelData;
@@ -25,7 +28,7 @@ export class LevelRuntime {
   projectiles: Projectile[] = [];
   missiles: Missile[] = [];
   particles: Particle[] = [];
-  links: LinkEffect[] = [];
+  links: RuntimeLinkEffect[] = [];
   selectedTower?: Tower;
   placingTower?: TowerKind;
   pointer?: Point;

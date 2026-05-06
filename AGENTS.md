@@ -128,8 +128,8 @@ Tower render sheet:
 Audio assets:
 
 - The committed `.m4a` files in `src/assets/audio/` are the source of truth for game sound effects.
-- The old procedural audio generator has been retired; do not recreate `npm run generate:audio` unless there is a clear reason to replace the current asset workflow.
-- When replacing audio, overwrite the relevant `.m4a` files directly and verify the soundboard/build before committing.
+- Audio sources are documented in `src/assets/audio/README.md` at the source-pack level.
+- When replacing audio, overwrite the relevant `.m4a` files directly, keep the source-pack documentation current, and verify the soundboard/build before committing.
 
 Maintenance preferences:
 
