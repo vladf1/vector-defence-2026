@@ -1,6 +1,7 @@
 import { TowerKind } from "../../types";
 import { GunTower } from "./gun-tower";
 import { LaserTower } from "./laser-tower";
+import { LightningTower } from "./lightning-tower";
 import { MissileTower } from "./missile-tower";
 import { SlowTower } from "./slow-tower";
 import type { Tower, TowerClass } from "./tower";
@@ -12,6 +13,7 @@ export const TOWER_TOOLBAR_PREVIEWS = [
   Object.assign(new LaserTower(PREVIEW_CENTER, PREVIEW_CENTER), { angle: -Math.PI / 4 }),
   Object.assign(new MissileTower(PREVIEW_CENTER, PREVIEW_CENTER), { angle: -Math.PI / 4 }),
   Object.assign(new SlowTower(PREVIEW_CENTER, PREVIEW_CENTER), { pulse: Math.PI / 2 }),
+  new LightningTower(PREVIEW_CENTER, PREVIEW_CENTER),
 ] as const satisfies readonly Tower[];
 
 const TOWER_CLASS_BY_KIND = TOWER_TOOLBAR_PREVIEWS.reduce<Record<TowerKind, TowerClass>>((classes, tower) => {

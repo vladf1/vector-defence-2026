@@ -31,6 +31,7 @@ const html = String.raw`
       import { FIELD_WIDTH, MAX_TOWER_LEVEL } from "/src/constants.ts";
       import { GunTower } from "/src/entities/towers/gun-tower.ts";
       import { LaserTower } from "/src/entities/towers/laser-tower.ts";
+      import { LightningTower } from "/src/entities/towers/lightning-tower.ts";
       import { MissileTower } from "/src/entities/towers/missile-tower.ts";
       import { SlowTower } from "/src/entities/towers/slow-tower.ts";
 
@@ -39,10 +40,11 @@ const html = String.raw`
         { label: "Laser", TowerClass: LaserTower, angle: -Math.PI / 4 },
         { label: "Missile", TowerClass: MissileTower, angle: -Math.PI / 4 },
         { label: "Slow", TowerClass: SlowTower, pulse: Math.PI / 2 },
+        { label: "Lightning", TowerClass: LightningTower },
       ];
 
       const cellSize = 182;
-      const rowHeaderWidth = 112;
+      const rowHeaderWidth = 148;
       const titleHeight = 84;
       const levelHeaderHeight = 48;
       const topHeaderHeight = titleHeight + levelHeaderHeight;

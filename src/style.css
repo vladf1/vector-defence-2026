@@ -435,13 +435,11 @@ textarea,
 
 .shortcut-chip {
   display: inline-block;
-  margin-left: 6px;
-  padding: 1px 6px;
-  border: 1px solid rgba(255, 227, 111, 0.28);
-  border-radius: 999px;
-  color: #ffe9a0;
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
+  margin-left: 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0;
   vertical-align: middle;
 }
 
@@ -514,7 +512,7 @@ textarea,
 
 .tower-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   align-items: stretch;
   height: 100%;
@@ -561,19 +559,9 @@ textarea,
 
 .tower-button.unaffordable .tower-button-meta span:first-child {
   color: #ffb0a8;
-}
-
-.tower-button.unaffordable::after {
-  content: "";
-  position: absolute;
-  right: 7px;
-  bottom: 7px;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: #ff877c;
-  box-shadow: 0 0 10px rgba(255, 135, 124, 0.58);
-  pointer-events: none;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: #ff877c;
 }
 
 .tower-button.unaffordable.active {
@@ -831,7 +819,7 @@ textarea,
   }
 
   .tower-strip {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .tower-strip-card,
@@ -1170,8 +1158,8 @@ textarea,
 
   .shortcut-chip {
     margin-left: 0;
-    padding: 1px 5px;
-    font-size: 0.66rem;
+    padding: 0;
+    font-size: 0.68rem;
   }
 
   .selection-card {
@@ -1266,6 +1254,38 @@ textarea,
   .mobile-shell .tower-button {
     height: 68px;
     min-height: 68px;
+  }
+
+  .mobile-shell .tower-button {
+    display: grid;
+    grid-template-rows: auto auto;
+    justify-items: center;
+    align-content: center;
+    gap: 2px;
+    padding: 4px 4px 5px;
+  }
+
+  .mobile-shell .tower-icon {
+    grid-row: 1;
+    width: 52px;
+    height: 52px;
+    align-self: center;
+    justify-self: center;
+    margin: 0;
+  }
+
+  .mobile-shell .tower-button-meta {
+    position: static;
+    grid-row: 2;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    gap: 0;
+  }
+
+  .mobile-shell .tower-button-meta span {
+    line-height: 1;
+    text-align: center;
   }
 
   .mobile-shell .selection-card {
@@ -1375,7 +1395,7 @@ textarea,
   }
 
   .tower-strip {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .selection-card {
@@ -1434,7 +1454,7 @@ textarea,
   }
 
   .tower-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-rows: repeat(2, minmax(0, 1fr));
     height: 100%;
   }
@@ -1491,7 +1511,7 @@ textarea,
   }
 
   .mobile-shell .tower-strip {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     grid-template-rows: none;
   }
 }
