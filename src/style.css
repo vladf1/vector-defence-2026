@@ -557,11 +557,8 @@ textarea,
   filter: grayscale(0.75);
 }
 
-.tower-button.unaffordable .tower-button-meta span:first-child {
+.tower-button.unaffordable .tower-button-meta span {
   color: #ffb0a8;
-  text-decoration: line-through;
-  text-decoration-thickness: 2px;
-  text-decoration-color: #ff877c;
 }
 
 .tower-button.unaffordable.active {
