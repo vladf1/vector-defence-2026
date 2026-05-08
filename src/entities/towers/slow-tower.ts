@@ -5,6 +5,9 @@ import { withinDistance } from "../../utils";
 import { LinkEffect } from "../effects/link-effect";
 import { Tower } from "./tower";
 
+const SLOW_FACTOR = 0.5;
+const RECOVERY_SPEED_PER_SECOND = 36;
+
 export class SlowTower extends Tower {
   static readonly kind = TowerKind.Slow;
   static readonly label = "Slow";
@@ -33,7 +36,7 @@ export class SlowTower extends Tower {
       if (!withinDistance(this.x, this.y, monster.x, monster.y, this.range)) {
         continue;
       }
-      monster.slowDown(0.5);
+      monster.slowDown(SLOW_FACTOR, RECOVERY_SPEED_PER_SECOND);
       game.addLink(new LinkEffect(monster, "#d8ff4f", 1, this));
       affected += 1;
       if (affected === maxTargets) {

@@ -136,6 +136,7 @@ Maintenance preferences:
 - Prefer named imports from `src/constants.ts` and `src/types.ts` so call sites show their dependencies clearly.
 - Keep Svelte UI declarative and thin; put formatting and modal/HUD derivation in `src/game-view.ts`.
 - Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in Svelte components.
+- Avoid default parameter values in new code; make call sites pass behavior-affecting values explicitly.
 - When changing tower drawing code, run `npm run render:towers -- artifacts/<fresh-name>.png` and inspect the generated sheet before calling the visuals done.
 - When adding monsters, add a `MonsterKind` value, a concrete monster class, a `createBaseMonster(...)` branch in `src/game-engine/monster-factory.ts`, and campaign/level-generator usage as needed.
 - When adding towers, add a `TowerKind` value, tower class, shortcut entry, and `Game.createTower(...)` branch.

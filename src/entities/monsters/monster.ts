@@ -33,7 +33,7 @@ export abstract class Monster extends EventTarget {
   rotation = randomRange(0, Math.PI * 2);
   angle = 0;
   removed = false;
-  private stunSeconds = 0;
+  private slowRecoverySpeedPerSecond = 0;
 
   constructor(path: PathEntry[], color: string, speedPerSecond: number, hitPoints: number, bounty: number, radius: number) {
     super();
@@ -57,12 +57,12 @@ export abstract class Monster extends EventTarget {
     this.hitPoints = Math.max(0, this.hitPoints - amount);
   }
 
-  slowDown(factor: number): void {
-    this.speedPerSecond = Math.min(this.speedPerSecond, this.maxSpeedPerSecond * factor);
-  }
-
-  stun(durationSeconds: number): void {
-    this.stunSeconds = Math.max(this.stunSeconds, durationSeconds);
+  slowDown(factor: number, recoverySpeedPerSecond: number): void {
+    const slowedSpeedPerSecond = this.maxSpeedPerSecond * factor;
+    if (slowedSpeedPerSecond < this.speedPerSecond) {
+      this.speedPerSecond = slowedSpeedPerSecond;
+      this.slowRecoverySpeedPerSecond = recoverySpeedPerSecond;
+    }
   }
 
   update(deltaSeconds: number): void {
@@ -77,14 +77,7 @@ export abstract class Monster extends EventTarget {
     }
 
     if (this.speedPerSecond < this.maxSpeedPerSecond) {
-      this.speedPerSecond = Math.min(this.maxSpeedPerSecond, this.speedPerSecond + (36 * deltaSeconds));
-    }
-
-    if (this.stunSeconds > 0) {
-      this.stunSeconds = Math.max(0, this.stunSeconds - deltaSeconds);
-      this.velocityXPerSecond = 0;
-      this.velocityYPerSecond = 0;
-      return;
+      this.speedPerSecond = Math.min(this.maxSpeedPerSecond, this.speedPerSecond + (this.slowRecoverySpeedPerSecond * deltaSeconds));
     }
 
     this.moveAlongPath(deltaSeconds);

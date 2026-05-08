@@ -16,10 +16,13 @@ const LIGHTNING_COLORS = [
   "#f5fbff",
 ] as const;
 
+const SLOW_FACTOR = 0.06;
+const RECOVERY_SPEED_PER_SECOND = 100;
+
 export class LightningTower extends Tower {
   static readonly kind = TowerKind.Lightning;
   static readonly label = "Lightning";
-  static readonly summary = "Chains shocks that damage and briefly stop monsters.";
+  static readonly summary = "Chains shocks that damage and heavily slow monsters.";
   static readonly baseCost = 5;
   static readonly baseRange = 74;
   static readonly shortcuts = ["5", "e"] as const;
@@ -43,13 +46,12 @@ export class LightningTower extends Tower {
 
     const targets = this.collectChainTargets(game, firstTarget);
     const damage = this.getDamage();
-    const stunSeconds = this.getStunSeconds();
     const color = this.getColor();
     let source: Tower | Monster = this;
 
     for (const target of targets) {
       target.takeDamage(damage);
-      target.stun(stunSeconds);
+      target.slowDown(SLOW_FACTOR, RECOVERY_SPEED_PER_SECOND);
       game.addLink(new LightningLinkEffect(source, target, color));
       source = target;
     }
@@ -99,10 +101,6 @@ export class LightningTower extends Tower {
 
   private getDamage(): number {
     return 12 + (this.level * 4.8);
-  }
-
-  private getStunSeconds(): number {
-    return 0.1 + (this.level * 0.03);
   }
 
   private getCooldownSeconds(): number {
