@@ -5,11 +5,10 @@ import { angleBetween, randomRange } from "../../utils";
 
 const MONSTER_STROKE_WIDTH = 1.5;
 const HIT_SHAKE_DURATION_SECONDS = 0.16;
-const HIT_SHAKE_DISTANCE = 2.4;
+const HIT_SHAKE_DISTANCE = 2;
 const HIT_SHAKE_HORIZONTAL_FREQUENCY_PER_SECOND = 92;
 const HIT_SHAKE_VERTICAL_FREQUENCY_PER_SECOND = 117;
 const HIT_SHAKE_VERTICAL_PHASE_SCALE = 0.7;
-const HIT_SHAKE_VERTICAL_DISTANCE_SCALE = 0.65;
 
 export interface MonsterDeathSound {
   cue: AudioCueValue;
@@ -42,6 +41,8 @@ export abstract class Monster extends EventTarget {
   private slowRecoverySpeedPerSecond = 0;
   private hitShakeSeconds = 0;
   private hitShakePhase = 0;
+  private hitShakeOffsetX = 0;
+  private hitShakeOffsetY = 0;
 
   constructor(path: PathEntry[], color: string, speedPerSecond: number, hitPoints: number, bounty: number, radius: number) {
     super();
@@ -66,8 +67,10 @@ export abstract class Monster extends EventTarget {
   }
 
   shakeFromHit(): void {
+    this.clearHitShakeOffset();
     this.hitShakeSeconds = HIT_SHAKE_DURATION_SECONDS;
     this.hitShakePhase = randomRange(0, Math.PI * 2);
+    this.applyHitShakeOffset();
   }
 
   slowDown(factor: number, recoverySpeedPerSecond: number): void {
@@ -89,23 +92,29 @@ export abstract class Monster extends EventTarget {
       return;
     }
 
+    this.clearHitShakeOffset();
+
     if (this.speedPerSecond < this.maxSpeedPerSecond) {
       this.speedPerSecond = Math.min(this.maxSpeedPerSecond, this.speedPerSecond + (this.slowRecoverySpeedPerSecond * deltaSeconds));
     }
 
     this.moveAlongPath(deltaSeconds);
+    if (this.removed) {
+      return;
+    }
+
     this.updateSpecial(deltaSeconds);
     this.hitShakeSeconds = Math.max(0, this.hitShakeSeconds - deltaSeconds);
+    this.applyHitShakeOffset();
   }
 
   draw(context: CanvasRenderingContext2D): void {
-    const shakeOffset = this.getHitShakeOffset();
     context.save();
-    context.translate(this.x + shakeOffset.x, this.y + shakeOffset.y);
+    context.translate(this.x, this.y);
     this.drawCoreBody(context);
     context.restore();
 
-    this.drawHealthBar(context, shakeOffset.x, shakeOffset.y);
+    this.drawHealthBar(context);
   }
 
   protected updateSpecial(_deltaSeconds: number): void {
@@ -173,20 +182,33 @@ export abstract class Monster extends EventTarget {
     const distance = HIT_SHAKE_DISTANCE * fade;
     return {
       x: Math.sin(this.hitShakePhase + (elapsedSeconds * HIT_SHAKE_HORIZONTAL_FREQUENCY_PER_SECOND)) * distance,
-      y: Math.cos((this.hitShakePhase * HIT_SHAKE_VERTICAL_PHASE_SCALE) + (elapsedSeconds * HIT_SHAKE_VERTICAL_FREQUENCY_PER_SECOND)) * distance * HIT_SHAKE_VERTICAL_DISTANCE_SCALE,
+      y: Math.cos((this.hitShakePhase * HIT_SHAKE_VERTICAL_PHASE_SCALE) + (elapsedSeconds * HIT_SHAKE_VERTICAL_FREQUENCY_PER_SECOND)) * distance,
     };
   }
 
-  private drawHealthBar(context: CanvasRenderingContext2D, offsetX: number, offsetY: number): void {
+  private applyHitShakeOffset(): void {
+    const offset = this.getHitShakeOffset();
+    this.x += offset.x;
+    this.y += offset.y;
+    this.hitShakeOffsetX = offset.x;
+    this.hitShakeOffsetY = offset.y;
+  }
+
+  private clearHitShakeOffset(): void {
+    this.x -= this.hitShakeOffsetX;
+    this.y -= this.hitShakeOffsetY;
+    this.hitShakeOffsetX = 0;
+    this.hitShakeOffsetY = 0;
+  }
+
+  private drawHealthBar(context: CanvasRenderingContext2D): void {
     const barWidth = Math.max(16, this.radius * 2);
     const healthRatio = this.hitPoints / this.maxHitPoints;
     const fillWidth = barWidth * healthRatio;
-    const x = this.x + offsetX;
-    const y = this.y + offsetY;
     context.fillStyle = "rgba(5, 10, 8, 0.85)";
-    context.fillRect(x - (barWidth / 2), y - this.radius - 7, barWidth, 3);
+    context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, barWidth, 3);
     context.fillStyle = this.getHealthBarColor(healthRatio);
-    context.fillRect(x - (barWidth / 2), y - this.radius - 7, fillWidth, 3);
+    context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, fillWidth, 3);
   }
 
   private getHealthBarColor(healthRatio: number): string {
