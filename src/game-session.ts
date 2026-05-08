@@ -210,7 +210,7 @@ export function createGameSession(profile: GameProfile): GameSession {
     }
 
     game = new Game(
-      createLevels(profile.mode, profile.proceduralRoute),
+      createLevels(profile.mode),
       nextBackgroundCanvas,
       backgroundCtx,
       canvas,

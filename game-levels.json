@@ -20,7 +20,6 @@
       { "x": 731, "y": 410 }
     ],
     "mobile": {
-      "subtitle": "A compact first route tuned for thumb placement.",
       "startingMoney": 32,
       "points": [
         { "x": 92, "y": 0 },
@@ -308,6 +307,40 @@
         { "x": 132, "y": 118 },
         { "x": 132, "y": 444 },
         { "x": 366, "y": 242 }
+      ]
+    }
+  },
+  {
+    "name": "Sammamish",
+    "subtitle": "A fixed crossing gauntlet that closes the campaign.",
+    "waveCount": 7,
+    "initialBuildTime": 14,
+    "startingMoney": 49,
+    "monsterCount": 164,
+    "allowEscape": 9,
+    "monsterSequence": ["ball", "runner", "triangle", "square", "runner", "square", "square", "square", "splitter", "tank", "bulwark", "berserker"],
+    "points": [
+      { "x": 36, "y": 371 },
+      { "x": 217, "y": 100 },
+      { "x": 196, "y": 328 },
+      { "x": 495, "y": 125 },
+      { "x": 330, "y": 110 },
+      { "x": 330, "y": 329 },
+      { "x": 658, "y": 240 },
+      { "x": 764, "y": 110 }
+    ],
+    "mobile": {
+      "initialBuildTime": 13,
+      "startingMoney": 49,
+      "points": [
+        { "x": 24, "y": 152 },
+        { "x": 232, "y": 422 },
+        { "x": 232, "y": 88 },
+        { "x": 366, "y": 426 },
+        { "x": 366, "y": 87 },
+        { "x": 153, "y": 290 },
+        { "x": 366, "y": 268 },
+        { "x": 366, "y": 341 }
       ]
     }
   }

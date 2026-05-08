@@ -1,5 +1,4 @@
 import { STARTING_MONEY } from "./constants";
-import { createProceduralLevel, type ProceduralRouteConfig } from "./level-generator";
 import { MonsterKind, type LevelData, type WaveData } from "./types";
 import { clamp } from "./utils";
 
@@ -152,41 +151,4 @@ export function createCampaignLevels(routes: LevelData[], mobile: boolean): Leve
       monsterSequence: waves.flatMap((wave) => wave.monsterSequence),
     };
   });
-}
-
-export function getCampaignLevelCount(levels: readonly LevelData[]): number {
-  return levels.filter((level) => !level.isChallenge).length;
-}
-
-export function createRandomChallengeLevel(campaignLevelCount: number, mobile: boolean, proceduralRoute: ProceduralRouteConfig): LevelData {
-  const route = createProceduralLevel(proceduralRoute);
-  const challengeIndex = campaignLevelCount;
-  const waveTotal = 7;
-  const buildTime = 14;
-  const waves = Array.from({ length: waveTotal }, (_, waveIndex) =>
-    buildWave(challengeIndex, waveIndex, waveTotal, route.monsterSequence, buildTime, mobile),
-  );
-
-  return {
-    ...route,
-    id: "random-challenge",
-    levelNumber: campaignLevelCount + 1,
-    isChallenge: true,
-    name: "Random",
-    subtitle: "A fresh crossing route with diagonal cuts, vertical runs, and no lock.",
-    allowEscape: 9,
-    startingMoney: 47,
-    waves,
-    monsterCount: waves.reduce((total, wave) => total + wave.count, 0),
-    monsterSequence: waves.flatMap((wave) => wave.monsterSequence),
-  };
-}
-
-export function createGameLevels(routes: LevelData[], mobile: boolean, proceduralRoute: ProceduralRouteConfig): LevelData[] {
-  const campaignLevels = createCampaignLevels(routes, mobile);
-
-  return [
-    ...campaignLevels,
-    createRandomChallengeLevel(campaignLevels.length, mobile, proceduralRoute),
-  ];
 }

@@ -184,7 +184,7 @@ export function createModalView(game: Game): ModalView | null {
 
     return {
       title: "Campaign Map",
-      description: `${game.campaignLevelCount} authored campaign battles plus an unlocked random challenge.`,
+      description: `${game.campaignLevelCount} campaign battles. Hold each route and finish the full run.`,
       actions,
       actionClassName: "campaign-actions",
       levelCards: createModalLevelCards(game),
@@ -192,18 +192,6 @@ export function createModalView(game: Game): ModalView | null {
   }
 
   if (game.state === GameState.Won) {
-    if (game.currentLevel?.isChallenge) {
-      return {
-        title: "Challenge Clear",
-        description: "The random route held. Try another layout from the map when you want a fresh run.",
-        centered: true,
-        actions: [
-          { action: ModalAction.Replay, label: "Replay This Route" },
-          { action: ModalAction.CampaignMap, label: "Campaign Map" },
-        ],
-      };
-    }
-
     return {
       title: "Level Clear",
       description: `Level ${game.currentLevel?.levelNumber ?? "?"} is secure. Keep the pressure on and push into the next route.`,
@@ -219,7 +207,7 @@ export function createModalView(game: Game): ModalView | null {
   if (game.state === GameState.CampaignWon) {
     return {
       title: "You Won the Campaign",
-      description: `All ${game.campaignLevelCount} campaign levels are secure. The random challenge is still open from the map.`,
+      description: `All ${game.campaignLevelCount} campaign levels are secure.`,
       centered: true,
       actions: [
         { action: ModalAction.RestartCampaign, label: "Restart Campaign" },
@@ -275,12 +263,12 @@ function assertNever(value: never): never {
 
 function createModalLevelCards(game: Game): ModalLevelCardView[] {
   return game.levels.map((level, index) => {
-    const unlocked = TEMPORARILY_UNLOCK_ALL_LEVELS || level.isChallenge || game.campaignCleared || index <= game.highestUnlockedLevelIndex;
-    const cleared = !level.isChallenge && (game.campaignCleared || index < game.highestUnlockedLevelIndex);
+    const unlocked = TEMPORARILY_UNLOCK_ALL_LEVELS || game.campaignCleared || index <= game.highestUnlockedLevelIndex;
+    const cleared = game.campaignCleared || index < game.highestUnlockedLevelIndex;
     const current = game.currentLevelIndex === index && !!game.currentLevel;
-    const status = level.isChallenge
-      ? (current ? "Current" : "Ready")
-      : (!unlocked ? "Locked" : (cleared ? "Cleared" : (index === Math.min(game.highestUnlockedLevelIndex, game.campaignLevelCount - 1) ? "Next" : "Ready")));
+    const status = !unlocked
+      ? "Locked"
+      : (cleared ? "Cleared" : (index === Math.min(game.highestUnlockedLevelIndex, game.campaignLevelCount - 1) ? "Next" : "Ready"));
 
     return {
       index,

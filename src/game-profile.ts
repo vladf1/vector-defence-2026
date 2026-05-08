@@ -10,7 +10,6 @@ import {
   TOWER_UPGRADE_RING_GROWTH,
   TOWER_UPGRADE_RING_OFFSET,
 } from "./constants";
-import type { ProceduralRouteConfig } from "./level-generator";
 import type { PlacementGeometry } from "./placement-rules";
 
 export const GameMode = {
@@ -34,7 +33,6 @@ export interface GameProfile {
   roadWidth: number;
   routeCurveSampleStep: number;
   placement: PlacementGeometry;
-  proceduralRoute: ProceduralRouteConfig;
   ui: {
     dragOnlyTowerPlacement: boolean;
     drawCanvasTowerActions: boolean;
@@ -58,8 +56,6 @@ function createProfile(options: {
   roadTurnRadius: number;
   roadWidth: number;
   routeCurveSampleStep: number;
-  randomRouteBaseWidth: number;
-  randomRouteMargin: number;
   ui: GameProfile["ui"];
 }): GameProfile {
   const maxTowerBodyRadius = options.towerRadius
@@ -89,12 +85,6 @@ function createProfile(options: {
     roadWidth: options.roadWidth,
     routeCurveSampleStep: options.routeCurveSampleStep,
     placement,
-    proceduralRoute: {
-      fieldWidth: options.fieldWidth,
-      fieldHeight: options.fieldHeight,
-      randomRouteBaseWidth: options.randomRouteBaseWidth,
-      randomRouteMargin: options.randomRouteMargin,
-    },
     ui: options.ui,
   };
 }
@@ -111,8 +101,6 @@ export const DESKTOP_GAME_PROFILE = createProfile({
   roadTurnRadius: ROAD_TURN_RADIUS,
   roadWidth: ROAD_WIDTH,
   routeCurveSampleStep: ROUTE_CURVE_SAMPLE_STEP,
-  randomRouteBaseWidth: 700,
-  randomRouteMargin: 36,
   ui: {
     dragOnlyTowerPlacement: false,
     drawCanvasTowerActions: true,
@@ -136,8 +124,6 @@ export const MOBILE_GAME_PROFILE = createProfile({
   roadTurnRadius: 34,
   roadWidth: 25,
   routeCurveSampleStep: 4,
-  randomRouteBaseWidth: 390,
-  randomRouteMargin: 24,
   ui: {
     dragOnlyTowerPlacement: false,
     drawCanvasTowerActions: false,

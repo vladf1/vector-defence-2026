@@ -103,7 +103,6 @@ export interface LevelData {
   points: Point[];
   id?: string;
   levelNumber?: number;
-  isChallenge?: boolean;
   subtitle?: string;
   initialBuildTime?: number;
   startingMoney?: number;

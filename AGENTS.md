@@ -20,7 +20,6 @@ Key paths:
 - Browser audio orchestration: `src/game-audio.ts`
 - Tower metadata/shortcuts/previews: `src/entities/towers/tower-registry.ts`
 - Browser campaign builder: `src/campaign.ts`
-- Procedural route generator used by the unlocked random challenge: `src/level-generator.ts`
 - Shared browser types: `src/types.ts`
 - Shared browser constants: `src/constants.ts`
 - Shared browser utilities: `src/utils.ts`
@@ -60,8 +59,7 @@ Current code structure:
 - Tower classes live under `src/entities/towers/`; `Tower` in `tower.ts` owns shared targeting/upgrade/selection behavior.
 - `src/entities/towers/tower-registry.ts` is the source of truth for tower class lookup, keyboard shortcuts, and tower preview instances used by the Svelte toolbar.
 - Towers and projectiles operate against `Game` directly; keep their gameplay interactions narrow and rooted in the active level runtime where possible.
-- `src/campaign.ts` turns the nine authored routes into the campaign and appends the unlocked random challenge.
-- `src/level-generator.ts` creates the route for the random challenge only.
+- `src/campaign.ts` turns the ten authored routes into the campaign.
 - `src/types.ts` is the source of truth for shared browser types such as `TowerKind`, `MonsterKind`, `GameState`, `Point`, `LevelData`, `WaveData`, and `HudSnapshot`.
 - `src/constants.ts` and `src/utils.ts` are shared by the active runtime, so prefer reusing those helpers instead of re-declaring gameplay constants or math utilities.
 - `src/entities.ts`, `src/entities/monsters.ts`, `src/entities/projectiles.ts`, and `src/entities/effects.ts` have been removed; do not recreate monolithic entity files or barrel files unless there is a clear payoff.
@@ -79,7 +77,7 @@ Data / naming conventions:
   - `bulwark`
 - `GameState`, `MonsterKind`, and `TowerKind` are `as const` value objects with derived union types in `src/types.ts`, not TypeScript enums.
 - Keep `game-levels.json` monster identifiers as plain strings. `src/utils.ts` normalizes them to `MonsterKind` values at runtime.
-- `game-levels.json` provides the nine handcrafted campaign routes. The actual playable campaign data is generated at runtime by `createCampaignLevels(...)`, which expands those authored routes into per-wave monster sequences and build windows.
+- `game-levels.json` provides the ten campaign routes. The actual playable campaign data is generated at runtime by `createCampaignLevels(...)`, which expands those authored routes into per-wave monster sequences and build windows.
 - Monster constructors pass private named constants to `Monster` with `super(path, COLOR, SPEED, HIT_POINTS, BOUNTY, RADIUS)`.
 - Monster constructor stats use `hitPoints`, not `hp`.
 - `hitPoints` is current monster health. `maxHitPoints` is the full-health denominator used by the health bar.
@@ -91,12 +89,11 @@ Data / naming conventions:
 
 Gameplay / UI notes:
 
-- The campaign is a fixed 9-level progression with unlocks stored in memory for the current session.
-- Level 10 is the unlocked random challenge and does not count toward campaign completion.
+- The campaign is a fixed 10-level progression with unlocks stored in memory for the current session.
 - Initial build time is campaign-driven, not a fixed global delay: early levels start around 10 seconds and later ones reach 14 seconds.
 - Intermission build windows between later waves are shorter and are generated per wave in `src/campaign.ts` (roughly 2.5 to 5.5 seconds).
 - Level 1 uses a showcase sequence that includes the full current monster roster across waves. Splitters burst into weakened runner children when killed.
-- Later campaign waves and the random challenge also introduce `bulwark` and `berserker` monsters; do not assume the early handcrafted `game-levels.json` sequences cover the full runtime enemy roster.
+- Later campaign waves introduce `bulwark` and `berserker` monsters; do not assume the early handcrafted `game-levels.json` sequences cover the full runtime enemy roster.
 - Monster spawning is orchestrated by `Game.spawnMonster(...)`, but monster construction and lifecycle event wiring are centralized in `src/game-engine/monster-factory.ts`; tower creation is centralized in `Game.createTower(...)`.
 - Monster classes should own their own body rendering. Shared monster rendering concerns belong in `Monster`.
 - Tower classes should own their own drawing and attack behavior. Shared tower rendering/selection concerns belong in `Tower`.
@@ -138,5 +135,5 @@ Maintenance preferences:
 - Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in Svelte components.
 - Avoid default parameter values in new code; make call sites pass behavior-affecting values explicitly.
 - When changing tower drawing code, run `npm run render:towers -- artifacts/<fresh-name>.png` and inspect the generated sheet before calling the visuals done.
-- When adding monsters, add a `MonsterKind` value, a concrete monster class, a `createBaseMonster(...)` branch in `src/game-engine/monster-factory.ts`, and campaign/level-generator usage as needed.
+- When adding monsters, add a `MonsterKind` value, a concrete monster class, a `createBaseMonster(...)` branch in `src/game-engine/monster-factory.ts`, and campaign usage as needed.
 - When adding towers, add a `TowerKind` value, tower class, shortcut entry, and `Game.createTower(...)` branch.
