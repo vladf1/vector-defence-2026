@@ -29,7 +29,7 @@ export class LaserTower extends Tower {
   damagePerSecond = 60;
   directionLocked = false;
   laserSparkCooldownSeconds = 0;
-  turnSpeedPerSecond = 4.8;
+  turnSpeedPerSecond = 6.72;
 
   constructor(x: number, y: number) {
     super(x, y);
