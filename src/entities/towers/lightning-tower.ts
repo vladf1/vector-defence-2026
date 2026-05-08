@@ -16,7 +16,7 @@ const LIGHTNING_COLORS = [
   "#f5fbff",
 ] as const;
 
-const SLOW_FACTOR = 0.06;
+const SLOW_FACTOR = 0.15;
 const RECOVERY_SPEED_PER_SECOND = 100;
 
 export class LightningTower extends Tower {
@@ -51,6 +51,7 @@ export class LightningTower extends Tower {
 
     for (const target of targets) {
       target.takeDamage(damage);
+      target.shakeFromHit();
       target.slowDown(SLOW_FACTOR, RECOVERY_SPEED_PER_SECOND);
       game.addLink(new LightningLinkEffect(source, target, color));
       source = target;
