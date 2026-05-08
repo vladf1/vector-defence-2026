@@ -20,7 +20,7 @@ export class LightningTower extends Tower {
   static readonly kind = TowerKind.Lightning;
   static readonly label = "Lightning";
   static readonly summary = "Chains shocks that damage and briefly stop monsters.";
-  static readonly baseCost = 6;
+  static readonly baseCost = 5;
   static readonly baseRange = 74;
   static readonly shortcuts = ["5", "e"] as const;
 
