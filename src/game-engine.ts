@@ -420,14 +420,22 @@ export class Game {
       return;
     }
 
-    this.runtime.selectedTower = findTowerAtPoint(
+    const selectedTower = findTowerAtPoint(
       point,
       this.runtime.towers,
       this.profile.towerRadius,
       this.profile.towerSelectionPadding,
     );
-    if (this.runtime.selectedTower) {
-      this.playSound(AudioCue.TowerSelect, this.runtime.selectedTower.x);
+
+    if (selectedTower && selectedTower === this.runtime.selectedTower) {
+      this.runtime.selectedTower = undefined;
+      this.requestHudSync();
+      return;
+    }
+
+    this.runtime.selectedTower = selectedTower;
+    if (selectedTower) {
+      this.playSound(AudioCue.TowerSelect, selectedTower.x);
     }
     this.requestHudSync();
   }
