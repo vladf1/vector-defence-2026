@@ -37,6 +37,9 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   banner: "Awaiting orders",
   selectionTitle: "",
   selectionBody: "Select a tower to view upgrades, range, and sell value.",
+  mobileSelectionBody: "Select a tower to view upgrades, range, and sell value.",
+  upgradeActionLabel: "Upgrade",
+  sellActionLabel: "Sell",
   upgradeDisabled: true,
   hasSelectedTower: false,
   hasLaserLockAction: false,
@@ -99,19 +102,21 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
 
   let selectionTitle = "";
   let selectionBody = "Select a tower to view upgrades, range, and sell value.";
+  let mobileSelectionBody = selectionBody;
+  let upgradeActionLabel = "Upgrade";
+  let sellActionLabel = "Sell";
 
   if (selected) {
-    selectionTitle = `${getTowerClass(selected.kind).label} Tower · Level ${selected.level + 1}`;
-    selectionBody = [
-      `Range ${Math.round(selected.range)}`,
-      selected.canUpgrade() ? `Upgrade ${formatMoney(selected.upgradeCost)}` : undefined,
-      selected instanceof LaserTower ? (selected.directionLocked ? "Locked" : "Unlocked") : undefined,
-      `Sell ${formatMoney(selected.resaleValue)}`,
-    ].filter((item) => item !== undefined).join(" · ");
+    selectionTitle = `${getTowerClass(selected.kind).label} Tower · Level ${selected.level + 1} · Range ${Math.round(selected.range)}`;
+    selectionBody = "";
+    mobileSelectionBody = selectionBody;
+    upgradeActionLabel = selected.canUpgrade() ? `Upgrade - ${formatMoney(selected.upgradeCost)}` : "Max";
+    sellActionLabel = `Sell - ${formatMoney(selected.resaleValue)}`;
   } else if (runtime.placingTower) {
     const towerClass = getTowerClass(runtime.placingTower);
     selectionTitle = `Placing ${towerClass.label} Tower`;
     selectionBody = towerClass.summary;
+    mobileSelectionBody = selectionBody;
   }
 
   const shotsTracked = runtime.projectiles.length + runtime.missiles.length;
@@ -126,6 +131,9 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     banner,
     selectionTitle,
     selectionBody,
+    mobileSelectionBody,
+    upgradeActionLabel,
+    sellActionLabel,
     upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || battleActionsDisabled,
     hasSelectedTower: selected !== undefined,
     hasLaserLockAction: selected instanceof LaserTower,
