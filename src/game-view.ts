@@ -41,6 +41,7 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   upgradeActionLabel: "Upgrade",
   sellActionLabel: "Sell",
   upgradeDisabled: true,
+  upgradeUnaffordable: false,
   hasSelectedTower: false,
   hasLaserLockAction: false,
   laserLocked: false,
@@ -110,7 +111,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     const rangeLabel = `Range ${Math.round(selected.range)}`;
     selectionTitle = `${getTowerClass(selected.kind).label} Tower · Level ${selected.level + 1} · ${rangeLabel}`;
     selectionBody = "";
-    mobileSelectionBody = rangeLabel;
+    mobileSelectionBody = `Level ${selected.level + 1} · ${rangeLabel}`;
     upgradeActionLabel = selected.canUpgrade() ? `Upgrade - ${formatMoney(selected.upgradeCost)}` : "Max";
     sellActionLabel = `Sell - ${formatMoney(selected.resaleValue)}`;
   } else if (runtime.placingTower) {
@@ -123,6 +124,9 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
   const shotsTracked = runtime.projectiles.length + runtime.missiles.length;
   const effectsTracked = runtime.particles.length + runtime.links.length;
   const trackedObjects = runtime.towers.length + runtime.monsters.length + shotsTracked + effectsTracked;
+  const upgradeUnaffordable = selected !== undefined
+    && selected.canUpgrade()
+    && runtime.money < selected.upgradeCost;
 
   return {
     levelName,
@@ -136,6 +140,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     upgradeActionLabel,
     sellActionLabel,
     upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || battleActionsDisabled,
+    upgradeUnaffordable,
     hasSelectedTower: selected !== undefined,
     hasLaserLockAction: selected instanceof LaserTower,
     laserLocked: selected instanceof LaserTower && selected.directionLocked,

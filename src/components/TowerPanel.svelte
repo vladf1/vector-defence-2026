@@ -16,8 +16,13 @@
   }
 
   function formatMobileSelectionTitle(title: string): string {
-    const [titleWithoutRange] = title.split(" · Range ");
-    return titleWithoutRange.replace(" · Level ", " - Level ");
+    const [towerName] = title.split(" · Level ");
+    return towerName;
+  }
+
+  function formatMobileActionValue(label: string): string {
+    const [, actionValue] = label.split(" - ");
+    return actionValue ?? label;
   }
 
   function drawTowerPreview(canvas: HTMLCanvasElement, tower: Tower): void {
@@ -119,9 +124,9 @@
         {/if}
       </div>
       {#if profile.mode === "mobile" && $hud.hasSelectedTower}
-        <div class="mobile-selection-actions">
+        <div class:laser-actions={$hud.hasLaserLockAction} class="mobile-selection-actions">
           <button
-            class="action-button"
+            class={`action-button${$hud.upgradeUnaffordable ? " unaffordable" : ""}`}
             type="button"
             aria-label={$hud.upgradeActionLabel}
             title={$hud.upgradeActionLabel}
@@ -129,7 +134,7 @@
             disabled={$hud.upgradeDisabled}
           >
             <span aria-hidden="true">▲</span>
-            <span class="mobile-action-label">{$hud.upgradeActionLabel}</span>
+            <span class="mobile-action-value">{formatMobileActionValue($hud.upgradeActionLabel)}</span>
           </button>
           {#if $hud.hasLaserLockAction}
             <button
@@ -141,7 +146,7 @@
               disabled={$hud.laserLockDisabled}
             >
               <span aria-hidden="true">{$hud.laserLocked ? "🔓" : "🔒"}</span>
-              <span class="mobile-action-label">{$hud.laserLocked ? "Unlock" : "Lock"}</span>
+              <span class="mobile-action-value">{$hud.laserLocked ? "Unlock" : "Lock"}</span>
             </button>
           {/if}
           <button
@@ -153,7 +158,7 @@
             disabled={$hud.sellDisabled}
           >
             <span aria-hidden="true">💰</span>
-            <span class="mobile-action-label">{$hud.sellActionLabel}</span>
+            <span class="mobile-action-value">{formatMobileActionValue($hud.sellActionLabel)}</span>
           </button>
         </div>
       {/if}

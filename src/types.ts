@@ -135,6 +135,7 @@ export interface HudSnapshot {
   upgradeActionLabel: string;
   sellActionLabel: string;
   upgradeDisabled: boolean;
+  upgradeUnaffordable: boolean;
   hasSelectedTower: boolean;
   hasLaserLockAction: boolean;
   laserLocked: boolean;

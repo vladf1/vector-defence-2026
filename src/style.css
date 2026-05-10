@@ -555,6 +555,24 @@ textarea,
   border-color: rgba(255, 227, 111, 0.58);
 }
 
+.action-button.unaffordable {
+  border-color: rgba(255, 135, 124, 0.34);
+  background: linear-gradient(180deg, rgba(5, 10, 8, 0.96), rgba(18, 27, 24, 0.92) 48%, rgba(5, 10, 8, 0.96));
+}
+
+.action-button.unaffordable:disabled {
+  opacity: 1;
+}
+
+.action-button.unaffordable > span[aria-hidden="true"] {
+  opacity: 0.48;
+  filter: grayscale(0.75);
+}
+
+.action-button.unaffordable .mobile-action-value {
+  color: #ffb0a8;
+}
+
 .tower-button-meta {
   position: absolute;
   top: 4px;
@@ -723,11 +741,6 @@ textarea,
 .action-placeholder {
   visibility: hidden;
   pointer-events: none;
-}
-
-.action-button.sell {
-  border-color: rgba(255, 135, 124, 0.28);
-  color: #ffd0cb;
 }
 
 .footnote {
@@ -985,7 +998,8 @@ textarea,
   }
 
   .modal.centered {
-    align-items: flex-start;
+    align-items: center;
+    justify-content: center;
     padding:
       max(14px, env(safe-area-inset-top))
       max(10px, env(safe-area-inset-right))
@@ -1006,6 +1020,14 @@ textarea,
     text-align: left;
   }
 
+  .modal-panel.centered {
+    width: min(370px, 100%);
+    max-height: calc(100dvh - max(14px, env(safe-area-inset-top)) - max(14px, env(safe-area-inset-bottom)));
+    padding: 20px;
+    overflow: auto;
+    text-align: center;
+  }
+
   .modal-panel.level-map-panel {
     border: 0;
     border-radius: 0;
@@ -1013,6 +1035,26 @@ textarea,
 
   .modal-panel h2 {
     font-size: 1.45rem;
+  }
+
+  .modal-panel.centered h2 {
+    font-size: 1.55rem;
+  }
+
+  .modal-panel.centered p {
+    margin: 12px 0 16px;
+    line-height: 1.35;
+  }
+
+  .modal-panel.centered .selection-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .modal-panel.centered .modal-button {
+    width: 100%;
+    min-height: 44px;
   }
 
   .level-map-header {
@@ -1303,7 +1345,7 @@ textarea,
     column-gap: 10px;
     height: 68px;
     min-height: 68px;
-    padding: 7px 0;
+    padding: 0;
   }
 
   .mobile-shell .selection-header {
@@ -1352,12 +1394,12 @@ textarea,
 
   .mobile-shell .mobile-selection-actions {
     grid-column: 2;
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
     align-items: stretch;
     min-width: 0;
-    height: auto;
+    height: 68px;
     align-self: center;
     justify-self: end;
     width: 204px;
@@ -1373,7 +1415,6 @@ textarea,
   }
 
   .mobile-shell .mobile-selection-actions .action-button {
-    flex: 1 1 0;
     min-width: 0;
     min-height: 52px;
     padding: 8px 6px;
@@ -1387,19 +1428,31 @@ textarea,
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    height: 52px;
-    min-height: 52px;
+    gap: 2px;
+    height: 68px;
+    min-height: 68px;
     padding: 7px 6px;
     font-size: 0.82rem;
   }
 
-  .mobile-shell .selected-tower-controls .mobile-action-label {
+  .mobile-shell .selected-tower-controls .mobile-selection-actions:not(.laser-actions) .action-button:first-child {
+    grid-column: 1 / span 2;
+  }
+
+  .mobile-shell .selected-tower-controls .mobile-selection-actions:not(.laser-actions) .action-button.sell {
+    grid-column: 3;
+  }
+
+  .mobile-shell .selected-tower-controls .mobile-action-value {
     display: block;
-    font-size: 0.6rem;
+    font-size: 0.72rem;
     line-height: 1;
     color: #b8e6cf;
     white-space: nowrap;
+  }
+
+  .mobile-shell .selected-tower-controls .action-button.unaffordable .mobile-action-value {
+    color: #ffb0a8;
   }
 }
 
