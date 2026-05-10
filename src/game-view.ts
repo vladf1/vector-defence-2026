@@ -107,9 +107,10 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
   let sellActionLabel = "Sell";
 
   if (selected) {
-    selectionTitle = `${getTowerClass(selected.kind).label} Tower · Level ${selected.level + 1} · Range ${Math.round(selected.range)}`;
+    const rangeLabel = `Range ${Math.round(selected.range)}`;
+    selectionTitle = `${getTowerClass(selected.kind).label} Tower · Level ${selected.level + 1} · ${rangeLabel}`;
     selectionBody = "";
-    mobileSelectionBody = selectionBody;
+    mobileSelectionBody = rangeLabel;
     upgradeActionLabel = selected.canUpgrade() ? `Upgrade - ${formatMoney(selected.upgradeCost)}` : "Max";
     sellActionLabel = `Sell - ${formatMoney(selected.resaleValue)}`;
   } else if (runtime.placingTower) {

@@ -16,7 +16,8 @@
   }
 
   function formatMobileSelectionTitle(title: string): string {
-    return title.replace(" · Level ", " - Level ");
+    const [titleWithoutRange] = title.split(" · Range ");
+    return titleWithoutRange.replace(" · Level ", " - Level ");
   }
 
   function drawTowerPreview(canvas: HTMLCanvasElement, tower: Tower): void {
@@ -92,6 +93,9 @@
         <div class="selection-copy">
           {#if profile.mode === "mobile" && $hud.hasSelectedTower}
             <strong>{formatMobileSelectionTitle($hud.selectionTitle)}</strong>
+            {#if $hud.mobileSelectionBody}
+              <span>{$hud.mobileSelectionBody}</span>
+            {/if}
           {:else}
             {#if $hud.selectionTitle}
               <strong>{profile.mode === "mobile" ? formatMobileSelectionTitle($hud.selectionTitle) : $hud.selectionTitle}</strong>
