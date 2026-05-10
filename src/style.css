@@ -1348,6 +1348,7 @@ textarea,
     height: 76px;
     min-height: 76px;
     padding: 0;
+    transform: translateY(2px);
   }
 
   .mobile-shell .selection-header {
@@ -1414,6 +1415,8 @@ textarea,
   .mobile-shell .selected-tower-controls .mobile-selection-actions {
     grid-column: 2;
     grid-row: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
     height: 64px;
     width: 100%;
@@ -1450,7 +1453,8 @@ textarea,
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button + .action-button {
-    margin-left: -1px;
+    margin-left: 0;
+    border-left-width: 0;
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button:first-child {
@@ -1470,11 +1474,11 @@ textarea,
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions:not(.laser-actions) .action-button:first-child {
-    flex-grow: 1.35;
+    grid-column: 1 / span 2;
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions:not(.laser-actions) .action-button.sell {
-    flex-grow: 1;
+    grid-column: 3;
   }
 
   .mobile-shell .selected-tower-controls .mobile-action-value {
