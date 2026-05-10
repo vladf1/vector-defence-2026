@@ -1270,15 +1270,25 @@ textarea,
   }
 
   .mobile-shell .controls-grid {
+    --mobile-control-button-height: 68px;
+    --mobile-control-button-radius: 8px;
+    --mobile-control-button-padding: 2px 5px 4px;
+    --mobile-control-icon-row-height: 50px;
+    --mobile-control-value-row-height: 12px;
+    --mobile-control-stack-gap: 0;
+    --mobile-control-icon-shift: -1px;
+    --mobile-control-value-shift: -3px;
+    --mobile-control-value-color: #b8e6cf;
+    --mobile-control-value-size: 0.76rem;
     grid-template-columns: 1fr;
-    grid-template-rows: 76px 72px;
-    gap: 8px;
-    height: 166px;
-    padding-bottom: 10px;
+    grid-template-rows: 72px 68px;
+    gap: 10px;
+    height: 158px;
+    padding-bottom: 8px;
   }
 
   .mobile-shell .controls-grid.selected-tower-controls {
-    grid-template-rows: 76px 72px;
+    grid-template-rows: 72px 68px;
   }
 
   .mobile-shell .tower-strip-card {
@@ -1287,42 +1297,47 @@ textarea,
 
   .mobile-shell .tower-strip-card,
   .mobile-shell .tower-button {
-    height: 72px;
-    min-height: 72px;
+    height: var(--mobile-control-button-height);
+    min-height: var(--mobile-control-button-height);
   }
 
   .mobile-shell .tower-button {
     display: grid;
-    grid-template-rows: auto auto;
+    grid-template-rows: var(--mobile-control-icon-row-height) var(--mobile-control-value-row-height);
+    align-items: center;
+    justify-content: center;
     justify-items: center;
-    align-content: center;
-    gap: 2px;
-    padding: 4px 4px 5px;
+    gap: var(--mobile-control-stack-gap);
+    padding: var(--mobile-control-button-padding);
+    border-radius: var(--mobile-control-button-radius);
   }
 
   .mobile-shell .tower-icon {
+    display: block;
     grid-row: 1;
+    order: 1;
     width: 52px;
     height: 52px;
-    align-self: center;
-    justify-self: center;
     margin: 0;
-    position: relative;
-    top: -2px;
+    transform: translateY(var(--mobile-control-icon-shift));
   }
 
   .mobile-shell .tower-button-meta {
-    position: static;
+    display: flex;
     grid-row: 2;
+    order: 2;
+    position: static;
     justify-content: center;
     align-items: center;
     width: 100%;
     gap: 0;
-    transform: translateY(-4px);
+    transform: translateY(var(--mobile-control-value-shift));
   }
 
   .mobile-shell .tower-button-meta span {
-    line-height: 1;
+    color: var(--mobile-control-value-color);
+    font-size: var(--mobile-control-value-size);
+    line-height: var(--mobile-control-value-row-height);
     text-align: center;
   }
 
@@ -1332,8 +1347,8 @@ textarea,
     grid-template-rows: 1fr;
     align-items: stretch;
     column-gap: 8px;
-    height: 76px;
-    min-height: 76px;
+    height: 72px;
+    min-height: 72px;
     padding: 7px 0;
     border: 0;
     background: transparent;
@@ -1345,8 +1360,8 @@ textarea,
     grid-template-columns: minmax(0, 1fr) minmax(152px, 46vw);
     grid-template-rows: 1fr;
     column-gap: 8px;
-    height: 76px;
-    min-height: 76px;
+    height: 72px;
+    min-height: 72px;
     padding: 0;
     transform: translateY(2px);
   }
@@ -1405,7 +1420,7 @@ textarea,
     gap: 6px;
     align-items: stretch;
     min-width: 0;
-    height: 76px;
+    height: 72px;
     align-self: center;
     justify-self: end;
     width: 100%;
@@ -1418,7 +1433,7 @@ textarea,
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
-    height: 64px;
+    height: var(--mobile-control-button-height);
     width: 100%;
     justify-self: end;
     align-self: center;
@@ -1432,24 +1447,36 @@ textarea,
   .mobile-shell .mobile-selection-actions .action-button {
     flex: 1 1 0;
     min-width: 0;
-    min-height: 56px;
-    padding: 6px 5px;
-    border-radius: 8px;
+    min-height: var(--mobile-control-button-height);
+    padding: var(--mobile-control-button-padding);
+    border-radius: var(--mobile-control-button-radius);
     font-size: 0.76rem;
     line-height: 1;
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: var(--mobile-control-icon-row-height) var(--mobile-control-value-row-height);
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    height: 64px;
-    min-height: 56px;
-    padding: 6px 5px;
+    justify-items: center;
+    gap: var(--mobile-control-stack-gap);
+    height: var(--mobile-control-button-height);
+    min-height: var(--mobile-control-button-height);
+    padding: var(--mobile-control-button-padding);
     border-radius: 0;
     font-size: 0.82rem;
+  }
+
+  .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button > span[aria-hidden="true"] {
+    display: grid;
+    grid-row: 1;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    font-size: 1.32rem;
+    line-height: 1;
+    transform: translateY(var(--mobile-control-icon-shift));
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button + .action-button {
@@ -1483,10 +1510,12 @@ textarea,
 
   .mobile-shell .selected-tower-controls .mobile-action-value {
     display: block;
-    font-size: 0.68rem;
-    line-height: 1;
-    color: #b8e6cf;
+    grid-row: 2;
+    color: var(--mobile-control-value-color);
+    font-size: var(--mobile-control-value-size);
+    line-height: var(--mobile-control-value-row-height);
     white-space: nowrap;
+    transform: translateY(var(--mobile-control-value-shift));
   }
 
   .mobile-shell .selected-tower-controls .action-button.unaffordable .mobile-action-value {
