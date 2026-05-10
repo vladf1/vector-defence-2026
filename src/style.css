@@ -1,6 +1,7 @@
 :root {
   color-scheme: dark;
   font-family: "Avenir Next", "Segoe UI", sans-serif;
+  --app-viewport-height: 100dvh;
   --panel: rgba(10, 21, 18, 0.82);
   --panel-strong: rgba(7, 15, 12, 0.94);
   --line: rgba(140, 255, 192, 0.18);
@@ -886,8 +887,8 @@ textarea,
 
   .shell {
     width: 100%;
-    height: calc(100dvh - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
-    max-height: calc(100dvh - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+    height: calc(var(--app-viewport-height) - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+    max-height: calc(var(--app-viewport-height) - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
     margin: 0;
     gap: 6px;
     align-content: start;
@@ -1235,8 +1236,8 @@ textarea,
 @media (hover: none) and (pointer: coarse), (max-width: 520px) {
   .mobile-shell {
     width: 100%;
-    height: calc(100dvh - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
-    max-height: calc(100dvh - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+    height: calc(var(--app-viewport-height) - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+    max-height: calc(var(--app-viewport-height) - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
     grid-template-rows: auto minmax(0, 1fr) auto;
     align-content: stretch;
     gap: 6px;
@@ -1270,14 +1271,14 @@ textarea,
 
   .mobile-shell .controls-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: 62px 68px;
-    gap: 10px;
-    height: 148px;
-    padding-bottom: 6px;
+    grid-template-rows: 76px 72px;
+    gap: 8px;
+    height: 166px;
+    padding-bottom: 10px;
   }
 
   .mobile-shell .controls-grid.selected-tower-controls {
-    grid-template-rows: 62px 68px;
+    grid-template-rows: 76px 72px;
   }
 
   .mobile-shell .tower-strip-card {
@@ -1286,8 +1287,8 @@ textarea,
 
   .mobile-shell .tower-strip-card,
   .mobile-shell .tower-button {
-    height: 68px;
-    min-height: 68px;
+    height: 72px;
+    min-height: 72px;
   }
 
   .mobile-shell .tower-button {
@@ -1327,24 +1328,25 @@ textarea,
 
   .mobile-shell .selection-card {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 204px;
+    grid-template-columns: minmax(0, 1fr) minmax(176px, 58%);
     grid-template-rows: 1fr;
     align-items: stretch;
-    column-gap: 10px;
-    height: 62px;
-    min-height: 62px;
+    column-gap: 8px;
+    height: 76px;
+    min-height: 76px;
     padding: 7px 0;
     border: 0;
     background: transparent;
     backdrop-filter: none;
+    overflow: visible;
   }
 
   .mobile-shell .selected-tower-controls .selection-card {
-    grid-template-columns: minmax(0, 1fr) 204px;
+    grid-template-columns: minmax(0, 1fr) minmax(152px, 46vw);
     grid-template-rows: 1fr;
-    column-gap: 10px;
-    height: 62px;
-    min-height: 62px;
+    column-gap: 8px;
+    height: 76px;
+    min-height: 76px;
     padding: 0;
   }
 
@@ -1355,8 +1357,12 @@ textarea,
   }
 
   .mobile-shell .selected-tower-controls .selection-header {
+    display: flex;
+    grid-column: 1;
+    grid-row: 1;
     align-self: center;
     align-items: center;
+    min-width: 0;
   }
 
   .mobile-shell .selection-card:not(:has(.mobile-selection-actions)) .selection-header {
@@ -1394,15 +1400,14 @@ textarea,
 
   .mobile-shell .mobile-selection-actions {
     grid-column: 2;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0;
+    display: flex;
+    gap: 6px;
     align-items: stretch;
     min-width: 0;
-    height: 62px;
+    height: 76px;
     align-self: center;
     justify-self: end;
-    width: 204px;
+    width: 100%;
     border-radius: 8px;
   }
 
@@ -1410,15 +1415,22 @@ textarea,
     grid-column: 2;
     grid-row: 1;
     gap: 0;
-    width: 204px;
+    height: 64px;
+    width: 100%;
     justify-self: end;
     align-self: center;
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 0 0 1px rgba(140, 255, 192, 0.12);
   }
 
   .mobile-shell .mobile-selection-actions .action-button {
+    flex: 1 1 0;
     min-width: 0;
-    min-height: 52px;
-    padding: 8px 6px;
+    min-height: 56px;
+    padding: 6px 5px;
     border-radius: 8px;
     font-size: 0.76rem;
     line-height: 1;
@@ -1430,9 +1442,9 @@ textarea,
     align-items: center;
     justify-content: center;
     gap: 2px;
-    height: 62px;
-    min-height: 52px;
-    padding: 7px 6px;
+    height: 64px;
+    min-height: 56px;
+    padding: 6px 5px;
     border-radius: 0;
     font-size: 0.82rem;
   }
@@ -1458,16 +1470,16 @@ textarea,
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions:not(.laser-actions) .action-button:first-child {
-    grid-column: 1 / span 2;
+    flex-grow: 1.35;
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions:not(.laser-actions) .action-button.sell {
-    grid-column: 3;
+    flex-grow: 1;
   }
 
   .mobile-shell .selected-tower-controls .mobile-action-value {
     display: block;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     line-height: 1;
     color: #b8e6cf;
     white-space: nowrap;
