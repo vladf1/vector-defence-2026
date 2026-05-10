@@ -1270,14 +1270,14 @@ textarea,
 
   .mobile-shell .controls-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: 68px 68px;
-    gap: 6px;
+    grid-template-rows: 62px 68px;
+    gap: 10px;
     height: 148px;
     padding-bottom: 6px;
   }
 
   .mobile-shell .controls-grid.selected-tower-controls {
-    grid-template-rows: 68px 68px;
+    grid-template-rows: 62px 68px;
   }
 
   .mobile-shell .tower-strip-card {
@@ -1331,8 +1331,8 @@ textarea,
     grid-template-rows: 1fr;
     align-items: stretch;
     column-gap: 10px;
-    height: 68px;
-    min-height: 68px;
+    height: 62px;
+    min-height: 62px;
     padding: 7px 0;
     border: 0;
     background: transparent;
@@ -1343,8 +1343,8 @@ textarea,
     grid-template-columns: minmax(0, 1fr) 204px;
     grid-template-rows: 1fr;
     column-gap: 10px;
-    height: 68px;
-    min-height: 68px;
+    height: 62px;
+    min-height: 62px;
     padding: 0;
   }
 
@@ -1396,19 +1396,20 @@ textarea,
     grid-column: 2;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    gap: 0;
     align-items: stretch;
     min-width: 0;
-    height: 68px;
+    height: 62px;
     align-self: center;
     justify-self: end;
     width: 204px;
+    border-radius: 8px;
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions {
     grid-column: 2;
     grid-row: 1;
-    gap: 6px;
+    gap: 0;
     width: 204px;
     justify-self: end;
     align-self: center;
@@ -1429,10 +1430,31 @@ textarea,
     align-items: center;
     justify-content: center;
     gap: 2px;
-    height: 68px;
-    min-height: 68px;
+    height: 62px;
+    min-height: 52px;
     padding: 7px 6px;
+    border-radius: 0;
     font-size: 0.82rem;
+  }
+
+  .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button + .action-button {
+    margin-left: -1px;
+  }
+
+  .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button:first-child {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+  }
+
+  .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button:last-child {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+
+  .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button:hover,
+  .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button:focus-visible {
+    position: relative;
+    z-index: 1;
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions:not(.laser-actions) .action-button:first-child {

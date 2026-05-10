@@ -124,7 +124,12 @@
         {/if}
       </div>
       {#if profile.mode === "mobile" && $hud.hasSelectedTower}
-        <div class:laser-actions={$hud.hasLaserLockAction} class="mobile-selection-actions">
+        <div
+          class:laser-actions={$hud.hasLaserLockAction}
+          class="mobile-selection-actions"
+          role="group"
+          aria-label="Selected tower actions"
+        >
           <button
             class={`action-button${$hud.upgradeUnaffordable ? " unaffordable" : ""}`}
             type="button"
