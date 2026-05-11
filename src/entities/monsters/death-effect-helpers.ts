@@ -133,9 +133,15 @@ function samplePolygonPerimeter(
     perimeterLength += length;
   }
 
-  const distances = Array.from({ length: sampleCount }, () =>
-    randomRange(0, perimeterLength),
-  ).sort((left, right) => left - right);
+  const spacing = perimeterLength / sampleCount;
+  const offset = randomRange(0, spacing);
+  const distances = Array.from({ length: sampleCount }, (_, index) => {
+    const jitteredDistance =
+      offset +
+      (spacing * index) +
+      randomRange(-spacing * 0.28, spacing * 0.28);
+    return (jitteredDistance + perimeterLength) % perimeterLength;
+  }).sort((left, right) => left - right);
   const points = distances.map((distance) =>
     samplePointOnPolygonPerimeter(outline, edgeLengths, distance),
   );

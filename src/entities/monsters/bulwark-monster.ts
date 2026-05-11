@@ -91,8 +91,10 @@ export class BulwarkMonster extends Monster {
           this.y,
           ARMOR_GLOW_COLOR,
           shardVertices,
+          shellPivot,
           this.angle,
           randomRange(120, 205),
+          0,
         ),
     );
 
@@ -111,8 +113,10 @@ export class BulwarkMonster extends Monster {
           this.y,
           this.color,
           shardVertices,
+          corePivot,
           this.angle,
           randomRange(105, 175),
+          0,
         ),
       );
     }

@@ -59,8 +59,10 @@ export class SplitterMonster extends Monster {
           this.y,
           this.color,
           shardVertices,
+          pivot,
           this.rotation,
           randomRange(110, 185),
+          0,
         ),
     );
 

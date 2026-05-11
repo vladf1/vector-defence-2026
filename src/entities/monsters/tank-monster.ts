@@ -55,8 +55,10 @@ export class TankMonster extends Monster {
             this.y,
             this.color,
             shardVertices,
+            hullPivot,
             this.angle,
             randomRange(125, 220),
+            0,
           ),
       ),
       ...createSimpleExplosionParticles(

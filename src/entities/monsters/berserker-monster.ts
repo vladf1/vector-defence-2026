@@ -89,8 +89,10 @@ export class BerserkerMonster extends Monster {
           this.y,
           this.color,
           shardVertices,
+          pivot,
           this.angle,
           randomRange(140, 230),
+          0,
         ),
     );
 

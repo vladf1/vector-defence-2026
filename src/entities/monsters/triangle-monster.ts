@@ -38,8 +38,10 @@ export class TriangleMonster extends Monster {
           this.y,
           this.color,
           shardVertices,
+          pivot,
           this.angle,
           randomRange(145, 245),
+          0,
         ),
     );
     particles.push(

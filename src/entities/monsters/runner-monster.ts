@@ -45,8 +45,10 @@ export class RunnerMonster extends Monster {
           this.y,
           this.color,
           shardVertices,
+          pivot,
           this.angle,
           randomRange(155, 255),
+          0,
         ),
     );
 

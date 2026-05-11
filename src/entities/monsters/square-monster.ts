@@ -1,9 +1,9 @@
 import { GlassShardParticle } from "../effects/glass-shard-particle";
 import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
-import { AudioCue } from "../../types";
+import { AudioCue, type Point } from "../../types";
 import { randomRange } from "../../utils";
-import { buildShards, createSimpleExplosionParticles } from "./death-effect-helpers";
+import { createSimpleExplosionParticles } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
 
 const COLOR = "#ff6f62";
@@ -42,27 +42,25 @@ export class SquareMonster extends Monster {
       x: randomRange(-this.radius * 0.24, this.radius * 0.24),
       y: randomRange(-this.radius * 0.24, this.radius * 0.24),
     };
-    const particles: Particle[] = buildShards(
-      this.createOutline(),
-      pivot,
-      Math.round(randomRange(5, 10)),
-    ).map(
+    const particles: Particle[] = this.createBreakupShards().map(
       (shardVertices) =>
         new GlassShardParticle(
           this.x,
           this.y,
           this.color,
           shardVertices,
+          pivot,
           this.rotation,
-          randomRange(130, 235),
+          randomRange(128, 233),
+          1.2,
         ),
     );
     particles.push(
       ...createSimpleExplosionParticles(
         this.x,
         this.y,
-        6,
-        randomRange(1.2, 2.2),
+        4,
+        randomRange(0.9, 1.7),
         "#ffffff",
         randomRange(3, 4.4),
       ),
@@ -74,12 +72,47 @@ export class SquareMonster extends Monster {
     };
   }
 
-  private createOutline() {
+  private createBreakupShards(): Point[][] {
+    const radius = this.radius;
+    const top = {
+      x: randomRange(-radius * 0.3, radius * 0.28),
+      y: -radius,
+    };
+    const right = {
+      x: radius,
+      y: randomRange(-radius * 0.28, radius * 0.32),
+    };
+    const bottom = {
+      x: randomRange(-radius * 0.28, radius * 0.3),
+      y: radius,
+    };
+    const left = {
+      x: -radius,
+      y: randomRange(-radius * 0.32, radius * 0.28),
+    };
+    const coreTop = {
+      x: randomRange(-radius * 0.12, radius * 0.16),
+      y: randomRange(-radius * 0.42, -radius * 0.2),
+    };
+    const coreRight = {
+      x: randomRange(radius * 0.18, radius * 0.42),
+      y: randomRange(-radius * 0.12, radius * 0.16),
+    };
+    const coreBottom = {
+      x: randomRange(-radius * 0.16, radius * 0.12),
+      y: randomRange(radius * 0.2, radius * 0.42),
+    };
+    const coreLeft = {
+      x: randomRange(-radius * 0.42, -radius * 0.18),
+      y: randomRange(-radius * 0.16, radius * 0.12),
+    };
+
     return [
-      { x: -this.radius, y: -this.radius },
-      { x: this.radius, y: -this.radius },
-      { x: this.radius, y: this.radius },
-      { x: -this.radius, y: this.radius },
+      [{ x: -radius, y: -radius }, top, coreTop, coreLeft, left],
+      [top, { x: radius, y: -radius }, right, coreRight, coreTop],
+      [coreRight, right, { x: radius, y: radius }, bottom, coreBottom],
+      [left, coreLeft, coreBottom, bottom, { x: -radius, y: radius }],
+      [coreTop, coreRight, coreBottom, coreLeft],
     ];
   }
 }
