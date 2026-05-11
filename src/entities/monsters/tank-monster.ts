@@ -1,11 +1,11 @@
-import { GlassShardParticle } from "../effects/glass-shard-particle";
 import { TankTurretParticle } from "../effects/tank-turret-particle";
 import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
-import { buildShards, createSimpleExplosionParticles, rotatePoint } from "./death-effect-helpers";
+import { createPolygonShardParticles, createSimpleExplosionParticles, rotatePoint } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
+import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 import { drawTankTurret } from "./tank-turret-rendering";
 
 const COLOR = "#9fb6ff";
@@ -44,22 +44,20 @@ export class TankMonster extends Monster {
         this.color,
         this.angle,
       ),
-      ...buildShards(
+      ...createPolygonShardParticles(
+        this.x,
+        this.y,
+        this.color,
         this.createHullOutline(),
         hullPivot,
-        Math.round(randomRange(7, 12)),
-      ).map(
-        (shardVertices) =>
-          new GlassShardParticle(
-            this.x,
-            this.y,
-            this.color,
-            shardVertices,
-            hullPivot,
-            this.angle,
-            randomRange(125, 220),
-            0,
-          ),
+        this.angle,
+        125,
+        220,
+        0,
+        createPolygonShardSplitterConfig({
+          minShardCount: 5,
+          maxShardCount: 11,
+        }),
       ),
       ...createSimpleExplosionParticles(
         this.x,

@@ -24,6 +24,12 @@ export interface PolygonShardSplitterConfig {
   random: () => number;
 }
 
+export type PolygonShardSplitterConfigOptions = {
+  minShardCount: number;
+  maxShardCount: number;
+  random?: () => number;
+} & Partial<Omit<PolygonShardSplitterConfig, "minShardCount" | "maxShardCount" | "random">>;
+
 export interface Shard {
   vertices: Point[];
 }
@@ -38,6 +44,34 @@ interface BoundarySample {
 interface EdgeMetric {
   length: number;
   distanceAtStart: number;
+}
+
+export function createPolygonShardSplitterConfig(
+  options: PolygonShardSplitterConfigOptions,
+): PolygonShardSplitterConfig {
+  return {
+    minShardCount: options.minShardCount,
+    maxShardCount: options.maxShardCount,
+    maxConsecutiveSplitFailures: options.maxConsecutiveSplitFailures ?? 360,
+    crackAttemptsPerShard: options.crackAttemptsPerShard ?? 42,
+    minBoundarySeparationRatio: options.minBoundarySeparationRatio ?? 0.2,
+    boundaryEndpointInsetRatio: options.boundaryEndpointInsetRatio ?? 0.055,
+    interiorPointAttempts: options.interiorPointAttempts ?? 72,
+    minInteriorDotEdgeDistanceRatio: options.minInteriorDotEdgeDistanceRatio ?? 0.025,
+    minShardAreaRatio: options.minShardAreaRatio ?? 0.034,
+    maxShardAreaRatio: options.maxShardAreaRatio ?? 0.56,
+    maxSplitChildAreaRatio: options.maxSplitChildAreaRatio ?? 0.72,
+    preferredMaxShardVertices: options.preferredMaxShardVertices ?? 9,
+    maxShardVertices: options.maxShardVertices ?? 11,
+    minBendCountPerCrackSegment: options.minBendCountPerCrackSegment ?? 1,
+    maxBendCountPerCrackSegment: options.maxBendCountPerCrackSegment ?? 1,
+    bendOffsetRatio: options.bendOffsetRatio ?? 0.18,
+    pointMergeDistance: options.pointMergeDistance ?? 0.025,
+    collinearDistance: options.collinearDistance ?? 0.035,
+    areaToleranceRatio: options.areaToleranceRatio ?? 0.035,
+    maxCrackVertices: options.maxCrackVertices ?? 5,
+    random: options.random ?? Math.random,
+  };
 }
 
 export class PolygonShardSplitter {

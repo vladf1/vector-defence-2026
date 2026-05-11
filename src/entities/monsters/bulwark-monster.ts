@@ -3,8 +3,9 @@ import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { drawPath, hexWithAlpha, randomRange } from "../../utils";
-import { buildShards, createBurstParticle, createSimpleExplosionParticles } from "./death-effect-helpers";
+import { createBurstParticle, createPolygonShardParticles, createSimpleExplosionParticles } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
+import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
 const COLOR = "#78d7ff";
 const ARMOR_GLOW_COLOR = "#dff7ff";
@@ -80,46 +81,33 @@ export class BulwarkMonster extends Monster {
       x: randomRange(-this.radius * 0.18, this.radius * 0.18),
       y: randomRange(-this.radius * 0.18, this.radius * 0.18),
     };
-    const particles: Particle[] = buildShards(
+    const particles: Particle[] = createPolygonShardParticles(
+      this.x,
+      this.y,
+      ARMOR_GLOW_COLOR,
       this.createShellOutline(),
       shellPivot,
-      Math.round(randomRange(6, 10)),
-    ).map(
-      (shardVertices) =>
-        new GlassShardParticle(
-          this.x,
-          this.y,
-          ARMOR_GLOW_COLOR,
-          shardVertices,
-          shellPivot,
-          this.angle,
-          randomRange(120, 205),
-          0,
-        ),
+      this.angle,
+      120,
+      205,
+      0,
+      createPolygonShardSplitterConfig({
+        minShardCount: 4,
+        maxShardCount: 9,
+      }),
     );
-
-    const corePivot = {
-      x: randomRange(-this.radius * 0.08, this.radius * 0.08),
-      y: randomRange(-this.radius * 0.08, this.radius * 0.08),
-    };
-    for (const shardVertices of buildShards(
-      this.createCoreOutline(),
-      corePivot,
-      4,
-    )) {
-      particles.push(
-        new GlassShardParticle(
-          this.x,
-          this.y,
-          this.color,
-          shardVertices,
-          corePivot,
-          this.angle,
-          randomRange(105, 175),
-          0,
-        ),
-      );
-    }
+    particles.push(
+      new GlassShardParticle(
+        this.x,
+        this.y,
+        this.color,
+        this.createFrontPlateOutline(),
+        { x: 0, y: 0 },
+        this.angle,
+        randomRange(105, 175),
+        0,
+      ),
+    );
 
     for (let index = 0; index < 10; index += 1) {
       particles.push(
@@ -173,6 +161,16 @@ export class BulwarkMonster extends Monster {
       { x: -this.radius * 0.72, y: 0 },
       { x: -this.radius * 0.3, y: this.radius * 0.46 },
       { x: this.radius * 0.42, y: this.radius * 0.46 },
+    ];
+  }
+
+  private createFrontPlateOutline() {
+    return [
+      { x: this.radius * 1.08, y: 0 },
+      { x: this.radius * 0.76, y: -this.radius * 0.28 },
+      { x: this.radius * 0.16, y: -this.radius * 0.28 },
+      { x: this.radius * 0.16, y: this.radius * 0.28 },
+      { x: this.radius * 0.76, y: this.radius * 0.28 },
     ];
   }
 }

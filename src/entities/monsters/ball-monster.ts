@@ -1,13 +1,14 @@
-import { CircleShardParticle } from "../effects/circle-shard-particle";
 import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue, type Point } from "../../types";
 import { randomRange } from "../../utils";
 import {
+  createPolygonShardParticles,
   createSimpleExplosionParticles,
   pointOnRadius,
 } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
+import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
 const COLOR = "#5df2ef";
 const SPEED_PER_SECOND = 81;
@@ -50,32 +51,27 @@ export class BallMonster extends Monster {
   }
 
   override createDeathEffect(): MonsterDeathEffect {
-    const particles: Particle[] = [];
-    for (const arc of this.sampleBodyArcs(Math.round(randomRange(6, 9)))) {
-      const innerStartAngle =
-        arc.startAngle + arc.sweepAngle * randomRange(0.08, 0.2);
-      const innerEndAngle =
-        arc.startAngle +
-        arc.sweepAngle -
-        arc.sweepAngle * randomRange(0.08, 0.2);
-      const innerPeakAngle =
-        arc.startAngle + arc.sweepAngle * randomRange(0.36, 0.64);
-      particles.push(
-        new CircleShardParticle(
-          this.x,
-          this.y,
-          this.radius * randomRange(0.96, 1.04),
-          this.color,
-          arc.startAngle + this.angle,
-          arc.sweepAngle,
-          pointOnRadius(innerStartAngle + this.angle, this.radius * randomRange(0.08, 0.24)),
-          pointOnRadius(innerPeakAngle + this.angle, this.radius * randomRange(0.02, 0.16)),
-          pointOnRadius(innerEndAngle + this.angle, this.radius * randomRange(0.08, 0.24)),
-          0,
-          randomRange(125, 205),
-        ),
-      );
-    }
+    const pivot = {
+      x: randomRange(-this.radius * 0.12, this.radius * 0.12),
+      y: randomRange(-this.radius * 0.12, this.radius * 0.12),
+    };
+    const particles: Particle[] = createPolygonShardParticles(
+      this.x,
+      this.y,
+      this.color,
+      this.createOutline(18),
+      pivot,
+      this.angle,
+      125,
+      205,
+      0,
+      createPolygonShardSplitterConfig({
+        minShardCount: 4,
+        maxShardCount: 9,
+        preferredMaxShardVertices: 14,
+        maxShardVertices: 26,
+      }),
+    );
 
     particles.push(
       ...createSimpleExplosionParticles(
@@ -100,21 +96,5 @@ export class BallMonster extends Monster {
       sound: { cue: AudioCue.MonsterShatter },
       particles,
     };
-  }
-
-  private sampleBodyArcs(arcCount: number) {
-    const bodySweepAngle = (Math.PI * 2) - (MOUTH_ANGLE * 2);
-    const weights = Array.from({ length: arcCount }, () =>
-      randomRange(0.72, 1.28),
-    );
-    const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
-    const arcs = [];
-    let startAngle = MOUTH_ANGLE;
-    for (const weight of weights) {
-      const sweepAngle = (weight / weightTotal) * bodySweepAngle;
-      arcs.push({ startAngle, sweepAngle });
-      startAngle += sweepAngle;
-    }
-    return arcs;
   }
 }

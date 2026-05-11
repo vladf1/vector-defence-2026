@@ -29,7 +29,7 @@ const html = String.raw`
     <canvas id="sheet"></canvas>
     <script type="module">
       const { BallMonster } = await import("/src/entities/monsters/ball-monster.ts");
-      const { PolygonShardSplitter } = await import("/src/entities/monsters/polygon-shard-splitter.ts");
+      const { PolygonShardSplitter, createPolygonShardSplitterConfig } = await import("/src/entities/monsters/polygon-shard-splitter.ts");
 
       const CELL_WIDTH = 390;
       const CELL_HEIGHT = 250;
@@ -155,30 +155,12 @@ const html = String.raw`
       window.__polygonShardRender = outputs;
 
       function createSplitterConfig(random, overrides) {
-        return {
+        return createPolygonShardSplitterConfig({
           minShardCount: 4,
-          maxShardCount: 6,
-          maxConsecutiveSplitFailures: 360,
-          crackAttemptsPerShard: 42,
-          minBoundarySeparationRatio: 0.2,
-          boundaryEndpointInsetRatio: 0.055,
-          interiorPointAttempts: 72,
-          minInteriorDotEdgeDistanceRatio: 0.025,
-          minShardAreaRatio: 0.034,
-          maxShardAreaRatio: 0.56,
-          maxSplitChildAreaRatio: 0.72,
-          preferredMaxShardVertices: 9,
-          maxShardVertices: 11,
-          minBendCountPerCrackSegment: 1,
-          maxBendCountPerCrackSegment: 1,
-          bendOffsetRatio: 0.18,
-          pointMergeDistance: 0.025,
-          collinearDistance: 0.035,
-          areaToleranceRatio: 0.035,
-          maxCrackVertices: 5,
+          maxShardCount: 9,
           random,
           ...overrides,
-        };
+        });
       }
 
       function drawOriginalCell(context, specimen, rowIndex, seed) {

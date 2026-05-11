@@ -1,10 +1,10 @@
-import { GlassShardParticle } from "../effects/glass-shard-particle";
 import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { drawPath, randomRange } from "../../utils";
-import { buildShards, createBurstParticle } from "./death-effect-helpers";
+import { createBurstParticle, createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
+import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
 const BASE_COLOR = "#ff7a4f";
 const ENRAGED_COLOR = "#ff5a36";
@@ -78,22 +78,20 @@ export class BerserkerMonster extends Monster {
       x: randomRange(-this.radius * 0.15, this.radius * 0.22),
       y: randomRange(-this.radius * 0.15, this.radius * 0.15),
     };
-    const particles: Particle[] = buildShards(
+    const particles: Particle[] = createPolygonShardParticles(
+      this.x,
+      this.y,
+      this.color,
       this.createOutline(),
       pivot,
-      Math.round(randomRange(6, 10)),
-    ).map(
-      (shardVertices) =>
-        new GlassShardParticle(
-          this.x,
-          this.y,
-          this.color,
-          shardVertices,
-          pivot,
-          this.angle,
-          randomRange(140, 230),
-          0,
-        ),
+      this.angle,
+      140,
+      230,
+      0,
+      createPolygonShardSplitterConfig({
+        minShardCount: 4,
+        maxShardCount: 9,
+      }),
     );
 
     for (let index = 0; index < 8; index += 1) {

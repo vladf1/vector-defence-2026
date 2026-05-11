@@ -1,10 +1,10 @@
-import { GlassShardParticle } from "../effects/glass-shard-particle";
 import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
-import { buildShards, createBurstParticle } from "./death-effect-helpers";
+import { createBurstParticle, createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
+import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
 const COLOR = "#ff8bd5";
 const SPEED_PER_SECOND = 73;
@@ -48,22 +48,20 @@ export class SplitterMonster extends Monster {
       x: randomRange(-this.radius * 0.14, this.radius * 0.14),
       y: randomRange(-this.radius * 0.14, this.radius * 0.14),
     };
-    const particles: Particle[] = buildShards(
+    const particles: Particle[] = createPolygonShardParticles(
+      this.x,
+      this.y,
+      this.color,
       this.createOutline(),
       pivot,
-      Math.round(randomRange(6, 9)),
-    ).map(
-      (shardVertices) =>
-        new GlassShardParticle(
-          this.x,
-          this.y,
-          this.color,
-          shardVertices,
-          pivot,
-          this.rotation,
-          randomRange(110, 185),
-          0,
-        ),
+      this.rotation,
+      110,
+      185,
+      0,
+      createPolygonShardSplitterConfig({
+        minShardCount: 4,
+        maxShardCount: 9,
+      }),
     );
 
     for (let index = 0; index < 7; index += 1) {

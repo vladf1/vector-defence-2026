@@ -36,7 +36,7 @@ export class GlassShardParticle extends Particle {
     this.vertices = vertices;
     this.rotation = rotation;
     this.angularVelocityPerSecond = randomRange(-5.5, 5.5);
-    this.alphaFadePerSecond = randomRange(1.2, 2.7);
+    this.alphaFadePerSecond = randomRange(0.8, 1.8);
   }
 
   update(deltaSeconds: number): void {
