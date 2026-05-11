@@ -23,8 +23,8 @@ const TOWER_CLASS_BY_KIND = TOWER_TOOLBAR_PREVIEWS.reduce<Record<TowerKind, Towe
 }, {} as Record<TowerKind, TowerClass>);
 
 const TOWER_KIND_BY_SHORTCUT: Record<string, TowerKind> = Object.fromEntries(
-  TOWER_TOOLBAR_PREVIEWS.flatMap((tower) =>
-    tower.towerClass.shortcuts.map((shortcut) => [shortcut, tower.kind] as const),
+  Object.values(TOWER_CLASS_BY_KIND).flatMap((towerClass) =>
+    towerClass.shortcuts.map((shortcut) => [shortcut, towerClass.kind] as const),
   ),
 ) as Record<string, TowerKind>;
 

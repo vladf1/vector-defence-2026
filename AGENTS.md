@@ -28,6 +28,7 @@ Key paths:
 - Browser level data: `game-levels.json`
 - Browser audio assets: `src/assets/audio/`
 - Tower render sheet script: `scripts/render-towers.mjs`
+- Monster explosion render sheet script: `scripts/render-monster-explosions.mjs`
 
 Repository notes:
 
@@ -120,6 +121,13 @@ Tower render sheet:
 - `npm run render:towers` generates `artifacts/tower-render.png`.
 - The script starts a temporary Vite server, opens it with Playwright, imports the real tower classes, upgrades each tower from level 1 through 7, and calls the actual canvas `draw()` methods.
 - Use a fresh artifact filename when comparing visual variants so the app does not show a cached old image, for example `npm run render:towers -- artifacts/tower-render-laser-test.png`.
+- Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
+
+Monster explosion render sheets:
+
+- `node scripts/render-monster-explosions.mjs --phase both` generates large contact sheets for every monster under `artifacts/monster-explosion-sequence/`.
+- The script starts a temporary Vite server, opens it with Playwright, imports the real monster classes, calls each monster's actual `createDeathEffect()`, and renders both early and full explosion sequences.
+- Use `--monster <kind>`, `--phase early|full|both`, or `--output <dir>` when comparing a smaller visual change.
 - Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
 
 Audio assets:

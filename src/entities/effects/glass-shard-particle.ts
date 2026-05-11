@@ -4,6 +4,7 @@ import { drawPath, hexWithAlpha, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
 const SHARD_FILL_COLOR = "#050908";
+const SHARD_STROKE_WIDTH = 0.75;
 
 export class GlassShardParticle extends Particle {
   alpha = 1;
@@ -63,7 +64,7 @@ export class GlassShardParticle extends Particle {
     context.rotate(this.rotation);
     context.fillStyle = hexWithAlpha(SHARD_FILL_COLOR, this.alpha);
     context.strokeStyle = hexWithAlpha(this.color, Math.min(1, this.alpha + 0.1));
-    context.lineWidth = 1;
+    context.lineWidth = SHARD_STROKE_WIDTH;
     drawPath(context, this.vertices, true);
     context.restore();
   }

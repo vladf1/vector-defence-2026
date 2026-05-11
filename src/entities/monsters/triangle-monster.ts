@@ -1,9 +1,9 @@
 import { GlassShardParticle } from "../effects/glass-shard-particle";
 import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
-import { AudioCue } from "../../types";
+import { AudioCue, type Point } from "../../types";
 import { drawPath, randomRange } from "../../utils";
-import { buildShards, createSimpleExplosionParticles, randomPointInsideTriangle } from "./death-effect-helpers";
+import { createSimpleExplosionParticles } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
 
 const COLOR = "#ffba4f";
@@ -25,13 +25,11 @@ export class TriangleMonster extends Monster {
   }
 
   override createDeathEffect(): MonsterDeathEffect {
-    const outline = this.createOutline();
-    const pivot = randomPointInsideTriangle(outline[0], outline[1], outline[2]);
-    const particles: Particle[] = buildShards(
-      outline,
-      pivot,
-      Math.round(randomRange(4, 8)),
-    ).map(
+    const pivot = {
+      x: randomRange(-OUTLINE_RADIUS * 0.1, OUTLINE_RADIUS * 0.14),
+      y: randomRange(-OUTLINE_RADIUS * 0.12, OUTLINE_RADIUS * 0.12),
+    };
+    const particles: Particle[] = this.createCrackShards(pivot).map(
       (shardVertices) =>
         new GlassShardParticle(
           this.x,
@@ -40,15 +38,15 @@ export class TriangleMonster extends Monster {
           shardVertices,
           pivot,
           this.angle,
-          randomRange(145, 245),
-          0,
+          randomRange(115, 195),
+          1.4,
         ),
     );
     particles.push(
       ...createSimpleExplosionParticles(
         this.x,
         this.y,
-        5,
+        4,
         randomRange(1.1, 2),
         "#fff0c8",
         randomRange(3.1, 4.2),
@@ -67,5 +65,38 @@ export class TriangleMonster extends Monster {
       { x: -OUTLINE_RADIUS, y: -OUTLINE_RADIUS },
       { x: -OUTLINE_RADIUS, y: OUTLINE_RADIUS },
     ];
+  }
+
+  private createCrackShards(pivot: Point): Point[][] {
+    const radius = OUTLINE_RADIUS;
+    const tip = { x: radius, y: 0 };
+    const upperLeft = { x: -radius, y: -radius };
+    const lowerLeft = { x: -radius, y: radius };
+    const upperSideBreak = this.jitterAlongEdge(upperLeft, tip, 0.48);
+    const lowerSideBreak = this.jitterAlongEdge(tip, lowerLeft, 0.5);
+    const leftSideBreak = this.jitterAlongEdge(lowerLeft, upperLeft, 0.5);
+
+    return [
+      [upperLeft, upperSideBreak, pivot],
+      [upperSideBreak, tip, pivot],
+      [tip, lowerSideBreak, pivot],
+      [lowerSideBreak, lowerLeft, pivot],
+      [lowerLeft, leftSideBreak, pivot],
+      [leftSideBreak, upperLeft, pivot],
+    ];
+  }
+
+  private jitterAlongEdge(start: Point, end: Point, ratio: number): Point {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    const edgeRatio = ratio + randomRange(-0.11, 0.11);
+    const normalOffset = randomRange(-0.28, 0.28);
+    const normalX = length === 0 ? 0 : (-dy / length) * normalOffset;
+    const normalY = length === 0 ? 0 : (dx / length) * normalOffset;
+    return {
+      x: start.x + (dx * edgeRatio) + normalX,
+      y: start.y + (dy * edgeRatio) + normalY,
+    };
   }
 }
