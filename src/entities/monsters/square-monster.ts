@@ -1,11 +1,9 @@
 import { GlassShardParticle } from "../effects/glass-shard-particle";
+import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
-import {
-  buildShards,
-  createSimpleExplosionParticles,
-} from "./death-effect-helpers";
+import { buildShards, createSimpleExplosionParticles } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
 
 const COLOR = "#ff6f62";
@@ -44,7 +42,7 @@ export class SquareMonster extends Monster {
       x: randomRange(-this.radius * 0.24, this.radius * 0.24),
       y: randomRange(-this.radius * 0.24, this.radius * 0.24),
     };
-    const particles: MonsterDeathEffect["particles"] = buildShards(
+    const particles: Particle[] = buildShards(
       this.createOutline(),
       pivot,
       Math.round(randomRange(5, 10)),

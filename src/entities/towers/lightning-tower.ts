@@ -1,4 +1,3 @@
-import { TOWER_RADIUS, TOWER_UPGRADE_RING_GROWTH, TOWER_UPGRADE_RING_OFFSET } from "../../constants";
 import type { Game } from "../../game-engine";
 import { AudioCue, TowerKind } from "../../types";
 import { withinDistance } from "../../utils";
@@ -118,21 +117,7 @@ export class LightningTower extends Tower {
 
     context.save();
     context.translate(this.x, this.y);
-    context.strokeStyle = "#ffffff";
-    context.fillStyle = "#050908";
-    context.lineWidth = 1.5;
-    context.beginPath();
-    context.arc(0, 0, TOWER_RADIUS, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
-
-    if (this.level > 0) {
-      context.strokeStyle = `rgba(255, 226, 122, ${0.22 + (this.level * 0.02)})`;
-      context.lineWidth = 0.9 + (this.level * 0.08);
-      context.beginPath();
-      context.arc(0, 0, TOWER_RADIUS + TOWER_UPGRADE_RING_OFFSET + (this.level * TOWER_UPGRADE_RING_GROWTH), 0, Math.PI * 2);
-      context.stroke();
-    }
+    this.drawBase(context, "#050908", "#ffffff", `rgba(255, 226, 122, ${0.22 + (this.level * 0.02)})`);
 
     context.save();
     const boltScale = 0.96 + (this.level * 0.026);

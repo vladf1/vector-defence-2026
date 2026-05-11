@@ -1,24 +1,22 @@
 import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "../../constants";
-import { hexWithAlpha, randomRange } from "../../utils";
+import type { Point } from "../../types";
+import { drawPath, hexWithAlpha, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
-type Vertex = {
-  x: number;
-  y: number;
-};
+const SHARD_FILL_COLOR = "#050908";
 
 export class GlassShardParticle extends Particle {
   alpha = 1;
   alphaFadePerSecond: number;
   rotation: number;
   angularVelocityPerSecond: number;
-  vertices: Vertex[];
+  vertices: Point[];
 
   constructor(
     x: number,
     y: number,
     color: string,
-    vertices: Vertex[],
+    vertices: Point[],
     rotation: number,
     speedPerSecond: number,
   ) {
@@ -56,22 +54,15 @@ export class GlassShardParticle extends Particle {
     context.save();
     context.translate(this.x, this.y);
     context.rotate(this.rotation);
-    context.fillStyle = hexWithAlpha(this.color, this.alpha);
-    context.strokeStyle = hexWithAlpha("#ffffff", Math.min(1, this.alpha + 0.1));
+    context.fillStyle = hexWithAlpha(SHARD_FILL_COLOR, this.alpha);
+    context.strokeStyle = hexWithAlpha(this.color, Math.min(1, this.alpha + 0.1));
     context.lineWidth = 1;
-    context.beginPath();
-    context.moveTo(this.vertices[0].x, this.vertices[0].y);
-    for (let index = 1; index < this.vertices.length; index += 1) {
-      context.lineTo(this.vertices[index].x, this.vertices[index].y);
-    }
-    context.closePath();
-    context.fill();
-    context.stroke();
+    drawPath(context, this.vertices, true);
     context.restore();
   }
 }
 
-function getCentroid(vertices: Vertex[]): Vertex {
+function getCentroid(vertices: Point[]): Point {
   let sumX = 0;
   let sumY = 0;
   for (const vertex of vertices) {

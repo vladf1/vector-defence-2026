@@ -1,5 +1,6 @@
 import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "../../constants";
 import { hexWithAlpha, randomRange } from "../../utils";
+import { drawTankTurret } from "../monsters/tank-turret-rendering";
 import { Particle } from "./particle";
 
 const TURRET_FILL = "#050908";
@@ -49,22 +50,13 @@ export class TankTurretParticle extends Particle {
   }
 
   draw(context: CanvasRenderingContext2D): void {
-    const turretRadius = this.radius * 0.48;
-    const turretCenterX = this.radius * 0.08;
     context.save();
     context.translate(this.x, this.y);
     context.rotate(this.rotation);
     context.fillStyle = hexWithAlpha(TURRET_FILL, this.alpha);
     context.strokeStyle = hexWithAlpha(this.color, Math.min(1, this.alpha + 0.08));
     context.lineWidth = 1.5;
-    context.beginPath();
-    context.arc(turretCenterX, 0, turretRadius, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
-    context.beginPath();
-    context.moveTo(turretCenterX + (turretRadius * 0.92), 0);
-    context.lineTo(this.radius * 1.7, 0);
-    context.stroke();
+    drawTankTurret(context, this.radius, 0.48, 1.7);
     context.restore();
   }
 }

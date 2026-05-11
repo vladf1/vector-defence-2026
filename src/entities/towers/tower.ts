@@ -1,4 +1,11 @@
-import { MAX_TOWER_LEVEL, TOWER_RANGE_UPGRADE_STEP, UPGRADE_COST } from "../../constants";
+import {
+  MAX_TOWER_LEVEL,
+  TOWER_RADIUS,
+  TOWER_RANGE_UPGRADE_STEP,
+  TOWER_UPGRADE_RING_GROWTH,
+  TOWER_UPGRADE_RING_OFFSET,
+  UPGRADE_COST,
+} from "../../constants";
 import type { Point } from "../../types";
 import type { TowerKind } from "../../types";
 import { normalizeAngle } from "../../utils";
@@ -163,6 +170,31 @@ export abstract class Tower {
     context.fill();
     context.stroke();
     context.restore();
+  }
+
+  protected drawBase(
+    context: CanvasRenderingContext2D,
+    fillStyle: string | CanvasGradient | CanvasPattern,
+    strokeStyle: string,
+    upgradeRingStyle: string,
+  ): void {
+    context.fillStyle = fillStyle;
+    context.strokeStyle = strokeStyle;
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.arc(0, 0, TOWER_RADIUS, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+
+    if (this.level === 0) {
+      return;
+    }
+
+    context.strokeStyle = upgradeRingStyle;
+    context.lineWidth = 0.9 + (this.level * 0.08);
+    context.beginPath();
+    context.arc(0, 0, TOWER_RADIUS + TOWER_UPGRADE_RING_OFFSET + (this.level * TOWER_UPGRADE_RING_GROWTH), 0, Math.PI * 2);
+    context.stroke();
   }
 
   protected abstract onUpdate(game: Game, deltaSeconds: number): void;

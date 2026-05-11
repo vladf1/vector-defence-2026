@@ -1,14 +1,12 @@
 import { GlassShardParticle } from "../effects/glass-shard-particle";
 import { TankTurretParticle } from "../effects/tank-turret-particle";
+import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
-import {
-  buildShards,
-  createSimpleExplosionParticles,
-  rotatePoint,
-} from "./death-effect-helpers";
+import { buildShards, createSimpleExplosionParticles, rotatePoint } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
+import { drawTankTurret } from "./tank-turret-rendering";
 
 const COLOR = "#9fb6ff";
 const SPEED_PER_SECOND = 41;
@@ -26,16 +24,7 @@ export class TankMonster extends Monster {
     const hull = this.createHullRect();
     context.fillRect(hull.x, hull.y, hull.width, hull.height);
     context.strokeRect(hull.x, hull.y, hull.width, hull.height);
-    const turretCenterX = this.radius * 0.08;
-    const turretRadius = this.radius * 0.42;
-    context.beginPath();
-    context.arc(turretCenterX, 0, turretRadius, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
-    context.beginPath();
-    context.moveTo(turretCenterX + turretRadius * 0.92, 0);
-    context.lineTo(this.radius * 1.52, 0);
-    context.stroke();
+    drawTankTurret(context, this.radius, 0.42, 1.52);
   }
 
   override createDeathEffect(): MonsterDeathEffect {
@@ -47,7 +36,7 @@ export class TankMonster extends Monster {
       { x: this.radius * 0.38, y: 0 },
       this.angle,
     );
-    const particles: MonsterDeathEffect["particles"] = [
+    const particles: Particle[] = [
       new TankTurretParticle(
         this.x + turretCenterOffset.x,
         this.y + turretCenterOffset.y,

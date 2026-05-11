@@ -54,6 +54,23 @@ export function angleBetween(source: Point, target: Point): number {
   return Math.atan2(target.y - source.y, target.x - source.x);
 }
 
+export function drawPath(context: CanvasRenderingContext2D, points: readonly Point[], fill: boolean): void {
+  if (points.length === 0) {
+    return;
+  }
+
+  context.beginPath();
+  context.moveTo(points[0].x, points[0].y);
+  for (let index = 1; index < points.length; index += 1) {
+    context.lineTo(points[index].x, points[index].y);
+  }
+  context.closePath();
+  if (fill) {
+    context.fill();
+  }
+  context.stroke();
+}
+
 export function normalizeAngle(angle: number): number {
   return Math.atan2(Math.sin(angle), Math.cos(angle));
 }

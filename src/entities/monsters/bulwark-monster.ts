@@ -1,12 +1,9 @@
 import { GlassShardParticle } from "../effects/glass-shard-particle";
+import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
-import { hexWithAlpha, randomRange } from "../../utils";
-import {
-  buildShards,
-  createBurstParticle,
-  createSimpleExplosionParticles,
-} from "./death-effect-helpers";
+import { drawPath, hexWithAlpha, randomRange } from "../../utils";
+import { buildShards, createBurstParticle, createSimpleExplosionParticles } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
 
 const COLOR = "#78d7ff";
@@ -44,27 +41,14 @@ export class BulwarkMonster extends Monster {
     const glow = 0.3 + (Math.sin(this.shieldPulse) * 0.12);
     const halfHeight = this.radius * 0.8;
 
-    context.beginPath();
     const shellOutline = this.createShellOutline();
-    context.moveTo(shellOutline[0].x, shellOutline[0].y);
-    for (let index = 1; index < shellOutline.length; index += 1) {
-      context.lineTo(shellOutline[index].x, shellOutline[index].y);
-    }
-    context.closePath();
-    context.fill();
-    context.stroke();
+    drawPath(context, shellOutline, true);
 
     context.save();
     context.strokeStyle = hexWithAlpha(ARMOR_GLOW_COLOR, glow);
     context.lineWidth = 1.2;
-    context.beginPath();
     const coreOutline = this.createCoreOutline();
-    context.moveTo(coreOutline[0].x, coreOutline[0].y);
-    for (let index = 1; index < coreOutline.length; index += 1) {
-      context.lineTo(coreOutline[index].x, coreOutline[index].y);
-    }
-    context.closePath();
-    context.stroke();
+    drawPath(context, coreOutline, false);
 
     context.beginPath();
     context.moveTo(-this.radius * 0.22, -this.radius * 0.82);
@@ -96,7 +80,7 @@ export class BulwarkMonster extends Monster {
       x: randomRange(-this.radius * 0.18, this.radius * 0.18),
       y: randomRange(-this.radius * 0.18, this.radius * 0.18),
     };
-    const particles: MonsterDeathEffect["particles"] = buildShards(
+    const particles: Particle[] = buildShards(
       this.createShellOutline(),
       shellPivot,
       Math.round(randomRange(6, 10)),

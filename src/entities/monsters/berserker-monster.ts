@@ -1,7 +1,8 @@
 import { GlassShardParticle } from "../effects/glass-shard-particle";
+import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
-import { randomRange } from "../../utils";
+import { drawPath, randomRange } from "../../utils";
 import { buildShards, createBurstParticle } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
 
@@ -51,15 +52,8 @@ export class BerserkerMonster extends Monster {
 
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
-    context.beginPath();
     const outline = this.createOutline();
-    context.moveTo(outline[0].x, outline[0].y);
-    for (let index = 1; index < outline.length; index += 1) {
-      context.lineTo(outline[index].x, outline[index].y);
-    }
-    context.closePath();
-    context.fill();
-    context.stroke();
+    drawPath(context, outline, true);
 
     context.beginPath();
     context.moveTo(-this.radius * 0.3, -this.radius * 0.16);
@@ -84,7 +78,7 @@ export class BerserkerMonster extends Monster {
       x: randomRange(-this.radius * 0.15, this.radius * 0.22),
       y: randomRange(-this.radius * 0.15, this.radius * 0.15),
     };
-    const particles: MonsterDeathEffect["particles"] = buildShards(
+    const particles: Particle[] = buildShards(
       this.createOutline(),
       pivot,
       Math.round(randomRange(6, 10)),

@@ -3,6 +3,8 @@ import type { Point } from "../../types";
 import { hexWithAlpha, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
+const SHARD_FILL_COLOR = "#050908";
+
 export class CircleShardParticle extends Particle {
   alpha = 1;
   alphaFadePerSecond: number;
@@ -25,6 +27,7 @@ export class CircleShardParticle extends Particle {
     innerStart: Point,
     innerPeak: Point,
     innerEnd: Point,
+    initialRotation: number,
     speedPerSecond: number,
   ) {
     super(x, y, radius * 2, color, 0, { speedPerSecond, offset: 0 });
@@ -37,7 +40,7 @@ export class CircleShardParticle extends Particle {
     this.innerStart = innerStart;
     this.innerPeak = innerPeak;
     this.innerEnd = innerEnd;
-    this.rotation = randomRange(-0.22, 0.22);
+    this.rotation = initialRotation;
     this.angularVelocityPerSecond = randomRange(-5.2, 5.2);
     this.alphaFadePerSecond = randomRange(0.95, 1.9);
   }
@@ -68,8 +71,8 @@ export class CircleShardParticle extends Particle {
     context.save();
     context.translate(this.x, this.y);
     context.rotate(this.rotation);
-    context.fillStyle = hexWithAlpha(this.color, this.alpha);
-    context.strokeStyle = hexWithAlpha("#ffffff", Math.min(1, this.alpha + 0.08));
+    context.fillStyle = hexWithAlpha(SHARD_FILL_COLOR, this.alpha);
+    context.strokeStyle = hexWithAlpha(this.color, Math.min(1, this.alpha + 0.08));
     context.lineWidth = 1.1;
     context.beginPath();
     context.moveTo(this.innerStart.x, this.innerStart.y);

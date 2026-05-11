@@ -1,4 +1,5 @@
 import { GlassShardParticle } from "../effects/glass-shard-particle";
+import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
@@ -47,7 +48,7 @@ export class SplitterMonster extends Monster {
       x: randomRange(-this.radius * 0.14, this.radius * 0.14),
       y: randomRange(-this.radius * 0.14, this.radius * 0.14),
     };
-    const particles: MonsterDeathEffect["particles"] = buildShards(
+    const particles: Particle[] = buildShards(
       this.createOutline(),
       pivot,
       Math.round(randomRange(6, 9)),

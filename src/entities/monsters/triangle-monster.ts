@@ -1,12 +1,9 @@
 import { GlassShardParticle } from "../effects/glass-shard-particle";
+import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
-import { randomRange } from "../../utils";
-import {
-  buildShards,
-  createSimpleExplosionParticles,
-  randomPointInsideTriangle,
-} from "./death-effect-helpers";
+import { drawPath, randomRange } from "../../utils";
+import { buildShards, createSimpleExplosionParticles, randomPointInsideTriangle } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
 
 const COLOR = "#ffba4f";
@@ -23,20 +20,14 @@ export class TriangleMonster extends Monster {
 
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
-    context.beginPath();
     const outline = this.createOutline();
-    context.moveTo(outline[0].x, outline[0].y);
-    context.lineTo(outline[1].x, outline[1].y);
-    context.lineTo(outline[2].x, outline[2].y);
-    context.closePath();
-    context.fill();
-    context.stroke();
+    drawPath(context, outline, true);
   }
 
   override createDeathEffect(): MonsterDeathEffect {
     const outline = this.createOutline();
     const pivot = randomPointInsideTriangle(outline[0], outline[1], outline[2]);
-    const particles: MonsterDeathEffect["particles"] = buildShards(
+    const particles: Particle[] = buildShards(
       outline,
       pivot,
       Math.round(randomRange(4, 8)),

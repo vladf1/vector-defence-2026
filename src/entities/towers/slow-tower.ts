@@ -1,4 +1,4 @@
-import { TOWER_RADIUS, TOWER_UPGRADE_RING_GROWTH, TOWER_UPGRADE_RING_OFFSET } from "../../constants";
+import { TOWER_RADIUS } from "../../constants";
 import type { Game } from "../../game-engine";
 import { AudioCue, TowerKind } from "../../types";
 import { withinDistance } from "../../utils";
@@ -62,21 +62,9 @@ export class SlowTower extends Tower {
     const gradient = context.createRadialGradient(0, 0, 0, 0, 0, TOWER_RADIUS);
     gradient.addColorStop(0, "#050908");
     gradient.addColorStop(1, `rgba(255, 220, 92, ${0.6 + (Math.sin(this.pulse) * 0.2)})`);
-    context.fillStyle = gradient;
-    context.strokeStyle = "#ffffff";
-    context.lineWidth = 1.5;
-    context.beginPath();
-    context.arc(0, 0, TOWER_RADIUS, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
+    this.drawBase(context, gradient, "#ffffff", `rgba(216, 255, 79, ${0.22 + (this.level * 0.02)})`);
 
     if (this.level > 0) {
-      context.strokeStyle = `rgba(216, 255, 79, ${0.22 + (this.level * 0.02)})`;
-      context.lineWidth = 0.9 + (this.level * 0.08);
-      context.beginPath();
-      context.arc(0, 0, TOWER_RADIUS + TOWER_UPGRADE_RING_OFFSET + (this.level * TOWER_UPGRADE_RING_GROWTH), 0, Math.PI * 2);
-      context.stroke();
-
       const nodeCount = Math.min(6, this.level + 1);
       const orbitRadius = 7 + (this.level * 0.75);
       for (let i = 0; i < nodeCount; i += 1) {
