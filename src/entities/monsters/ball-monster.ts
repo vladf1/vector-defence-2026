@@ -1,7 +1,7 @@
 import { CircleShardParticle } from "../effects/circle-shard-particle";
 import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
-import { AudioCue } from "../../types";
+import { AudioCue, type Point } from "../../types";
 import { randomRange } from "../../utils";
 import {
   createSimpleExplosionParticles,
@@ -33,6 +33,20 @@ export class BallMonster extends Monster {
     context.beginPath();
     context.arc(this.radius * 0.12, -this.radius * 0.5, this.radius * 0.16, 0, Math.PI * 2);
     context.fill();
+  }
+
+  createOutline(arcVertexCount: number): Point[] {
+    const bodySweepAngle = (Math.PI * 2) - (MOUTH_ANGLE * 2);
+    const vertexCount = Math.max(2, Math.floor(arcVertexCount));
+    const outline = [{ x: 0, y: 0 }];
+
+    for (let index = 0; index < vertexCount; index += 1) {
+      const ratio = vertexCount === 1 ? 0 : index / (vertexCount - 1);
+      const angle = MOUTH_ANGLE + (bodySweepAngle * ratio);
+      outline.push(pointOnRadius(angle, this.radius));
+    }
+
+    return outline;
   }
 
   override createDeathEffect(): MonsterDeathEffect {
