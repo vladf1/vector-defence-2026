@@ -7,8 +7,7 @@ import { createServer } from "vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
-const options = parseOptions(process.argv.slice(2));
-const outputDir = path.resolve(repoRoot, options.outputDir);
+const outputDir = path.resolve(repoRoot, "artifacts/monster-explosion-sequence");
 
 const html = String.raw`
 <!doctype html>
@@ -37,11 +36,8 @@ const html = String.raw`
       const SHEET_ROWS = Math.ceil(FRAME_COUNT / SHEET_COLUMNS);
       const SHEET_WIDTH = FRAME_WIDTH * SHEET_COLUMNS;
       const SHEET_HEIGHT = FRAME_HEIGHT * SHEET_ROWS;
-      const FULL_DELTA_SECONDS = 1 / 180;
-      const EARLY_DELTA_SECONDS = 1 / 420;
+      const DELTA_SECONDS = 1 / 420;
       const MONSTER_STROKE_WIDTH = 1.5;
-      const REQUESTED_MONSTER = ${JSON.stringify(options.monster)};
-      const REQUESTED_PHASE = ${JSON.stringify(options.phase)};
 
       const { BallMonster } = await import("/src/entities/monsters/ball-monster.ts");
       const { SquareMonster } = await import("/src/entities/monsters/square-monster.ts");
@@ -63,11 +59,6 @@ const html = String.raw`
         { slug: "berserker", label: "Berserker", MonsterClass: BerserkerMonster, seed: 2207, zoom: 10.4, angle: 0 },
       ];
 
-      const phaseSpecs = [
-        { slug: "full", deltaSeconds: FULL_DELTA_SECONDS, startsIntact: false, suffix: "explosion-contact-sheet-large" },
-        { slug: "early", deltaSeconds: EARLY_DELTA_SECONDS, startsIntact: true, suffix: "explosion-early-contact-sheet-large" },
-      ];
-
       const frameCanvas = document.getElementById("frame");
       const frameContext = frameCanvas.getContext("2d");
       const sheetCanvas = document.getElementById("sheet");
@@ -78,39 +69,31 @@ const html = String.raw`
       sheetCanvas.width = SHEET_WIDTH;
       sheetCanvas.height = SHEET_HEIGHT;
 
-      const selectedMonsters = REQUESTED_MONSTER === "all"
-        ? monsterSpecs
-        : monsterSpecs.filter((spec) => spec.slug === REQUESTED_MONSTER);
-      const selectedPhases = REQUESTED_PHASE === "both"
-        ? phaseSpecs
-        : phaseSpecs.filter((spec) => spec.slug === REQUESTED_PHASE);
       const outputs = {};
 
-      for (const monsterSpec of selectedMonsters) {
-        for (const phaseSpec of selectedPhases) {
-          Math.random = createSeededRandom(monsterSpec.seed);
-          const monster = createMonster(monsterSpec);
-          const effect = monster.createDeathEffect();
-          const particles = effect.particles;
+      for (const monsterSpec of monsterSpecs) {
+        Math.random = createSeededRandom(monsterSpec.seed);
+        const monster = createMonster(monsterSpec);
+        const effect = monster.createDeathEffect();
+        const particles = effect.particles;
 
-          sheetContext.fillStyle = "#020807";
-          sheetContext.fillRect(0, 0, SHEET_WIDTH, SHEET_HEIGHT);
+        sheetContext.fillStyle = "#020807";
+        sheetContext.fillRect(0, 0, SHEET_WIDTH, SHEET_HEIGHT);
 
-          for (let frameIndex = 0; frameIndex < FRAME_COUNT; frameIndex += 1) {
-            drawFrame(frameContext, monster, particles, frameIndex, monsterSpec, phaseSpec);
-            const sheetX = (frameIndex % SHEET_COLUMNS) * FRAME_WIDTH;
-            const sheetY = Math.floor(frameIndex / SHEET_COLUMNS) * FRAME_HEIGHT;
-            sheetContext.drawImage(frameCanvas, sheetX, sheetY);
+        for (let frameIndex = 0; frameIndex < FRAME_COUNT; frameIndex += 1) {
+          drawFrame(frameContext, monster, particles, frameIndex, monsterSpec);
+          const sheetX = (frameIndex % SHEET_COLUMNS) * FRAME_WIDTH;
+          const sheetY = Math.floor(frameIndex / SHEET_COLUMNS) * FRAME_HEIGHT;
+          sheetContext.drawImage(frameCanvas, sheetX, sheetY);
 
-            if (!phaseSpec.startsIntact || frameIndex > 0) {
-              for (const particle of particles) {
-                particle.update(phaseSpec.deltaSeconds);
-              }
+          if (frameIndex > 0) {
+            for (const particle of particles) {
+              particle.update(DELTA_SECONDS);
             }
           }
-
-          outputs[monsterSpec.slug + "-" + phaseSpec.suffix] = sheetCanvas.toDataURL("image/png");
         }
+
+        outputs[monsterSpec.slug + "-explosion-early-contact-sheet-large"] = sheetCanvas.toDataURL("image/png");
       }
 
       window.__monsterExplosionRender = outputs;
@@ -139,7 +122,7 @@ const html = String.raw`
         return monster;
       }
 
-      function drawFrame(context, monster, particles, frameIndex, monsterSpec, phaseSpec) {
+      function drawFrame(context, monster, particles, frameIndex, monsterSpec) {
         context.save();
         context.fillStyle = "#020807";
         context.fillRect(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
@@ -165,7 +148,7 @@ const html = String.raw`
         context.strokeStyle = "rgba(255, 255, 255, 0.2)";
         context.strokeRect(-13, -13, 26, 26);
 
-        if (phaseSpec.startsIntact && frameIndex === 0) {
+        if (frameIndex === 0) {
           drawIntactMonster(context, monster);
         } else {
           for (const particle of particles) {
@@ -180,9 +163,7 @@ const html = String.raw`
         context.font = "900 28px Avenir Next, Arial Black, Arial, sans-serif";
         context.fillText(monsterSpec.label, 28, 42);
         context.font = "800 22px Avenir Next, Arial, sans-serif";
-        const frameLabel = phaseSpec.startsIntact && frameIndex === 0
-          ? "intact"
-          : String(phaseSpec.startsIntact ? frameIndex : frameIndex + 1).padStart(2, "0");
+        const frameLabel = frameIndex === 0 ? "intact" : String(frameIndex).padStart(2, "0");
         context.fillText(frameLabel, 28, 75);
       }
 
@@ -252,37 +233,4 @@ try {
 } finally {
   await browser?.close();
   await server.close();
-}
-
-function parseOptions(args) {
-  const parsed = {
-    monster: "all",
-    phase: "early",
-    outputDir: "artifacts/monster-explosion-sequence",
-  };
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--monster") {
-      parsed.monster = args[index + 1] ?? parsed.monster;
-      index += 1;
-    } else if (arg === "--phase") {
-      parsed.phase = args[index + 1] ?? parsed.phase;
-      index += 1;
-    } else if (arg === "--output") {
-      parsed.outputDir = args[index + 1] ?? parsed.outputDir;
-      index += 1;
-    } else if (!arg.startsWith("--")) {
-      parsed.outputDir = arg;
-    }
-  }
-
-  if (!["all", "ball", "square", "triangle", "runner", "splitter", "tank", "bulwark", "berserker"].includes(parsed.monster)) {
-    throw new Error(`Unknown monster: ${parsed.monster}`);
-  }
-  if (!["early", "full", "both"].includes(parsed.phase)) {
-    throw new Error(`Unknown phase: ${parsed.phase}`);
-  }
-
-  return parsed;
 }

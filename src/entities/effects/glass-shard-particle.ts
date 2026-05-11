@@ -4,7 +4,7 @@ import { drawPath, hexWithAlpha, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
 const SHARD_FILL_COLOR = "#050908";
-const SHARD_STROKE_WIDTH = 0.75;
+const SHARD_STROKE_WIDTH = 1;
 
 export class GlassShardParticle extends Particle {
   alpha = 1;

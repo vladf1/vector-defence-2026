@@ -4,6 +4,7 @@ import { hexWithAlpha, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
 const SHARD_FILL_COLOR = "#050908";
+const SHARD_STROKE_WIDTH = 1;
 
 export class CircleShardParticle extends Particle {
   alpha = 1;
@@ -73,7 +74,7 @@ export class CircleShardParticle extends Particle {
     context.rotate(this.rotation);
     context.fillStyle = hexWithAlpha(SHARD_FILL_COLOR, this.alpha);
     context.strokeStyle = hexWithAlpha(this.color, Math.min(1, this.alpha + 0.08));
-    context.lineWidth = 1.1;
+    context.lineWidth = SHARD_STROKE_WIDTH;
     context.beginPath();
     context.moveTo(this.innerStart.x, this.innerStart.y);
     context.lineTo(outerStart.x, outerStart.y);

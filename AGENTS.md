@@ -125,9 +125,8 @@ Tower render sheet:
 
 Monster explosion render sheets:
 
-- `node scripts/render-monster-explosions.mjs --phase both` generates large contact sheets for every monster under `artifacts/monster-explosion-sequence/`.
-- The script starts a temporary Vite server, opens it with Playwright, imports the real monster classes, calls each monster's actual `createDeathEffect()`, and renders both early and full explosion sequences.
-- Use `--monster <kind>`, `--phase early|full|both`, or `--output <dir>` when comparing a smaller visual change.
+- `node scripts/render-monster-explosions.mjs` generates large early-stage contact sheets for every monster under `artifacts/monster-explosion-sequence/`.
+- The script starts a temporary Vite server, opens it with Playwright, imports the real monster classes, calls each monster's actual `createDeathEffect()`, and renders detailed early explosion frames with the intact monster as frame 0.
 - Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
 
 Audio assets:
