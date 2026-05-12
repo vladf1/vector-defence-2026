@@ -11,16 +11,16 @@ export class MissileShockwaveEffect extends Particle {
 
   override update(deltaSeconds: number): void {
     this.ageSeconds += deltaSeconds;
-    this.alpha = Math.max(0, 1 - (this.ageSeconds * 4.8));
+    this.alpha = Math.max(0, 1 - (this.ageSeconds * 4.15));
     if (this.alpha <= 0) {
       this.removed = true;
     }
   }
 
   override draw(context: CanvasRenderingContext2D): void {
-    const progress = Math.min(1, this.ageSeconds * 4.8);
-    const coreAlpha = Math.max(0, 1 - (progress * 4.7));
-    const shockRadius = (5.5 + (progress * 34)) * this.scale;
+    const progress = Math.min(1, this.ageSeconds * 4.15);
+    const coreAlpha = Math.max(0, 1 - (progress * 4.5));
+    const shockRadius = (5.75 + (progress * 37)) * this.scale;
 
     context.save();
     context.globalCompositeOperation = "lighter";
@@ -36,14 +36,14 @@ export class MissileShockwaveEffect extends Particle {
       context.fill();
     }
 
-    context.strokeStyle = hexWithAlpha("#ffb45f", this.alpha * 0.84);
-    context.lineWidth = 2.85 * this.scale * (1 - (progress * 0.44));
+    context.strokeStyle = hexWithAlpha("#f99a5f", this.alpha * 0.84);
+    context.lineWidth = 3.05 * this.scale * (1 - (progress * 0.42));
     context.beginPath();
     context.arc(this.x, this.y, shockRadius, 0, Math.PI * 2);
     context.stroke();
 
-    context.strokeStyle = hexWithAlpha("#fff2a8", this.alpha * 0.51);
-    context.lineWidth = 1.1 * this.scale;
+    context.strokeStyle = hexWithAlpha("#fff2bf", this.alpha * 0.5);
+    context.lineWidth = 1.18 * this.scale;
     context.beginPath();
     context.arc(this.x, this.y, shockRadius * 0.56, 0, Math.PI * 2);
     context.stroke();
