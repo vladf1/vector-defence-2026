@@ -3,7 +3,7 @@ import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { drawPath, hexWithAlpha, randomRange } from "../../utils";
-import { createBurstParticle, createPolygonShardParticles, createSimpleExplosionParticles } from "./death-effect-helpers";
+import { createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
@@ -40,7 +40,6 @@ export class BulwarkMonster extends Monster {
     context.rotate(this.angle);
 
     const glow = 0.3 + (Math.sin(this.shieldPulse) * 0.12);
-    const halfHeight = this.radius * 0.8;
 
     const shellOutline = this.createShellOutline();
     drawPath(context, shellOutline, true);
@@ -92,8 +91,8 @@ export class BulwarkMonster extends Monster {
       205,
       0,
       createPolygonShardSplitterConfig({
-        minShardCount: 4,
-        maxShardCount: 9,
+        minShardCount: 5,
+        maxShardCount: 11,
       }),
     );
     particles.push(
@@ -106,30 +105,6 @@ export class BulwarkMonster extends Monster {
         this.angle,
         randomRange(105, 175),
         0,
-      ),
-    );
-
-    for (let index = 0; index < 10; index += 1) {
-      particles.push(
-        createBurstParticle(
-          this.x,
-          this.y,
-          index % 2 === 0 ? ARMOR_GLOW_COLOR : "#9bf4ff",
-          randomRange(1.1, 2.1),
-          randomRange(2.7, 4),
-          (Math.PI * 2 * index) / 10 + randomRange(-0.08, 0.08),
-          randomRange(110, 185),
-        ),
-      );
-    }
-    particles.push(
-      ...createSimpleExplosionParticles(
-        this.x,
-        this.y,
-        5,
-        randomRange(1.2, 2.2),
-        "#ffffff",
-        randomRange(3.2, 4.4),
       ),
     );
 

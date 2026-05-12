@@ -1,5 +1,5 @@
 import { GlassShardParticle } from "../effects/glass-shard-particle";
-import { Particle } from "../effects/particle";
+import type { Particle } from "../effects/particle";
 import type { Point } from "../../types";
 import { randomRange } from "../../utils";
 import { PolygonShardSplitter, type PolygonShardSplitterConfig } from "./polygon-shard-splitter";
@@ -16,40 +16,6 @@ export function pointOnRadius(angle: number, radius: number): Point {
     x: Math.cos(angle) * radius,
     y: Math.sin(angle) * radius,
   };
-}
-
-export function createBurstParticle(
-  x: number,
-  y: number,
-  color: string,
-  size: number,
-  alphaFadePerSecond: number,
-  angle: number,
-  speedPerSecond: number,
-): Particle {
-  const particle = new Particle(x, y, size, color, alphaFadePerSecond, {
-    speedPerSecond: 0,
-    offset: 0,
-  });
-  particle.velocityXPerSecond = Math.cos(angle) * speedPerSecond;
-  particle.velocityYPerSecond = Math.sin(angle) * speedPerSecond;
-  particle.x = x;
-  particle.y = y;
-  return particle;
-}
-
-export function createSimpleExplosionParticles(
-  x: number,
-  y: number,
-  count: number,
-  size: number,
-  color: string,
-  alphaFadePerSecond: number,
-): Particle[] {
-  return Array.from(
-    { length: count },
-    () => new Particle(x, y, size, color, alphaFadePerSecond),
-  );
 }
 
 export function createPolygonShardParticles(

@@ -2,7 +2,7 @@ import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
-import { createPolygonShardParticles, createSimpleExplosionParticles } from "./death-effect-helpers";
+import { createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
@@ -53,21 +53,10 @@ export class SquareMonster extends Monster {
       233,
       1.2,
       createPolygonShardSplitterConfig({
-        minShardCount: 4,
-        maxShardCount: 9,
+        minShardCount: 5,
+        maxShardCount: 11,
       }),
     );
-    particles.push(
-      ...createSimpleExplosionParticles(
-        this.x,
-        this.y,
-        4,
-        randomRange(0.9, 1.7),
-        "#ffffff",
-        randomRange(3, 4.4),
-      ),
-    );
-
     return {
       sound: { cue: AudioCue.MonsterShatter },
       particles,

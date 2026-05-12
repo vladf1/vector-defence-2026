@@ -3,7 +3,7 @@ import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
-import { createPolygonShardParticles, createSimpleExplosionParticles, rotatePoint } from "./death-effect-helpers";
+import { createPolygonShardParticles, rotatePoint } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 import { drawTankTurret } from "./tank-turret-rendering";
@@ -55,25 +55,9 @@ export class TankMonster extends Monster {
         220,
         0,
         createPolygonShardSplitterConfig({
-          minShardCount: 5,
-          maxShardCount: 11,
+          minShardCount: 6,
+          maxShardCount: 13,
         }),
-      ),
-      ...createSimpleExplosionParticles(
-        this.x,
-        this.y,
-        12,
-        randomRange(2.6, 4.8),
-        "#fff1a6",
-        randomRange(1.8, 2.5),
-      ),
-      ...createSimpleExplosionParticles(
-        this.x,
-        this.y,
-        8,
-        randomRange(1.5, 2.8),
-        "#dfe6f3",
-        randomRange(2.6, 3.8),
       ),
     ];
 

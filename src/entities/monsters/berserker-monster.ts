@@ -2,7 +2,7 @@ import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { drawPath, randomRange } from "../../utils";
-import { createBurstParticle, createPolygonShardParticles } from "./death-effect-helpers";
+import { createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
@@ -89,38 +89,10 @@ export class BerserkerMonster extends Monster {
       230,
       0,
       createPolygonShardSplitterConfig({
-        minShardCount: 4,
-        maxShardCount: 9,
+        minShardCount: 5,
+        maxShardCount: 11,
       }),
     );
-
-    for (let index = 0; index < 8; index += 1) {
-      particles.push(
-        createBurstParticle(
-          this.x,
-          this.y,
-          index % 3 === 0 ? "#ffd1a3" : this.color,
-          randomRange(1.2, 2.6),
-          randomRange(2.6, 3.7),
-          this.angle + randomRange(-0.55, 0.55),
-          randomRange(145, 260),
-        ),
-      );
-    }
-
-    for (let index = 0; index < 5; index += 1) {
-      particles.push(
-        createBurstParticle(
-          this.x,
-          this.y,
-          "#ffffff",
-          randomRange(0.8, 1.6),
-          randomRange(3.6, 5),
-          this.angle + randomRange(-0.18, 0.18),
-          randomRange(190, 295),
-        ),
-      );
-    }
 
     return {
       sound: { cue: AudioCue.MonsterHeavyDeath, intensity: 1.05 },

@@ -156,8 +156,8 @@ const html = String.raw`
 
       function createSplitterConfig(random, overrides) {
         return createPolygonShardSplitterConfig({
-          minShardCount: 4,
-          maxShardCount: 9,
+          minShardCount: 5,
+          maxShardCount: 11,
           random,
           ...overrides,
         });

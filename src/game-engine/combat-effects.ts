@@ -32,13 +32,6 @@ export function createLaserImpactEffect(game: Game, x: number, y: number, beamAn
   }
 }
 
-export function createExplosionEffect(game: Game, x: number, y: number, count: number, size: number, color: string, alphaFadePerSecond: number): void {
-  const particleCount = Math.min(count, Math.max(0, MAX_PARTICLES - game.runtime.particles.length));
-  for (let index = 0; index < particleCount; index += 1) {
-    game.addParticle(new Particle(x, y, size, color, alphaFadePerSecond));
-  }
-}
-
 export function createMissileExplosionEffect(game: Game, x: number, y: number, blastAngle: number): void {
   game.addParticle(new MissileShockwaveEffect(x, y));
 

@@ -4,7 +4,6 @@ import { AudioCue, type Point } from "../../types";
 import { randomRange } from "../../utils";
 import {
   createPolygonShardParticles,
-  createSimpleExplosionParticles,
   pointOnRadius,
 } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
@@ -66,30 +65,11 @@ export class BallMonster extends Monster {
       205,
       0,
       createPolygonShardSplitterConfig({
-        minShardCount: 4,
-        maxShardCount: 9,
+        minShardCount: 5,
+        maxShardCount: 11,
         preferredMaxShardVertices: 14,
         maxShardVertices: 26,
       }),
-    );
-
-    particles.push(
-      ...createSimpleExplosionParticles(
-        this.x,
-        this.y,
-        6,
-        randomRange(1.5, 2.8),
-        this.color,
-        randomRange(2.4, 3.6),
-      ),
-      ...createSimpleExplosionParticles(
-        this.x,
-        this.y,
-        4,
-        randomRange(1, 1.8),
-        "#dcfffe",
-        randomRange(3, 4.2),
-      ),
     );
 
     return {

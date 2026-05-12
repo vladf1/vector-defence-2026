@@ -139,7 +139,7 @@ export function hexWithAlpha(hex: string, alpha: number): string {
 }
 
 export function formatMoney(value: number): string {
-  return `$${Math.round(value).toLocaleString()}`;
+  return `$${Math.round(value)}`;
 }
 
 export function compactInPlace<T extends { removed: boolean }>(items: T[]): void {
