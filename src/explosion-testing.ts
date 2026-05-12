@@ -12,15 +12,15 @@ import { TankMonster } from "./entities/monsters/tank-monster";
 import { TriangleMonster } from "./entities/monsters/triangle-monster";
 import type { PathEntry } from "./route-path";
 
-const canvasElement = document.querySelector<HTMLCanvasElement>("#monster-slowmo");
+const canvasElement = document.querySelector<HTMLCanvasElement>("#explosion-testing");
 if (!canvasElement) {
-  throw new Error("Monster slow motion canvas is missing.");
+  throw new Error("Monster explosion testing canvas is missing.");
 }
 
 const canvas = canvasElement;
 const canvasContext = canvas.getContext("2d");
 if (!canvasContext) {
-  throw new Error("Monster slow motion canvas could not be initialized.");
+  throw new Error("Monster explosion testing canvas could not be initialized.");
 }
 const context = canvasContext;
 const monsterNameTarget = document.querySelector<HTMLElement>("#monster-name");
@@ -47,7 +47,7 @@ if (
   !zoomSliderTarget ||
   !zoomValueTarget
 ) {
-  throw new Error("Monster slow motion controls are missing.");
+  throw new Error("Monster explosion testing controls are missing.");
 }
 const monsterNameElement = monsterNameTarget;
 const phaseNameElement = phaseNameTarget;

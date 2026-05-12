@@ -12,6 +12,7 @@ export default defineConfig({
       input: {
         main: resolve(rootDir, "index.html"),
         soundboard: resolve(rootDir, "soundboard.html"),
+        explosions: resolve(rootDir, "explosions.html"),
       },
       output: {
         manualChunks(id) {

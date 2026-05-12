@@ -29,8 +29,8 @@ Key paths:
 - Browser audio assets: `src/assets/audio/`
 - Tower render sheet script: `scripts/render-towers.mjs`
 - Monster explosion render sheet script: `scripts/render-monster-explosions.mjs`
-- Monster slow-motion showcase page: `monster-slowmo.html`
-- Monster slow-motion showcase script: `src/monster-slowmo.ts`
+- Monster explosion testing page: `explosions.html`
+- Monster explosion testing script: `src/explosion-testing.ts`
 
 Repository notes:
 
@@ -131,12 +131,12 @@ Monster explosion render sheets:
 - The script starts a temporary Vite server, opens it with Playwright, imports the real monster classes, calls each monster's actual `createDeathEffect()`, and renders detailed early explosion frames with the intact monster as frame 0.
 - Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
 
-Monster slow-motion showcase:
+Monster explosion testing showcase:
 
-- `monster-slowmo.html` is a separate desktop-only Vite page for inspecting monsters zoomed way in as they move into center and explode in slow motion.
-- Its behavior lives in `src/monster-slowmo.ts`; keep changes isolated there unless deliberately promoting the page into the production build.
+- `explosions.html` is a separate desktop-only Vite page for inspecting monsters zoomed way in as they move into center and explode in slow motion.
+- Its behavior lives in `src/explosion-testing.ts`; keep changes isolated there unless deliberately promoting the page into the main game runtime.
 - The page reuses the real monster classes and each monster's actual `createDeathEffect()` particles, and intentionally uses normal runtime randomness rather than seeded output.
-- The normal production build does not currently emit `monster-slowmo.html`; add it to `vite.config.ts` `rollupOptions.input` only if it should ship like `soundboard.html`.
+- The production build emits `explosions.html` as a separate Rollup entry like `soundboard.html`; keep `src/explosion-testing.ts` out of the main game imports so the game does not load its testing-only JavaScript.
 
 Audio assets:
 
