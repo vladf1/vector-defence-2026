@@ -37,13 +37,6 @@ export class TankMonster extends Monster {
       this.angle,
     );
     const particles: Particle[] = [
-      new TankTurretParticle(
-        this.x + turretCenterOffset.x,
-        this.y + turretCenterOffset.y,
-        this.radius,
-        this.color,
-        this.angle,
-      ),
       ...createPolygonShardParticles(
         this.x,
         this.y,
@@ -58,6 +51,13 @@ export class TankMonster extends Monster {
           minShardCount: 6,
           maxShardCount: 13,
         }),
+      ),
+      new TankTurretParticle(
+        this.x + turretCenterOffset.x,
+        this.y + turretCenterOffset.y,
+        this.radius,
+        this.color,
+        this.angle,
       ),
     ];
 

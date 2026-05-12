@@ -1,4 +1,5 @@
 import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "./constants";
+import { GlassShardParticle } from "./entities/effects/glass-shard-particle";
 import type { Particle } from "./entities/effects/particle";
 import { BallMonster } from "./entities/monsters/ball-monster";
 import { BerserkerMonster } from "./entities/monsters/berserker-monster";
@@ -25,16 +26,40 @@ const context = canvasContext;
 const monsterNameTarget = document.querySelector<HTMLElement>("#monster-name");
 const phaseNameTarget = document.querySelector<HTMLElement>("#phase-name");
 const playbackToggleTarget = document.querySelector<HTMLButtonElement>("#playback-toggle");
-const speedSliderTarget = document.querySelector<HTMLInputElement>("#speed-slider");
-const speedValueTarget = document.querySelector<HTMLElement>("#speed-value");
-if (!monsterNameTarget || !phaseNameTarget || !playbackToggleTarget || !speedSliderTarget || !speedValueTarget) {
+const nextMonsterTarget = document.querySelector<HTMLButtonElement>("#next-monster");
+const repeatMonsterTarget = document.querySelector<HTMLButtonElement>("#repeat-monster");
+const approachSpeedSliderTarget = document.querySelector<HTMLInputElement>("#approach-speed-slider");
+const approachSpeedValueTarget = document.querySelector<HTMLElement>("#approach-speed-value");
+const explosionSpeedSliderTarget = document.querySelector<HTMLInputElement>("#explosion-speed-slider");
+const explosionSpeedValueTarget = document.querySelector<HTMLElement>("#explosion-speed-value");
+const zoomSliderTarget = document.querySelector<HTMLInputElement>("#zoom-slider");
+const zoomValueTarget = document.querySelector<HTMLElement>("#zoom-value");
+if (
+  !monsterNameTarget ||
+  !phaseNameTarget ||
+  !playbackToggleTarget ||
+  !nextMonsterTarget ||
+  !repeatMonsterTarget ||
+  !approachSpeedSliderTarget ||
+  !approachSpeedValueTarget ||
+  !explosionSpeedSliderTarget ||
+  !explosionSpeedValueTarget ||
+  !zoomSliderTarget ||
+  !zoomValueTarget
+) {
   throw new Error("Monster slow motion controls are missing.");
 }
 const monsterNameElement = monsterNameTarget;
 const phaseNameElement = phaseNameTarget;
 const playbackToggleButton = playbackToggleTarget;
-const speedSlider = speedSliderTarget;
-const speedValueElement = speedValueTarget;
+const nextMonsterButton = nextMonsterTarget;
+const repeatMonsterButton = repeatMonsterTarget;
+const approachSpeedSlider = approachSpeedSliderTarget;
+const approachSpeedValueElement = approachSpeedValueTarget;
+const explosionSpeedSlider = explosionSpeedSliderTarget;
+const explosionSpeedValueElement = explosionSpeedValueTarget;
+const zoomSlider = zoomSliderTarget;
+const zoomValueElement = zoomValueTarget;
 
 type MonsterConstructor = new (path: PathEntry[], speedScale: number) => Monster;
 type MonsterBodyDrawable = Monster & {
@@ -44,7 +69,6 @@ type MonsterBodyDrawable = Monster & {
 interface MonsterSpec {
   label: string;
   MonsterClass: MonsterConstructor;
-  zoom: number;
   approachDistance: number;
   initialRotation?: number;
   initialAngle?: number;
@@ -64,23 +88,25 @@ const CENTER = {
   y: EFFECT_FIELD_HEIGHT / 2,
 };
 const APPROACH_SECONDS = 3.15;
-const EXPLOSION_SECONDS = 4.6;
+const EXPLOSION_SECONDS = 5.6;
 const MONSTER_TIME_SCALE = 0.36;
 const EXPLOSION_TIME_SCALE = 0.12;
 const GRID_SPACING = 40;
 const WORLD_STROKE_WIDTH = 1.5;
 const MAX_DEVICE_PIXEL_RATIO = 2;
-const DEFAULT_PLAYBACK_SPEED = 1;
+const DEFAULT_SPEED = 1;
+const BASE_WORLD_ZOOM = 10;
+const DEFAULT_ZOOM_SCALE = 1;
 
 const monsterSpecs: MonsterSpec[] = [
-  { label: "Ball", MonsterClass: BallMonster, zoom: 10.5, approachDistance: 112, initialAngle: 0 },
-  { label: "Square", MonsterClass: SquareMonster, zoom: 10.8, approachDistance: 112, initialRotation: Math.PI * 0.1 },
-  { label: "Triangle", MonsterClass: TriangleMonster, zoom: 11.2, approachDistance: 110, initialAngle: 0 },
-  { label: "Runner", MonsterClass: RunnerMonster, zoom: 12.2, approachDistance: 116, initialAngle: 0 },
-  { label: "Splitter", MonsterClass: SplitterMonster, zoom: 9.9, approachDistance: 116, initialRotation: Math.PI * 0.08 },
-  { label: "Tank", MonsterClass: TankMonster, zoom: 8.5, approachDistance: 120, initialAngle: 0 },
-  { label: "Bulwark", MonsterClass: BulwarkMonster, zoom: 8.9, approachDistance: 118, initialAngle: 0 },
-  { label: "Berserker", MonsterClass: BerserkerMonster, zoom: 9.8, approachDistance: 116, initialAngle: 0, lowHealthRatio: 0.18 },
+  { label: "Ball", MonsterClass: BallMonster, approachDistance: 112, initialAngle: 0 },
+  { label: "Square", MonsterClass: SquareMonster, approachDistance: 112, initialRotation: Math.PI * 0.1 },
+  { label: "Triangle", MonsterClass: TriangleMonster, approachDistance: 110, initialAngle: 0 },
+  { label: "Runner", MonsterClass: RunnerMonster, approachDistance: 116, initialAngle: 0 },
+  { label: "Splitter", MonsterClass: SplitterMonster, approachDistance: 116, initialRotation: Math.PI * 0.08 },
+  { label: "Tank", MonsterClass: TankMonster, approachDistance: 120, initialAngle: 0 },
+  { label: "Bulwark", MonsterClass: BulwarkMonster, approachDistance: 118, initialAngle: 0 },
+  { label: "Berserker", MonsterClass: BerserkerMonster, approachDistance: 116, initialAngle: 0, lowHealthRatio: 0.18 },
 ];
 
 let viewportWidth = 0;
@@ -90,14 +116,23 @@ let sceneIndex = 0;
 let activeScene = createScene(sceneIndex);
 let lastTimestamp = performance.now();
 let isPaused = false;
-let playbackSpeed = DEFAULT_PLAYBACK_SPEED;
+let approachSpeed = DEFAULT_SPEED;
+let explosionSpeed = DEFAULT_SPEED;
+let zoomScale = DEFAULT_ZOOM_SCALE;
 
-speedSlider.value = String(DEFAULT_PLAYBACK_SPEED);
+approachSpeedSlider.value = String(DEFAULT_SPEED);
+explosionSpeedSlider.value = String(DEFAULT_SPEED);
+zoomSlider.value = String(DEFAULT_ZOOM_SCALE);
 playbackToggleButton.addEventListener("click", togglePlayback);
-speedSlider.addEventListener("input", updatePlaybackSpeed);
+nextMonsterButton.addEventListener("click", advanceToNextMonster);
+repeatMonsterButton.addEventListener("click", repeatCurrentMonster);
+approachSpeedSlider.addEventListener("input", updateApproachSpeed);
+explosionSpeedSlider.addEventListener("input", updateExplosionSpeed);
+zoomSlider.addEventListener("input", updateZoomScale);
 updateHudLabels();
 updatePlaybackButton();
-updateSpeedValue();
+updateSpeedValues();
+updateZoomValue();
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 requestAnimationFrame(animate);
@@ -106,7 +141,7 @@ function animate(timestamp: number): void {
   const deltaSeconds = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
   lastTimestamp = timestamp;
   if (!isPaused) {
-    updateScene(deltaSeconds * playbackSpeed);
+    updateScene(deltaSeconds * getActivePhaseSpeed());
   }
   drawScene();
   requestAnimationFrame(animate);
@@ -162,6 +197,11 @@ function advanceToNextMonster(): void {
   updateHudLabels();
 }
 
+function repeatCurrentMonster(): void {
+  activeScene = createScene(sceneIndex);
+  updateHudLabels();
+}
+
 function updateParticles(particles: Particle[], deltaSeconds: number): void {
   for (const particle of particles) {
     if (!particle.removed) {
@@ -177,7 +217,8 @@ function drawScene(): void {
 
   context.save();
   context.translate(viewportWidth / 2, viewportHeight / 2);
-  context.scale(activeScene.spec.zoom, activeScene.spec.zoom);
+  const sceneZoom = BASE_WORLD_ZOOM * zoomScale;
+  context.scale(sceneZoom, sceneZoom);
   context.translate(-CENTER.x, -CENTER.y);
 
   if (activeScene.phase === "approach") {
@@ -244,6 +285,12 @@ function drawOverlay(): void {
   context.fillRect(margin, barY, barWidth, barHeight);
   context.fillStyle = activeScene.phase === "approach" ? "rgba(93, 242, 239, 0.82)" : "rgba(255, 228, 148, 0.86)";
   context.fillRect(margin, barY, barWidth * Math.min(1, progress), barHeight);
+
+  if (activeScene.phase === "explode") {
+    context.fillStyle = "rgba(232, 255, 248, 0.72)";
+    context.font = "800 13px Avenir Next, Avenir, Inter, sans-serif";
+    context.fillText(`${activeScene.particles.length} shards`, margin, barY + 20);
+  }
 }
 
 function createScene(index: number): ActiveScene {
@@ -324,13 +371,32 @@ function updatePlaybackButton(): void {
   playbackToggleButton.textContent = isPaused ? "Play" : "Pause";
 }
 
-function updatePlaybackSpeed(): void {
-  playbackSpeed = Number(speedSlider.value);
-  updateSpeedValue();
+function updateApproachSpeed(): void {
+  approachSpeed = Number(approachSpeedSlider.value);
+  updateSpeedValues();
 }
 
-function updateSpeedValue(): void {
-  speedValueElement.textContent = `${playbackSpeed.toFixed(1)}x`;
+function updateExplosionSpeed(): void {
+  explosionSpeed = Number(explosionSpeedSlider.value);
+  updateSpeedValues();
+}
+
+function updateSpeedValues(): void {
+  approachSpeedValueElement.textContent = `${approachSpeed.toFixed(1)}x`;
+  explosionSpeedValueElement.textContent = `${explosionSpeed.toFixed(1)}x`;
+}
+
+function updateZoomScale(): void {
+  zoomScale = Number(zoomSlider.value);
+  updateZoomValue();
+}
+
+function updateZoomValue(): void {
+  zoomValueElement.textContent = `${zoomScale.toFixed(1)}x`;
+}
+
+function getActivePhaseSpeed(): number {
+  return activeScene.phase === "approach" ? approachSpeed : explosionSpeed;
 }
 
 function easeOutCubic(value: number): number {

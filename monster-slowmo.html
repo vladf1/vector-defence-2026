@@ -56,14 +56,30 @@
         top: 24px;
         right: 28px;
         display: flex;
-        align-items: center;
-        gap: 14px;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
         color: rgba(232, 255, 248, 0.76);
         font-size: 13px;
         font-weight: 800;
       }
 
-      .playback-toggle {
+      .slider-controls,
+      .button-controls {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+      }
+
+      .slider-controls {
+        gap: 18px;
+      }
+
+      .button-controls {
+        gap: 10px;
+      }
+
+      .playback-button {
         appearance: none;
         min-width: 76px;
         border: 1px solid rgba(232, 255, 248, 0.28);
@@ -77,8 +93,8 @@
         font-weight: 800;
       }
 
-      .playback-toggle:hover,
-      .playback-toggle:focus-visible {
+      .playback-button:hover,
+      .playback-button:focus-visible {
         border-color: rgba(255, 228, 148, 0.64);
         color: #fff4bc;
       }
@@ -87,11 +103,11 @@
         display: flex;
         align-items: center;
         gap: 9px;
-        min-width: 210px;
+        min-width: 190px;
       }
 
       .speed-control input {
-        width: 128px;
+        width: 104px;
         accent-color: #ffe494;
       }
 
@@ -108,12 +124,28 @@
       <span id="phase-name" class="phase-name"></span>
     </div>
     <div class="playback-controls">
-      <label class="speed-control" for="speed-slider">
-        <span>Speed</span>
-        <input id="speed-slider" type="range" min="0.1" max="2" step="0.05" value="1" />
-        <span id="speed-value" class="speed-value">1.0x</span>
-      </label>
-      <button id="playback-toggle" class="playback-toggle" type="button">Pause</button>
+      <div class="slider-controls">
+        <label class="speed-control" for="approach-speed-slider">
+          <span>Approach</span>
+          <input id="approach-speed-slider" type="range" min="0.1" max="2" step="0.05" value="1" />
+          <span id="approach-speed-value" class="speed-value">1.0x</span>
+        </label>
+        <label class="speed-control" for="explosion-speed-slider">
+          <span>Explosion</span>
+          <input id="explosion-speed-slider" type="range" min="0.1" max="2" step="0.05" value="1" />
+          <span id="explosion-speed-value" class="speed-value">1.0x</span>
+        </label>
+        <label class="speed-control" for="zoom-slider">
+          <span>Zoom</span>
+          <input id="zoom-slider" type="range" min="0.25" max="1.75" step="0.05" value="1" />
+          <span id="zoom-value" class="speed-value">1.0x</span>
+        </label>
+      </div>
+      <div class="button-controls">
+        <button id="repeat-monster" class="playback-button" type="button">Repeat</button>
+        <button id="next-monster" class="playback-button" type="button">Next</button>
+        <button id="playback-toggle" class="playback-button" type="button">Pause</button>
+      </div>
     </div>
     <canvas id="monster-slowmo" aria-label="Monster slow motion showcase"></canvas>
     <script type="module" src="/src/monster-slowmo.ts"></script>
