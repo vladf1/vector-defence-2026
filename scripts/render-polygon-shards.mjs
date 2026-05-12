@@ -28,7 +28,7 @@ const html = String.raw`
   <body>
     <canvas id="sheet"></canvas>
     <script type="module">
-      const { BallMonster } = await import("/src/entities/monsters/ball-monster.ts");
+      const { PackManMonster } = await import("/src/entities/monsters/packman-monster.ts");
       const { PolygonShardSplitter, createPolygonShardSplitterConfig } = await import("/src/entities/monsters/polygon-shard-splitter.ts");
 
       const CELL_WIDTH = 390;
@@ -343,7 +343,7 @@ const html = String.raw`
           { x: 0, y: 0, totalDistance: 0 },
           { x: 100, y: 0, totalDistance: 100 },
         ];
-        const monster = new BallMonster(path, 1);
+        const monster = new PackManMonster(path, 1);
         return monster.createOutline(arcVertexCount);
       }
 

@@ -7,7 +7,7 @@
     "startingMoney": 32,
     "monsterCount": 96,
     "allowEscape": 15,
-    "monsterSequence": ["ball", "runner", "square", "triangle", "splitter", "berserker", "bulwark", "tank"],
+    "monsterSequence": ["packman", "runner", "square", "triangle", "splitter", "berserker", "bulwark", "tank"],
     "points": [
       { "x": 103, "y": 0 },
       { "x": 103, "y": 240 },
@@ -41,7 +41,7 @@
     "startingMoney": 34,
     "monsterCount": 84,
     "allowEscape": 15,
-    "monsterSequence": ["ball", "runner", "square", "runner", "triangle", "square", "tank"],
+    "monsterSequence": ["packman", "runner", "square", "runner", "triangle", "square", "tank"],
     "points": [
       { "x": 137, "y": 0 },
       { "x": 137, "y": 320 },
@@ -75,7 +75,7 @@
     "startingMoney": 35,
     "monsterCount": 88,
     "allowEscape": 14,
-    "monsterSequence": ["runner", "ball", "square", "runner", "triangle", "tank", "square"],
+    "monsterSequence": ["runner", "packman", "square", "runner", "triangle", "tank", "square"],
     "points": [
       { "x": 103, "y": 0 },
       { "x": 103, "y": 90 },
@@ -106,7 +106,7 @@
     "startingMoney": 37,
     "monsterCount": 78,
     "allowEscape": 13,
-    "monsterSequence": ["runner", "triangle", "ball", "runner", "triangle", "square", "tank"],
+    "monsterSequence": ["runner", "triangle", "packman", "runner", "triangle", "square", "tank"],
     "points": [
       { "x": 251, "y": 0 },
       { "x": 251, "y": 170 },
@@ -142,7 +142,7 @@
     "startingMoney": 38,
     "monsterCount": 54,
     "allowEscape": 12,
-    "monsterSequence": ["ball", "runner", "square", "triangle", "runner", "ball", "square", "tank"],
+    "monsterSequence": ["packman", "runner", "square", "triangle", "runner", "packman", "square", "tank"],
     "points": [
       { "x": 400, "y": 0 },
       { "x": 400, "y": 110 },
@@ -177,7 +177,7 @@
     "startingMoney": 40,
     "monsterCount": 108,
     "allowEscape": 12,
-    "monsterSequence": ["ball", "runner", "square", "triangle", "runner", "square", "tank", "ball", "runner", "triangle", "square"],
+    "monsterSequence": ["packman", "runner", "square", "triangle", "runner", "square", "tank", "packman", "runner", "triangle", "square"],
     "points": [
       { "x": 91, "y": 0 },
       { "x": 91, "y": 120 },
@@ -309,7 +309,7 @@
     "startingMoney": 49,
     "monsterCount": 164,
     "allowEscape": 9,
-    "monsterSequence": ["ball", "runner", "triangle", "square", "runner", "square", "square", "square", "splitter", "tank", "bulwark", "berserker"],
+    "monsterSequence": ["packman", "runner", "triangle", "square", "runner", "square", "square", "square", "splitter", "tank", "bulwark", "berserker"],
     "points": [
       { "x": 36, "y": 371 },
       { "x": 217, "y": 100 },

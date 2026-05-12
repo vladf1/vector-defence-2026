@@ -234,7 +234,7 @@ export class Game {
     }
 
     const sequence = this.activeWave?.monsterSequence ?? level.monsterSequence;
-    const code = sequence[this.runtime.spawnIndex] ?? MonsterKind.Ball;
+    const code = sequence[this.runtime.spawnIndex] ?? MonsterKind.PackMan;
     this.runtime.spawnIndex = (this.runtime.spawnIndex + 1) % sequence.length;
     this.runtime.spawnedMonsters += 1;
     this.runtime.waveSpawnedMonsters += 1;

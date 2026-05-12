@@ -83,7 +83,7 @@ export class BulwarkMonster extends Monster {
     const particles: Particle[] = createPolygonShardParticles(
       this.x,
       this.y,
-      ARMOR_GLOW_COLOR,
+      this.color,
       this.createShellOutline(),
       shellPivot,
       this.angle,

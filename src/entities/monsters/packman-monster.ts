@@ -16,7 +16,7 @@ const BOUNTY = 2;
 const RADIUS = 7.5;
 const MOUTH_ANGLE = Math.PI * 0.18;
 
-export class BallMonster extends Monster {
+export class PackManMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
     super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }

@@ -10,7 +10,7 @@ export const GameState = {
 export type GameState = typeof GameState[keyof typeof GameState];
 
 export const MonsterKind = {
-  Ball: "ball",
+  PackMan: "packman",
   Square: "square",
   Triangle: "triangle",
   Tank: "tank",

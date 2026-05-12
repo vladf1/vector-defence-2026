@@ -70,7 +70,7 @@ Current code structure:
 Data / naming conventions:
 
 - Monster identifiers in `game-levels.json` use the readable string values from `MonsterKind`, not one-letter codes:
-  - `ball`
+  - `packman`
   - `square`
   - `triangle`
   - `tank`

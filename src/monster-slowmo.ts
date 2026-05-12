@@ -1,7 +1,7 @@
 import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "./constants";
 import { GlassShardParticle } from "./entities/effects/glass-shard-particle";
 import type { Particle } from "./entities/effects/particle";
-import { BallMonster } from "./entities/monsters/ball-monster";
+import { PackManMonster } from "./entities/monsters/packman-monster";
 import { BerserkerMonster } from "./entities/monsters/berserker-monster";
 import { BulwarkMonster } from "./entities/monsters/bulwark-monster";
 import { Monster } from "./entities/monsters/monster";
@@ -99,7 +99,7 @@ const BASE_WORLD_ZOOM = 10;
 const DEFAULT_ZOOM_SCALE = 1;
 
 const monsterSpecs: MonsterSpec[] = [
-  { label: "Ball", MonsterClass: BallMonster, approachDistance: 112, initialAngle: 0 },
+  { label: "PackMan", MonsterClass: PackManMonster, approachDistance: 112, initialAngle: 0 },
   { label: "Square", MonsterClass: SquareMonster, approachDistance: 112, initialRotation: Math.PI * 0.1 },
   { label: "Triangle", MonsterClass: TriangleMonster, approachDistance: 110, initialAngle: 0 },
   { label: "Runner", MonsterClass: RunnerMonster, approachDistance: 116, initialAngle: 0 },

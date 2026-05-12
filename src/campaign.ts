@@ -53,11 +53,11 @@ function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, wave
   const sequence: MonsterKind[] = [];
 
   for (let index = 0; index < length; index += 1) {
-    sequence.push(source[(index + waveIndex + (levelIndex * 2)) % source.length] ?? MonsterKind.Ball);
+    sequence.push(source[(index + waveIndex + (levelIndex * 2)) % source.length] ?? MonsterKind.PackMan);
   }
 
   if (pressure < 2.4) {
-    sequence.unshift(MonsterKind.Ball);
+    sequence.unshift(MonsterKind.PackMan);
   } else if (pressure < 4.4) {
     sequence.unshift(MonsterKind.Runner);
   } else {
@@ -89,12 +89,12 @@ function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, wave
 }
 
 function buildLevelOneShowcaseSequence(baseSequence: MonsterKind[], waveIndex: number): MonsterKind[] {
-  const source = baseSequence.length > 0 ? baseSequence : [MonsterKind.Ball];
+  const source = baseSequence.length > 0 ? baseSequence : [MonsterKind.PackMan];
   const sequence: MonsterKind[] = [];
   for (let index = 0; index < source.length + 2; index += 1) {
     sequence.push(
       source[(index + waveIndex) % source.length]
-      ?? MonsterKind.Ball,
+      ?? MonsterKind.PackMan,
     );
   }
   return sequence;

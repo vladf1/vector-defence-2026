@@ -1,5 +1,5 @@
 import type { Game } from "../game-engine";
-import { BallMonster } from "../entities/monsters/ball-monster";
+import { PackManMonster } from "../entities/monsters/packman-monster";
 import { BerserkerMonster } from "../entities/monsters/berserker-monster";
 import { BulwarkMonster } from "../entities/monsters/bulwark-monster";
 import type { Monster } from "../entities/monsters/monster";
@@ -88,8 +88,8 @@ function createRandomOffsetInDirection(distanceAlongPath: number, pathLength: nu
 
 function createBaseMonster(kind: MonsterKind, path: PathEntry[], speedScale: number): Monster {
   switch (kind) {
-    case MonsterKind.Ball:
-      return new BallMonster(path, speedScale);
+    case MonsterKind.PackMan:
+      return new PackManMonster(path, speedScale);
     case MonsterKind.Berserker:
       return new BerserkerMonster(path, speedScale);
     case MonsterKind.Bulwark:

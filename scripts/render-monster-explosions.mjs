@@ -39,7 +39,7 @@ const html = String.raw`
       const DELTA_SECONDS = 1 / 420;
       const MONSTER_STROKE_WIDTH = 1.5;
 
-      const { BallMonster } = await import("/src/entities/monsters/ball-monster.ts");
+      const { PackManMonster } = await import("/src/entities/monsters/packman-monster.ts");
       const { SquareMonster } = await import("/src/entities/monsters/square-monster.ts");
       const { TriangleMonster } = await import("/src/entities/monsters/triangle-monster.ts");
       const { RunnerMonster } = await import("/src/entities/monsters/runner-monster.ts");
@@ -49,7 +49,7 @@ const html = String.raw`
       const { BerserkerMonster } = await import("/src/entities/monsters/berserker-monster.ts");
 
       const monsterSpecs = [
-        { slug: "ball", label: "Ball", MonsterClass: BallMonster, seed: 2201, zoom: 11.5, angle: 0 },
+        { slug: "packman", label: "PackMan", MonsterClass: PackManMonster, seed: 2201, zoom: 11.5, angle: 0 },
         { slug: "square", label: "Square", MonsterClass: SquareMonster, seed: 2208, zoom: 11.3, rotation: Math.PI * 0.08 },
         { slug: "triangle", label: "Triangle", MonsterClass: TriangleMonster, seed: 2202, zoom: 12, angle: 0.15 },
         { slug: "runner", label: "Runner", MonsterClass: RunnerMonster, seed: 2203, zoom: 13, angle: 0 },
