@@ -83,23 +83,27 @@
       .button-controls {
         display: flex;
         position: fixed;
-        top: 102px;
+        top: 88px;
         left: 32px;
         gap: 10px;
       }
 
       .playback-button {
         appearance: none;
-        min-width: 76px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 58px;
+        height: 40px;
         border: 1px solid rgba(232, 255, 248, 0.28);
         border-radius: 6px;
-        padding: 8px 13px;
+        padding: 0 0 2px;
         background: rgba(2, 8, 7, 0.72);
         color: rgba(255, 228, 148, 0.9);
         cursor: pointer;
-        font: inherit;
-        font-size: 14px;
-        font-weight: 800;
+        font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Avenir Next", Avenir, Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 22px;
+        line-height: 1;
       }
 
       .playback-button:hover,
@@ -144,7 +148,7 @@
       <div class="slider-controls">
         <label class="speed-control" for="approach-speed-slider">
           <span>Approach</span>
-          <input id="approach-speed-slider" type="range" min="0.1" max="2" step="0.05" value="1" />
+          <input id="approach-speed-slider" type="range" min="0.1" max="3" step="0.05" value="1" />
           <span id="approach-speed-value" class="speed-value">1.0x</span>
         </label>
         <label class="speed-control" for="explosion-speed-slider">
@@ -154,14 +158,14 @@
         </label>
         <label class="speed-control" for="zoom-slider">
           <span>Zoom</span>
-          <input id="zoom-slider" type="range" min="0.25" max="1.75" step="0.05" value="1" />
+          <input id="zoom-slider" type="range" min="0.1" max="1.75" step="0.05" value="1" />
           <span id="zoom-value" class="speed-value">1.0x</span>
         </label>
       </div>
       <div class="button-controls">
-        <button id="repeat-monster" class="playback-button" type="button">Repeat</button>
-        <button id="next-monster" class="playback-button" type="button">Next</button>
-        <button id="playback-toggle" class="playback-button" type="button">Pause</button>
+        <button id="repeat-monster" class="playback-button" type="button" aria-label="Repeat">🔁</button>
+        <button id="next-monster" class="playback-button" type="button" aria-label="Next">⏭️</button>
+        <button id="playback-toggle" class="playback-button" type="button" aria-label="Pause">⏸️</button>
       </div>
     </div>
     <canvas id="monster-slowmo" aria-label="Monster slow motion showcase"></canvas>

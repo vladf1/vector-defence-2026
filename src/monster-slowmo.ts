@@ -279,18 +279,13 @@ function drawOverlay(): void {
     : activeScene.phaseSeconds / EXPLOSION_SECONDS;
   const barWidth = Math.min(340, viewportWidth * 0.28);
   const barHeight = 4;
-  const barY = margin + 36;
+  const barY = margin + 29;
 
   context.fillStyle = "rgba(232, 255, 248, 0.34)";
   context.fillRect(margin, barY, barWidth, barHeight);
   context.fillStyle = activeScene.phase === "approach" ? "rgba(93, 242, 239, 0.82)" : "rgba(255, 228, 148, 0.86)";
   context.fillRect(margin, barY, barWidth * Math.min(1, progress), barHeight);
 
-  if (activeScene.phase === "explode") {
-    context.fillStyle = "rgba(232, 255, 248, 0.72)";
-    context.font = "800 13px Avenir Next, Avenir, Inter, sans-serif";
-    context.fillText(`${activeScene.particles.length} shards`, margin, barY + 20);
-  }
 }
 
 function createScene(index: number): ActiveScene {
@@ -359,7 +354,9 @@ function updateHudLabels(): void {
 }
 
 function updatePhaseName(): void {
-  phaseNameElement.textContent = activeScene.phase === "approach" ? "approach" : "explosion";
+  phaseNameElement.textContent = activeScene.phase === "approach"
+    ? "approach"
+    : `explosion / ${activeScene.particles.length} shards`;
 }
 
 function togglePlayback(): void {
@@ -368,7 +365,8 @@ function togglePlayback(): void {
 }
 
 function updatePlaybackButton(): void {
-  playbackToggleButton.textContent = isPaused ? "Play" : "Pause";
+  playbackToggleButton.textContent = isPaused ? "▶️" : "⏸️";
+  playbackToggleButton.setAttribute("aria-label", isPaused ? "Play" : "Pause");
 }
 
 function updateApproachSpeed(): void {
