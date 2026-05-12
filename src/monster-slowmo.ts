@@ -279,7 +279,7 @@ function drawOverlay(): void {
     : activeScene.phaseSeconds / EXPLOSION_SECONDS;
   const barWidth = Math.min(340, viewportWidth * 0.28);
   const barHeight = 4;
-  const barY = margin + 22;
+  const barY = margin + 36;
 
   context.fillStyle = "rgba(232, 255, 248, 0.34)";
   context.fillRect(margin, barY, barWidth, barHeight);
