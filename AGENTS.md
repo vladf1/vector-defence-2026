@@ -29,6 +29,8 @@ Key paths:
 - Browser audio assets: `src/assets/audio/`
 - Tower render sheet script: `scripts/render-towers.mjs`
 - Monster explosion render sheet script: `scripts/render-monster-explosions.mjs`
+- Monster slow-motion showcase page: `monster-slowmo.html`
+- Monster slow-motion showcase script: `src/monster-slowmo.ts`
 
 Repository notes:
 
@@ -128,6 +130,13 @@ Monster explosion render sheets:
 - `node scripts/render-monster-explosions.mjs` generates large early-stage contact sheets for every monster under `artifacts/monster-explosion-sequence/`.
 - The script starts a temporary Vite server, opens it with Playwright, imports the real monster classes, calls each monster's actual `createDeathEffect()`, and renders detailed early explosion frames with the intact monster as frame 0.
 - Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
+
+Monster slow-motion showcase:
+
+- `monster-slowmo.html` is a separate desktop-only Vite page for inspecting monsters zoomed way in as they move into center and explode in slow motion.
+- Its behavior lives in `src/monster-slowmo.ts`; keep changes isolated there unless deliberately promoting the page into the production build.
+- The page reuses the real monster classes and each monster's actual `createDeathEffect()` particles, and intentionally uses normal runtime randomness rather than seeded output.
+- The normal production build does not currently emit `monster-slowmo.html`; add it to `vite.config.ts` `rollupOptions.input` only if it should ship like `soundboard.html`.
 
 Audio assets:
 
