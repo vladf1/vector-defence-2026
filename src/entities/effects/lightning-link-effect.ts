@@ -108,9 +108,9 @@ export class LightningLinkEffect {
     const radius = this.target.radius + 4 + (sourceLevel * 0.32);
     const spin = this.ageSeconds * 18;
 
+    context.beginPath();
     for (let index = 0; index < arcCount; index += 1) {
       const angle = spin + ((Math.PI * 2 * index) / arcCount);
-      context.beginPath();
       context.moveTo(
         x + (Math.cos(angle) * (radius - 3)),
         y + (Math.sin(angle) * (radius - 3)),
@@ -119,7 +119,7 @@ export class LightningLinkEffect {
         x + (Math.cos(angle + 0.22) * (radius + 2.2)),
         y + (Math.sin(angle + 0.22) * (radius + 2.2)),
       );
-      context.stroke();
     }
+    context.stroke();
   }
 }

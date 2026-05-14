@@ -67,13 +67,24 @@ export class SlowTower extends Tower {
     if (this.level > 0) {
       const nodeCount = Math.min(6, this.level + 1);
       const orbitRadius = 7 + (this.level * 0.75);
+      context.fillStyle = "#ffe27a";
+      context.beginPath();
       for (let i = 0; i < nodeCount; i += 1) {
+        if (i % 2 !== 0) {
+          continue;
+        }
         const angle = this.orbit + ((Math.PI * 2 * i) / nodeCount);
-        context.fillStyle = i % 2 === 0 ? "#ffe27a" : "#d8ff4f";
-        context.beginPath();
         context.arc(Math.cos(angle) * orbitRadius, Math.sin(angle) * orbitRadius, 1.8 + (this.level * 0.12), 0, Math.PI * 2);
-        context.fill();
       }
+      context.fill();
+
+      context.fillStyle = "#d8ff4f";
+      context.beginPath();
+      for (let i = 1; i < nodeCount; i += 2) {
+        const angle = this.orbit + ((Math.PI * 2 * i) / nodeCount);
+        context.arc(Math.cos(angle) * orbitRadius, Math.sin(angle) * orbitRadius, 1.8 + (this.level * 0.12), 0, Math.PI * 2);
+      }
+      context.fill();
     }
 
     if (active) {

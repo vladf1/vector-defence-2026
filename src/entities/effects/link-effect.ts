@@ -83,12 +83,12 @@ export class LinkEffect {
     context.shadowColor = SLOW_ARC_COLOR;
     context.shadowBlur = 5;
 
+    context.beginPath();
     for (let index = 0; index < SLOW_ARC_COUNT; index += 1) {
       const startAngle = rotation + ((Math.PI * 2 * index) / SLOW_ARC_COUNT);
-      context.beginPath();
       context.arc(x, y, radius, startAngle, startAngle + arcLength);
-      context.stroke();
     }
+    context.stroke();
     context.restore();
   }
 }

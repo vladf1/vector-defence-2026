@@ -58,6 +58,7 @@ export class GunTower extends Tower {
     if (this.level > 0) {
       context.fillStyle = "#ffe27a";
       const pipCount = Math.min(6, this.level);
+      context.beginPath();
       for (let i = 0; i < pipCount; i += 1) {
         const pipSpacing = 0.28;
         const pipSpread = pipSpacing * (pipCount - 1);
@@ -65,10 +66,9 @@ export class GunTower extends Tower {
           ? Math.PI
           : Math.PI - (pipSpread / 2) + ((pipSpread * i) / (pipCount - 1));
         const pipRadius = 7.6 + (this.level * 0.24);
-        context.beginPath();
         context.arc(Math.cos(pipAngle) * pipRadius, Math.sin(pipAngle) * pipRadius, 1, 0, Math.PI * 2);
-        context.fill();
       }
+      context.fill();
 
       context.strokeStyle = "#9dffd7";
       context.lineWidth = 1.2;

@@ -126,11 +126,11 @@ export class MissileTower extends Tower {
         [{ x: -1.6, y: 8.2 }, { x: 1.6, y: 8.2 }, { x: -1.6, y: -8.2 }, { x: 1.6, y: -8.2 }],
       ][upgradePipCount - 1];
       context.fillStyle = "#ffe27a";
+      context.beginPath();
       for (const pip of pipPositions) {
-        context.beginPath();
         context.arc(pip.x, pip.y, 1.25, 0, Math.PI * 2);
-        context.fill();
       }
+      context.fill();
     }
 
     if (this.muzzleFlashSeconds > 0) {

@@ -196,15 +196,15 @@ export class LightningTower extends Tower {
     context.strokeStyle = "#ffffff";
     context.lineWidth = 0.65;
 
+    context.beginPath();
     for (let index = 0; index < dotCount; index += 1) {
       const angle = centerAngle - ((dotSpacing * (dotCount - 1)) / 2) + (dotSpacing * index);
       const x = Math.cos(angle) * dotRadius;
       const y = Math.sin(angle) * dotRadius;
-      context.beginPath();
       context.arc(x, y, 1.25 + (this.level * 0.05), 0, Math.PI * 2);
-      context.fill();
-      context.stroke();
     }
+    context.fill();
+    context.stroke();
   }
 
 }

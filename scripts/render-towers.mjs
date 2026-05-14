@@ -168,7 +168,7 @@ let browser;
 try {
   await server.listen(0);
   const url = server.resolvedUrls.local[0];
-  browser = await chromium.launch();
+  browser = await launchChromium();
   const page = await browser.newPage({ viewport: { width: 920, height: 540 }, deviceScaleFactor: 2 });
   await page.goto(`${url}__tower-renderer`, { waitUntil: "networkidle" });
   const dataUrl = await page.waitForFunction(() => window.__towerRenderDataUrl, undefined, { timeout: 5000 });
@@ -179,4 +179,15 @@ try {
 } finally {
   await browser?.close();
   await server.close();
+}
+
+async function launchChromium() {
+  try {
+    return await chromium.launch();
+  } catch (error) {
+    if (!String(error).includes("Executable doesn't exist")) {
+      throw error;
+    }
+    return chromium.launch({ channel: "chrome" });
+  }
 }
