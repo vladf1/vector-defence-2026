@@ -91,11 +91,11 @@ export class Missile {
     context.rotate(this.angle);
     context.fillStyle = "#ffe77c";
     context.beginPath();
-    context.moveTo(-6, -1.45);
+    context.moveTo(-7, -1.45);
     context.lineTo(3.8, -1.45);
-    context.lineTo(6.4, 0);
+    context.lineTo(9, 0);
     context.lineTo(3.8, 1.45);
-    context.lineTo(-6, 1.45);
+    context.lineTo(-7, 1.45);
     context.closePath();
     context.fill();
     context.restore();
