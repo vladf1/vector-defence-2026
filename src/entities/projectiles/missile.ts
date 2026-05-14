@@ -6,6 +6,9 @@ import { angleBetween, calculateDistance, randomRange, withinDistance } from "..
 import { Particle } from "../effects/particle";
 import type { Monster } from "../monsters/monster";
 
+const MISSILE_TAIL_X = -7;
+const MISSILE_NOSE_X = 9;
+const MISSILE_HALF_LENGTH = (MISSILE_NOSE_X - MISSILE_TAIL_X) / 2;
 const MISSILE_EXHAUST_SMOKE_PUFFS = [
   { x: -8.8, y: -0.18, radius: 2.2, alpha: 0.25 },
   { x: -11.4, y: 0.22, radius: 3.1, alpha: 0.28 },
@@ -76,7 +79,7 @@ export class Missile {
     }
 
     for (const monster of game.runtime.getActiveMonsters()) {
-      const hitDistance = monster.radius + 6;
+      const hitDistance = monster.radius + MISSILE_HALF_LENGTH;
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         this.removed = true;
         createMissileExplosionEffect(game, this.x, this.y, this.angle);
@@ -122,11 +125,11 @@ export class Missile {
 
     context.fillStyle = "#ffe77c";
     context.beginPath();
-    context.moveTo(-7, -1.45);
+    context.moveTo(MISSILE_TAIL_X, -1.45);
     context.lineTo(3.8, -1.45);
-    context.lineTo(9, 0);
+    context.lineTo(MISSILE_NOSE_X, 0);
     context.lineTo(3.8, 1.45);
-    context.lineTo(-7, 1.45);
+    context.lineTo(MISSILE_TAIL_X, 1.45);
     context.closePath();
     context.fill();
     context.restore();
