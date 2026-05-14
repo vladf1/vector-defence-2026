@@ -18,7 +18,7 @@
       <h1>Vector Defence</h1>
     </div>
   {/if}
-  {#if $hud.canTogglePause}
+  {#if $hud.showStatusHud}
     <section class="hud">
       {#each [
         { label: profile.mode === "mobile" ? "" : "Level", value: $hud.levelName, className: "level-stat" },

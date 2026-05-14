@@ -310,7 +310,7 @@ textarea,
   z-index: 2;
 }
 
-.modal.centered {
+.modal.sheet {
   align-items: center;
   justify-content: center;
   padding: 18px;
@@ -332,19 +332,14 @@ textarea,
   border-radius: 0;
 }
 
-.modal-panel.centered {
-  width: min(720px, 100%);
+.modal-panel.modal-sheet {
+  width: min(560px, 100%);
   min-height: 0;
   padding: clamp(22px, 4vw, 34px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(146, 255, 205, 0.2);
   border-radius: 16px;
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
   text-align: center;
-}
-
-.modal-panel.completion-sheet {
-  width: min(560px, 100%);
-  border-color: rgba(146, 255, 205, 0.2);
 }
 
 .modal-panel h2 {
@@ -357,23 +352,19 @@ textarea,
   color: var(--muted);
 }
 
-.campaign-actions {
-  margin-top: 14px;
-}
-
-.modal-panel.centered .selection-actions {
+.modal-panel.modal-sheet .selection-actions {
   justify-content: center;
 }
 
-.completion-sheet .selection-actions {
+.modal-sheet .selection-actions {
   gap: 10px;
 }
 
-.completion-sheet .modal-button {
+.modal-sheet .modal-button {
   min-height: 46px;
 }
 
-.completion-sheet .modal-button:first-child {
+.modal-sheet .modal-button:first-child {
   border-color: rgba(157, 255, 209, 0.38);
   background: linear-gradient(180deg, rgba(54, 145, 105, 0.98), rgba(21, 87, 61, 0.98));
 }
@@ -685,6 +676,8 @@ textarea,
     grid-area: hud;
     justify-content: flex-start;
     gap: 5px 0;
+    flex-wrap: nowrap;
+    overflow: hidden;
   }
 
   .mobile-shell .stat-card + .stat-card::before {
@@ -696,6 +689,15 @@ textarea,
 
   .mobile-shell .wave-stat {
     display: flex;
+  }
+
+  .mobile-shell .stat-card {
+    flex: 0 1 auto;
+  }
+
+  .mobile-shell .money-stat,
+  .mobile-shell .wave-stat {
+    flex-shrink: 0;
   }
 
 .mobile-shell .actions {
@@ -908,7 +910,7 @@ textarea,
     height: calc(var(--app-viewport-height) - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
     max-height: calc(var(--app-viewport-height) - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
     margin: 0;
-    gap: 6px;
+    gap: 7px;
     align-content: start;
     overflow: hidden;
   }
@@ -1016,17 +1018,7 @@ textarea,
     overflow: auto;
   }
 
-  .modal.centered {
-    align-items: center;
-    justify-content: center;
-    padding:
-      max(14px, env(safe-area-inset-top))
-      max(10px, env(safe-area-inset-right))
-      max(14px, env(safe-area-inset-bottom))
-      max(10px, env(safe-area-inset-left));
-  }
-
-  .modal.completion {
+  .modal.sheet {
     align-items: flex-end;
     justify-content: center;
     padding:
@@ -1038,8 +1030,7 @@ textarea,
     overflow: hidden;
   }
 
-  .modal-panel,
-  .modal-panel.centered {
+  .modal-panel {
     width: 100%;
     min-height: min-content;
     max-height: none;
@@ -1051,45 +1042,36 @@ textarea,
     text-align: left;
   }
 
-  .modal-panel.centered {
-    width: min(370px, 100%);
-    max-height: calc(100dvh - max(14px, env(safe-area-inset-top)) - max(14px, env(safe-area-inset-bottom)));
-    padding: 20px;
-    overflow: auto;
-    text-align: center;
-  }
-
-  .modal-panel.completion-sheet,
-  .modal-panel.centered.completion-sheet {
+  .modal-panel.modal-sheet {
     width: 100%;
     max-height: none;
     padding: 14px 14px max(14px, env(safe-area-inset-bottom));
     border-radius: 16px 16px 10px 10px;
     box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.42);
     text-align: left;
-    animation: completion-sheet-in 180ms ease-out both;
+    animation: modal-sheet-in 180ms ease-out both;
     transform-origin: bottom center;
   }
 
-  .modal-panel.completion-sheet h2 {
+  .modal-panel.modal-sheet h2 {
     font-size: 1.32rem;
     letter-spacing: 0.03em;
   }
 
-  .modal-panel.completion-sheet p {
+  .modal-panel.modal-sheet p {
     margin: 5px 0 12px;
     font-size: 0.9rem;
     line-height: 1.25;
   }
 
-  .modal-panel.completion-sheet .selection-actions {
+  .modal-panel.modal-sheet .selection-actions {
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 8px;
     align-items: center;
   }
 
-  .modal-panel.completion-sheet .modal-button {
+  .modal-panel.modal-sheet .modal-button {
     width: auto;
     min-width: 0;
     min-height: 38px;
@@ -1098,19 +1080,24 @@ textarea,
     white-space: nowrap;
   }
 
-  .modal-panel.completion-sheet .modal-button:first-child {
+  .modal-panel.modal-sheet .modal-button:first-child {
     grid-column: 1 / -1;
+    width: 100%;
     min-height: 48px;
     font-weight: 700;
   }
 
-  .modal-panel.completion-sheet .modal-button:not(:first-child) {
+  .modal-panel.modal-sheet .modal-button:not(:first-child) {
     justify-self: start;
     background: rgba(8, 17, 14, 0.58);
     color: var(--muted);
   }
 
-  @keyframes completion-sheet-in {
+  .modal-panel.modal-sheet .modal-button:last-child {
+    justify-self: end;
+  }
+
+  @keyframes modal-sheet-in {
     from {
       opacity: 0;
       transform: translateY(22px);
@@ -1129,45 +1116,6 @@ textarea,
 
   .modal-panel h2 {
     font-size: 1.45rem;
-  }
-
-  .modal-panel.centered h2 {
-    font-size: 1.55rem;
-  }
-
-  .modal-panel.centered p {
-    margin: 12px 0 16px;
-    line-height: 1.35;
-  }
-
-  .modal-panel.centered .selection-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .modal-panel.centered .modal-button {
-    width: 100%;
-    min-height: 44px;
-  }
-
-  .modal-panel.centered.completion-sheet .selection-actions {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .modal-panel.centered.completion-sheet .modal-button {
-    width: auto;
-    min-width: 0;
-    min-height: 38px;
-  }
-
-  .modal-panel.centered.completion-sheet .modal-button:first-child {
-    grid-column: 1 / -1;
-    width: 100%;
-    min-height: 48px;
   }
 
   .level-map-header {
@@ -1352,7 +1300,7 @@ textarea,
     max-height: calc(var(--app-viewport-height) - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
     grid-template-rows: auto minmax(0, 1fr) auto;
     align-content: stretch;
-    gap: 6px;
+    gap: 7px;
     overflow: hidden;
   }
 

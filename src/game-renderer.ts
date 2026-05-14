@@ -22,6 +22,10 @@ const COMPACT_PAUSE_BUTTON_HEIGHT = 42;
 const PAUSE_BUTTON_TOP = 10;
 const PAUSE_BUTTON_RIGHT = 10;
 const COMPACT_CANVAS_WIDTH_THRESHOLD = 520;
+const GRID_FADE_EDGE_ALPHA = 0.035;
+const GRID_FADE_CENTER_ALPHA = 0.07;
+const GRID_FADE_CENTER_START = 0.18;
+const GRID_FADE_CENTER_END = 0.82;
 
 export interface CanvasButtonRect {
   x: number;
@@ -274,16 +278,17 @@ export class GameRenderer {
   private drawBackground(context: CanvasRenderingContext2D): void {
     const fieldGradient = context.createLinearGradient(0, 0, 0, this.fieldHeight);
     fieldGradient.addColorStop(0, "#010302");
-    fieldGradient.addColorStop(1, "#050d0a");
+    fieldGradient.addColorStop(0.5, "#050d0a");
+    fieldGradient.addColorStop(1, "#010302");
     context.fillStyle = fieldGradient;
     context.fillRect(0, 0, this.fieldWidth, this.fieldHeight);
 
     context.save();
     const gridGradient = context.createLinearGradient(0, 0, 0, this.fieldHeight);
-    gridGradient.addColorStop(0, "rgba(255, 255, 255, 0.035)");
-    gridGradient.addColorStop(0.18, "rgba(255, 255, 255, 0.07)");
-    gridGradient.addColorStop(0.82, "rgba(255, 255, 255, 0.07)");
-    gridGradient.addColorStop(1, "rgba(255, 255, 255, 0.035)");
+    gridGradient.addColorStop(0, `rgba(255, 255, 255, ${GRID_FADE_EDGE_ALPHA})`);
+    gridGradient.addColorStop(GRID_FADE_CENTER_START, `rgba(255, 255, 255, ${GRID_FADE_CENTER_ALPHA})`);
+    gridGradient.addColorStop(GRID_FADE_CENTER_END, `rgba(255, 255, 255, ${GRID_FADE_CENTER_ALPHA})`);
+    gridGradient.addColorStop(1, `rgba(255, 255, 255, ${GRID_FADE_EDGE_ALPHA})`);
     context.strokeStyle = gridGradient;
     for (let x = 0; x <= this.fieldWidth; x += 35) {
       context.beginPath();
@@ -292,8 +297,7 @@ export class GameRenderer {
       context.stroke();
     }
     for (let y = 0; y <= this.fieldHeight; y += 35) {
-      const distanceFromCenter = Math.abs((y / this.fieldHeight) - 0.5) * 2;
-      const alpha = 0.035 + (0.035 * Math.max(0, 1 - Math.max(0, distanceFromCenter - 0.64) / 0.36));
+      const alpha = this.getGridFadeAlpha(y, this.fieldHeight);
       context.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
       context.beginPath();
       context.moveTo(0, y);
@@ -337,12 +341,18 @@ export class GameRenderer {
   private drawCanvasBackdrop(context: CanvasRenderingContext2D): void {
     const fieldGradient = context.createLinearGradient(0, 0, 0, this.viewportHeight);
     fieldGradient.addColorStop(0, "#010302");
-    fieldGradient.addColorStop(1, "#050d0a");
+    fieldGradient.addColorStop(0.5, "#050d0a");
+    fieldGradient.addColorStop(1, "#010302");
     context.fillStyle = fieldGradient;
     context.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
 
     context.save();
-    context.strokeStyle = "rgba(255, 255, 255, 0.055)";
+    const gridGradient = context.createLinearGradient(0, 0, 0, this.viewportHeight);
+    gridGradient.addColorStop(0, `rgba(255, 255, 255, ${GRID_FADE_EDGE_ALPHA})`);
+    gridGradient.addColorStop(GRID_FADE_CENTER_START, "rgba(255, 255, 255, 0.055)");
+    gridGradient.addColorStop(GRID_FADE_CENTER_END, "rgba(255, 255, 255, 0.055)");
+    gridGradient.addColorStop(1, `rgba(255, 255, 255, ${GRID_FADE_EDGE_ALPHA})`);
+    context.strokeStyle = gridGradient;
     for (let x = 0; x <= this.viewportWidth; x += 35) {
       context.beginPath();
       context.moveTo(x, 0);
@@ -350,12 +360,20 @@ export class GameRenderer {
       context.stroke();
     }
     for (let y = 0; y <= this.viewportHeight; y += 35) {
+      const alpha = this.getGridFadeAlpha(y, this.viewportHeight, 0.055);
+      context.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
       context.beginPath();
       context.moveTo(0, y);
       context.lineTo(this.viewportWidth, y);
       context.stroke();
     }
     context.restore();
+  }
+
+  private getGridFadeAlpha(y: number, height: number, centerAlpha = GRID_FADE_CENTER_ALPHA): number {
+    const distanceFromCenter = Math.abs((y / height) - 0.5) * 2;
+    const fadeProgress = Math.max(0, 1 - Math.max(0, distanceFromCenter - (GRID_FADE_CENTER_END - GRID_FADE_CENTER_START)) / (1 - (GRID_FADE_CENTER_END - GRID_FADE_CENTER_START)));
+    return GRID_FADE_EDGE_ALPHA + ((centerAlpha - GRID_FADE_EDGE_ALPHA) * fadeProgress);
   }
 
   toFieldPoint(point: { x: number; y: number }): { x: number; y: number } {

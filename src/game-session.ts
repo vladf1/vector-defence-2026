@@ -513,6 +513,24 @@ export function createGameSession(profile: GameProfile): GameSession {
   };
 
   const handleKeyDown = (event: KeyboardEvent): void => {
+    const key = event.key.toLowerCase();
+
+    if (import.meta.env.DEV && key === "j") {
+      event.preventDefault();
+      withGame((currentGame) => {
+        currentGame.finishLevel();
+      }, true);
+      return;
+    }
+
+    if (import.meta.env.DEV && key === "k") {
+      event.preventDefault();
+      withGame((currentGame) => {
+        currentGame.loseLevel();
+      }, true);
+      return;
+    }
+
     if (profile.ui.dragOnlyTowerPlacement) {
       return;
     }
@@ -521,7 +539,6 @@ export function createGameSession(profile: GameProfile): GameSession {
       return;
     }
 
-    const key = event.key.toLowerCase();
     if (event.code === "Space") {
       event.preventDefault();
       togglePause();

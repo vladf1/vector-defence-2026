@@ -49,6 +49,7 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   sellDisabled: true,
   cancelBuildDisabled: true,
   canTogglePause: false,
+  showStatusHud: false,
   canSkipBreak: false,
   paused: false,
   dragOnlyTowerPlacement: false,
@@ -148,6 +149,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     sellDisabled: !selected || battleActionsDisabled,
     cancelBuildDisabled: !runtime.placingTower || battleActionsDisabled,
     canTogglePause: game.state === GameState.Playing || game.state === GameState.Paused,
+    showStatusHud: currentLevel !== undefined && game.state !== GameState.Menu,
     canSkipBreak: game.state === GameState.Playing
       && !!activeWave
       && runtime.spawnDelay > 0
@@ -200,7 +202,6 @@ export function createModalView(game: Game): ModalView | null {
       title: "Campaign Map",
       description: `${game.campaignLevelCount} campaign battles. Hold each route and finish the full run.`,
       actions,
-      actionClassName: "campaign-actions",
       levelCards: createModalLevelCards(game),
     };
   }
@@ -208,12 +209,12 @@ export function createModalView(game: Game): ModalView | null {
   if (game.state === GameState.Won) {
     return {
       title: "Level Clear",
-      description: `Level ${game.currentLevel?.levelNumber ?? "?"} secured. Next route unlocked.`,
-      centered: true,
-      completion: true,
+      description: `Level ${game.currentLevel?.levelNumber ?? "?"} secured. Next route unlocked!`,
+      sheet: true,
       actions: [
         { action: ModalAction.NextLevel, label: `Continue to Level ${(game.currentLevel?.levelNumber ?? 0) + 1}` },
         { action: ModalAction.CampaignMap, label: "Campaign Map" },
+        { action: ModalAction.Replay, label: "Replay" },
       ],
     };
   }
@@ -222,11 +223,11 @@ export function createModalView(game: Game): ModalView | null {
     return {
       title: "You Won the Campaign",
       description: `All ${game.campaignLevelCount} campaign levels are secure.`,
-      centered: true,
-      completion: true,
+      sheet: true,
       actions: [
         { action: ModalAction.RestartCampaign, label: "Restart Campaign" },
         { action: ModalAction.CampaignMap, label: "Campaign Map" },
+        { action: ModalAction.Replay, label: "Replay" },
       ],
     };
   }
@@ -234,8 +235,8 @@ export function createModalView(game: Game): ModalView | null {
   if (game.state === GameState.Lost) {
     return {
       title: "Defeat",
-      description: "The route broke through. Rework the build, lean on the intermissions, and try again.",
-      centered: true,
+      description: "Too many enemies reached the exit. Better luck next time!",
+      sheet: true,
       actions: [
         { action: ModalAction.Replay, label: "Try Again" },
         { action: ModalAction.CampaignMap, label: "Campaign Map" },

@@ -143,6 +143,7 @@ export interface HudSnapshot {
   sellDisabled: boolean;
   cancelBuildDisabled: boolean;
   canTogglePause: boolean;
+  showStatusHud: boolean;
   canSkipBreak: boolean;
   paused: boolean;
   dragOnlyTowerPlacement: boolean;
@@ -183,8 +184,6 @@ export interface ModalView {
   title: string;
   description: string;
   actions: ModalActionView[];
-  actionClassName?: string;
-  centered?: boolean;
-  completion?: boolean;
+  sheet?: boolean;
   levelCards?: ModalLevelCardView[];
 }

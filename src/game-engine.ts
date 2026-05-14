@@ -267,15 +267,24 @@ export class Game {
     createEscapeBurstEffect(this, monster.x, monster.y);
     this.runtime.escapesLeft = Math.max(0, this.runtime.escapesLeft - 1);
     if (this.runtime.escapesLeft === 0) {
-      this.runtime.monsters.forEach((item) => {
-        item.removed = true;
-      });
-      this.setState(GameState.Lost);
-      this.menuReturnState = undefined;
-      this.setBanner("Defeat", 5);
-      this.playSound(AudioCue.LevelLoss);
-      this.requestModalSync();
+      this.loseLevel();
     }
+    this.requestHudSync();
+  }
+
+  loseLevel(): void {
+    if (!this.currentLevel) {
+      return;
+    }
+
+    this.runtime.monsters.forEach((item) => {
+      item.removed = true;
+    });
+    this.setState(GameState.Lost);
+    this.menuReturnState = undefined;
+    this.setBanner("Defeat", 5);
+    this.playSound(AudioCue.LevelLoss);
+    this.requestModalSync();
     this.requestHudSync();
   }
 
