@@ -13,6 +13,18 @@ const SPEED_PER_SECOND = 41;
 const HIT_POINTS = 462;
 const BOUNTY = 6;
 const RADIUS = 10.5;
+const HULL_RECT = {
+  x: -RADIUS,
+  y: -RADIUS * 0.72,
+  width: RADIUS * 2.1,
+  height: RADIUS * 1.44,
+};
+const HULL_OUTLINE = [
+  { x: HULL_RECT.x, y: HULL_RECT.y },
+  { x: HULL_RECT.x + HULL_RECT.width, y: HULL_RECT.y },
+  { x: HULL_RECT.x + HULL_RECT.width, y: HULL_RECT.y + HULL_RECT.height },
+  { x: HULL_RECT.x, y: HULL_RECT.y + HULL_RECT.height },
+];
 
 export class TankMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
@@ -21,9 +33,8 @@ export class TankMonster extends Monster {
 
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
-    const hull = this.createHullRect();
-    context.fillRect(hull.x, hull.y, hull.width, hull.height);
-    context.strokeRect(hull.x, hull.y, hull.width, hull.height);
+    context.fillRect(HULL_RECT.x, HULL_RECT.y, HULL_RECT.width, HULL_RECT.height);
+    context.strokeRect(HULL_RECT.x, HULL_RECT.y, HULL_RECT.width, HULL_RECT.height);
     drawTankTurret(context, this.radius, 0.42, 1.52);
   }
 
@@ -41,7 +52,7 @@ export class TankMonster extends Monster {
         this.x,
         this.y,
         this.color,
-        this.createHullOutline(),
+        HULL_OUTLINE,
         hullPivot,
         this.angle,
         125,
@@ -67,22 +78,4 @@ export class TankMonster extends Monster {
     };
   }
 
-  private createHullRect() {
-    return {
-      x: -this.radius,
-      y: -this.radius * 0.72,
-      width: this.radius * 2.1,
-      height: this.radius * 1.44,
-    };
-  }
-
-  private createHullOutline() {
-    const hull = this.createHullRect();
-    return [
-      { x: hull.x, y: hull.y },
-      { x: hull.x + hull.width, y: hull.y },
-      { x: hull.x + hull.width, y: hull.y + hull.height },
-      { x: hull.x, y: hull.y + hull.height },
-    ];
-  }
 }

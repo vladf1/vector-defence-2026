@@ -89,13 +89,15 @@ export class Missile {
     context.save();
     context.translate(this.x, this.y);
     context.rotate(this.angle);
-    context.strokeStyle = "#ffe77c";
-    context.lineWidth = 3;
-    context.lineCap = "round";
+    context.fillStyle = "#ffe77c";
     context.beginPath();
-    context.moveTo(-6, 0);
-    context.lineTo(6, 0);
-    context.stroke();
+    context.moveTo(-6, -1.45);
+    context.lineTo(3.8, -1.45);
+    context.lineTo(6.4, 0);
+    context.lineTo(3.8, 1.45);
+    context.lineTo(-6, 1.45);
+    context.closePath();
+    context.fill();
     context.restore();
   }
 }

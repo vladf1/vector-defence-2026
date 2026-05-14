@@ -15,6 +15,16 @@ const FRENZIED_SPEED_PER_SECOND = 138;
 const HIT_POINTS = 286;
 const BOUNTY = 4;
 const RADIUS = 8;
+const OUTLINE = [
+  { x: RADIUS * 1.55, y: 0 },
+  { x: RADIUS * 0.4, y: -RADIUS * 0.8 },
+  { x: -RADIUS * 0.1, y: -RADIUS * 1.08 },
+  { x: -RADIUS * 1.28, y: -RADIUS * 0.44 },
+  { x: -RADIUS * 0.72, y: 0 },
+  { x: -RADIUS * 1.28, y: RADIUS * 0.44 },
+  { x: -RADIUS * 0.1, y: RADIUS * 1.08 },
+  { x: RADIUS * 0.4, y: RADIUS * 0.8 },
+];
 
 export class BerserkerMonster extends Monster {
   private rageStage = 0;
@@ -52,8 +62,7 @@ export class BerserkerMonster extends Monster {
 
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
-    const outline = this.createOutline();
-    drawPath(context, outline, true);
+    drawPath(context, OUTLINE, true);
 
     context.beginPath();
     context.moveTo(-this.radius * 0.3, -this.radius * 0.16);
@@ -82,7 +91,7 @@ export class BerserkerMonster extends Monster {
       this.x,
       this.y,
       this.color,
-      this.createOutline(),
+      OUTLINE,
       pivot,
       this.angle,
       140,
@@ -120,16 +129,4 @@ export class BerserkerMonster extends Monster {
     return BASE_SPEED_PER_SECOND * this.speedScale;
   }
 
-  private createOutline() {
-    return [
-      { x: this.radius * 1.55, y: 0 },
-      { x: this.radius * 0.4, y: -this.radius * 0.8 },
-      { x: -this.radius * 0.1, y: -this.radius * 1.08 },
-      { x: -this.radius * 1.28, y: -this.radius * 0.44 },
-      { x: -this.radius * 0.72, y: 0 },
-      { x: -this.radius * 1.28, y: this.radius * 0.44 },
-      { x: -this.radius * 0.1, y: this.radius * 1.08 },
-      { x: this.radius * 0.4, y: this.radius * 0.8 },
-    ];
-  }
 }

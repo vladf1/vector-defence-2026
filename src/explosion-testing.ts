@@ -10,6 +10,8 @@ import { SplitterMonster } from "./entities/monsters/splitter-monster";
 import { SquareMonster } from "./entities/monsters/square-monster";
 import { TankMonster } from "./entities/monsters/tank-monster";
 import { TriangleMonster } from "./entities/monsters/triangle-monster";
+import { Missile } from "./entities/projectiles/missile";
+import type { Game } from "./game-engine";
 import type { PathEntry } from "./route-path";
 
 const canvasElement = document.querySelector<HTMLCanvasElement>("#explosion-testing");
@@ -25,6 +27,9 @@ if (!canvasContext) {
 const context = canvasContext;
 const monsterNameTarget = document.querySelector<HTMLElement>("#monster-name");
 const phaseNameTarget = document.querySelector<HTMLElement>("#phase-name");
+const monsterModeTarget = document.querySelector<HTMLButtonElement>("#monster-mode");
+const missileModeTarget = document.querySelector<HTMLButtonElement>("#missile-mode");
+const combinedModeTarget = document.querySelector<HTMLButtonElement>("#combined-mode");
 const playbackToggleTarget = document.querySelector<HTMLButtonElement>("#playback-toggle");
 const nextMonsterTarget = document.querySelector<HTMLButtonElement>("#next-monster");
 const repeatMonsterTarget = document.querySelector<HTMLButtonElement>("#repeat-monster");
@@ -37,6 +42,9 @@ const zoomValueTarget = document.querySelector<HTMLElement>("#zoom-value");
 if (
   !monsterNameTarget ||
   !phaseNameTarget ||
+  !monsterModeTarget ||
+  !missileModeTarget ||
+  !combinedModeTarget ||
   !playbackToggleTarget ||
   !nextMonsterTarget ||
   !repeatMonsterTarget ||
@@ -51,6 +59,9 @@ if (
 }
 const monsterNameElement = monsterNameTarget;
 const phaseNameElement = phaseNameTarget;
+const monsterModeButton = monsterModeTarget;
+const missileModeButton = missileModeTarget;
+const combinedModeButton = combinedModeTarget;
 const playbackToggleButton = playbackToggleTarget;
 const nextMonsterButton = nextMonsterTarget;
 const repeatMonsterButton = repeatMonsterTarget;
@@ -65,6 +76,7 @@ type MonsterConstructor = new (path: PathEntry[], speedScale: number) => Monster
 type MonsterBodyDrawable = Monster & {
   drawBody(context: CanvasRenderingContext2D): void;
 };
+type LabMode = "monster" | "missile" | "combined";
 
 interface MonsterSpec {
   label: string;
@@ -76,8 +88,10 @@ interface MonsterSpec {
 }
 
 interface ActiveScene {
+  mode: LabMode;
   spec: MonsterSpec;
   monster: Monster;
+  missile?: Missile;
   particles: Particle[];
   phase: "approach" | "explode";
   phaseSeconds: number;
@@ -90,6 +104,7 @@ const CENTER = {
 const APPROACH_SECONDS = 3.15;
 const EXPLOSION_SECONDS = 5.6;
 const MONSTER_TIME_SCALE = 0.36;
+const MISSILE_TIME_SCALE = 0.22;
 const EXPLOSION_TIME_SCALE = 0.12;
 const GRID_SPACING = 40;
 const WORLD_STROKE_WIDTH = 1.5;
@@ -97,6 +112,14 @@ const MAX_DEVICE_PIXEL_RATIO = 2;
 const DEFAULT_SPEED = 1;
 const BASE_WORLD_ZOOM = 10;
 const DEFAULT_ZOOM_SCALE = 1;
+const MISSILE_LABEL = "Missile";
+const COMBINED_LABEL = "Missile + Monster";
+const MISSILE_APPROACH_DISTANCE = 126;
+const MISSILE_SOURCE_OFFSET = 10;
+const MISSILE_DAMAGE = 50;
+const MISSILE_DAMAGE_RADIUS = 72;
+const MISSILE_SPEED_PER_SECOND = 118;
+const COMBINED_TARGET_HIT_POINTS = 1;
 
 const monsterSpecs: MonsterSpec[] = [
   { label: "PackMan", MonsterClass: PackManMonster, approachDistance: 112, initialAngle: 0 },
@@ -112,6 +135,7 @@ const monsterSpecs: MonsterSpec[] = [
 let viewportWidth = 0;
 let viewportHeight = 0;
 let devicePixelRatio = 1;
+let labMode: LabMode = "monster";
 let sceneIndex = 0;
 let activeScene = createScene(sceneIndex);
 let lastTimestamp = performance.now();
@@ -123,6 +147,9 @@ let zoomScale = DEFAULT_ZOOM_SCALE;
 approachSpeedSlider.value = String(DEFAULT_SPEED);
 explosionSpeedSlider.value = String(DEFAULT_SPEED);
 zoomSlider.value = String(DEFAULT_ZOOM_SCALE);
+monsterModeButton.addEventListener("click", () => switchMode("monster"));
+missileModeButton.addEventListener("click", () => switchMode("missile"));
+combinedModeButton.addEventListener("click", () => switchMode("combined"));
 playbackToggleButton.addEventListener("click", togglePlayback);
 nextMonsterButton.addEventListener("click", advanceToNextMonster);
 repeatMonsterButton.addEventListener("click", repeatCurrentMonster);
@@ -151,7 +178,11 @@ function updateScene(deltaSeconds: number): void {
   activeScene.phaseSeconds += deltaSeconds;
 
   if (activeScene.phase === "approach") {
-    updateMonsterApproach(activeScene, deltaSeconds);
+    if (activeScene.mode === "monster") {
+      updateMonsterApproach(activeScene, deltaSeconds);
+    } else {
+      updateMissileApproach(activeScene, deltaSeconds);
+    }
     if (activeScene.phaseSeconds >= APPROACH_SECONDS) {
       startExplosion(activeScene);
     }
@@ -181,7 +212,40 @@ function updateMonsterApproach(scene: ActiveScene, deltaSeconds: number): void {
   scene.monster.velocityYPerSecond = Math.sin(scene.monster.angle) * scene.monster.speedPerSecond;
 }
 
+function updateMissileApproach(scene: ActiveScene, deltaSeconds: number): void {
+  const missile = scene.missile;
+  if (!missile) {
+    return;
+  }
+
+  const particleCountBeforeUpdate = scene.particles.length;
+  missile.update(createMissilePreviewGame(scene), deltaSeconds * MISSILE_TIME_SCALE);
+  scene.monster.x = CENTER.x;
+  scene.monster.y = CENTER.y;
+  scene.monster.angle = scene.spec.initialAngle ?? 0;
+  scene.monster.velocityXPerSecond = 0;
+  scene.monster.velocityYPerSecond = 0;
+
+  if (missile.removed) {
+    scene.particles = scene.particles.slice(particleCountBeforeUpdate);
+    if (scene.mode === "combined") {
+      scene.monster.update(0);
+      addMonsterDeathEffect(scene.monster, scene.particles);
+    }
+    scene.phase = "explode";
+    scene.phaseSeconds = 0;
+    updatePhaseName();
+  }
+}
+
 function startExplosion(scene: ActiveScene): void {
+  if (scene.mode === "missile") {
+    scene.phase = "explode";
+    scene.phaseSeconds = 0;
+    updatePhaseName();
+    return;
+  }
+
   scene.monster.x = CENTER.x;
   scene.monster.y = CENTER.y;
   scene.monster.angle = scene.spec.initialAngle ?? 0;
@@ -223,6 +287,9 @@ function drawScene(): void {
 
   if (activeScene.phase === "approach") {
     drawMonsterBody(activeScene.monster);
+    if (activeScene.missile) {
+      activeScene.missile.draw(context);
+    }
   } else {
     for (const particle of activeScene.particles) {
       if (!particle.removed) {
@@ -236,13 +303,7 @@ function drawScene(): void {
 }
 
 function drawBackdrop(): void {
-  const centerX = viewportWidth / 2;
-  const centerY = viewportHeight / 2;
-  const glow = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, Math.max(viewportWidth, viewportHeight) * 0.58);
-  glow.addColorStop(0, "rgba(22, 255, 202, 0.12)");
-  glow.addColorStop(0.35, "rgba(7, 29, 25, 0.44)");
-  glow.addColorStop(1, "rgba(1, 5, 4, 1)");
-  context.fillStyle = glow;
+  context.fillStyle = "#020807";
   context.fillRect(0, 0, viewportWidth, viewportHeight);
 
   context.strokeStyle = "rgba(193, 255, 237, 0.055)";
@@ -291,13 +352,31 @@ function drawOverlay(): void {
 function createScene(index: number): ActiveScene {
   const spec = monsterSpecs[index];
   const monster = createMonster(spec);
+  const particles: Particle[] = [];
+  if (labMode === "combined") {
+    prepareCombinedTarget(monster);
+  }
+  const missile = labMode === "missile" || labMode === "combined" ? createMissile(monster) : undefined;
   return {
+    mode: labMode,
     spec,
     monster,
-    particles: [],
+    missile,
+    particles,
     phase: "approach",
     phaseSeconds: 0,
   };
+}
+
+function switchMode(mode: LabMode): void {
+  if (labMode === mode) {
+    return;
+  }
+
+  labMode = mode;
+  activeScene = createScene(sceneIndex);
+  updateHudLabels();
+  updateModeButtons();
 }
 
 function createMonster(spec: MonsterSpec): Monster {
@@ -340,6 +419,46 @@ function createPath(spec: MonsterSpec): PathEntry[] {
   ];
 }
 
+function createMissile(monster: Monster): Missile {
+  const source = {
+    x: CENTER.x - MISSILE_APPROACH_DISTANCE,
+    y: CENTER.y - MISSILE_SOURCE_OFFSET,
+  };
+  monster.x = CENTER.x;
+  monster.y = CENTER.y;
+  monster.removed = false;
+  return new Missile(source, monster, MISSILE_DAMAGE, MISSILE_DAMAGE_RADIUS, MISSILE_SPEED_PER_SECOND, 0);
+}
+
+function prepareCombinedTarget(monster: Monster): void {
+  monster.hitPoints = COMBINED_TARGET_HIT_POINTS;
+}
+
+function createMissilePreviewGame(scene: ActiveScene): Game {
+  const previewGame = {
+    profile: {
+      fieldWidth: EFFECT_FIELD_WIDTH,
+      fieldHeight: EFFECT_FIELD_HEIGHT,
+    },
+    runtime: {
+      particles: scene.particles,
+      getActiveMonsters() {
+        return scene.monster.removed ? [] : [scene.monster];
+      },
+    },
+    addParticle(particle: Particle) {
+      scene.particles.push(particle);
+    },
+    playSound() {},
+  };
+  return previewGame as unknown as Game;
+}
+
+function addMonsterDeathEffect(monster: Monster, particles: Particle[]): void {
+  const effect = monster.createDeathEffect();
+  particles.push(...effect.particles);
+}
+
 function resizeCanvas(): void {
   viewportWidth = window.innerWidth;
   viewportHeight = window.innerHeight;
@@ -349,14 +468,39 @@ function resizeCanvas(): void {
 }
 
 function updateHudLabels(): void {
-  monsterNameElement.textContent = activeScene.spec.label;
+  monsterNameElement.textContent = getSceneLabel(activeScene);
   updatePhaseName();
+  updateModeButtons();
 }
 
 function updatePhaseName(): void {
-  phaseNameElement.textContent = activeScene.phase === "approach"
-    ? "approach"
-    : `explosion / ${activeScene.particles.length} shards`;
+  if (activeScene.phase === "approach") {
+    phaseNameElement.textContent = activeScene.mode === "monster" ? "approach" : `impacting ${activeScene.spec.label}`;
+    return;
+  }
+  if (activeScene.mode === "monster") {
+    phaseNameElement.textContent = `explosion / ${activeScene.particles.length} shards`;
+    return;
+  }
+  phaseNameElement.textContent = activeScene.mode === "missile"
+    ? `impact / ${activeScene.particles.length} particles`
+    : `combined / ${activeScene.particles.length} particles`;
+}
+
+function updateModeButtons(): void {
+  monsterModeButton.setAttribute("aria-pressed", labMode === "monster" ? "true" : "false");
+  missileModeButton.setAttribute("aria-pressed", labMode === "missile" ? "true" : "false");
+  combinedModeButton.setAttribute("aria-pressed", labMode === "combined" ? "true" : "false");
+}
+
+function getSceneLabel(scene: ActiveScene): string {
+  if (scene.mode === "missile") {
+    return MISSILE_LABEL;
+  }
+  if (scene.mode === "combined") {
+    return COMBINED_LABEL;
+  }
+  return scene.spec.label;
 }
 
 function togglePlayback(): void {

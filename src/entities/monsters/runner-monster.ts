@@ -11,6 +11,12 @@ const SPEED_PER_SECOND = 132;
 const HIT_POINTS = 83;
 const BOUNTY = 2;
 const RADIUS = 5.5;
+const OUTLINE = [
+  { x: RADIUS * 1.7, y: 0 },
+  { x: -RADIUS * 0.1, y: -RADIUS * 0.82 },
+  { x: -RADIUS * 1.35, y: 0 },
+  { x: -RADIUS * 0.1, y: RADIUS * 0.82 },
+];
 
 export class RunnerMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
@@ -19,8 +25,7 @@ export class RunnerMonster extends Monster {
 
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
-    const outline = this.createOutline();
-    drawPath(context, outline, true);
+    drawPath(context, OUTLINE, true);
     context.beginPath();
     context.moveTo(-this.radius * 0.95, 0);
     context.lineTo(-this.radius * 1.5, -this.radius * 0.55);
@@ -38,7 +43,7 @@ export class RunnerMonster extends Monster {
       this.x,
       this.y,
       this.color,
-      this.createOutline(),
+      OUTLINE,
       pivot,
       this.angle,
       155,
@@ -56,12 +61,4 @@ export class RunnerMonster extends Monster {
     };
   }
 
-  private createOutline() {
-    return [
-      { x: this.radius * 1.7, y: 0 },
-      { x: -this.radius * 0.1, y: -this.radius * 0.82 },
-      { x: -this.radius * 1.35, y: 0 },
-      { x: -this.radius * 0.1, y: this.radius * 0.82 },
-    ];
-  }
 }

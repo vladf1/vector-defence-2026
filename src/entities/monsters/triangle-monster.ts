@@ -12,6 +12,11 @@ const HIT_POINTS = 110;
 const BOUNTY = 3;
 const RADIUS = 7;
 const OUTLINE_RADIUS = 6;
+const OUTLINE = [
+  { x: OUTLINE_RADIUS, y: 0 },
+  { x: -OUTLINE_RADIUS, y: -OUTLINE_RADIUS },
+  { x: -OUTLINE_RADIUS, y: OUTLINE_RADIUS },
+];
 
 export class TriangleMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
@@ -20,8 +25,7 @@ export class TriangleMonster extends Monster {
 
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
-    const outline = this.createOutline();
-    drawPath(context, outline, true);
+    drawPath(context, OUTLINE, true);
   }
 
   override createDeathEffect(): MonsterDeathEffect {
@@ -33,7 +37,7 @@ export class TriangleMonster extends Monster {
       this.x,
       this.y,
       this.color,
-      this.createOutline(),
+      OUTLINE,
       pivot,
       this.angle,
       115,
@@ -50,11 +54,4 @@ export class TriangleMonster extends Monster {
     };
   }
 
-  private createOutline() {
-    return [
-      { x: OUTLINE_RADIUS, y: 0 },
-      { x: -OUTLINE_RADIUS, y: -OUTLINE_RADIUS },
-      { x: -OUTLINE_RADIUS, y: OUTLINE_RADIUS },
-    ];
-  }
 }

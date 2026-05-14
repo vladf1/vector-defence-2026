@@ -15,6 +15,32 @@ const BOUNTY = 4;
 const RADIUS = 9.5;
 const ARMOR_PER_HIT = 3.5;
 const MIN_CHIP_DAMAGE = 0.4;
+const SHELL_HALF_HEIGHT = RADIUS * 0.8;
+const SHELL_OUTLINE = [
+  { x: RADIUS * 1.35, y: 0 },
+  { x: RADIUS * 0.82, y: -SHELL_HALF_HEIGHT },
+  { x: -RADIUS * 0.2, y: -RADIUS * 0.98 },
+  { x: -RADIUS * 1.08, y: -SHELL_HALF_HEIGHT },
+  { x: -RADIUS * 1.32, y: 0 },
+  { x: -RADIUS * 1.08, y: SHELL_HALF_HEIGHT },
+  { x: -RADIUS * 0.2, y: RADIUS * 0.98 },
+  { x: RADIUS * 0.82, y: SHELL_HALF_HEIGHT },
+];
+const CORE_OUTLINE = [
+  { x: RADIUS * 0.98, y: 0 },
+  { x: RADIUS * 0.42, y: -RADIUS * 0.46 },
+  { x: -RADIUS * 0.3, y: -RADIUS * 0.46 },
+  { x: -RADIUS * 0.72, y: 0 },
+  { x: -RADIUS * 0.3, y: RADIUS * 0.46 },
+  { x: RADIUS * 0.42, y: RADIUS * 0.46 },
+];
+const FRONT_PLATE_OUTLINE = [
+  { x: RADIUS * 1.08, y: 0 },
+  { x: RADIUS * 0.76, y: -RADIUS * 0.28 },
+  { x: RADIUS * 0.16, y: -RADIUS * 0.28 },
+  { x: RADIUS * 0.16, y: RADIUS * 0.28 },
+  { x: RADIUS * 0.76, y: RADIUS * 0.28 },
+];
 
 export class BulwarkMonster extends Monster {
   private shieldPulse = 0;
@@ -41,14 +67,12 @@ export class BulwarkMonster extends Monster {
 
     const glow = 0.3 + (Math.sin(this.shieldPulse) * 0.12);
 
-    const shellOutline = this.createShellOutline();
-    drawPath(context, shellOutline, true);
+    drawPath(context, SHELL_OUTLINE, true);
 
     context.save();
     context.strokeStyle = hexWithAlpha(ARMOR_GLOW_COLOR, glow);
     context.lineWidth = 1.2;
-    const coreOutline = this.createCoreOutline();
-    drawPath(context, coreOutline, false);
+    drawPath(context, CORE_OUTLINE, false);
 
     context.beginPath();
     context.moveTo(-this.radius * 0.22, -this.radius * 0.82);
@@ -84,7 +108,7 @@ export class BulwarkMonster extends Monster {
       this.x,
       this.y,
       this.color,
-      this.createShellOutline(),
+      SHELL_OUTLINE,
       shellPivot,
       this.angle,
       120,
@@ -100,7 +124,7 @@ export class BulwarkMonster extends Monster {
         this.x,
         this.y,
         this.color,
-        this.createFrontPlateOutline(),
+        FRONT_PLATE_OUTLINE,
         { x: 0, y: 0 },
         this.angle,
         randomRange(105, 175),
@@ -114,38 +138,4 @@ export class BulwarkMonster extends Monster {
     };
   }
 
-  private createShellOutline() {
-    const halfHeight = this.radius * 0.8;
-    return [
-      { x: this.radius * 1.35, y: 0 },
-      { x: this.radius * 0.82, y: -halfHeight },
-      { x: -this.radius * 0.2, y: -this.radius * 0.98 },
-      { x: -this.radius * 1.08, y: -halfHeight },
-      { x: -this.radius * 1.32, y: 0 },
-      { x: -this.radius * 1.08, y: halfHeight },
-      { x: -this.radius * 0.2, y: this.radius * 0.98 },
-      { x: this.radius * 0.82, y: halfHeight },
-    ];
-  }
-
-  private createCoreOutline() {
-    return [
-      { x: this.radius * 0.98, y: 0 },
-      { x: this.radius * 0.42, y: -this.radius * 0.46 },
-      { x: -this.radius * 0.3, y: -this.radius * 0.46 },
-      { x: -this.radius * 0.72, y: 0 },
-      { x: -this.radius * 0.3, y: this.radius * 0.46 },
-      { x: this.radius * 0.42, y: this.radius * 0.46 },
-    ];
-  }
-
-  private createFrontPlateOutline() {
-    return [
-      { x: this.radius * 1.08, y: 0 },
-      { x: this.radius * 0.76, y: -this.radius * 0.28 },
-      { x: this.radius * 0.16, y: -this.radius * 0.28 },
-      { x: this.radius * 0.16, y: this.radius * 0.28 },
-      { x: this.radius * 0.76, y: this.radius * 0.28 },
-    ];
-  }
 }

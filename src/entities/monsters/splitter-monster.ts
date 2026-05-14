@@ -1,7 +1,7 @@
 import type { Particle } from "../effects/particle";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
-import { randomRange } from "../../utils";
+import { drawPath, randomRange } from "../../utils";
 import { createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster, type MonsterDeathEffect } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
@@ -11,6 +11,14 @@ const SPEED_PER_SECOND = 73;
 const HIT_POINTS = 253;
 const BOUNTY = 3;
 const RADIUS = 8.5;
+const OUTLINE = Array.from({ length: 6 }, (_, index) => {
+  const angle = (Math.PI / 3) * index;
+  const radius = index % 2 === 0 ? RADIUS * 1.15 : RADIUS * 0.72;
+  return {
+    x: Math.cos(angle) * radius,
+    y: Math.sin(angle) * radius,
+  };
+});
 
 export class SplitterMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
@@ -23,19 +31,7 @@ export class SplitterMonster extends Monster {
 
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.rotation);
-    context.beginPath();
-    const outline = this.createOutline();
-    for (let index = 0; index < outline.length; index += 1) {
-      const { x, y } = outline[index];
-      if (index === 0) {
-        context.moveTo(x, y);
-      } else {
-        context.lineTo(x, y);
-      }
-    }
-    context.closePath();
-    context.fill();
-    context.stroke();
+    drawPath(context, OUTLINE, true);
     context.beginPath();
     context.moveTo(-this.radius * 0.55, -this.radius * 0.15);
     context.lineTo(0, this.radius * 0.2);
@@ -52,7 +48,7 @@ export class SplitterMonster extends Monster {
       this.x,
       this.y,
       this.color,
-      this.createOutline(),
+      OUTLINE,
       pivot,
       this.rotation,
       110,
@@ -70,14 +66,4 @@ export class SplitterMonster extends Monster {
     };
   }
 
-  private createOutline() {
-    return Array.from({ length: 6 }, (_, index) => {
-      const angle = (Math.PI / 3) * index;
-      const radius = index % 2 === 0 ? this.radius * 1.15 : this.radius * 0.72;
-      return {
-        x: Math.cos(angle) * radius,
-        y: Math.sin(angle) * radius,
-      };
-    });
-  }
 }
