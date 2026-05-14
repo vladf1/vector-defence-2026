@@ -280,10 +280,10 @@ export class GameRenderer {
 
     context.save();
     const gridGradient = context.createLinearGradient(0, 0, 0, this.fieldHeight);
-    gridGradient.addColorStop(0, "rgba(255, 255, 255, 0)");
-    gridGradient.addColorStop(0.28, "rgba(255, 255, 255, 0.07)");
-    gridGradient.addColorStop(0.72, "rgba(255, 255, 255, 0.07)");
-    gridGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+    gridGradient.addColorStop(0, "rgba(255, 255, 255, 0.035)");
+    gridGradient.addColorStop(0.18, "rgba(255, 255, 255, 0.07)");
+    gridGradient.addColorStop(0.82, "rgba(255, 255, 255, 0.07)");
+    gridGradient.addColorStop(1, "rgba(255, 255, 255, 0.035)");
     context.strokeStyle = gridGradient;
     for (let x = 0; x <= this.fieldWidth; x += 35) {
       context.beginPath();
@@ -293,7 +293,7 @@ export class GameRenderer {
     }
     for (let y = 0; y <= this.fieldHeight; y += 35) {
       const distanceFromCenter = Math.abs((y / this.fieldHeight) - 0.5) * 2;
-      const alpha = 0.07 * Math.max(0, 1 - Math.max(0, distanceFromCenter - 0.44) / 0.56);
+      const alpha = 0.035 + (0.035 * Math.max(0, 1 - Math.max(0, distanceFromCenter - 0.64) / 0.36));
       context.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
       context.beginPath();
       context.moveTo(0, y);
