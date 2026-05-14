@@ -208,11 +208,11 @@ export function createModalView(game: Game): ModalView | null {
   if (game.state === GameState.Won) {
     return {
       title: "Level Clear",
-      description: `Level ${game.currentLevel?.levelNumber ?? "?"} is secure. Keep the pressure on and push into the next route.`,
+      description: `Level ${game.currentLevel?.levelNumber ?? "?"} secured. Next route unlocked.`,
       centered: true,
+      completion: true,
       actions: [
         { action: ModalAction.NextLevel, label: `Continue to Level ${(game.currentLevel?.levelNumber ?? 0) + 1}` },
-        { action: ModalAction.Replay, label: "Replay This Level" },
         { action: ModalAction.CampaignMap, label: "Campaign Map" },
       ],
     };
@@ -223,9 +223,9 @@ export function createModalView(game: Game): ModalView | null {
       title: "You Won the Campaign",
       description: `All ${game.campaignLevelCount} campaign levels are secure.`,
       centered: true,
+      completion: true,
       actions: [
         { action: ModalAction.RestartCampaign, label: "Restart Campaign" },
-        { action: ModalAction.Replay, label: "Replay Final Level" },
         { action: ModalAction.CampaignMap, label: "Campaign Map" },
       ],
     };
