@@ -103,6 +103,7 @@ const CENTER = {
 };
 const APPROACH_SECONDS = 3.15;
 const EXPLOSION_SECONDS = 5.6;
+const MIN_EXPLOSION_SECONDS = 4;
 const MONSTER_TIME_SCALE = 0.36;
 const MISSILE_TIME_SCALE = 0.22;
 const EXPLOSION_TIME_SCALE = 0.12;
@@ -191,7 +192,10 @@ function updateScene(deltaSeconds: number): void {
 
   if (activeScene.phase === "explode") {
     updateParticles(activeScene.particles, deltaSeconds * EXPLOSION_TIME_SCALE);
-    if (activeScene.phaseSeconds >= EXPLOSION_SECONDS) {
+    if (
+      (activeScene.phaseSeconds >= MIN_EXPLOSION_SECONDS && allParticlesOffScreen(activeScene.particles))
+      || activeScene.phaseSeconds >= EXPLOSION_SECONDS
+    ) {
       advanceToNextMonster();
     }
   }
@@ -272,6 +276,37 @@ function updateParticles(particles: Particle[], deltaSeconds: number): void {
       particle.update(deltaSeconds);
     }
   }
+}
+
+function allParticlesOffScreen(particles: Particle[]): boolean {
+  if (particles.length === 0) {
+    return false;
+  }
+
+  const bounds = getVisibleWorldBounds();
+  return particles.every((particle) => particle.removed || !isParticleVisible(particle, bounds));
+}
+
+function getVisibleWorldBounds(): { minX: number; minY: number; maxX: number; maxY: number } {
+  const sceneZoom = BASE_WORLD_ZOOM * zoomScale;
+  const halfWidth = viewportWidth / (sceneZoom * 2);
+  const halfHeight = viewportHeight / (sceneZoom * 2);
+  return {
+    minX: CENTER.x - halfWidth,
+    minY: CENTER.y - halfHeight,
+    maxX: CENTER.x + halfWidth,
+    maxY: CENTER.y + halfHeight,
+  };
+}
+
+function isParticleVisible(
+  particle: Particle,
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+): boolean {
+  return particle.x + particle.size >= bounds.minX
+    && particle.x - particle.size <= bounds.maxX
+    && particle.y + particle.size >= bounds.minY
+    && particle.y - particle.size <= bounds.maxY;
 }
 
 function drawScene(): void {

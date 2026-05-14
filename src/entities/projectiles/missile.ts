@@ -6,6 +6,14 @@ import { angleBetween, calculateDistance, randomRange, withinDistance } from "..
 import { Particle } from "../effects/particle";
 import type { Monster } from "../monsters/monster";
 
+const MISSILE_EXHAUST_SMOKE_PUFFS = [
+  { x: -8.8, y: -0.18, radius: 2.2, alpha: 0.25 },
+  { x: -11.4, y: 0.22, radius: 3.1, alpha: 0.28 },
+  { x: -14.6, y: -0.35, radius: 4, alpha: 0.24 },
+  { x: -18.4, y: 0.18, radius: 4.8, alpha: 0.18 },
+  { x: -22.5, y: -0.08, radius: 5.7, alpha: 0.12 },
+];
+
 export class Missile {
   x: number;
   y: number;
@@ -89,6 +97,29 @@ export class Missile {
     context.save();
     context.translate(this.x, this.y);
     context.rotate(this.angle);
+
+    for (const puff of MISSILE_EXHAUST_SMOKE_PUFFS) {
+      const smoke = context.createRadialGradient(puff.x, puff.y, 0, puff.x, puff.y, puff.radius);
+      smoke.addColorStop(0, `rgba(126, 133, 140, ${puff.alpha})`);
+      smoke.addColorStop(1, "rgba(126, 133, 140, 0)");
+      context.fillStyle = smoke;
+      context.beginPath();
+      context.arc(puff.x, puff.y, puff.radius, 0, Math.PI * 2);
+      context.fill();
+    }
+
+    context.save();
+    context.globalCompositeOperation = "lighter";
+    const flameGlow = context.createRadialGradient(-7.4, 0, 0, -7.4, 0, 8.2);
+    flameGlow.addColorStop(0, "rgba(255, 240, 168, 0.5)");
+    flameGlow.addColorStop(0.32, "rgba(255, 143, 69, 0.38)");
+    flameGlow.addColorStop(1, "rgba(255, 143, 69, 0)");
+    context.fillStyle = flameGlow;
+    context.beginPath();
+    context.ellipse(-10.8, 0, 6.9, 1.7, 0, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+
     context.fillStyle = "#ffe77c";
     context.beginPath();
     context.moveTo(-7, -1.45);
