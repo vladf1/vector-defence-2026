@@ -1,4 +1,9 @@
 <script lang="ts">
+  import controlHomeIcon from "../assets/ui/control-home.png";
+  import controlPauseIcon from "../assets/ui/control-pause.png";
+  import controlPlayIcon from "../assets/ui/control-play.png";
+  import controlSoundMutedIcon from "../assets/ui/control-sound-muted.png";
+  import controlSoundOnIcon from "../assets/ui/control-sound-on.png";
   import { getGameSessionContext } from "../game-context";
 
   const session = getGameSessionContext();
@@ -46,7 +51,7 @@
       title={$soundEnabled ? "Mute sound" : "Unmute sound"}
       onclick={session.toggleSound}
     >
-      <span class="sound-icon" aria-hidden="true">{$soundEnabled ? "🔊" : "🔇"}</span>
+      <img class="control-icon" src={$soundEnabled ? controlSoundOnIcon : controlSoundMutedIcon} alt="" aria-hidden="true" />
     </button>
     <button
       class="chrome-button pause-button"
@@ -56,7 +61,7 @@
       disabled={!$hud.canTogglePause}
       onclick={session.togglePause}
     >
-      <span aria-hidden="true">{$hud.paused ? "▶️" : "⏸️"}</span>
+      <img class="control-icon" src={$hud.paused ? controlPlayIcon : controlPauseIcon} alt="" aria-hidden="true" />
     </button>
     <button
       class="chrome-button campaign-button"
@@ -65,7 +70,7 @@
       title="Campaign"
       onclick={session.openMenu}
     >
-      <span aria-hidden="true">🎮</span>
+      <img class="control-icon" src={controlHomeIcon} alt="" aria-hidden="true" />
     </button>
   </div>
 </header>

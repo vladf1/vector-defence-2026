@@ -175,7 +175,8 @@ textarea,
 }
 
 .sound-button,
-.campaign-button {
+.campaign-button,
+.pause-button {
   width: 40px;
   min-width: 40px;
   padding-inline: 0;
@@ -183,17 +184,13 @@ textarea,
   place-items: center;
 }
 
-.pause-button {
-  width: 40px;
-  min-width: 40px;
-  padding-inline: 0;
-  text-align: center;
-}
-
-.sound-icon {
+.control-icon {
   display: block;
-  font-size: 1.05rem;
-  line-height: 1;
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 4px rgba(49, 255, 235, 0.42));
+  pointer-events: none;
 }
 
 .board-card {
@@ -705,10 +702,14 @@ textarea,
 }
 
 .mobile-shell .chrome-button {
+  display: inline-grid;
+  place-items: center;
+  height: 36px;
   min-height: 36px;
   border-radius: 8px;
-  padding: 6px 9px;
+  padding: 0;
   font-size: 0.82rem;
+  line-height: 0;
 }
 
 .mobile-shell .sound-button,
@@ -716,6 +717,16 @@ textarea,
 .mobile-shell .pause-button {
   width: 36px;
   min-width: 36px;
+}
+
+.mobile-shell .control-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.mobile-shell .sound-button .control-icon {
+  width: 28px;
+  height: 28px;
 }
 
 @media (max-width: 680px) {
