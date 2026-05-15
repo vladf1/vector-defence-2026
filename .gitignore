@@ -4,4 +4,5 @@ artifacts/
 /.DS_Store
 .codex-vite.out.log
 .codex-vite.err.log
+.codex-vite.pid
 src/.DS_Store
