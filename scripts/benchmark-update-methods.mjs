@@ -21,14 +21,14 @@ const html = String.raw`
       const { Missile } = await import("/src/entities/projectiles/missile.ts");
 
       const maxStressConfig = {
-        monsterCount: 180,
-        towerRows: 10,
-        projectileCount: 240,
-        missileCount: 60,
-        particleCount: 480,
-        linkCount: 110,
-        warmupFrames: 12,
-        measuredFrames: 45,
+        monsterCount: 720,
+        towerRows: 18,
+        projectileCount: 1200,
+        missileCount: 180,
+        particleCount: 2000,
+        linkCount: 120,
+        warmupFrames: 18,
+        measuredFrames: 60,
       };
 
       const profile = runMaxStressUpdateProfile(maxStressConfig);

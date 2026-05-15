@@ -143,8 +143,18 @@ export function formatMoney(value: number): string {
 }
 
 export function compactInPlace<T extends { removed: boolean }>(items: T[]): void {
+  const itemCount = items.length;
   let writeIndex = 0;
-  for (let readIndex = 0; readIndex < items.length; readIndex += 1) {
+
+  while (writeIndex < itemCount && !items[writeIndex].removed) {
+    writeIndex += 1;
+  }
+
+  if (writeIndex === itemCount) {
+    return;
+  }
+
+  for (let readIndex = writeIndex + 1; readIndex < itemCount; readIndex += 1) {
     const item = items[readIndex];
     if (!item.removed) {
       items[writeIndex] = item;
