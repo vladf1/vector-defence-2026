@@ -37,7 +37,6 @@ Repository notes:
 - The project root is the active browser app repo.
 - The browser app in `src/` is the active implementation.
 - The browser app is a Svelte 5 + Vite app. Avoid reintroducing hand-built DOM/UI glue when a small Svelte component or view model is the cleaner boundary.
-- `window.vectorDefenceGame` is intentionally populated by `src/game-session.ts` for browser/dev smoke checks.
 
 Current code structure:
 

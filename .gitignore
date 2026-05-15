@@ -1,6 +1,5 @@
 node_modules/
 dist/
-dist-single/
 artifacts/
 /.DS_Store
 .codex-vite.out.log

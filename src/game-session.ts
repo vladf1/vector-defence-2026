@@ -21,11 +21,6 @@ const MAX_FRAME_DELTA = 1 / 15;
 const NERD_STATS_SAMPLE_MS = 500;
 const TOWER_DRAG_THRESHOLD_PX = 6;
 
-interface VectorDefenceWindow extends Window {
-  // Exposes the live game instance for browser/dev smoke checks.
-  vectorDefenceGame?: Game;
-}
-
 export interface GameSession {
   profile: GameProfile;
   hud: Readable<HudSnapshot>;
@@ -218,7 +213,6 @@ export function createGameSession(profile: GameProfile): GameSession {
       audio,
       profile,
     );
-    (window as VectorDefenceWindow).vectorDefenceGame = game;
     game.resize();
     game.draw();
     canvasResizeObserver = new ResizeObserver(() => {
@@ -247,10 +241,6 @@ export function createGameSession(profile: GameProfile): GameSession {
 
     canvasResizeObserver?.disconnect();
     canvasResizeObserver = null;
-
-    if ((window as VectorDefenceWindow).vectorDefenceGame === game) {
-      delete (window as VectorDefenceWindow).vectorDefenceGame;
-    }
 
     previousFrameTime = 0;
     runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
