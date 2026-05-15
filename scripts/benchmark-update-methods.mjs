@@ -20,69 +20,154 @@ const html = String.raw`
       const { Projectile } = await import("/src/entities/projectiles/projectile.ts");
       const { Missile } = await import("/src/entities/projectiles/missile.ts");
 
-      const scenarios = [
-        createBusyScenario("busy:mixed-48m-25t", { monsterCount: 48, towerRows: 5, projectileCount: 35, missileCount: 10, particleCount: 80, linkCount: 18 }),
-        createBusyScenario("busy:mixed-96m-40t", { monsterCount: 96, towerRows: 8, projectileCount: 80, missileCount: 22, particleCount: 160, linkCount: 36 }),
-        createBusyScenario("busy:swarm-180m-40t", { monsterCount: 180, towerRows: 8, projectileCount: 80, missileCount: 22, particleCount: 160, linkCount: 36 }),
-        createBusyScenario("busy:projectile-stress", { monsterCount: 140, towerRows: 2, projectileCount: 220, missileCount: 50, particleCount: 80, linkCount: 8 }),
-      ];
-
-      window.__benchmarkResults = {
-        summary: scenarios.map((scenario) => runUpdateScenario(scenario))
-          .sort((a, b) => b.medianUpdateMsPerFrame - a.medianUpdateMsPerFrame),
+      const maxStressConfig = {
+        monsterCount: 180,
+        towerRows: 10,
+        projectileCount: 240,
+        missileCount: 60,
+        particleCount: 480,
+        linkCount: 110,
+        warmupFrames: 12,
+        measuredFrames: 45,
       };
 
-      function createBusyScenario(name, config) {
-        return { name, config };
-      }
+      const profile = runMaxStressUpdateProfile(maxStressConfig);
+      window.__benchmarkResults = {
+        totalImpact: profile.totalImpact,
+        perInvocation: profile.perInvocation,
+      };
 
-      function runUpdateScenario(scenario) {
+      function runMaxStressUpdateProfile(config) {
         const game = createBenchmarkGame();
         game.draw = () => {
         };
-        populateBusyBoard(game, scenario.config);
-        const warmupFrames = 30;
-        const sampleCount = 3;
-        const framesPerSample = 20;
+        populateBusyBoard(game, config);
         const deltaSeconds = 1 / 60;
 
-        for (let frame = 0; frame < warmupFrames; frame += 1) {
-          game.update(deltaSeconds);
-          maintainBusyBoard(game, scenario.config, frame);
+        for (let frame = 0; frame < config.warmupFrames; frame += 1) {
+          profileOneRuntimeUpdate(game, deltaSeconds, undefined);
+          maintainBusyBoard(game, config, frame);
         }
 
-        const samples = [];
-        for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
-          maintainBusyBoard(game, scenario.config, sampleIndex + warmupFrames);
+        const buckets = new Map();
+        const frameStart = performance.now();
+        for (let frame = 0; frame < config.measuredFrames; frame += 1) {
+          maintainBusyBoard(game, config, frame + config.warmupFrames);
           game.setState(GameState.Playing);
           game.runtime.escapesLeft = 999999;
-          const start = performance.now();
-          for (let frame = 0; frame < framesPerSample; frame += 1) {
-            game.update(deltaSeconds);
-            boundBusyBoard(game, scenario.config);
-          }
-          samples.push((performance.now() - start) / framesPerSample);
+          profileOneRuntimeUpdate(game, deltaSeconds, buckets);
+          boundBusyBoard(game, config);
         }
+        const elapsedWithFixtureMaintenance = performance.now() - frameStart;
+        const timedUpdateMs = Array.from(buckets.values())
+          .reduce((sum, bucket) => sum + bucket.totalMs, 0);
 
-        samples.sort((a, b) => a - b);
-        const median = samples[Math.floor(samples.length / 2)];
-        const p95 = samples[Math.floor(samples.length * 0.95)];
-        const mean = samples.reduce((sum, value) => sum + value, 0) / samples.length;
+        const rows = Array.from(buckets.entries())
+          .map(([method, bucket]) => ({
+            method,
+            avgInstances: round(bucket.calls / config.measuredFrames),
+            totalMs: round(bucket.totalMs),
+            msPerFrame: round(bucket.totalMs / config.measuredFrames),
+            usPerCall: round((bucket.totalMs * 1000) / Math.max(1, bucket.calls)),
+            finalInstances: bucket.lastInstances,
+          }))
+          .concat([{
+            method: "TOTAL:timed-update-methods",
+            avgInstances: "",
+            totalMs: round(timedUpdateMs),
+            msPerFrame: round(timedUpdateMs / config.measuredFrames),
+            usPerCall: "",
+            finalInstances: [
+              "monsters=" + game.runtime.monsters.length,
+              "towers=" + game.runtime.towers.length,
+              "projectiles=" + game.runtime.projectiles.length,
+              "missiles=" + game.runtime.missiles.length,
+              "particles=" + game.runtime.particles.length,
+              "links=" + game.runtime.links.length,
+            ].join(" "),
+          }, {
+            method: "benchmark:fixture-maintenance",
+            avgInstances: "",
+            totalMs: round(elapsedWithFixtureMaintenance - timedUpdateMs),
+            msPerFrame: round((elapsedWithFixtureMaintenance - timedUpdateMs) / config.measuredFrames),
+            usPerCall: "",
+            finalInstances: "",
+          }])
         return {
-          name: scenario.name,
-          medianUpdateMsPerFrame: round(median),
-          meanUpdateMsPerFrame: round(mean),
-          p95UpdateMsPerFrame: round(p95),
-          minUpdateMsPerFrame: round(samples[0]),
-          maxUpdateMsPerFrame: round(samples[samples.length - 1]),
-          towers: game.runtime.towers.length,
-          monsters: game.runtime.monsters.length,
-          projectiles: game.runtime.projectiles.length,
-          missiles: game.runtime.missiles.length,
-          particles: game.runtime.particles.length,
-          links: game.runtime.links.length,
-          state: game.state,
+          totalImpact: rows.toSorted((a, b) => {
+            if (a.method.startsWith("TOTAL:")) {
+              return 1;
+            }
+            if (b.method.startsWith("TOTAL:")) {
+              return -1;
+            }
+            return b.msPerFrame - a.msPerFrame;
+          }),
+          perInvocation: rows
+            .filter((row) => typeof row.usPerCall === "number")
+            .toSorted((a, b) => b.usPerCall - a.usPerCall),
         };
+      }
+
+      function profileOneRuntimeUpdate(game, deltaSeconds, buckets) {
+        timeGroupedByConstructor(buckets, "monster", game.runtime.monsters, (monster) => {
+          monster.update(deltaSeconds);
+        });
+        timeGroup(buckets, "projectile:Projectile.update", game.runtime.projectiles, (projectile) => {
+          projectile.update(game, deltaSeconds);
+        });
+        timeGroup(buckets, "projectile:Missile.update", game.runtime.missiles, (missile) => {
+          missile.update(game, deltaSeconds);
+        });
+        timeGroupedByConstructor(buckets, "particle", game.runtime.particles, (particle) => {
+          particle.update(deltaSeconds);
+        });
+        timeGroupedByConstructor(buckets, "link", game.runtime.links, (link) => {
+          link.update(deltaSeconds);
+        });
+        timeGroupedByConstructor(buckets, "tower", game.runtime.towers, (tower) => {
+          tower.update(game, deltaSeconds);
+        });
+        timeGroup(buckets, "runtime:compactRemoved", [game.runtime], (runtime) => {
+          runtime.compactRemoved();
+        });
+      }
+
+      function timeGroupedByConstructor(buckets, category, items, update) {
+        const groups = groupByConstructor(items);
+        for (const [constructorName, group] of groups) {
+          timeGroup(buckets, category + ":" + constructorName + ".update", group, update);
+        }
+      }
+
+      function groupByConstructor(items) {
+        const groups = new Map();
+        for (const item of items) {
+          const name = item.constructor?.name ?? "Unknown";
+          const group = groups.get(name);
+          if (group) {
+            group.push(item);
+          } else {
+            groups.set(name, [item]);
+          }
+        }
+        return groups;
+      }
+
+      function timeGroup(buckets, method, items, update) {
+        const start = performance.now();
+        for (const item of items) {
+          update(item);
+        }
+        const elapsed = performance.now() - start;
+        if (!buckets) {
+          return;
+        }
+        const bucket = buckets.get(method) ?? { totalMs: 0, calls: 0, lastInstances: 0 };
+        bucket.totalMs += elapsed;
+        bucket.calls += items.length;
+        bucket.lastInstances = items.length;
+        buckets.set(method, bucket);
       }
 
       function createBenchmarkGame() {
@@ -283,4 +368,7 @@ const value = await runBenchmarkPage({
   timeoutMs: 120_000,
 });
 
-console.table(value.summary);
+console.log("Total frame impact");
+console.table(value.totalImpact);
+console.log("Per update invocation");
+console.table(value.perInvocation);
