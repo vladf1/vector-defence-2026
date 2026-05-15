@@ -1,14 +1,8 @@
-import path from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
-import { chromium } from "playwright";
-import { createServer } from "vite";
+import { runBenchmarkPage } from "./benchmark-browser-harness.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "..");
 const runLightningProfile = process.argv.includes("--lightning-profile");
 const runTowerProfile = process.argv.includes("--tower-profile");
-const flushCanvas = process.argv.includes("--flush-canvas");
 
 const html = String.raw`
 <!doctype html>
@@ -148,26 +142,26 @@ const html = String.raw`
 
       const searchParams = new URLSearchParams(location.search);
       if (searchParams.has("lightning-profile")) {
-        window.__drawBenchmarkResults = {
+        window.__benchmarkResults = {
           orders: [],
           summary: lightningProfileSpecs.map(([name, make]) => runBenchmark({
             name,
             kind: "single",
             make,
-            warmupIterations: 80,
-            measuredIterations: 600,
+            warmupIterations: 20,
+            measuredIterations: 80,
             flushCanvas: true,
           })).sort((a, b) => b.usPerDraw - a.usPerDraw),
         };
       } else if (searchParams.has("tower-profile")) {
-        window.__drawBenchmarkResults = {
+        window.__benchmarkResults = {
           orders: [],
           summary: towerProfileSpecs.map(([name, make]) => runBenchmark({
             name,
             kind: name.includes(":sheet:") ? "collection" : "single",
             make,
-            warmupIterations: name.includes(":sheet:") ? 20 : 80,
-            measuredIterations: name.includes(":sheet:") ? 80 : 600,
+            warmupIterations: name.includes(":sheet:") ? 10 : 20,
+            measuredIterations: name.includes(":sheet:") ? 30 : 80,
             flushCanvas: true,
           })).sort((a, b) => b.usPerDraw - a.usPerDraw),
         };
@@ -176,35 +170,23 @@ const html = String.raw`
       }
 
       function runFullBenchmarkSuite() {
-        const orders = getBenchmarkOrders();
+        const orders = [{ name: "flushed", benchmarks }];
         const orderResults = orders.map((order) => ({
           name: order.name,
           results: order.benchmarks.map((benchmark, index) => ({
             orderIndex: index,
             ...runBenchmark({
               ...benchmark,
-              flushCanvas: ${flushCanvas ? "true" : "false"},
-              warmupIterations: ${flushCanvas ? "30" : "undefined"},
-              measuredIterations: ${flushCanvas ? "120" : "undefined"},
+              flushCanvas: true,
+              warmupIterations: 30,
+              measuredIterations: 120,
             }),
           })),
         }));
-        window.__drawBenchmarkResults = {
+        window.__benchmarkResults = {
           orders: orderResults,
           summary: summarizeOrderResults(orderResults),
         };
-      }
-
-      function getBenchmarkOrders() {
-        if (${flushCanvas ? "true" : "false"}) {
-          return [{ name: "original-flushed", benchmarks }];
-        }
-        return [
-          { name: "original", benchmarks },
-          { name: "reversed", benchmarks: [...benchmarks].reverse() },
-          { name: "shuffle-a", benchmarks: shuffleBenchmarks(benchmarks, 739391) },
-          { name: "shuffle-b", benchmarks: shuffleBenchmarks(benchmarks, 991807) },
-        ];
       }
 
       function prepareMonster(monster, options = {}) {
@@ -493,88 +475,36 @@ const html = String.raw`
         return summary;
       }
 
-      function shuffleBenchmarks(items, seed) {
-        const random = createSeededRandom(seed);
-        const shuffled = [...items];
-        for (let index = shuffled.length - 1; index > 0; index -= 1) {
-          const swapIndex = Math.floor(random() * (index + 1));
-          const item = shuffled[index];
-          shuffled[index] = shuffled[swapIndex];
-          shuffled[swapIndex] = item;
-        }
-        return shuffled;
-      }
-
-      function createSeededRandom(seed) {
-        let state = seed >>> 0;
-        return () => {
-          state = (state + 0x6D2B79F5) >>> 0;
-          let value = state;
-          value = Math.imul(value ^ (value >>> 15), value | 1);
-          value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-          return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
-        };
-      }
     </script>
   </body>
 </html>
 `;
 
-const server = await createServer({
-  root: repoRoot,
-  logLevel: "error",
-  server: {
-    host: "127.0.0.1",
-  },
-  plugins: [
-    {
-      name: "draw-benchmark-page",
-      configureServer(viteServer) {
-        viteServer.middlewares.use("/__draw-benchmark", (_request, response) => {
-          response.setHeader("Content-Type", "text/html; charset=utf-8");
-          response.end(html);
-        });
-      },
-    },
-  ],
+const query = runLightningProfile
+  ? "?lightning-profile=1"
+  : (runTowerProfile ? "?tower-profile=1" : "");
+const value = await runBenchmarkPage({
+  html,
+  path: "/__draw-benchmark",
+  query,
+  pluginName: "draw-benchmark-page",
 });
 
-let browser;
-try {
-  await server.listen(0);
-  const url = server.resolvedUrls.local[0];
-  browser = await chromium.launch({ channel: "chrome" });
-  const page = await browser.newPage({
-    viewport: { width: 960, height: 540 },
-    deviceScaleFactor: 1,
-  });
-  const benchmarkUrl = runLightningProfile
-    ? `${url}__draw-benchmark?lightning-profile=1`
-    : runTowerProfile
-      ? `${url}__draw-benchmark?tower-profile=1`
-    : `${url}__draw-benchmark${flushCanvas ? "?flush-canvas=1" : ""}`;
-  await page.goto(benchmarkUrl, { waitUntil: "networkidle" });
-  const results = await page.waitForFunction(() => window.__drawBenchmarkResults, null, { timeout: 120_000 });
-  const value = await results.jsonValue();
-  if (runLightningProfile || runTowerProfile) {
-    console.table(value.summary.map((result) => ({
-      name: result.name,
-      medianUs: result.usPerDraw,
-      meanUs: result.meanUsPerDraw,
-      minUs: result.sampleMinUs,
-      maxUs: result.sampleMaxUs,
-    })));
-  } else {
-    console.table(value.summary.map((result) => ({
-      name: result.name,
-      medianUs: result.medianAcrossOrdersUs,
-      minUs: result.minAcrossOrdersUs,
-      maxUs: result.maxAcrossOrdersUs,
-      spreadUs: result.spreadUs,
-      orderValues: result.orderValues.map((value) => `${value.order}:${value.usPerDraw}`).join(" "),
-    })));
-  }
-} finally {
-  await browser?.close();
-  await server.close();
+if (runLightningProfile || runTowerProfile) {
+  console.table(value.summary.map((result) => ({
+    name: result.name,
+    medianUs: result.usPerDraw,
+    meanUs: result.meanUsPerDraw,
+    minUs: result.sampleMinUs,
+    maxUs: result.sampleMaxUs,
+  })));
+} else {
+  console.table(value.summary.map((result) => ({
+    name: result.name,
+    medianUs: result.medianAcrossOrdersUs,
+    minUs: result.minAcrossOrdersUs,
+    maxUs: result.maxAcrossOrdersUs,
+    spreadUs: result.spreadUs,
+    orderValues: result.orderValues.map((value) => `${value.order}:${value.usPerDraw}`).join(" "),
+  })));
 }
