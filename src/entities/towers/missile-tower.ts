@@ -128,6 +128,7 @@ export class MissileTower extends Tower {
       context.fillStyle = "#ffe27a";
       context.beginPath();
       for (const pip of pipPositions) {
+        context.moveTo(pip.x + 1.25, pip.y);
         context.arc(pip.x, pip.y, 1.25, 0, Math.PI * 2);
       }
       context.fill();

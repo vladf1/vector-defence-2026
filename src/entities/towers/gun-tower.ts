@@ -66,7 +66,10 @@ export class GunTower extends Tower {
           ? Math.PI
           : Math.PI - (pipSpread / 2) + ((pipSpread * i) / (pipCount - 1));
         const pipRadius = 7.6 + (this.level * 0.24);
-        context.arc(Math.cos(pipAngle) * pipRadius, Math.sin(pipAngle) * pipRadius, 1, 0, Math.PI * 2);
+        const pipX = Math.cos(pipAngle) * pipRadius;
+        const pipY = Math.sin(pipAngle) * pipRadius;
+        context.moveTo(pipX + 1, pipY);
+        context.arc(pipX, pipY, 1, 0, Math.PI * 2);
       }
       context.fill();
 

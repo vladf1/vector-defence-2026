@@ -74,7 +74,11 @@ export class SlowTower extends Tower {
           continue;
         }
         const angle = this.orbit + ((Math.PI * 2 * i) / nodeCount);
-        context.arc(Math.cos(angle) * orbitRadius, Math.sin(angle) * orbitRadius, 1.8 + (this.level * 0.12), 0, Math.PI * 2);
+        const nodeX = Math.cos(angle) * orbitRadius;
+        const nodeY = Math.sin(angle) * orbitRadius;
+        const nodeRadius = 1.8 + (this.level * 0.12);
+        context.moveTo(nodeX + nodeRadius, nodeY);
+        context.arc(nodeX, nodeY, nodeRadius, 0, Math.PI * 2);
       }
       context.fill();
 
@@ -82,7 +86,11 @@ export class SlowTower extends Tower {
       context.beginPath();
       for (let i = 1; i < nodeCount; i += 2) {
         const angle = this.orbit + ((Math.PI * 2 * i) / nodeCount);
-        context.arc(Math.cos(angle) * orbitRadius, Math.sin(angle) * orbitRadius, 1.8 + (this.level * 0.12), 0, Math.PI * 2);
+        const nodeX = Math.cos(angle) * orbitRadius;
+        const nodeY = Math.sin(angle) * orbitRadius;
+        const nodeRadius = 1.8 + (this.level * 0.12);
+        context.moveTo(nodeX + nodeRadius, nodeY);
+        context.arc(nodeX, nodeY, nodeRadius, 0, Math.PI * 2);
       }
       context.fill();
     }

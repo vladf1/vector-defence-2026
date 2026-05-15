@@ -201,7 +201,9 @@ export class LightningTower extends Tower {
       const angle = centerAngle - ((dotSpacing * (dotCount - 1)) / 2) + (dotSpacing * index);
       const x = Math.cos(angle) * dotRadius;
       const y = Math.sin(angle) * dotRadius;
-      context.arc(x, y, 1.25 + (this.level * 0.05), 0, Math.PI * 2);
+      const radius = 1.25 + (this.level * 0.05);
+      context.moveTo(x + radius, y);
+      context.arc(x, y, radius, 0, Math.PI * 2);
     }
     context.fill();
     context.stroke();
