@@ -1,7 +1,7 @@
 import { STARTING_MONEY } from "./constants";
 import { createBannerText } from "./banner-text";
 import { LaserTower } from "./entities/towers/laser-tower";
-import { getTowerClass } from "./entities/towers/tower-registry";
+import { TOWER_CLASSES, getTowerClass } from "./entities/towers/tower-registry";
 import { TEMPORARILY_UNLOCK_ALL_LEVELS } from "./game-engine";
 import { formatMoney } from "./utils";
 import type { Game } from "./game-engine";
@@ -77,6 +77,12 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
 
 function formatTimingMs(value: number): string {
   return `${value.toFixed(3)} ms`;
+}
+
+function createAffordableTowers(money: number): Record<TowerKind, boolean> {
+  return Object.fromEntries(
+    TOWER_CLASSES.map((towerClass) => [towerClass.kind, money >= towerClass.baseCost]),
+  ) as Record<TowerKind, boolean>;
 }
 
 export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = INITIAL_RUNTIME_HUD_STATS): HudSnapshot {
@@ -158,13 +164,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     dragOnlyTowerPlacement: game.profile.ui.dragOnlyTowerPlacement,
     placingTower: runtime.placingTower,
     towerButtonsDisabled: battleActionsDisabled,
-    affordableTowers: {
-      [TowerKind.Gun]: runtime.money >= getTowerClass(TowerKind.Gun).baseCost,
-      [TowerKind.Laser]: runtime.money >= getTowerClass(TowerKind.Laser).baseCost,
-      [TowerKind.Missile]: runtime.money >= getTowerClass(TowerKind.Missile).baseCost,
-      [TowerKind.Slow]: runtime.money >= getTowerClass(TowerKind.Slow).baseCost,
-      [TowerKind.Lightning]: runtime.money >= getTowerClass(TowerKind.Lightning).baseCost,
-    },
+    affordableTowers: createAffordableTowers(runtime.money),
     nerdStats: {
       fps: String(Math.max(0, Math.round(runtimeStats.fps))),
       frameTime: `${runtimeStats.frameTimeMs.toFixed(1)} ms`,

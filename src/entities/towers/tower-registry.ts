@@ -8,6 +8,14 @@ import type { Tower, TowerClass } from "./tower";
 
 const PREVIEW_CENTER = 30;
 
+export const TOWER_CLASSES = [
+  GunTower,
+  LaserTower,
+  MissileTower,
+  SlowTower,
+  LightningTower,
+] as const satisfies readonly TowerClass[];
+
 export const TOWER_TOOLBAR_PREVIEWS = [
   Object.assign(new GunTower(PREVIEW_CENTER, PREVIEW_CENTER), { angle: -Math.PI / 4 }),
   Object.assign(new LaserTower(PREVIEW_CENTER, PREVIEW_CENTER), { angle: -Math.PI / 4 }),
@@ -16,14 +24,13 @@ export const TOWER_TOOLBAR_PREVIEWS = [
   new LightningTower(PREVIEW_CENTER, PREVIEW_CENTER),
 ] as const satisfies readonly Tower[];
 
-const TOWER_CLASS_BY_KIND = TOWER_TOOLBAR_PREVIEWS.reduce<Record<TowerKind, TowerClass>>((classes, tower) => {
-  const towerClass = tower.towerClass;
+const TOWER_CLASS_BY_KIND = TOWER_CLASSES.reduce<Record<TowerKind, TowerClass>>((classes, towerClass) => {
   classes[towerClass.kind] = towerClass;
   return classes;
 }, {} as Record<TowerKind, TowerClass>);
 
 const TOWER_KIND_BY_SHORTCUT: Record<string, TowerKind> = Object.fromEntries(
-  Object.values(TOWER_CLASS_BY_KIND).flatMap((towerClass) =>
+  TOWER_CLASSES.flatMap((towerClass) =>
     towerClass.shortcuts.map((shortcut) => [shortcut, towerClass.kind] as const),
   ),
 ) as Record<string, TowerKind>;
