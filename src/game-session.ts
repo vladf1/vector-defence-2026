@@ -396,7 +396,8 @@ export function createGameSession(profile: GameProfile): GameSession {
   };
 
   function handleTowerDragMove(event: PointerEvent): void {
-    if (!towerDrag || event.pointerId !== towerDrag.pointerId) {
+    const drag = towerDrag;
+    if (!drag || event.pointerId !== drag.pointerId) {
       return;
     }
 
@@ -405,15 +406,15 @@ export function createGameSession(profile: GameProfile): GameSession {
       return;
     }
 
-    const distance = Math.hypot(event.clientX - towerDrag.startClientX, event.clientY - towerDrag.startClientY);
-    if (!towerDrag.active) {
+    const distance = Math.hypot(event.clientX - drag.startClientX, event.clientY - drag.startClientY);
+    if (!drag.active) {
       if (distance < TOWER_DRAG_THRESHOLD_PX) {
         return;
       }
 
-      towerDrag.active = true;
+      drag.active = true;
       withGame((currentGame) => {
-        currentGame.startTowerPlacement(towerDrag!.kind);
+        currentGame.startTowerPlacement(drag.kind);
       }, true);
     }
 
@@ -428,7 +429,8 @@ export function createGameSession(profile: GameProfile): GameSession {
   }
 
   function handleTowerDragEnd(event: PointerEvent): void {
-    if (!towerDrag || event.pointerId !== towerDrag.pointerId) {
+    const drag = towerDrag;
+    if (!drag || event.pointerId !== drag.pointerId) {
       return;
     }
 
@@ -437,7 +439,7 @@ export function createGameSession(profile: GameProfile): GameSession {
       return;
     }
 
-    const wasActive = towerDrag.active;
+    const wasActive = drag.active;
     const point = toCanvasPoint(event);
     const isOnCanvas = isPointerInsideCanvas(event);
     const releasePoint = point && isOnCanvas
@@ -449,8 +451,8 @@ export function createGameSession(profile: GameProfile): GameSession {
       if (releasePoint) {
         game?.setPointer(releasePoint);
         withGame((currentGame) => {
-          if (currentGame.canPlaceTower(releasePoint) && currentGame.canAffordTower(towerDrag!.kind)) {
-            currentGame.placeTower(towerDrag!.kind, releasePoint);
+          if (currentGame.canPlaceTower(releasePoint) && currentGame.canAffordTower(drag.kind)) {
+            currentGame.placeTower(drag.kind, releasePoint);
           } else {
             currentGame.cancelTowerPlacement();
           }

@@ -20,7 +20,6 @@ function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, wave
   }
 
   const pressure = (levelIndex * 0.85) + (waveIndex * 0.9);
-  const introduceSplitterEarly = levelIndex === 0 && waveIndex >= 2;
   const pool: MonsterKind[] = [...baseSequence];
 
   if (pressure >= 1.2) {
@@ -44,10 +43,6 @@ function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, wave
   if (pressure >= 6.1) {
     pool.push(MonsterKind.Triangle, MonsterKind.Runner, MonsterKind.Tank, MonsterKind.Splitter, MonsterKind.Berserker, MonsterKind.Bulwark);
   }
-  if (introduceSplitterEarly) {
-    pool.push(MonsterKind.Splitter);
-  }
-
   const source = uniqueSequence(pool);
   const length = clamp(5 + waveIndex + Math.floor(levelIndex / 2), 5, 12);
   const sequence: MonsterKind[] = [];
@@ -81,10 +76,6 @@ function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, wave
         : (waveIndex % 2 === 0 ? MonsterKind.Splitter : MonsterKind.Runner),
     );
   }
-  if (introduceSplitterEarly) {
-    sequence.push(MonsterKind.Splitter);
-  }
-
   return sequence;
 }
 
