@@ -1,7 +1,7 @@
 import { createLaserImpactEffect } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
 import { AudioCue, TowerKind } from "../../types";
-import { angleBetween, calculateDistanceToSegment, closestPointOnSegment, randomRange, turnAngleTowards } from "../../utils";
+import { angleBetween, closestPointOnSegment, isWithinDistanceToSegment, randomRange, turnAngleTowards } from "../../utils";
 import { Tower } from "./tower";
 
 const LASER_COLORS = [
@@ -79,8 +79,7 @@ export class LaserTower extends Tower {
     const colors = this.getLaserColors();
 
     for (const monster of game.runtime.getActiveMonsters()) {
-      const distanceToBeam = calculateDistanceToSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
-      if (distanceToBeam <= monster.radius) {
+      if (isWithinDistanceToSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y, monster.radius)) {
         monster.takeDamage(this.damagePerSecond * deltaSeconds * this.beamAlpha);
         if (shouldCreateSparks && sparkBurstsCreated < 2) {
           const impact = closestPointOnSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
@@ -128,8 +127,7 @@ export class LaserTower extends Tower {
         continue;
       }
 
-      const distanceToBeam = calculateDistanceToSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
-      if (distanceToBeam <= monster.radius) {
+      if (isWithinDistanceToSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y, monster.radius)) {
         return true;
       }
     }

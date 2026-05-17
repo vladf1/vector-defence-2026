@@ -81,19 +81,6 @@ export function turnAngleTowards(current: number, target: number, maxStep: numbe
   return normalizeAngle(current + step);
 }
 
-export function calculateDistanceToSegment(pointX: number, pointY: number, startX: number, startY: number, endX: number, endY: number): number {
-  const px = endX - startX;
-  const py = endY - startY;
-  const denom = (px * px) + (py * py);
-  if (denom === 0) {
-    return calculateDistance(pointX, pointY, startX, startY);
-  }
-  const t = projectPointOntoSegment(pointX, pointY, startX, startY, px, py, denom);
-  const x = startX + (t * px);
-  const y = startY + (t * py);
-  return calculateDistance(pointX, pointY, x, y);
-}
-
 export function closestPointOnSegment(pointX: number, pointY: number, startX: number, startY: number, endX: number, endY: number): Point {
   const segmentX = endX - startX;
   const segmentY = endY - startY;
