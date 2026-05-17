@@ -44,7 +44,7 @@ export class Missile {
       this.trackedMonster = undefined;
     }
     if (this.trackedMonster) {
-      this.angle = angleBetween({ x: this.x, y: this.y }, { x: this.trackedMonster.x, y: this.trackedMonster.y });
+      this.angle = angleBetween(this, this.trackedMonster);
     }
 
     this.x += Math.cos(this.angle) * this.speedPerSecond * deltaSeconds;
