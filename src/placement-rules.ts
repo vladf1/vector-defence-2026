@@ -49,7 +49,7 @@ export function canPlaceTower(
   for (let index = 0; index < routePath.entries.length - 1; index += 1) {
     const start = routePath.entries[index];
     const end = routePath.entries[index + 1];
-    if (isWithinDistanceToSegment(point.x, point.y, start.x, start.y, end.x, end.y, geometry.minDistanceToRoad)) {
+    if (isWithinDistanceToSegment(point, start, end, geometry.minDistanceToRoad)) {
       return false;
     }
   }

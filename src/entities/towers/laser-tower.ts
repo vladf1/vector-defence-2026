@@ -1,7 +1,7 @@
 import { createLaserImpactEffect } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
-import { AudioCue, TowerKind } from "../../types";
-import { angleBetween, closestPointOnSegment, isWithinDistanceToSegment, randomRange, turnAngleTowards } from "../../utils";
+import { AudioCue, type Point, TowerKind } from "../../types";
+import { angleBetween, closestPointOnSegment, isWithinDistanceToSegment, randomRange, turnAngleTowards, withinDistance } from "../../utils";
 import { Tower } from "./tower";
 
 const LASER_COLORS = [
@@ -50,8 +50,7 @@ export class LaserTower extends Tower {
     } else {
       const tracked = this.getTrackedMonster(game);
       if (tracked) {
-        const target = { x: tracked.x, y: tracked.y };
-        const targetAngle = angleBetween({ x: this.x, y: this.y }, target);
+        const targetAngle = angleBetween(this, tracked);
         this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
         this.beamTarget = {
           x: this.x + (Math.cos(this.angle) * 1000),
@@ -79,7 +78,7 @@ export class LaserTower extends Tower {
     const colors = this.getLaserColors();
 
     for (const monster of game.runtime.getActiveMonsters()) {
-      if (isWithinDistanceToSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y, monster.radius)) {
+      if (isWithinDistanceToSegment(monster, source, this.beamTarget, monster.radius)) {
         monster.takeDamage(this.damagePerSecond * deltaSeconds * this.beamAlpha);
         if (shouldCreateSparks && sparkBurstsCreated < 2) {
           const impact = closestPointOnSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
@@ -118,23 +117,20 @@ export class LaserTower extends Tower {
 
   private hasMonsterInBeam(game: Game): boolean {
     const source = this.getBeamSource();
-    const rangeSquared = this.range * this.range;
 
     for (const monster of game.runtime.getActiveMonsters()) {
-      const dx = monster.x - this.x;
-      const dy = monster.y - this.y;
-      if ((dx * dx) + (dy * dy) > rangeSquared) {
+      if (!withinDistance(this.x, this.y, monster.x, monster.y, this.range)) {
         continue;
       }
 
-      if (isWithinDistanceToSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y, monster.radius)) {
+      if (isWithinDistanceToSegment(monster, source, this.beamTarget, monster.radius)) {
         return true;
       }
     }
     return false;
   }
 
-  private getBeamSource(): { x: number; y: number } {
+  private getBeamSource(): Point {
     const muzzleOffset = this.getMuzzleOffset();
     return {
       x: this.x + (Math.cos(this.angle) * muzzleOffset),

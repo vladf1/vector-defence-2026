@@ -32,7 +32,7 @@ export class GunTower extends Tower {
       y: this.y + (Math.sin(this.angle) * 16),
     };
     const target = this.calculateIntercept(tracked, 420, source);
-    const targetAngle = angleBetween({ x: this.x, y: this.y }, target);
+    const targetAngle = angleBetween(this, target);
     this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
 
     const alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle);

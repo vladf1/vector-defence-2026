@@ -96,36 +96,28 @@ export function closestPointOnSegment(pointX: number, pointY: number, startX: nu
   };
 }
 
-export function isWithinDistanceToSegment(
-  pointX: number,
-  pointY: number,
-  startX: number,
-  startY: number,
-  endX: number,
-  endY: number,
-  maxDistance: number,
-): boolean {
+export function isWithinDistanceToSegment(point: Point, start: Point, end: Point, maxDistance: number): boolean {
   if (
-    pointX < Math.min(startX, endX) - maxDistance ||
-    pointX > Math.max(startX, endX) + maxDistance ||
-    pointY < Math.min(startY, endY) - maxDistance ||
-    pointY > Math.max(startY, endY) + maxDistance
+    point.x < Math.min(start.x, end.x) - maxDistance ||
+    point.x > Math.max(start.x, end.x) + maxDistance ||
+    point.y < Math.min(start.y, end.y) - maxDistance ||
+    point.y > Math.max(start.y, end.y) + maxDistance
   ) {
     return false;
   }
 
-  const segmentX = endX - startX;
-  const segmentY = endY - startY;
+  const segmentX = end.x - start.x;
+  const segmentY = end.y - start.y;
   const segmentLengthSquared = (segmentX * segmentX) + (segmentY * segmentY);
   if (segmentLengthSquared === 0) {
-    return withinDistance(pointX, pointY, startX, startY, maxDistance);
+    return withinDistance(point.x, point.y, start.x, start.y, maxDistance);
   }
 
-  const projection = projectPointOntoSegment(pointX, pointY, startX, startY, segmentX, segmentY, segmentLengthSquared);
-  const closestX = startX + (projection * segmentX);
-  const closestY = startY + (projection * segmentY);
-  const distanceX = closestX - pointX;
-  const distanceY = closestY - pointY;
+  const projection = projectPointOntoSegment(point.x, point.y, start.x, start.y, segmentX, segmentY, segmentLengthSquared);
+  const closestX = start.x + (projection * segmentX);
+  const closestY = start.y + (projection * segmentY);
+  const distanceX = closestX - point.x;
+  const distanceY = closestY - point.y;
   return (distanceX * distanceX) + (distanceY * distanceY) <= (maxDistance * maxDistance);
 }
 

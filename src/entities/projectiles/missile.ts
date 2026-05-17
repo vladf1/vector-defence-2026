@@ -2,13 +2,14 @@ import { createMissileExplosionEffect } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
 import { AudioCue } from "../../types";
 import type { Point } from "../../types";
-import { angleBetween, calculateDistance, randomRange, withinDistance } from "../../utils";
+import { angleBetween, calculateDistance, randomRange, turnAngleTowards, withinDistance } from "../../utils";
 import { Particle } from "../effects/particle";
 import type { Monster } from "../monsters/monster";
 
 const MISSILE_TAIL_X = -7;
 const MISSILE_NOSE_X = 9;
 const MISSILE_HALF_LENGTH = (MISSILE_NOSE_X - MISSILE_TAIL_X) / 2;
+const MISSILE_TURN_SPEED_PER_SECOND = 7.2;
 const MISSILE_EXHAUST_SMOKE_PUFFS = [
   { x: -8.8, y: -0.18, radius: 2.2, alpha: 0.25 },
   { x: -11.4, y: 0.22, radius: 3.1, alpha: 0.28 },
@@ -35,7 +36,7 @@ export class Missile {
     this.damage = damage;
     this.effectRadius = effectRadius;
     this.speedPerSecond = speedPerSecond;
-    this.angle = initialAngle ?? angleBetween(source, { x: trackedMonster.x, y: trackedMonster.y });
+    this.angle = initialAngle ?? angleBetween(source, trackedMonster);
   }
 
   update(game: Game, deltaSeconds: number): void {
@@ -44,7 +45,8 @@ export class Missile {
       this.trackedMonster = undefined;
     }
     if (this.trackedMonster) {
-      this.angle = angleBetween(this, this.trackedMonster);
+      const targetAngle = angleBetween(this, this.trackedMonster);
+      this.angle = turnAngleTowards(this.angle, targetAngle, MISSILE_TURN_SPEED_PER_SECOND * deltaSeconds);
     }
 
     this.x += Math.cos(this.angle) * this.speedPerSecond * deltaSeconds;

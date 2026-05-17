@@ -30,7 +30,7 @@ export class MissileTower extends Tower {
     let alignedToTarget = false;
 
     if (tracked) {
-      const targetAngle = angleBetween({ x: this.x, y: this.y }, { x: tracked.x, y: tracked.y });
+      const targetAngle = angleBetween(this, tracked);
       this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
       alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle, MISSILE_FIRING_ANGLE_TOLERANCE);
     }

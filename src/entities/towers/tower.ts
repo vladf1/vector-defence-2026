@@ -104,14 +104,10 @@ export abstract class Tower {
   }
 
   protected canTrack(monster: Monster): boolean {
-    return this.getDistanceSquaredInRange(monster) !== null;
+    return !monster.removed && this.getDistanceSquaredInRange(monster) !== null;
   }
 
   private getDistanceSquaredInRange(monster: Monster): number | null {
-    if (monster.removed) {
-      return null;
-    }
-
     const dx = monster.x - this.x;
     if (Math.abs(dx) > this.range) {
       return null;
@@ -172,12 +168,7 @@ export abstract class Tower {
     context.restore();
   }
 
-  protected drawBase(
-    context: CanvasRenderingContext2D,
-    fillStyle: string | CanvasGradient | CanvasPattern,
-    strokeStyle: string,
-    upgradeRingStyle: string,
-  ): void {
+  protected drawBase(context: CanvasRenderingContext2D, fillStyle: string | CanvasGradient | CanvasPattern, strokeStyle: string, upgradeRingStyle: string): void {
     context.fillStyle = fillStyle;
     context.strokeStyle = strokeStyle;
     context.lineWidth = 1.5;
