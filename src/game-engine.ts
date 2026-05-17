@@ -4,7 +4,7 @@ import { GameMode, type GameMode as GameModeValue, type GameProfile } from "./ga
 import type { GameAudio } from "./game-audio";
 import { createEscapeBurstEffect } from "./game-engine/combat-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
-import { GameRenderer } from "./game-renderer";
+import { GameRenderer, type FieldBounds } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
 import { Particle } from "./entities/effects/particle";
 import type { Monster } from "./entities/monsters/monster";
@@ -391,11 +391,15 @@ export class Game {
   }
 
   canPlaceTower(point: Point): boolean {
+    return this.canPlaceTowerInBounds(point, this.renderer.getVisibleFieldBounds());
+  }
+
+  canPlaceTowerInBounds(point: Point, fieldBounds: FieldBounds): boolean {
     return canPlaceTower(
       point,
       this.runtime.routePath,
       this.runtime.towers,
-      { ...this.profile.placement, ...this.renderer.getVisibleFieldBounds() },
+      { ...this.profile.placement, ...fieldBounds },
     );
   }
 

@@ -573,8 +573,8 @@ export class GameRenderer {
     }
 
     const towerClass = getTowerClass(runtime.placingTower);
-    const valid = this.game.canPlaceTower(runtime.pointer) && runtime.money >= towerClass.baseCost;
     const bounds = this.getVisibleFieldBounds();
+    const valid = this.game.canPlaceTowerInBounds(runtime.pointer, bounds) && runtime.money >= towerClass.baseCost;
     context.save();
     context.strokeStyle = valid ? "rgba(255, 255, 255, 0.35)" : "rgba(255, 120, 120, 0.45)";
     context.setLineDash([6, 6]);
