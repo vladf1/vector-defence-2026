@@ -1,7 +1,7 @@
 import { createLaserImpactEffect } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
 import { AudioCue, TowerKind } from "../../types";
-import { angleBetween, calculateDistanceToSegment, clamp, randomRange, turnAngleTowards } from "../../utils";
+import { angleBetween, calculateDistanceToSegment, closestPointOnSegment, randomRange, turnAngleTowards } from "../../utils";
 import { Tower } from "./tower";
 
 const LASER_COLORS = [
@@ -83,7 +83,7 @@ export class LaserTower extends Tower {
       if (distanceToBeam <= monster.radius) {
         monster.takeDamage(this.damagePerSecond * deltaSeconds * this.beamAlpha);
         if (shouldCreateSparks && sparkBurstsCreated < 2) {
-          const impact = getClosestPointOnSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
+          const impact = closestPointOnSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
           createLaserImpactEffect(game, impact.x, impact.y, this.angle, colors.accent);
           sparkBurstsCreated += 1;
         }
@@ -238,19 +238,4 @@ export class LaserTower extends Tower {
     context.lineTo(tailX, -halfHeight);
     context.closePath();
   }
-}
-
-function getClosestPointOnSegment(pointX: number, pointY: number, startX: number, startY: number, endX: number, endY: number): { x: number; y: number } {
-  const segmentX = endX - startX;
-  const segmentY = endY - startY;
-  const segmentLengthSquared = (segmentX * segmentX) + (segmentY * segmentY);
-  if (segmentLengthSquared === 0) {
-    return { x: startX, y: startY };
-  }
-
-  const projection = clamp((((pointX - startX) * segmentX) + ((pointY - startY) * segmentY)) / segmentLengthSquared, 0, 1);
-  return {
-    x: startX + (projection * segmentX),
-    y: startY + (projection * segmentY),
-  };
 }

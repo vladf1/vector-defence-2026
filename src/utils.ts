@@ -88,11 +88,25 @@ export function calculateDistanceToSegment(pointX: number, pointY: number, start
   if (denom === 0) {
     return calculateDistance(pointX, pointY, startX, startY);
   }
-  let t = (((pointX - startX) * px) + ((pointY - startY) * py)) / denom;
-  t = clamp(t, 0, 1);
+  const t = projectPointOntoSegment(pointX, pointY, startX, startY, px, py, denom);
   const x = startX + (t * px);
   const y = startY + (t * py);
   return calculateDistance(pointX, pointY, x, y);
+}
+
+export function closestPointOnSegment(pointX: number, pointY: number, startX: number, startY: number, endX: number, endY: number): Point {
+  const segmentX = endX - startX;
+  const segmentY = endY - startY;
+  const segmentLengthSquared = (segmentX * segmentX) + (segmentY * segmentY);
+  if (segmentLengthSquared === 0) {
+    return { x: startX, y: startY };
+  }
+
+  const projection = projectPointOntoSegment(pointX, pointY, startX, startY, segmentX, segmentY, segmentLengthSquared);
+  return {
+    x: startX + (projection * segmentX),
+    y: startY + (projection * segmentY),
+  };
 }
 
 export function isWithinDistanceToSegment(
@@ -120,13 +134,16 @@ export function isWithinDistanceToSegment(
     return withinDistance(pointX, pointY, startX, startY, maxDistance);
   }
 
-  const rawProjection = (((pointX - startX) * segmentX) + ((pointY - startY) * segmentY)) / segmentLengthSquared;
-  const projection = clamp(rawProjection, 0, 1);
+  const projection = projectPointOntoSegment(pointX, pointY, startX, startY, segmentX, segmentY, segmentLengthSquared);
   const closestX = startX + (projection * segmentX);
   const closestY = startY + (projection * segmentY);
   const distanceX = closestX - pointX;
   const distanceY = closestY - pointY;
   return (distanceX * distanceX) + (distanceY * distanceY) <= (maxDistance * maxDistance);
+}
+
+function projectPointOntoSegment(pointX: number, pointY: number, startX: number, startY: number, segmentX: number, segmentY: number, segmentLengthSquared: number): number {
+  return clamp((((pointX - startX) * segmentX) + ((pointY - startY) * segmentY)) / segmentLengthSquared, 0, 1);
 }
 
 export function randomRange(min: number, max: number): number {
