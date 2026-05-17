@@ -80,9 +80,11 @@ function formatTimingMs(value: number): string {
 }
 
 function createAffordableTowers(money: number): Record<TowerKind, boolean> {
-  return Object.fromEntries(
-    TOWER_CLASSES.map((towerClass) => [towerClass.kind, money >= towerClass.baseCost]),
-  ) as Record<TowerKind, boolean>;
+  const affordableTowers = {} as Record<TowerKind, boolean>;
+  for (const towerClass of TOWER_CLASSES) {
+    affordableTowers[towerClass.kind] = money >= towerClass.baseCost;
+  }
+  return affordableTowers;
 }
 
 export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = INITIAL_RUNTIME_HUD_STATS): HudSnapshot {

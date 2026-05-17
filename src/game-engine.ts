@@ -465,7 +465,10 @@ export class Game {
     this.runtime.money += selectedTower.resaleValue;
     this.playSound(AudioCue.TowerSell, selectedTower.x);
     selectedTower.removed = true;
-    this.runtime.towers = this.runtime.towers.filter((tower) => tower !== selectedTower);
+    const selectedTowerIndex = this.runtime.towers.indexOf(selectedTower);
+    if (selectedTowerIndex !== -1) {
+      this.runtime.towers.splice(selectedTowerIndex, 1);
+    }
     this.runtime.selectedTower = undefined;
     this.requestHudSync();
   }
