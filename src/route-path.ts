@@ -318,14 +318,15 @@ function appendQuadratic(
 
 function appendPoint(entries: PathEntry[], point: Point, heading: PathEntryHeading): void {
   const previous = entries[entries.length - 1];
-  if (calculateDistance(previous.x, previous.y, point.x, point.y) <= 0) {
+  const segmentLength = calculateDistance(previous.x, previous.y, point.x, point.y);
+  if (segmentLength <= 0) {
     return;
   }
 
   entries.push({
     x: point.x,
     y: point.y,
-    totalDistance: previous.totalDistance + calculateDistance(previous.x, previous.y, point.x, point.y),
+    totalDistance: previous.totalDistance + segmentLength,
     heading,
   });
 }
