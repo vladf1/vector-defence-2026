@@ -49,9 +49,28 @@ export class Projectile {
   }
 
   draw(context: CanvasRenderingContext2D): void {
-    context.fillStyle = "#9fffe4";
+    const angle = Math.atan2(this.velocityYPerSecond, this.velocityXPerSecond);
+    const visualLevel = (this.radius - (PROJECTILE_SIZE_BASE / 2)) / (PROJECTILE_SIZE_PER_LEVEL / 2);
+    const length = (9.8 + (visualLevel * 1.45)) * 0.6;
+    const halfWidth = (1.8 + (visualLevel * 0.22)) * 0.66;
+    const tailX = -(length * 0.55);
+    const noseX = length * 0.55;
+
+    context.save();
+    context.translate(this.x, this.y);
+    context.rotate(angle);
+    context.globalCompositeOperation = "lighter";
+
+    context.fillStyle = "#d9fff3";
     context.beginPath();
-    context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    context.moveTo(noseX, 0);
+    context.lineTo(noseX - (length * 0.28), -halfWidth);
+    context.lineTo(tailX, -halfWidth);
+    context.lineTo(tailX, halfWidth);
+    context.lineTo(noseX - (length * 0.28), halfWidth);
+    context.closePath();
     context.fill();
+    context.restore();
   }
+
 }

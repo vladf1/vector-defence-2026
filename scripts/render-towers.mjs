@@ -46,8 +46,8 @@ const html = String.raw`
       ];
       const projectileRows = [
         { label: "Projectile", draw: drawProjectileSample },
-        { label: "Missle", draw: drawMissileSample },
-        { label: "Missle Explosion", draw: drawMissileExplosionSample },
+        { label: "Missile", draw: drawMissileSample },
+        { label: "Missile Explosion", draw: drawMissileExplosionSample },
       ];
       const renderRows = [...towerRows, ...projectileRows];
 
@@ -56,7 +56,7 @@ const html = String.raw`
       const titleHeight = 84;
       const levelHeaderHeight = 48;
       const topHeaderHeight = titleHeight + levelHeaderHeight;
-      const towerScale = 3.35;
+      const gameArtScale = 3.35;
       const width = rowHeaderWidth + ((MAX_TOWER_LEVEL + 1) * cellSize) + 36;
       const height = topHeaderHeight + (renderRows.length * cellSize) + 28;
       const canvas = document.getElementById("tower-render");
@@ -88,7 +88,7 @@ const html = String.raw`
           }
           context.save();
           context.translate(centerX, centerY);
-          context.scale(towerScale, towerScale);
+          context.scale(gameArtScale, gameArtScale);
           tower.draw(context, false);
           context.restore();
         }
@@ -163,6 +163,7 @@ const html = String.raw`
         projectile.y = 0;
         context.save();
         context.translate(centerX, centerY);
+        context.scale(gameArtScale, gameArtScale);
         projectile.draw(context);
         context.restore();
       }
@@ -174,6 +175,7 @@ const html = String.raw`
         missile.y = 0;
         context.save();
         context.translate(centerX, centerY);
+        context.scale(gameArtScale, gameArtScale);
         missile.draw(context);
         context.restore();
       }
@@ -187,6 +189,7 @@ const html = String.raw`
           y: explosionY,
           radius: 12,
           removed: false,
+          shake() {},
           takeDamage() {},
         };
         const missile = new Missile({ x: explosionX, y: explosionY }, target, level, 0);
@@ -213,7 +216,7 @@ const html = String.raw`
 
         context.save();
         context.translate(centerX, centerY);
-        context.scale(towerScale, towerScale);
+        context.scale(gameArtScale, gameArtScale);
         context.translate(-explosionX, -explosionY);
         for (const particle of particles) {
           particle.draw(context);
