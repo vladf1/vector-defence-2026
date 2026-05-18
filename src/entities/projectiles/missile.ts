@@ -2,7 +2,7 @@ import { createMissileExplosionEffect } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
 import { AudioCue } from "../../types";
 import type { Point } from "../../types";
-import { angleBetween, calculateDistance, randomRange, turnAngleTowards, withinDistance } from "../../utils";
+import { angleBetween, calculateDistance, clamp, randomRange, turnAngleTowards, withinDistance } from "../../utils";
 import { Particle } from "../effects/particle";
 import type { Monster } from "../monsters/monster";
 
@@ -15,6 +15,10 @@ const MISSILE_EFFECT_RADIUS_BASE = 60;
 const MISSILE_EFFECT_RADIUS_PER_LEVEL = 5;
 const MISSILE_SPEED_BASE_PER_SECOND = 108;
 const MISSILE_SPEED_PER_LEVEL_PER_SECOND = 30;
+const MISSILE_HIT_SHAKE_MIN_DURATION_SECONDS = 0.08;
+const MISSILE_HIT_SHAKE_DURATION_RANGE_SECONDS = 0.035;
+const MISSILE_HIT_SHAKE_MIN_DISTANCE = 0.45;
+const MISSILE_HIT_SHAKE_DISTANCE_RANGE = 0.8;
 const MISSILE_TURN_SPEED_PER_SECOND = 7.2;
 const MISSILE_EXHAUST_SMOKE_PUFFS = [
   { x: -8.8, y: -0.18, radius: 2.2, alpha: 0.25 },
@@ -23,6 +27,10 @@ const MISSILE_EXHAUST_SMOKE_PUFFS = [
   { x: -18.4, y: 0.18, radius: 4.8, alpha: 0.18 },
   { x: -22.5, y: -0.08, radius: 5.7, alpha: 0.12 },
 ];
+
+function getShakeStrengthFromSplashRatio(ratio: number): number {
+  return clamp(ratio, 0.15, 1);
+}
 
 export class Missile {
   x: number;
@@ -100,6 +108,11 @@ export class Missile {
           const dist = calculateDistance(this.x, this.y, nearby.x, nearby.y);
           if (dist <= this.effectRadius) {
             const ratio = (this.effectRadius - dist) / this.effectRadius;
+            const shakeStrength = getShakeStrengthFromSplashRatio(ratio);
+            nearby.shake(
+              MISSILE_HIT_SHAKE_MIN_DURATION_SECONDS + (MISSILE_HIT_SHAKE_DURATION_RANGE_SECONDS * shakeStrength),
+              MISSILE_HIT_SHAKE_MIN_DISTANCE + (MISSILE_HIT_SHAKE_DISTANCE_RANGE * shakeStrength),
+            );
             nearby.takeDamage(this.damage * ratio);
           }
         }

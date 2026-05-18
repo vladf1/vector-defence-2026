@@ -1,4 +1,5 @@
 import type { Point } from "../../types";
+import { clamp } from "../../utils";
 
 export interface PolygonShardSplitterConfig {
   minShardCount: number;
@@ -801,8 +802,4 @@ function randomInteger(
 
 function clonePoint(point: Point): Point {
   return { x: point.x, y: point.y };
-}
-
-function clamp(value: number, minValue: number, maxValue: number): number {
-  return Math.min(maxValue, Math.max(minValue, value));
 }

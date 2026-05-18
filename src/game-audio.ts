@@ -4,6 +4,7 @@ import {
   AudioCue,
   type AudioCue as AudioCueValue,
 } from "./types";
+import { clamp } from "./utils";
 
 interface AudioCueOptions {
   intensity?: number;
@@ -18,10 +19,6 @@ interface AudioWindow extends Window {
 
 const MASTER_VOLUME = 0.34;
 const DEFAULT_INTENSITY = 1;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
 export class GameAudio {
   private context?: AudioContext;

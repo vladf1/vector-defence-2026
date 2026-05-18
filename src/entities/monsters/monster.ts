@@ -40,6 +40,8 @@ export abstract class Monster extends EventTarget {
   removed = false;
   private slowRecoverySpeedPerSecond = 0;
   private hitShakeSeconds = 0;
+  private hitShakeDurationSeconds = HIT_SHAKE_DURATION_SECONDS;
+  private hitShakeDistance = HIT_SHAKE_DISTANCE;
   private hitShakePhase = 0;
   private hitShakeOffsetX = 0;
   private hitShakeOffsetY = 0;
@@ -67,8 +69,14 @@ export abstract class Monster extends EventTarget {
   }
 
   shakeFromHit(): void {
+    this.shake(HIT_SHAKE_DURATION_SECONDS, HIT_SHAKE_DISTANCE);
+  }
+
+  shake(durationSeconds: number, distance: number): void {
     this.clearHitShakeOffset();
-    this.hitShakeSeconds = HIT_SHAKE_DURATION_SECONDS;
+    this.hitShakeDurationSeconds = Math.max(0.001, durationSeconds);
+    this.hitShakeSeconds = this.hitShakeDurationSeconds;
+    this.hitShakeDistance = Math.max(0, distance);
     this.hitShakePhase = randomRange(0, Math.PI * 2);
     this.applyHitShakeOffset();
   }
@@ -177,9 +185,9 @@ export abstract class Monster extends EventTarget {
       return { x: 0, y: 0 };
     }
 
-    const elapsedSeconds = HIT_SHAKE_DURATION_SECONDS - this.hitShakeSeconds;
-    const fade = this.hitShakeSeconds / HIT_SHAKE_DURATION_SECONDS;
-    const distance = HIT_SHAKE_DISTANCE * fade;
+    const elapsedSeconds = this.hitShakeDurationSeconds - this.hitShakeSeconds;
+    const fade = this.hitShakeSeconds / this.hitShakeDurationSeconds;
+    const distance = this.hitShakeDistance * fade;
     return {
       x: Math.sin(this.hitShakePhase + (elapsedSeconds * HIT_SHAKE_HORIZONTAL_FREQUENCY_PER_SECOND)) * distance,
       y: Math.cos((this.hitShakePhase * HIT_SHAKE_VERTICAL_PHASE_SCALE) + (elapsedSeconds * HIT_SHAKE_VERTICAL_FREQUENCY_PER_SECOND)) * distance,
