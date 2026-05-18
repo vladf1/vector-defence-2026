@@ -556,12 +556,10 @@ export class Game {
       this.campaignCleared = true;
       this.highestUnlockedLevelIndex = finalCampaignLevelIndex;
       this.setState(GameState.CampaignWon);
-      this.setBanner("Campaign Complete", 5.5);
       this.playSound(AudioCue.CampaignComplete);
     } else {
       this.highestUnlockedLevelIndex = Math.max(this.highestUnlockedLevelIndex, this.currentLevelIndex + 1);
       this.setState(GameState.Won);
-      this.setBanner("Level Clear", 5);
       this.playSound(AudioCue.LevelWin);
     }
     this.requestModalSync();
