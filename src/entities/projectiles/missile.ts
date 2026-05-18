@@ -15,6 +15,7 @@ const MISSILE_EFFECT_RADIUS_BASE = 60;
 const MISSILE_EFFECT_RADIUS_PER_LEVEL = 5;
 const MISSILE_SPEED_BASE_PER_SECOND = 108;
 const MISSILE_SPEED_PER_LEVEL_PER_SECOND = 30;
+const MISSILE_SCALE_PER_LEVEL = 0.05;
 const MISSILE_TURN_SPEED_PER_SECOND = 7.2;
 const MISSILE_EXHAUST_SMOKE_PUFFS = [
   { x: -8.8, y: -0.18, radius: 2.2, alpha: 0.25 },
@@ -31,6 +32,7 @@ export class Missile {
   speedPerSecond: number;
   damage: number;
   effectRadius: number;
+  scale: number;
   trackedMonster?: Monster;
   removed = false;
   trailTimer = 0;
@@ -42,6 +44,7 @@ export class Missile {
     this.damage = MISSILE_DAMAGE_BASE + (MISSILE_DAMAGE_PER_LEVEL * level);
     this.effectRadius = MISSILE_EFFECT_RADIUS_BASE + (MISSILE_EFFECT_RADIUS_PER_LEVEL * level);
     this.speedPerSecond = MISSILE_SPEED_BASE_PER_SECOND + (MISSILE_SPEED_PER_LEVEL_PER_SECOND * level);
+    this.scale = 1 + (MISSILE_SCALE_PER_LEVEL * level);
     this.angle = initialAngle ?? angleBetween(source, trackedMonster);
   }
 
@@ -87,7 +90,7 @@ export class Missile {
     }
 
     for (const monster of game.runtime.getActiveMonsters()) {
-      const hitDistance = monster.radius + MISSILE_HALF_LENGTH;
+      const hitDistance = monster.radius + (MISSILE_HALF_LENGTH * this.scale);
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         this.removed = true;
         createMissileExplosionEffect(game, this.x, this.y, this.angle);
@@ -108,6 +111,7 @@ export class Missile {
     context.save();
     context.translate(this.x, this.y);
     context.rotate(this.angle);
+    context.scale(this.scale, this.scale);
 
     for (const puff of MISSILE_EXHAUST_SMOKE_PUFFS) {
       const smoke = context.createRadialGradient(puff.x, puff.y, 0, puff.x, puff.y, puff.radius);
