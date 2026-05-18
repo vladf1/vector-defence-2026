@@ -1,7 +1,8 @@
 import { MAX_PARTICLES } from "../constants";
 import { HitRingEffect } from "../entities/effects/hit-ring-effect";
-import { EmberStreakParticle, MissileShockwaveEffect, SmokeParticle } from "../entities/effects/missile-explosion-effect";
+import { EmberStreakParticle, SmokeParticle } from "../entities/effects/missile-explosion-effect";
 import { Particle } from "../entities/effects/particle";
+import { ShockwaveEffect } from "../entities/effects/shockwave-effect";
 import type { Game } from "../game-engine";
 import { randomRange } from "../utils";
 
@@ -32,22 +33,22 @@ export function createLaserImpactEffect(game: Game, x: number, y: number, beamAn
   }
 }
 
-export function createMissileExplosionEffect(game: Game, x: number, y: number, blastAngle: number): void {
-  game.addParticle(new MissileShockwaveEffect(x, y));
+export function createMissileExplosionEffect(game: Game, x: number, y: number, blastAngle: number, level: number): void {
+  game.addParticle(new ShockwaveEffect(x, y, 0.8 + (0.06 * level)));
 
   const emberCount = Math.min(14, Math.max(0, MAX_PARTICLES - game.runtime.particles.length));
   for (let index = 0; index < emberCount; index += 1) {
-    game.addParticle(new EmberStreakParticle(x, y, blastAngle));
+    game.addParticle(new EmberStreakParticle(x, y, blastAngle, level));
   }
 
   const smokeCount = Math.min(10, Math.max(0, MAX_PARTICLES - game.runtime.particles.length));
   for (let index = 0; index < smokeCount; index += 1) {
-    game.addParticle(new SmokeParticle(x, y, blastAngle));
+    game.addParticle(new SmokeParticle(x, y, blastAngle, level));
   }
 }
 
 export function createEscapeBurstEffect(game: Game, x: number, y: number): void {
-  game.addParticle(new MissileShockwaveEffect(x, y, 1.65));
+  game.addParticle(new ShockwaveEffect(x, y, 1.65));
   game.addParticle(new HitRingEffect(x, y, "#b0ffe1", 24));
   game.addParticle(new HitRingEffect(x, y, "#ffe36f", 15));
 

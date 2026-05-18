@@ -35,8 +35,9 @@ const html = String.raw`
       const { HitRingEffect } = await import("/src/entities/effects/hit-ring-effect.ts");
       const { LightningLinkEffect } = await import("/src/entities/effects/lightning-link-effect.ts");
       const { LinkEffect } = await import("/src/entities/effects/link-effect.ts");
-      const { MissileShockwaveEffect, SmokeParticle, EmberStreakParticle } = await import("/src/entities/effects/missile-explosion-effect.ts");
+      const { SmokeParticle, EmberStreakParticle } = await import("/src/entities/effects/missile-explosion-effect.ts");
       const { Particle } = await import("/src/entities/effects/particle.ts");
+      const { ShockwaveEffect } = await import("/src/entities/effects/shockwave-effect.ts");
       const { TankTurretParticle } = await import("/src/entities/effects/tank-turret-particle.ts");
       const { GunTower } = await import("/src/entities/towers/gun-tower.ts");
       const { LaserTower } = await import("/src/entities/towers/laser-tower.ts");
@@ -77,9 +78,9 @@ const html = String.raw`
         ], { x: 0, y: 0 }, 0.7, 160, 3)],
         ["particle:TankTurretParticle.draw", () => new TankTurretParticle(480, 270, 10.5, "#9fb6ff", 0.3)],
         ["particle:HitRingEffect.draw", () => warmed(new HitRingEffect(480, 270, "#d8ff4f", 18), 0.09)],
-        ["particle:MissileShockwaveEffect.draw", () => warmed(new MissileShockwaveEffect(480, 270, 1), 0.08)],
-        ["particle:SmokeParticle.draw", () => warmed(new SmokeParticle(480, 270, 0.4), 0.12)],
-        ["particle:EmberStreakParticle.draw", () => new EmberStreakParticle(480, 270, 0.4)],
+        ["particle:ShockwaveEffect.draw", () => warmed(new ShockwaveEffect(480, 270, 1), 0.08)],
+        ["particle:SmokeParticle.draw", () => warmed(new SmokeParticle(480, 270, 0.4, 1), 0.12)],
+        ["particle:EmberStreakParticle.draw", () => new EmberStreakParticle(480, 270, 0.4, 1)],
         ["effect:LinkEffect.draw", () => warmed(new LinkEffect(target, "#d8ff4f", 1.8, source), 0.08)],
         ["effect:LightningLinkEffect.draw", () => warmed(new LightningLinkEffect(source, target, "#8ff7ff"), 0.08)],
       ];

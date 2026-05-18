@@ -289,8 +289,7 @@ const html = String.raw`
           const projectile = new Projectile(
             { x: 40 + ((index * 37) % 500), y: 40 + ((index * 53) % 300) },
             { x: targetMonster.x + ((index % 5) * 6), y: targetMonster.y },
-            0.02,
-            4,
+            0,
           );
           projectile.x = 4 + (index % 7);
           projectile.y = 4 + (index % 11);
@@ -308,9 +307,7 @@ const html = String.raw`
           const missile = new Missile(
             { x: 60 + ((index * 71) % 460), y: 60 + ((index * 41) % 280) },
             targetMonster,
-            0.04,
-            72,
-            180,
+            0,
             0.3 + (index * 0.17),
           );
           missile.x = 260 + (index % 17);

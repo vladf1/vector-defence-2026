@@ -1,74 +1,34 @@
 import { hexWithAlpha, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
-export class MissileShockwaveEffect extends Particle {
-  private ageSeconds = 0;
+const MISSILE_EXPLOSION_SCALE_BASE = 0.8;
+const MISSILE_EXPLOSION_SCALE_PER_LEVEL = 0.06;
 
-  constructor(x: number, y: number, private readonly scale = 1) {
-    super(x, y, 0, "#fff0a8", 1, { speedPerSecond: 0, offset: 0, angle: 0 });
-    this.alpha = 1;
-  }
-
-  override update(deltaSeconds: number): void {
-    this.ageSeconds += deltaSeconds;
-    this.alpha = Math.max(0, 1 - (this.ageSeconds * 4.15));
-    if (this.alpha <= 0) {
-      this.removed = true;
-    }
-  }
-
-  override draw(context: CanvasRenderingContext2D): void {
-    const progress = Math.min(1, this.ageSeconds * 4.15);
-    const coreAlpha = Math.max(0, 1 - (progress * 4.5));
-    const shockRadius = (5.75 + (progress * 37)) * this.scale;
-
-    context.save();
-    context.globalCompositeOperation = "lighter";
-    if (coreAlpha > 0) {
-      const coreRadius = 13 * this.scale;
-      const coreGradient = context.createRadialGradient(this.x, this.y, 0, this.x, this.y, coreRadius);
-      coreGradient.addColorStop(0, hexWithAlpha("#ffffff", coreAlpha));
-      coreGradient.addColorStop(0.38, hexWithAlpha("#fff0a8", coreAlpha * 0.9));
-      coreGradient.addColorStop(1, hexWithAlpha("#ff7a3d", 0));
-      context.fillStyle = coreGradient;
-      context.beginPath();
-      context.arc(this.x, this.y, coreRadius, 0, Math.PI * 2);
-      context.fill();
-    }
-
-    context.strokeStyle = hexWithAlpha("#f99a5f", this.alpha * 0.84);
-    context.lineWidth = 3.05 * this.scale * (1 - (progress * 0.42));
-    context.beginPath();
-    context.arc(this.x, this.y, shockRadius, 0, Math.PI * 2);
-    context.stroke();
-
-    context.strokeStyle = hexWithAlpha("#fff2bf", this.alpha * 0.5);
-    context.lineWidth = 1.18 * this.scale;
-    context.beginPath();
-    context.arc(this.x, this.y, shockRadius * 0.56, 0, Math.PI * 2);
-    context.stroke();
-    context.restore();
-  }
+function getMissileExplosionScale(level: number): number {
+  return MISSILE_EXPLOSION_SCALE_BASE + (MISSILE_EXPLOSION_SCALE_PER_LEVEL * level);
 }
 
 export class SmokeParticle extends Particle {
   private readonly maxSize: number;
+  private readonly growthPerSecond: number;
 
-  constructor(x: number, y: number, blastAngle: number) {
+  constructor(x: number, y: number, blastAngle: number, level: number) {
+    const scale = getMissileExplosionScale(level);
     const angle = blastAngle + Math.PI + randomRange(-1.1, 1.1);
-    const size = randomRange(3.2, 6.8);
+    const size = randomRange(3.2, 6.8) * scale;
     super(x, y, size, "#7d7b72", randomRange(0.7, 1.15), {
-      speedPerSecond: randomRange(22, 78),
-      offset: randomRange(1, 7),
+      speedPerSecond: randomRange(22, 78) * scale,
+      offset: randomRange(1, 7) * scale,
       angle,
     });
     this.alpha = randomRange(0.32, 0.58);
-    this.maxSize = size + randomRange(4, 8);
+    this.maxSize = size + (randomRange(4, 8) * scale);
+    this.growthPerSecond = 12 * scale;
   }
 
   override update(deltaSeconds: number): void {
     super.update(deltaSeconds);
-    this.size = Math.min(this.maxSize, this.size + (12 * deltaSeconds));
+    this.size = Math.min(this.maxSize, this.size + (this.growthPerSecond * deltaSeconds));
   }
 
   override draw(context: CanvasRenderingContext2D): void {
@@ -85,11 +45,12 @@ export class SmokeParticle extends Particle {
 export class EmberStreakParticle extends Particle {
   private readonly angle: number;
 
-  constructor(x: number, y: number, blastAngle: number) {
+  constructor(x: number, y: number, blastAngle: number, level: number) {
+    const scale = getMissileExplosionScale(level);
     const angle = blastAngle + Math.PI + randomRange(-1.8, 1.8);
-    super(x, y, randomRange(2.1, 3.6), randomRange(0, 1) > 0.45 ? "#ff8f45" : "#fff0a8", randomRange(3.5, 5.4), {
-      speedPerSecond: randomRange(175, 385),
-      offset: randomRange(2, 6),
+    super(x, y, randomRange(2.1, 3.6) * scale, randomRange(0, 1) > 0.45 ? "#ff8f45" : "#fff0a8", randomRange(3.5, 5.4), {
+      speedPerSecond: randomRange(175, 385) * scale,
+      offset: randomRange(2, 6) * scale,
       angle,
     });
     this.angle = angle;

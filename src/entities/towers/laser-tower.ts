@@ -161,9 +161,9 @@ export class LaserTower extends Tower {
     if (this.level > 0) {
       context.fillStyle = colors.accent;
       const powerbankX = -6.9;
-      const powerbankWidth = 5.3 + (this.level * 0.92);
-      context.fillRect(powerbankX, -halfHeight - 2.6, powerbankWidth, 1.5 + (this.level * 0.06));
-      context.fillRect(powerbankX, halfHeight + 1.1, powerbankWidth, 1.5 + (this.level * 0.06));
+      const powerbankLength = 6.22 + ((this.level - 1) * 1.14);
+      context.fillRect(powerbankX, -halfHeight - 2.6, powerbankLength, 1.5 + (this.level * 0.06));
+      context.fillRect(powerbankX, halfHeight + 1.1, powerbankLength, 1.5 + (this.level * 0.06));
       context.beginPath();
       context.arc(muzzleOffset - 1.4, 0, 1.25 + (this.level * 0.16), 0, Math.PI * 2);
       context.fill();

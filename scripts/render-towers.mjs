@@ -28,7 +28,7 @@ const html = String.raw`
   <body>
     <canvas id="tower-render"></canvas>
     <script type="module">
-      import { FIELD_WIDTH, MAX_TOWER_LEVEL } from "/src/constants.ts";
+      import { FIELD_HEIGHT, FIELD_WIDTH, MAX_TOWER_LEVEL } from "/src/constants.ts";
       import { GunTower } from "/src/entities/towers/gun-tower.ts";
       import { LaserTower } from "/src/entities/towers/laser-tower.ts";
       import { LightningTower } from "/src/entities/towers/lightning-tower.ts";
@@ -47,11 +47,12 @@ const html = String.raw`
       const projectileRows = [
         { label: "Projectile", draw: drawProjectileSample },
         { label: "Missle", draw: drawMissileSample },
+        { label: "Missle Explosion", draw: drawMissileExplosionSample },
       ];
       const renderRows = [...towerRows, ...projectileRows];
 
       const cellSize = 182;
-      const rowHeaderWidth = 184;
+      const rowHeaderWidth = 232;
       const titleHeight = 84;
       const levelHeaderHeight = 48;
       const topHeaderHeight = titleHeight + levelHeaderHeight;
@@ -174,6 +175,49 @@ const html = String.raw`
         context.save();
         context.translate(centerX, centerY);
         missile.draw(context);
+        context.restore();
+      }
+
+      function drawMissileExplosionSample(context, centerX, centerY, level) {
+        const explosionX = 100;
+        const explosionY = 100;
+        const particles = [];
+        const target = {
+          x: explosionX,
+          y: explosionY,
+          radius: 12,
+          removed: false,
+          takeDamage() {},
+        };
+        const missile = new Missile({ x: explosionX, y: explosionY }, target, level, 0);
+        missile.x = explosionX;
+        missile.y = explosionY;
+        missile.speedPerSecond = 0;
+        missile.update({
+          profile: { fieldWidth: FIELD_WIDTH, fieldHeight: FIELD_HEIGHT },
+          runtime: {
+            particles,
+            getActiveMonsters() {
+              return [target];
+            },
+          },
+          addParticle(particle) {
+            particles.push(particle);
+          },
+          playSound() {},
+        }, 0);
+
+        for (const particle of particles) {
+          particle.update(0.075);
+        }
+
+        context.save();
+        context.translate(centerX, centerY);
+        context.scale(towerScale, towerScale);
+        context.translate(-explosionX, -explosionY);
+        for (const particle of particles) {
+          particle.draw(context);
+        }
         context.restore();
       }
     </script>

@@ -15,7 +15,6 @@ const MISSILE_EFFECT_RADIUS_BASE = 60;
 const MISSILE_EFFECT_RADIUS_PER_LEVEL = 5;
 const MISSILE_SPEED_BASE_PER_SECOND = 108;
 const MISSILE_SPEED_PER_LEVEL_PER_SECOND = 30;
-const MISSILE_SCALE_PER_LEVEL = 0.05;
 const MISSILE_TURN_SPEED_PER_SECOND = 7.2;
 const MISSILE_EXHAUST_SMOKE_PUFFS = [
   { x: -8.8, y: -0.18, radius: 2.2, alpha: 0.25 },
@@ -33,6 +32,7 @@ export class Missile {
   damage: number;
   effectRadius: number;
   scale: number;
+  level: number;
   trackedMonster?: Monster;
   removed = false;
   trailTimer = 0;
@@ -41,10 +41,11 @@ export class Missile {
     this.x = source.x;
     this.y = source.y;
     this.trackedMonster = trackedMonster;
+    this.level = level;
     this.damage = MISSILE_DAMAGE_BASE + (MISSILE_DAMAGE_PER_LEVEL * level);
     this.effectRadius = MISSILE_EFFECT_RADIUS_BASE + (MISSILE_EFFECT_RADIUS_PER_LEVEL * level);
     this.speedPerSecond = MISSILE_SPEED_BASE_PER_SECOND + (MISSILE_SPEED_PER_LEVEL_PER_SECOND * level);
-    this.scale = 1 + (MISSILE_SCALE_PER_LEVEL * level);
+    this.scale = 1 + (0.05 * level);
     this.angle = initialAngle ?? angleBetween(source, trackedMonster);
   }
 
@@ -93,7 +94,7 @@ export class Missile {
       const hitDistance = monster.radius + (MISSILE_HALF_LENGTH * this.scale);
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         this.removed = true;
-        createMissileExplosionEffect(game, this.x, this.y, this.angle);
+        createMissileExplosionEffect(game, this.x, this.y, this.angle, this.level);
         game.playSound(AudioCue.MissileExplosion, this.x, 1.1);
         for (const nearby of game.runtime.getActiveMonsters()) {
           const dist = calculateDistance(this.x, this.y, nearby.x, nearby.y);
