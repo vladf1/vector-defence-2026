@@ -34,6 +34,8 @@ const html = String.raw`
       import { LightningTower } from "/src/entities/towers/lightning-tower.ts";
       import { MissileTower } from "/src/entities/towers/missile-tower.ts";
       import { SlowTower } from "/src/entities/towers/slow-tower.ts";
+      import { Missile } from "/src/entities/projectiles/missile.ts";
+      import { Projectile } from "/src/entities/projectiles/projectile.ts";
 
       const towerRows = [
         { label: "Gun", TowerClass: GunTower, angle: -Math.PI / 4 },
@@ -42,15 +44,20 @@ const html = String.raw`
         { label: "Slow", TowerClass: SlowTower, pulse: Math.PI / 2 },
         { label: "Lightning", TowerClass: LightningTower },
       ];
+      const projectileRows = [
+        { label: "Projectile", draw: drawProjectileSample },
+        { label: "Missle", draw: drawMissileSample },
+      ];
+      const renderRows = [...towerRows, ...projectileRows];
 
       const cellSize = 182;
-      const rowHeaderWidth = 148;
+      const rowHeaderWidth = 184;
       const titleHeight = 84;
       const levelHeaderHeight = 48;
       const topHeaderHeight = titleHeight + levelHeaderHeight;
       const towerScale = 3.35;
       const width = rowHeaderWidth + ((MAX_TOWER_LEVEL + 1) * cellSize) + 36;
-      const height = topHeaderHeight + (towerRows.length * cellSize) + 28;
+      const height = topHeaderHeight + (renderRows.length * cellSize) + 28;
       const canvas = document.getElementById("tower-render");
       canvas.width = width;
       canvas.height = height;
@@ -59,7 +66,7 @@ const html = String.raw`
       context.fillStyle = "#020807";
       context.fillRect(0, 0, width, height);
       drawGrid(context, width, height, cellSize);
-      drawLabels(context, towerRows, cellSize, rowHeaderWidth, topHeaderHeight);
+      drawLabels(context, renderRows, cellSize, rowHeaderWidth, topHeaderHeight);
 
       for (const [rowIndex, row] of towerRows.entries()) {
         for (let level = 0; level <= MAX_TOWER_LEVEL; level += 1) {
@@ -83,6 +90,14 @@ const html = String.raw`
           context.scale(towerScale, towerScale);
           tower.draw(context, false);
           context.restore();
+        }
+      }
+      for (const [projectileIndex, row] of projectileRows.entries()) {
+        const rowIndex = towerRows.length + projectileIndex;
+        for (let level = 0; level <= MAX_TOWER_LEVEL; level += 1) {
+          const centerX = rowHeaderWidth + (level * cellSize) + (cellSize / 2);
+          const centerY = topHeaderHeight + (rowIndex * cellSize) + (cellSize / 2);
+          row.draw(context, centerX, centerY, level);
         }
       }
 
@@ -123,7 +138,7 @@ const html = String.raw`
         context.font = "900 36px Avenir Next, Arial Black, Trebuchet MS, system-ui, sans-serif";
         context.textAlign = "center";
         context.textBaseline = "middle";
-        context.fillText("Tower Upgrade Render Sheet", width / 2, 42);
+        context.fillText("Tower + Projectile Render Sheet", width / 2, 42);
         context.shadowBlur = 0;
 
         context.fillStyle = "rgba(239, 255, 247, 0.9)";
@@ -138,6 +153,27 @@ const html = String.raw`
         for (const [rowIndex, row] of towerRows.entries()) {
           context.fillText(row.label, rowHeaderWidth - 18, topHeaderHeight + (rowIndex * cellSize) + (cellSize / 2));
         }
+        context.restore();
+      }
+
+      function drawProjectileSample(context, centerX, centerY, level) {
+        const projectile = new Projectile({ x: 0, y: 0 }, { x: 36, y: 0 }, level);
+        projectile.x = 0;
+        projectile.y = 0;
+        context.save();
+        context.translate(centerX, centerY);
+        projectile.draw(context);
+        context.restore();
+      }
+
+      function drawMissileSample(context, centerX, centerY, level) {
+        const target = { x: 120, y: 0, radius: 12, removed: false };
+        const missile = new Missile({ x: 0, y: 0 }, target, level, -Math.PI / 8);
+        missile.x = 0;
+        missile.y = 0;
+        context.save();
+        context.translate(centerX, centerY);
+        missile.draw(context);
         context.restore();
       }
     </script>

@@ -117,9 +117,7 @@ const MISSILE_LABEL = "Missile";
 const COMBINED_LABEL = "Missile + Monster";
 const MISSILE_APPROACH_DISTANCE = 126;
 const MISSILE_SOURCE_OFFSET = 10;
-const MISSILE_DAMAGE = 50;
-const MISSILE_DAMAGE_RADIUS = 72;
-const MISSILE_SPEED_PER_SECOND = 118;
+const MISSILE_PREVIEW_LEVEL = 0;
 const COMBINED_TARGET_HIT_POINTS = 1;
 
 const monsterSpecs: MonsterSpec[] = [
@@ -462,7 +460,7 @@ function createMissile(monster: Monster): Missile {
   monster.x = CENTER.x;
   monster.y = CENTER.y;
   monster.removed = false;
-  return new Missile(source, monster, MISSILE_DAMAGE, MISSILE_DAMAGE_RADIUS, MISSILE_SPEED_PER_SECOND, 0);
+  return new Missile(source, monster, MISSILE_PREVIEW_LEVEL, 0);
 }
 
 function prepareCombinedTarget(monster: Monster): void {

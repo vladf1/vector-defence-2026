@@ -4,6 +4,11 @@ import { AudioCue } from "../../types";
 import type { Point } from "../../types";
 import { angleBetween, withinDistance } from "../../utils";
 
+const PROJECTILE_DAMAGE_BASE = 10;
+const PROJECTILE_SIZE_BASE = 3;
+const PROJECTILE_SIZE_PER_LEVEL = 0.5;
+const PROJECTILE_SPEED_PER_SECOND = 420;
+
 export class Projectile {
   x: number;
   y: number;
@@ -13,14 +18,14 @@ export class Projectile {
   radius: number;
   removed = false;
 
-  constructor(source: Point, target: Point, damage: number, size: number) {
+  constructor(source: Point, target: Point, level: number) {
     const angle = angleBetween(source, target);
     this.x = source.x;
     this.y = source.y;
-    this.velocityXPerSecond = Math.cos(angle) * 420;
-    this.velocityYPerSecond = Math.sin(angle) * 420;
-    this.damage = damage;
-    this.radius = size / 2;
+    this.velocityXPerSecond = Math.cos(angle) * PROJECTILE_SPEED_PER_SECOND;
+    this.velocityYPerSecond = Math.sin(angle) * PROJECTILE_SPEED_PER_SECOND;
+    this.damage = PROJECTILE_DAMAGE_BASE + level;
+    this.radius = (PROJECTILE_SIZE_BASE + (level * PROJECTILE_SIZE_PER_LEVEL)) / 2;
   }
 
   update(game: Game, deltaSeconds: number): void {

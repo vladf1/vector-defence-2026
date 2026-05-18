@@ -9,6 +9,12 @@ import type { Monster } from "../monsters/monster";
 const MISSILE_TAIL_X = -7;
 const MISSILE_NOSE_X = 9;
 const MISSILE_HALF_LENGTH = (MISSILE_NOSE_X - MISSILE_TAIL_X) / 2;
+const MISSILE_DAMAGE_BASE = 50;
+const MISSILE_DAMAGE_PER_LEVEL = 4;
+const MISSILE_EFFECT_RADIUS_BASE = 60;
+const MISSILE_EFFECT_RADIUS_PER_LEVEL = 5;
+const MISSILE_SPEED_BASE_PER_SECOND = 108;
+const MISSILE_SPEED_PER_LEVEL_PER_SECOND = 30;
 const MISSILE_TURN_SPEED_PER_SECOND = 7.2;
 const MISSILE_EXHAUST_SMOKE_PUFFS = [
   { x: -8.8, y: -0.18, radius: 2.2, alpha: 0.25 },
@@ -29,13 +35,13 @@ export class Missile {
   removed = false;
   trailTimer = 0;
 
-  constructor(source: Point, trackedMonster: Monster, damage: number, effectRadius: number, speedPerSecond: number, initialAngle?: number) {
+  constructor(source: Point, trackedMonster: Monster, level: number, initialAngle?: number) {
     this.x = source.x;
     this.y = source.y;
     this.trackedMonster = trackedMonster;
-    this.damage = damage;
-    this.effectRadius = effectRadius;
-    this.speedPerSecond = speedPerSecond;
+    this.damage = MISSILE_DAMAGE_BASE + (MISSILE_DAMAGE_PER_LEVEL * level);
+    this.effectRadius = MISSILE_EFFECT_RADIUS_BASE + (MISSILE_EFFECT_RADIUS_PER_LEVEL * level);
+    this.speedPerSecond = MISSILE_SPEED_BASE_PER_SECOND + (MISSILE_SPEED_PER_LEVEL_PER_SECOND * level);
     this.angle = initialAngle ?? angleBetween(source, trackedMonster);
   }
 

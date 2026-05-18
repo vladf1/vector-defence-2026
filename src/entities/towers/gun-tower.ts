@@ -41,7 +41,7 @@ export class GunTower extends Tower {
         x: this.x + (Math.cos(this.angle) * 16),
         y: this.y + (Math.sin(this.angle) * 16),
       };
-      game.runtime.projectiles.push(new Projectile(actualSource, target, 10 + this.level, 3 + (this.level / 2)));
+      game.runtime.projectiles.push(new Projectile(actualSource, target, this.level));
       this.muzzleFlashSeconds = 0.055;
       game.playSound(AudioCue.GunFire, actualSource.x, 0.92 + (this.level * 0.08));
       this.resetCooldown(0.2);

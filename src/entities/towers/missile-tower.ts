@@ -15,13 +15,11 @@ export class MissileTower extends Tower {
   static readonly shortcuts = ["3", "r"] as const;
 
   angle = randomRange(-Math.PI, Math.PI);
-  missileDamage = 50;
   turnSpeedPerSecond = 3.6;
   muzzleFlashSeconds = 0;
 
   constructor(x: number, y: number) {
     super(x, y);
-    this.applyLevelStats();
   }
 
   protected onUpdate(game: Game, deltaSeconds: number): void {
@@ -36,25 +34,15 @@ export class MissileTower extends Tower {
     }
 
     if (tracked && alignedToTarget && this.ready()) {
-      const damageRadius = 60 + (5 * this.level);
-      const missileSpeedPerSecond = 108 + (30 * this.level);
       const source = {
         x: this.x + (Math.cos(this.angle) * 14),
         y: this.y + (Math.sin(this.angle) * 14),
       };
-      game.runtime.missiles.push(new Missile(source, tracked, this.missileDamage, damageRadius, missileSpeedPerSecond, this.angle));
+      game.runtime.missiles.push(new Missile(source, tracked, this.level, this.angle));
       this.muzzleFlashSeconds = 0.12;
       game.playSound(AudioCue.MissileLaunch, source.x, 1 + (this.level * 0.09));
       this.resetCooldown(2 - (0.2 * this.level));
     }
-  }
-
-  protected onUpgrade(): void {
-    this.applyLevelStats();
-  }
-
-  private applyLevelStats(): void {
-    this.missileDamage = 50 + (4 * this.level);
   }
 
   draw(context: CanvasRenderingContext2D, active: boolean): void {
