@@ -32,7 +32,7 @@
         ...(profile.mode === "mobile" || !$hud.monsters ? [] : [
           { label: "Monsters", value: $hud.monsters, className: "monsters-stat" },
         ]),
-      ] as stat}
+      ].filter((stat) => stat.value) as stat}
         <div class={`stat-card ${stat.className}`}>
           {#if stat.label}
             <span>{stat.label}</span>

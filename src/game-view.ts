@@ -103,7 +103,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
             : game.state === GameState.Playing && runtime.spawnDelay > 0
             ? `${runtime.currentWaveIndex + 1}/${runtime.waveTotal}`
             : `${runtime.currentWaveIndex + 1}/${runtime.waveTotal} · ${Math.min(runtime.waveSpawnedMonsters, activeWave.count)}/${activeWave.count}`)
-        : `All ${game.waveTotal} waves cleared`)
+        : "")
     : "Idle";
   const monsters = activeWave
     ? `${Math.min(runtime.waveSpawnedMonsters, activeWave.count)} of ${activeWave.count}`
