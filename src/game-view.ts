@@ -127,7 +127,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     const towerClass = getTowerClass(runtime.placingTower);
     selectionTitle = `Placing ${towerClass.label} Tower`;
     selectionBody = towerClass.summary;
-    mobileSelectionBody = selectionBody;
+    mobileSelectionBody = `Tap field to build · ${formatMoney(towerClass.baseCost)}`;
   }
 
   const shotsTracked = runtime.projectiles.length + runtime.missiles.length;

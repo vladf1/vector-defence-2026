@@ -92,11 +92,11 @@
     </div>
   </div>
 
-  {#if profile.mode !== "mobile" || $hud.hasSelectedTower}
+  {#if profile.mode !== "mobile" || $hud.hasSelectedTower || $hud.placingTower}
     <div class="control-card selection-card">
       <div class="selection-header">
         <div class="selection-copy">
-          {#if profile.mode === "mobile" && $hud.hasSelectedTower}
+          {#if profile.mode === "mobile" && ($hud.hasSelectedTower || $hud.placingTower)}
             <strong>{formatMobileSelectionTitle($hud.selectionTitle)}</strong>
             {#if $hud.mobileSelectionBody}
               <span>{$hud.mobileSelectionBody}</span>
@@ -110,6 +110,18 @@
             {/if}
           {/if}
         </div>
+        {#if $hud.placingTower && !$hud.hasSelectedTower}
+          <button
+            class="action-button cancel-build-button"
+            type="button"
+            aria-label="Cancel build"
+            title="Cancel build"
+            onclick={session.cancelBuild}
+            disabled={$hud.cancelBuildDisabled}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        {/if}
         {#if $hud.hasSelectedTower && profile.mode !== "mobile"}
           <button
             class="action-button sell selection-sell-button"

@@ -641,6 +641,18 @@ textarea,
   flex: 0 0 auto;
 }
 
+.cancel-build-button {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
 .selection-actions {
   display: flex;
   gap: 8px;
@@ -1288,6 +1300,13 @@ textarea,
     font-size: 0.82rem;
   }
 
+  .cancel-build-button {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    font-size: 1.25rem;
+  }
+
   .mobile-selection-actions {
     gap: 6px;
   }
@@ -1454,6 +1473,14 @@ textarea,
 
   .mobile-shell .selection-card:not(:has(.mobile-selection-actions)) .selection-header {
     grid-column: 1 / -1;
+  }
+
+  .mobile-shell .selection-card:not(:has(.mobile-selection-actions)) .cancel-build-button {
+    width: 52px;
+    min-width: 52px;
+    height: 52px;
+    align-self: center;
+    font-size: 1.45rem;
   }
 
   .mobile-shell .selection-copy {
