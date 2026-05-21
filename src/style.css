@@ -1360,7 +1360,11 @@ textarea,
   }
 
   .mobile-shell .controls-grid {
+    --mobile-control-row-height: 72px;
     --mobile-control-button-height: 68px;
+    --mobile-control-strip-gap: 10px;
+    --mobile-tower-button-width: calc((100% - (4 * var(--mobile-control-strip-gap))) / 5);
+    --mobile-control-row-padding: calc((var(--mobile-control-row-height) - var(--mobile-control-button-height)) / 2) 0;
     --mobile-control-button-radius: 8px;
     --mobile-control-button-padding: 2px 5px 4px;
     --mobile-control-icon-row-height: 50px;
@@ -1371,14 +1375,18 @@ textarea,
     --mobile-control-value-color: #b8e6cf;
     --mobile-control-value-size: 0.76rem;
     grid-template-columns: 1fr;
-    grid-template-rows: 72px 68px;
-    gap: 10px;
+    grid-template-rows: var(--mobile-control-row-height) var(--mobile-control-button-height);
+    gap: var(--mobile-control-strip-gap);
     height: 158px;
     padding-bottom: 8px;
   }
 
+  .mobile-shell .tower-strip {
+    gap: var(--mobile-control-strip-gap);
+  }
+
   .mobile-shell .controls-grid.selected-tower-controls {
-    grid-template-rows: 72px 68px;
+    grid-template-rows: var(--mobile-control-row-height) var(--mobile-control-button-height);
   }
 
   .mobile-shell .tower-strip-card {
@@ -1437,9 +1445,9 @@ textarea,
     grid-template-rows: 1fr;
     align-items: stretch;
     column-gap: 8px;
-    height: 72px;
-    min-height: 72px;
-    padding: 7px 0;
+    height: var(--mobile-control-row-height);
+    min-height: var(--mobile-control-row-height);
+    padding: var(--mobile-control-row-padding);
     border: 0;
     background: transparent;
     backdrop-filter: none;
@@ -1450,10 +1458,6 @@ textarea,
     grid-template-columns: minmax(0, 1fr) minmax(152px, 46vw);
     grid-template-rows: 1fr;
     column-gap: 8px;
-    height: 72px;
-    min-height: 72px;
-    padding: 0;
-    transform: translateY(2px);
   }
 
   .mobile-shell .selection-header {
@@ -1476,9 +1480,10 @@ textarea,
   }
 
   .mobile-shell .selection-card:not(:has(.mobile-selection-actions)) .cancel-build-button {
-    width: 52px;
-    min-width: 52px;
-    height: 52px;
+    width: var(--mobile-tower-button-width);
+    min-width: var(--mobile-tower-button-width);
+    height: var(--mobile-control-button-height);
+    padding: var(--mobile-control-button-padding);
     align-self: center;
     font-size: 1.45rem;
   }
@@ -1512,13 +1517,21 @@ textarea,
     line-height: 1.15;
   }
 
+  .mobile-shell .idle-selection-card .selection-copy strong {
+    color: rgba(235, 255, 244, 0.9);
+  }
+
+  .mobile-shell .idle-selection-card .selection-copy span {
+    color: rgba(184, 230, 207, 0.72);
+  }
+
   .mobile-shell .mobile-selection-actions {
     grid-column: 2;
     display: flex;
     gap: 6px;
     align-items: stretch;
     min-width: 0;
-    height: 72px;
+    height: var(--mobile-control-button-height);
     align-self: center;
     justify-self: end;
     width: 100%;

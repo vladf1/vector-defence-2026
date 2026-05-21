@@ -92,7 +92,16 @@
     </div>
   </div>
 
-  {#if profile.mode !== "mobile" || $hud.hasSelectedTower || $hud.placingTower}
+  {#if profile.mode === "mobile" && !$hud.hasSelectedTower && !$hud.placingTower}
+    <div class="control-card selection-card idle-selection-card">
+      <div class="selection-header">
+        <div class="selection-copy">
+          <strong>Build towers</strong>
+          <span>Tap a tower to inspect</span>
+        </div>
+      </div>
+    </div>
+  {:else if profile.mode !== "mobile" || $hud.hasSelectedTower || $hud.placingTower}
     <div class="control-card selection-card">
       <div class="selection-header">
         <div class="selection-copy">
