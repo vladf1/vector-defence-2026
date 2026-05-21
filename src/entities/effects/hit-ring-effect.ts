@@ -9,7 +9,7 @@ export class HitRingEffect extends Particle {
     this.alpha = 0.85;
   }
 
-  override update(deltaSeconds: number): void {
+  override update(deltaSeconds: number, _fieldWidth: number, _fieldHeight: number): void {
     this.ageSeconds += deltaSeconds;
     this.alpha = Math.max(0, this.alpha - (5.2 * deltaSeconds));
     if (this.alpha <= 0) {

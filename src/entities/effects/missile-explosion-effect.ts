@@ -26,8 +26,8 @@ export class SmokeParticle extends Particle {
     this.growthPerSecond = 12 * scale;
   }
 
-  override update(deltaSeconds: number): void {
-    super.update(deltaSeconds);
+  override update(deltaSeconds: number, fieldWidth: number, fieldHeight: number): void {
+    super.update(deltaSeconds, fieldWidth, fieldHeight);
     this.size = Math.min(this.maxSize, this.size + (this.growthPerSecond * deltaSeconds));
   }
 

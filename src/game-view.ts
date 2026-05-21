@@ -71,7 +71,6 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
     hostiles: "0",
     shots: "0",
     effects: "0",
-    pixelRatio: "1x",
   },
 };
 
@@ -177,7 +176,6 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
       hostiles: String(runtime.monsters.length),
       shots: String(shotsTracked),
       effects: String(effectsTracked),
-      pixelRatio: `${game.renderer.currentDpr.toFixed(game.renderer.currentDpr % 1 === 0 ? 0 : 1)}x`,
     },
   };
 }

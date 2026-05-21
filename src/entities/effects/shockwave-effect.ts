@@ -9,7 +9,7 @@ export class ShockwaveEffect extends Particle {
     this.alpha = 1;
   }
 
-  override update(deltaSeconds: number): void {
+  override update(deltaSeconds: number, _fieldWidth: number, _fieldHeight: number): void {
     this.ageSeconds += deltaSeconds;
     this.alpha = Math.max(0, 1 - (this.ageSeconds * 4.15));
     if (this.alpha <= 0) {

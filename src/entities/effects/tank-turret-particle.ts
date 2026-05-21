@@ -1,5 +1,4 @@
-import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "../../constants";
-import { hexWithAlpha, randomRange } from "../../utils";
+import { hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
 import { drawTankTurret } from "../monsters/tank-turret-rendering";
 import { Particle } from "./particle";
 
@@ -30,7 +29,7 @@ export class TankTurretParticle extends Particle {
     this.alphaFadePerSecond = randomRange(0.45, 0.78);
   }
 
-  update(deltaSeconds: number): void {
+  update(deltaSeconds: number, fieldWidth: number, fieldHeight: number): void {
     const driftSlowdownFactor = 1 - (0.34 * deltaSeconds);
     this.velocityXPerSecond *= driftSlowdownFactor;
     this.velocityYPerSecond *= driftSlowdownFactor;
@@ -38,13 +37,7 @@ export class TankTurretParticle extends Particle {
     this.y += this.velocityYPerSecond * deltaSeconds;
     this.rotation += this.angularVelocityPerSecond * deltaSeconds;
     this.alpha = Math.max(0, this.alpha - (this.alphaFadePerSecond * deltaSeconds));
-    if (
-      this.alpha <= 0 ||
-      this.x < -34 ||
-      this.y < -34 ||
-      this.x > EFFECT_FIELD_WIDTH + 34 ||
-      this.y > EFFECT_FIELD_HEIGHT + 34
-    ) {
+    if (this.alpha <= 0 || isOutsideBounds(this, fieldWidth, fieldHeight, 34)) {
       this.removed = true;
     }
   }

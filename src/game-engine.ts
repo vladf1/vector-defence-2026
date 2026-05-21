@@ -620,7 +620,7 @@ export class Game {
       }
 
       for (const particle of this.runtime.particles) {
-        particle.update(deltaSeconds);
+        particle.update(deltaSeconds, this.profile.fieldWidth, this.profile.fieldHeight);
       }
 
       for (const link of this.runtime.links) {

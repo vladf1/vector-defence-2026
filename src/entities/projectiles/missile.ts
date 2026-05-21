@@ -2,7 +2,7 @@ import { createMissileExplosionEffect } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
 import { AudioCue } from "../../types";
 import type { Point } from "../../types";
-import { angleBetween, calculateDistance, clamp, randomRange, turnAngleTowards, withinDistance } from "../../utils";
+import { angleBetween, calculateDistance, clamp, isOutsideBounds, randomRange, turnAngleTowards, withinDistance } from "../../utils";
 import { Particle } from "../effects/particle";
 import type { Monster } from "../monsters/monster";
 
@@ -93,7 +93,7 @@ export class Missile {
       }));
     }
 
-    if (this.x < -20 || this.y < -20 || this.x > game.profile.fieldWidth + 20 || this.y > game.profile.fieldHeight + 20) {
+    if (isOutsideBounds(this, game.profile.fieldWidth, game.profile.fieldHeight, 20)) {
       this.removed = true;
       return;
     }

@@ -50,6 +50,10 @@ export function withinDistance(x1: number, y1: number, x2: number, y2: number, m
   return (dx * dx) + (dy * dy) <= (maxDistance * maxDistance);
 }
 
+export function isOutsideBounds(point: Point, width: number, height: number, margin: number): boolean {
+  return point.x < -margin || point.y < -margin || point.x > width + margin || point.y > height + margin;
+}
+
 export function angleBetween(source: Point, target: Point): number {
   return Math.atan2(target.y - source.y, target.x - source.x);
 }

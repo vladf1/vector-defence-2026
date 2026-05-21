@@ -1,5 +1,4 @@
-import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "../../constants";
-import { hexWithAlpha, randomRange } from "../../utils";
+import { hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
 
 interface ParticleOptions {
   speedPerSecond?: number;
@@ -38,14 +37,14 @@ export class Particle {
     this.alphaFadePerSecond = alphaFadePerSecond;
   }
 
-  update(deltaSeconds: number): void {
+  update(deltaSeconds: number, fieldWidth: number, fieldHeight: number): void {
     const slowDownFactor = 1 - (2.4 * deltaSeconds);
     this.velocityXPerSecond *= slowDownFactor;
     this.velocityYPerSecond *= slowDownFactor;
     this.x += this.velocityXPerSecond * deltaSeconds;
     this.y += this.velocityYPerSecond * deltaSeconds;
     this.alpha -= this.alphaFadePerSecond * deltaSeconds;
-    if (this.alpha <= 0 || this.x < -20 || this.y < -20 || this.x > EFFECT_FIELD_WIDTH + 20 || this.y > EFFECT_FIELD_HEIGHT + 20) {
+    if (this.alpha <= 0 || isOutsideBounds(this, fieldWidth, fieldHeight, 20)) {
       this.removed = true;
     }
   }

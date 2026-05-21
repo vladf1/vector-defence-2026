@@ -17,7 +17,6 @@
       { label: "Hostiles", value: $hud.nerdStats.hostiles },
       { label: "Shots", value: $hud.nerdStats.shots },
       { label: "FX", value: $hud.nerdStats.effects },
-      { label: "Pixel Ratio", value: $hud.nerdStats.pixelRatio },
     ] as stat (stat.label)}
       <div class="nerd-stat">
         <span>{stat.label}:</span>

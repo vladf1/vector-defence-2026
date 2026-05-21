@@ -1,6 +1,5 @@
-import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "../../constants";
 import type { Point } from "../../types";
-import { drawPath, hexWithAlpha, randomRange } from "../../utils";
+import { drawPath, hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
 const SHARD_FILL_COLOR = "#050908";
@@ -39,7 +38,7 @@ export class GlassShardParticle extends Particle {
     this.alphaFadePerSecond = randomRange(0.8, 1.8);
   }
 
-  update(deltaSeconds: number): void {
+  update(deltaSeconds: number, fieldWidth: number, fieldHeight: number): void {
     const driftSlowdownFactor = 1 - (0.42 * deltaSeconds);
     this.velocityXPerSecond *= driftSlowdownFactor;
     this.velocityYPerSecond *= driftSlowdownFactor;
@@ -47,13 +46,7 @@ export class GlassShardParticle extends Particle {
     this.y += this.velocityYPerSecond * deltaSeconds;
     this.rotation += this.angularVelocityPerSecond * deltaSeconds;
     this.alpha = Math.max(0, this.alpha - (this.alphaFadePerSecond * deltaSeconds));
-    if (
-      this.alpha <= 0 ||
-      this.x < -28 ||
-      this.y < -28 ||
-      this.x > EFFECT_FIELD_WIDTH + 28 ||
-      this.y > EFFECT_FIELD_HEIGHT + 28
-    ) {
+    if (this.alpha <= 0 || isOutsideBounds(this, fieldWidth, fieldHeight, 28)) {
       this.removed = true;
     }
   }

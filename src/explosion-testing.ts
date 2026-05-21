@@ -1,4 +1,3 @@
-import { EFFECT_FIELD_HEIGHT, EFFECT_FIELD_WIDTH } from "./constants";
 import { GlassShardParticle } from "./entities/effects/glass-shard-particle";
 import type { Particle } from "./entities/effects/particle";
 import { PackManMonster } from "./entities/monsters/packman-monster";
@@ -77,6 +76,9 @@ type MonsterBodyDrawable = Monster & {
   drawBody(context: CanvasRenderingContext2D): void;
 };
 type LabMode = "monster" | "missile" | "combined";
+
+const EFFECT_FIELD_WIDTH = 800;
+const EFFECT_FIELD_HEIGHT = 560;
 
 interface MonsterSpec {
   label: string;
@@ -189,7 +191,7 @@ function updateScene(deltaSeconds: number): void {
   }
 
   if (activeScene.phase === "explode") {
-    updateParticles(activeScene.particles, deltaSeconds * EXPLOSION_TIME_SCALE);
+    updateParticles(activeScene.particles, deltaSeconds * EXPLOSION_TIME_SCALE, EFFECT_FIELD_WIDTH, EFFECT_FIELD_HEIGHT);
     if (
       (activeScene.phaseSeconds >= MIN_EXPLOSION_SECONDS && allParticlesOffScreen(activeScene.particles))
       || activeScene.phaseSeconds >= EXPLOSION_SECONDS
@@ -268,10 +270,10 @@ function repeatCurrentMonster(): void {
   updateHudLabels();
 }
 
-function updateParticles(particles: Particle[], deltaSeconds: number): void {
+function updateParticles(particles: Particle[], deltaSeconds: number, fieldWidth: number, fieldHeight: number): void {
   for (const particle of particles) {
     if (!particle.removed) {
-      particle.update(deltaSeconds);
+      particle.update(deltaSeconds, fieldWidth, fieldHeight);
     }
   }
 }

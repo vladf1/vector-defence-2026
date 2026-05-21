@@ -163,7 +163,6 @@ export interface NerdStatsSnapshot {
   hostiles: string;
   shots: string;
   effects: string;
-  pixelRatio: string;
 }
 
 export interface ModalActionView {

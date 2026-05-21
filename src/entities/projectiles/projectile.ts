@@ -2,7 +2,7 @@ import { createHitImpactEffect } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
 import { AudioCue } from "../../types";
 import type { Point } from "../../types";
-import { angleBetween, withinDistance } from "../../utils";
+import { angleBetween, isOutsideBounds, withinDistance } from "../../utils";
 
 const PROJECTILE_DAMAGE_BASE = 10;
 const PROJECTILE_SIZE_BASE = 3;
@@ -31,7 +31,7 @@ export class Projectile {
   update(game: Game, deltaSeconds: number): void {
     this.x += this.velocityXPerSecond * deltaSeconds;
     this.y += this.velocityYPerSecond * deltaSeconds;
-    if (this.x < -20 || this.y < -20 || this.x > game.profile.fieldWidth + 20 || this.y > game.profile.fieldHeight + 20) {
+    if (isOutsideBounds(this, game.profile.fieldWidth, game.profile.fieldHeight, 20)) {
       this.removed = true;
       return;
     }
