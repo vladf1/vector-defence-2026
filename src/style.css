@@ -691,9 +691,13 @@ textarea,
 
   .mobile-shell .stat-card + .stat-card::before {
     content: "|";
-    color: var(--muted);
+    color: rgba(156, 199, 178, 0.72);
     font-weight: 500;
     margin-inline: 8px;
+  }
+
+  .mobile-shell .stat-card strong {
+    color: rgba(235, 255, 244, 0.9);
   }
 
   .mobile-shell .wave-stat {
@@ -1377,8 +1381,23 @@ textarea,
     grid-template-columns: 1fr;
     grid-template-rows: var(--mobile-control-row-height) var(--mobile-control-button-height);
     gap: var(--mobile-control-strip-gap);
-    height: 158px;
+    height: calc(var(--mobile-control-strip-gap) + var(--mobile-control-row-height) + var(--mobile-control-strip-gap) + var(--mobile-control-button-height) + 8px);
+    padding-top: var(--mobile-control-strip-gap);
     padding-bottom: 8px;
+    position: relative;
+    background: linear-gradient(180deg, rgba(11, 27, 20, 0.34), rgba(3, 8, 6, 0) 24px);
+  }
+
+  .mobile-shell .controls-grid::before {
+    content: "";
+    position: absolute;
+    right: 0;
+    left: 0;
+    top: 0;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(158, 255, 210, 0.28) 12%, rgba(158, 255, 210, 0.34) 50%, rgba(158, 255, 210, 0.28) 88%, transparent);
+    box-shadow: 0 5px 18px rgba(58, 255, 171, 0.08);
   }
 
   .mobile-shell .tower-strip {
