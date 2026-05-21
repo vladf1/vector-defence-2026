@@ -101,6 +101,7 @@ Gameplay / UI notes:
 - Tower classes should own their own drawing and attack behavior. Shared tower rendering/selection concerns belong in `Tower`.
 - Svelte components should consume `HudSnapshot` and `ModalView` data rather than reaching into the `Game` object directly.
 - The HUD selection card supports upgrade, sell, and cancel-build actions; keep those interactions flowing through `GameSession` and the HUD snapshot rather than binding components directly to `Game`.
+- Mobile layout support starts at a `375 x 812` CSS-pixel viewport. Do not optimize for older/smaller phone viewports such as `320 x 568` or `360 x 667` unless explicitly asked.
 - The campaign modal doubles as the map screen, win/loss screen, and resume flow.
 
 To run the browser version:

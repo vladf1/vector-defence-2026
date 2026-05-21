@@ -691,7 +691,7 @@ textarea,
 
   .mobile-shell .stat-card + .stat-card::before {
     content: "|";
-    color: rgba(156, 199, 178, 0.72);
+    color: rgba(156, 199, 178, 0.52);
     font-weight: 500;
     margin-inline: 8px;
   }
@@ -1334,7 +1334,7 @@ textarea,
     max-height: calc(var(--app-viewport-height) - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
     grid-template-rows: auto minmax(0, 1fr) auto;
     align-content: stretch;
-    gap: 7px;
+    gap: 10px;
     overflow: hidden;
   }
 
