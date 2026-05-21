@@ -94,7 +94,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
   const activeWave = runtime.activeWave;
   const battleActionsDisabled = !game.canPerformBattleAction();
   const levelName = currentLevel
-    ? `${currentLevel.levelNumber ?? "?"} · ${currentLevel.name}`
+    ? `Level ${currentLevel.levelNumber ?? "?"}`
     : "Campaign Map";
   const wave = currentLevel
     ? (activeWave
