@@ -4,14 +4,14 @@ import { GameMode, type GameMode as GameModeValue, type GameProfile } from "./ga
 import type { GameAudio } from "./game-audio";
 import { createEscapeBurstParticles } from "./game-engine/combat-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
+import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
 import { GameRenderer, type FieldBounds } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
-import { Particle } from "./entities/effects/particle";
 import type { Monster } from "./entities/monsters/monster";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { Tower } from "./entities/towers/tower";
-import { LevelRuntime, type RuntimeLinkEffect } from "./level-runtime";
+import { LevelRuntime } from "./level-runtime";
 import { canPlaceTower, findTowerAtPoint } from "./placement-rules";
 import {
   formatMoney,
@@ -99,22 +99,27 @@ export class Game {
     return this.levels.length;
   }
 
-  addParticle(particle: Particle): void {
-    if (this.runtime.particles.length < MAX_PARTICLES) {
-      this.runtime.particles.push(particle);
+  private applyUpdateResult(result: UpdateResult): void {
+    for (const particle of result.particles) {
+      if (this.runtime.particles.length < MAX_PARTICLES) {
+        this.runtime.particles.push(particle);
+      }
     }
+    for (const link of result.links) {
+      if (this.runtime.links.length < MAX_LINKS) {
+        this.runtime.links.push(link);
+      }
+    }
+    this.runtime.projectiles.push(...result.projectiles);
+    this.runtime.missiles.push(...result.missiles);
+    for (const sound of result.sounds) {
+      this.playSound(sound.cue, sound.panX, sound.intensity);
+    }
+    result.clear();
   }
 
-  addParticles(particles: readonly Particle[]): void {
-    for (const particle of particles) {
-      this.addParticle(particle);
-    }
-  }
-
-  addLink(link: RuntimeLinkEffect): void {
-    if (this.runtime.links.length < MAX_LINKS) {
-      this.runtime.links.push(link);
-    }
+  private getActiveMonsters(): Monster[] {
+    return this.runtime.monsters.filter((monster) => !monster.removed && monster.hitPoints > 0);
   }
 
   playSound(cue: AudioCueValue, panX?: number, intensity?: number): void {
@@ -249,9 +254,9 @@ export class Game {
 
   onMonsterKilled(monster: Monster): void {
     this.runtime.money += monster.bounty;
-    const effect = monster.createDeathEffect();
-    this.playSound(effect.sound.cue, monster.x, effect.sound.intensity);
-    this.addParticles(effect.particles);
+    const result = new UpdateResult();
+    monster.addDeathEffect(result);
+    this.applyUpdateResult(result);
     this.requestHudSync();
   }
 
@@ -267,8 +272,12 @@ export class Game {
   }
 
   onMonsterEscaped(monster: Monster): void {
-    this.playSound(AudioCue.EscapeBurst, monster.x);
-    this.addParticles(createEscapeBurstParticles(monster.x, monster.y));
+    const result = new UpdateResult();
+    for (const particle of createEscapeBurstParticles(monster.x, monster.y)) {
+      result.addParticle(particle);
+    }
+    result.playSound(AudioCue.EscapeBurst, monster.x);
+    this.applyUpdateResult(result);
     this.runtime.escapesLeft = Math.max(0, this.runtime.escapesLeft - 1);
     if (this.runtime.escapesLeft === 0) {
       this.loseLevel();
@@ -611,30 +620,43 @@ export class Game {
         }
       }
 
+      let updateContext: UpdateContext = {
+        deltaSeconds,
+        fieldWidth: this.profile.fieldWidth,
+        fieldHeight: this.profile.fieldHeight,
+        activeMonsters: this.getActiveMonsters(),
+      };
+      const updateResult = new UpdateResult();
+
       for (const monster of this.runtime.monsters) {
-        monster.update(deltaSeconds);
+        monster.update(updateContext);
       }
+      updateContext = {
+        ...updateContext,
+        activeMonsters: this.getActiveMonsters(),
+      };
 
       for (const projectile of this.runtime.projectiles) {
-        projectile.update(this, deltaSeconds);
+        projectile.update(updateContext, updateResult);
       }
 
       for (const missile of this.runtime.missiles) {
-        missile.update(this, deltaSeconds);
+        missile.update(updateContext, updateResult);
       }
 
       for (const particle of this.runtime.particles) {
-        particle.update(deltaSeconds, this.profile.fieldWidth, this.profile.fieldHeight);
+        particle.update(updateContext);
       }
 
       for (const link of this.runtime.links) {
-        link.update(deltaSeconds);
+        link.update(updateContext);
       }
 
       for (const tower of this.runtime.towers) {
-        tower.update(this, deltaSeconds);
+        tower.update(updateContext, updateResult);
       }
 
+      this.applyUpdateResult(updateResult);
       this.runtime.compactRemoved();
 
       if (wave && this.runtime.waveSpawnedMonsters >= wave.count && this.runtime.monsters.length === 0) {

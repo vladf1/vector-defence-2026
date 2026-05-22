@@ -1,10 +1,10 @@
 import { GlassShardParticle } from "../effects/glass-shard-particle";
-import type { Particle } from "../effects/particle";
+import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { drawPath, hexWithAlpha, randomRange } from "../../utils";
 import { createPolygonShardParticles } from "./death-effect-helpers";
-import { Monster, type MonsterDeathEffect } from "./monster";
+import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
 const COLOR = "#78d7ff";
@@ -41,6 +41,10 @@ const FRONT_PLATE_OUTLINE = [
   { x: RADIUS * 0.16, y: RADIUS * 0.28 },
   { x: RADIUS * 0.76, y: RADIUS * 0.28 },
 ];
+const SHARD_SPLITTER_CONFIG = createPolygonShardSplitterConfig({
+  minShardCount: 5,
+  maxShardCount: 11,
+});
 
 export class BulwarkMonster extends Monster {
   private shieldPulse = 0;
@@ -58,8 +62,8 @@ export class BulwarkMonster extends Monster {
     super.takeDamage(mitigated);
   }
 
-  protected updateSpecial(deltaSeconds: number): void {
-    this.shieldPulse += 2.8 * deltaSeconds;
+  protected override updateSpecial(context: UpdateContext): void {
+    this.shieldPulse += 2.8 * context.deltaSeconds;
   }
 
   protected drawBody(context: CanvasRenderingContext2D): void {
@@ -99,12 +103,12 @@ export class BulwarkMonster extends Monster {
     context.stroke();
   }
 
-  override createDeathEffect(): MonsterDeathEffect {
+  override addDeathEffect(result: UpdateResult): void {
     const shellPivot = {
       x: randomRange(-this.radius * 0.18, this.radius * 0.18),
       y: randomRange(-this.radius * 0.18, this.radius * 0.18),
     };
-    const particles: Particle[] = createPolygonShardParticles(
+    for (const particle of createPolygonShardParticles(
       this.x,
       this.y,
       this.color,
@@ -114,28 +118,21 @@ export class BulwarkMonster extends Monster {
       120,
       205,
       0,
-      createPolygonShardSplitterConfig({
-        minShardCount: 5,
-        maxShardCount: 11,
-      }),
-    );
-    particles.push(
-      new GlassShardParticle(
-        this.x,
-        this.y,
-        this.color,
-        FRONT_PLATE_OUTLINE,
-        { x: 0, y: 0 },
-        this.angle,
-        randomRange(105, 175),
-        0,
-      ),
-    );
-
-    return {
-      sound: { cue: AudioCue.MonsterHeavyDeath, intensity: 1.05 },
-      particles,
-    };
+      SHARD_SPLITTER_CONFIG,
+    )) {
+      result.addParticle(particle);
+    }
+    result.addParticle(new GlassShardParticle(
+      this.x,
+      this.y,
+      this.color,
+      FRONT_PLATE_OUTLINE,
+      { x: 0, y: 0 },
+      this.angle,
+      randomRange(105, 175),
+      0,
+    ));
+    result.playSound(AudioCue.MonsterHeavyDeath, this.x, 1.05);
   }
 
 }

@@ -1,3 +1,4 @@
+import type { UpdateContext } from "../../game-engine/update-context";
 import { hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
 import { drawTankTurret } from "../monsters/tank-turret-rendering";
 import { Particle } from "./particle";
@@ -29,15 +30,15 @@ export class TankTurretParticle extends Particle {
     this.alphaFadePerSecond = randomRange(0.45, 0.78);
   }
 
-  update(deltaSeconds: number, fieldWidth: number, fieldHeight: number): void {
-    const driftSlowdownFactor = 1 - (0.34 * deltaSeconds);
+  update(context: UpdateContext): void {
+    const driftSlowdownFactor = 1 - (0.34 * context.deltaSeconds);
     this.velocityXPerSecond *= driftSlowdownFactor;
     this.velocityYPerSecond *= driftSlowdownFactor;
-    this.x += this.velocityXPerSecond * deltaSeconds;
-    this.y += this.velocityYPerSecond * deltaSeconds;
-    this.rotation += this.angularVelocityPerSecond * deltaSeconds;
-    this.alpha = Math.max(0, this.alpha - (this.alphaFadePerSecond * deltaSeconds));
-    if (this.alpha <= 0 || isOutsideBounds(this, fieldWidth, fieldHeight, 34)) {
+    this.x += this.velocityXPerSecond * context.deltaSeconds;
+    this.y += this.velocityYPerSecond * context.deltaSeconds;
+    this.rotation += this.angularVelocityPerSecond * context.deltaSeconds;
+    this.alpha = Math.max(0, this.alpha - (this.alphaFadePerSecond * context.deltaSeconds));
+    if (this.alpha <= 0 || isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 34)) {
       this.removed = true;
     }
   }

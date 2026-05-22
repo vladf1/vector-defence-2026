@@ -1,9 +1,9 @@
-import type { Particle } from "../effects/particle";
+import type { UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { drawPath, randomRange } from "../../utils";
 import { createPolygonShardParticles } from "./death-effect-helpers";
-import { Monster, type MonsterDeathEffect } from "./monster";
+import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
 const COLOR = "#91ff63";
@@ -17,6 +17,10 @@ const OUTLINE = [
   { x: -RADIUS * 1.35, y: 0 },
   { x: -RADIUS * 0.1, y: RADIUS * 0.82 },
 ];
+const SHARD_SPLITTER_CONFIG = createPolygonShardSplitterConfig({
+  minShardCount: 5,
+  maxShardCount: 11,
+});
 
 export class RunnerMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
@@ -34,12 +38,12 @@ export class RunnerMonster extends Monster {
     context.stroke();
   }
 
-  override createDeathEffect(): MonsterDeathEffect {
+  override addDeathEffect(result: UpdateResult): void {
     const pivot = {
       x: randomRange(-this.radius * 0.35, this.radius * 0.3),
       y: randomRange(-this.radius * 0.16, this.radius * 0.16),
     };
-    const particles: Particle[] = createPolygonShardParticles(
+    for (const particle of createPolygonShardParticles(
       this.x,
       this.y,
       this.color,
@@ -49,16 +53,11 @@ export class RunnerMonster extends Monster {
       155,
       255,
       0,
-      createPolygonShardSplitterConfig({
-        minShardCount: 5,
-        maxShardCount: 11,
-      }),
-    );
-
-    return {
-      sound: { cue: AudioCue.MonsterPop, intensity: 0.85 },
-      particles,
-    };
+      SHARD_SPLITTER_CONFIG,
+    )) {
+      result.addParticle(particle);
+    }
+    result.playSound(AudioCue.MonsterPop, this.x, 0.85);
   }
 
 }

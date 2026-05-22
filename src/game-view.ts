@@ -1,4 +1,3 @@
-import { STARTING_MONEY } from "./constants";
 import { createBannerText } from "./banner-text";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { TOWER_CLASSES, getTowerClass } from "./entities/towers/tower-registry";
@@ -31,7 +30,7 @@ export const INITIAL_RUNTIME_HUD_STATS: RuntimeHudStats = {
 
 export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   levelName: "Campaign Map",
-  money: formatMoney(STARTING_MONEY),
+  money: formatMoney(0),
   wave: "Idle",
   monsters: "",
   banner: "Awaiting orders",

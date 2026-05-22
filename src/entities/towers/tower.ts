@@ -9,7 +9,7 @@ import {
 import type { Point } from "../../types";
 import type { TowerKind } from "../../types";
 import { normalizeAngle } from "../../utils";
-import type { Game } from "../../game-engine";
+import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { Monster } from "../monsters/monster";
 
 const DEFAULT_FIRING_ANGLE_TOLERANCE = 0.08;
@@ -61,9 +61,9 @@ export abstract class Tower {
     return this.level < MAX_TOWER_LEVEL;
   }
 
-  update(game: Game, deltaSeconds: number): void {
-    this.cooldownSeconds = Math.max(0, this.cooldownSeconds - deltaSeconds);
-    this.onUpdate(game, deltaSeconds);
+  update(context: UpdateContext, result: UpdateResult): void {
+    this.cooldownSeconds = Math.max(0, this.cooldownSeconds - context.deltaSeconds);
+    this.onUpdate(context, result);
   }
 
   upgrade(): void {
@@ -76,20 +76,20 @@ export abstract class Tower {
     this.onUpgrade();
   }
 
-  protected getTrackedMonster(game: Game): Monster | undefined {
+  protected getTrackedMonster(context: UpdateContext): Monster | undefined {
     if (this.currentTarget && this.canTrack(this.currentTarget)) {
       return this.currentTarget;
     }
 
-    this.currentTarget = this.getClosestMonster(game);
+    this.currentTarget = this.getClosestMonster(context);
     return this.currentTarget;
   }
 
-  protected getClosestMonster(game: Game): Monster | undefined {
+  protected getClosestMonster(context: UpdateContext): Monster | undefined {
     let closest: Monster | undefined;
     let smallestDistanceSquared = Number.POSITIVE_INFINITY;
 
-    for (const monster of game.runtime.getActiveMonsters()) {
+    for (const monster of context.activeMonsters) {
       const distanceSquared = this.getDistanceSquaredInRange(monster);
       if (distanceSquared === null) {
         continue;
@@ -188,7 +188,7 @@ export abstract class Tower {
     context.stroke();
   }
 
-  protected abstract onUpdate(game: Game, deltaSeconds: number): void;
+  protected abstract onUpdate(context: UpdateContext, result: UpdateResult): void;
   protected onUpgrade(): void {
   }
   abstract draw(context: CanvasRenderingContext2D, active: boolean): void;

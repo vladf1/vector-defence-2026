@@ -1,4 +1,4 @@
-import type { Game } from "../../game-engine";
+import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { AudioCue, TowerKind } from "../../types";
 import { withinDistance } from "../../utils";
 import { LightningLinkEffect } from "../effects/lightning-link-effect";
@@ -32,18 +32,18 @@ export class LightningTower extends Tower {
     super(x, y);
   }
 
-  protected onUpdate(game: Game, deltaSeconds: number): void {
-    this.chargeSeconds = Math.max(0, this.chargeSeconds - deltaSeconds);
+  protected onUpdate(context: UpdateContext, result: UpdateResult): void {
+    this.chargeSeconds = Math.max(0, this.chargeSeconds - context.deltaSeconds);
     if (!this.ready()) {
       return;
     }
 
-    const firstTarget = this.getClosestMonster(game);
+    const firstTarget = this.getClosestMonster(context);
     if (!firstTarget) {
       return;
     }
 
-    const targets = this.collectChainTargets(game, firstTarget);
+    const targets = this.collectChainTargets(context, firstTarget);
     const damage = this.getDamage();
     const color = this.getColor();
     let source: Tower | Monster = this;
@@ -52,16 +52,16 @@ export class LightningTower extends Tower {
       target.takeDamage(damage);
       target.shakeFromHit();
       target.slowDown(SLOW_FACTOR, RECOVERY_SPEED_PER_SECOND);
-      game.addLink(new LightningLinkEffect(source, target, color));
+      result.addLink(new LightningLinkEffect(source, target, color));
       source = target;
     }
 
     this.chargeSeconds = 0.18;
     this.resetCooldown(this.getCooldownSeconds());
-    game.playSound(AudioCue.LightningShock, this.x, 0.95 + (this.level * 0.09));
+    result.playSound(AudioCue.LightningShock, this.x, 0.95 + (this.level * 0.09));
   }
 
-  private collectChainTargets(game: Game, firstTarget: Monster): Monster[] {
+  private collectChainTargets(context: UpdateContext, firstTarget: Monster): Monster[] {
     const targets = [firstTarget];
     let source = firstTarget;
     const maxTargets = Math.min(6, 2 + Math.floor(this.level / 2));
@@ -71,7 +71,7 @@ export class LightningTower extends Tower {
       let nextTarget: Monster | undefined;
       let closestDistanceSquared = Number.POSITIVE_INFINITY;
 
-      for (const monster of game.runtime.getActiveMonsters()) {
+      for (const monster of context.activeMonsters) {
         if (targets.includes(monster)) {
           continue;
         }

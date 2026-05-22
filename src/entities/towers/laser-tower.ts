@@ -1,5 +1,5 @@
 import { createLaserImpactParticles } from "../../game-engine/combat-effects";
-import type { Game } from "../../game-engine";
+import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { AudioCue, type Point, TowerKind } from "../../types";
 import { angleBetween, closestPointOnSegment, isWithinDistanceToSegment, randomRange, turnAngleTowards, withinDistance } from "../../utils";
 import { Tower } from "./tower";
@@ -34,9 +34,9 @@ export class LaserTower extends Tower {
     super(x, y);
   }
 
-  protected onUpdate(game: Game, deltaSeconds: number): void {
-    this.beamAlpha = Math.max(0, this.beamAlpha - (0.9 * deltaSeconds));
-    this.laserSparkCooldownSeconds = Math.max(0, this.laserSparkCooldownSeconds - deltaSeconds);
+  protected onUpdate(context: UpdateContext, result: UpdateResult): void {
+    this.beamAlpha = Math.max(0, this.beamAlpha - (0.9 * context.deltaSeconds));
+    this.laserSparkCooldownSeconds = Math.max(0, this.laserSparkCooldownSeconds - context.deltaSeconds);
 
     this.beamTarget = {
       x: this.x + (Math.cos(this.angle) * 1000),
@@ -44,14 +44,14 @@ export class LaserTower extends Tower {
     };
 
     if (this.directionLocked) {
-      if (this.ready() && this.hasMonsterInBeam(game)) {
-        this.fire(game);
+      if (this.ready() && this.hasMonsterInBeam(context)) {
+        this.fire(result);
       }
     } else {
-      const tracked = this.getTrackedMonster(game);
+      const tracked = this.getTrackedMonster(context);
       if (tracked) {
         const targetAngle = angleBetween(this, tracked);
-        this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
+        this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * context.deltaSeconds);
         this.beamTarget = {
           x: this.x + (Math.cos(this.angle) * 1000),
           y: this.y + (Math.sin(this.angle) * 1000),
@@ -59,7 +59,7 @@ export class LaserTower extends Tower {
 
         const alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle);
         if (alignedToTarget && this.ready()) {
-          this.fire(game);
+          this.fire(result);
         }
       }
     }
@@ -77,12 +77,14 @@ export class LaserTower extends Tower {
     let sparkBurstsCreated = 0;
     const colors = this.getLaserColors();
 
-    for (const monster of game.runtime.getActiveMonsters()) {
+    for (const monster of context.activeMonsters) {
       if (isWithinDistanceToSegment(monster, source, this.beamTarget, monster.radius)) {
-        monster.takeDamage(this.damagePerSecond * deltaSeconds * this.beamAlpha);
+        monster.takeDamage(this.damagePerSecond * context.deltaSeconds * this.beamAlpha);
         if (shouldCreateSparks && sparkBurstsCreated < 2) {
           const impact = closestPointOnSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
-          game.addParticles(createLaserImpactParticles(impact.x, impact.y, this.angle, colors.accent));
+          for (const particle of createLaserImpactParticles(impact.x, impact.y, this.angle, colors.accent)) {
+            result.addParticle(particle);
+          }
           sparkBurstsCreated += 1;
         }
       }
@@ -109,16 +111,16 @@ export class LaserTower extends Tower {
     return 8.5 + (this.level * 0.78);
   }
 
-  private fire(game: Game): void {
+  private fire(result: UpdateResult): void {
     this.beamAlpha = 1;
-    game.playSound(AudioCue.LaserFire, this.x, 0.9 + (this.level * 0.1));
     this.resetCooldown(1.5);
+    result.playSound(AudioCue.LaserFire, this.x, 0.9 + (this.level * 0.1));
   }
 
-  private hasMonsterInBeam(game: Game): boolean {
+  private hasMonsterInBeam(context: UpdateContext): boolean {
     const source = this.getBeamSource();
 
-    for (const monster of game.runtime.getActiveMonsters()) {
+    for (const monster of context.activeMonsters) {
       if (!withinDistance(this.x, this.y, monster.x, monster.y, this.range)) {
         continue;
       }

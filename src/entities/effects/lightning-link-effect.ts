@@ -1,3 +1,4 @@
+import type { UpdateContext } from "../../game-engine/update-context";
 import { hexWithAlpha } from "../../utils";
 import type { Monster } from "../monsters/monster";
 
@@ -24,12 +25,12 @@ export class LightningLinkEffect {
     this.color = color;
   }
 
-  update(deltaSeconds: number): void {
+  update(context: UpdateContext): void {
     if (this.target.removed || this.source.removed) {
       this.alpha = 0;
     } else {
-      this.ageSeconds += deltaSeconds;
-      this.alpha -= 3.8 * deltaSeconds;
+      this.ageSeconds += context.deltaSeconds;
+      this.alpha -= 3.8 * context.deltaSeconds;
     }
 
     if (this.alpha <= 0) {

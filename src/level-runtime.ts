@@ -1,4 +1,3 @@
-import { STARTING_MONEY } from "./constants";
 import type { LightningLinkEffect } from "./entities/effects/lightning-link-effect";
 import type { LinkEffect } from "./entities/effects/link-effect";
 import type { Particle } from "./entities/effects/particle";
@@ -46,7 +45,7 @@ export class LevelRuntime {
       }
       this.routePath = createRouteMotionPath(level.points, roadTurnRadius, routeCurveSampleStep);
     }
-    this.money = level?.startingMoney ?? STARTING_MONEY;
+    this.money = level?.startingMoney ?? 0;
     this.escapesLeft = level?.allowEscape ?? 0;
     this.spawnDelay = level ? (level.waves?.[0]?.buildTime ?? 8) : 0;
     this.spawnCooldown = level ? 0.2 : 0;

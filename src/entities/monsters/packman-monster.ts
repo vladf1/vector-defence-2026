@@ -1,4 +1,4 @@
-import type { Particle } from "../effects/particle";
+import type { UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { AudioCue, type Point } from "../../types";
 import { randomRange } from "../../utils";
@@ -6,7 +6,7 @@ import {
   createPolygonShardParticles,
   pointOnRadius,
 } from "./death-effect-helpers";
-import { Monster, type MonsterDeathEffect } from "./monster";
+import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
 const COLOR = "#5df2ef";
@@ -15,6 +15,12 @@ const HIT_POINTS = 220;
 const BOUNTY = 2;
 const RADIUS = 7.5;
 const MOUTH_ANGLE = Math.PI * 0.18;
+const SHARD_SPLITTER_CONFIG = createPolygonShardSplitterConfig({
+  minShardCount: 5,
+  maxShardCount: 11,
+  preferredMaxShardVertices: 14,
+  maxShardVertices: 26,
+});
 
 export class PackManMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
@@ -49,12 +55,12 @@ export class PackManMonster extends Monster {
     return outline;
   }
 
-  override createDeathEffect(): MonsterDeathEffect {
+  override addDeathEffect(result: UpdateResult): void {
     const pivot = {
       x: randomRange(-this.radius * 0.12, this.radius * 0.12),
       y: randomRange(-this.radius * 0.12, this.radius * 0.12),
     };
-    const particles: Particle[] = createPolygonShardParticles(
+    for (const particle of createPolygonShardParticles(
       this.x,
       this.y,
       this.color,
@@ -64,17 +70,10 @@ export class PackManMonster extends Monster {
       125,
       205,
       0,
-      createPolygonShardSplitterConfig({
-        minShardCount: 5,
-        maxShardCount: 11,
-        preferredMaxShardVertices: 14,
-        maxShardVertices: 26,
-      }),
-    );
-
-    return {
-      sound: { cue: AudioCue.MonsterShatter },
-      particles,
-    };
+      SHARD_SPLITTER_CONFIG,
+    )) {
+      result.addParticle(particle);
+    }
+    result.playSound(AudioCue.MonsterShatter, this.x);
   }
 }

@@ -1,6 +1,5 @@
-import type { Particle } from "../effects/particle";
+import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { getPathHeadingAngle, type PathEntry } from "../../route-path";
-import type { AudioCue as AudioCueValue } from "../../types";
 import { angleBetween, randomRange } from "../../utils";
 
 const MONSTER_STROKE_WIDTH = 1.5;
@@ -9,16 +8,6 @@ const HIT_SHAKE_DISTANCE = 2;
 const HIT_SHAKE_HORIZONTAL_FREQUENCY_PER_SECOND = 92;
 const HIT_SHAKE_VERTICAL_FREQUENCY_PER_SECOND = 117;
 const HIT_SHAKE_VERTICAL_PHASE_SCALE = 0.7;
-
-export interface MonsterDeathSound {
-  cue: AudioCueValue;
-  intensity?: number;
-}
-
-export interface MonsterDeathEffect {
-  sound: MonsterDeathSound;
-  particles: Particle[];
-}
 
 export abstract class Monster extends EventTarget {
   x: number;
@@ -89,7 +78,7 @@ export abstract class Monster extends EventTarget {
     }
   }
 
-  update(deltaSeconds: number): void {
+  update(context: UpdateContext): void {
     if (this.removed) {
       return;
     }
@@ -103,16 +92,16 @@ export abstract class Monster extends EventTarget {
     this.clearHitShakeOffset();
 
     if (this.speedPerSecond < this.maxSpeedPerSecond) {
-      this.speedPerSecond = Math.min(this.maxSpeedPerSecond, this.speedPerSecond + (this.slowRecoverySpeedPerSecond * deltaSeconds));
+      this.speedPerSecond = Math.min(this.maxSpeedPerSecond, this.speedPerSecond + (this.slowRecoverySpeedPerSecond * context.deltaSeconds));
     }
 
-    this.moveAlongPath(deltaSeconds);
+    this.moveAlongPath(context.deltaSeconds);
     if (this.removed) {
       return;
     }
 
-    this.updateSpecial(deltaSeconds);
-    this.hitShakeSeconds = Math.max(0, this.hitShakeSeconds - deltaSeconds);
+    this.updateSpecial(context);
+    this.hitShakeSeconds = Math.max(0, this.hitShakeSeconds - context.deltaSeconds);
     this.applyHitShakeOffset();
   }
 
@@ -125,12 +114,12 @@ export abstract class Monster extends EventTarget {
     this.drawHealthBar(context);
   }
 
-  protected updateSpecial(_deltaSeconds: number): void {
+  protected updateSpecial(_context: UpdateContext): void {
   }
 
   protected abstract drawBody(context: CanvasRenderingContext2D): void;
 
-  abstract createDeathEffect(): MonsterDeathEffect;
+  abstract addDeathEffect(result: UpdateResult): void;
 
   private drawCoreBody(context: CanvasRenderingContext2D): void {
     context.save();

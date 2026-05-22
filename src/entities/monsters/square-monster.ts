@@ -1,9 +1,9 @@
-import type { Particle } from "../effects/particle";
+import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
 import { createPolygonShardParticles } from "./death-effect-helpers";
-import { Monster, type MonsterDeathEffect } from "./monster";
+import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
 const COLOR = "#ff6f62";
@@ -11,14 +11,18 @@ const SPEED_PER_SECOND = 68;
 const HIT_POINTS = 165;
 const BOUNTY = 3;
 const RADIUS = 6.5;
+const SHARD_SPLITTER_CONFIG = createPolygonShardSplitterConfig({
+  minShardCount: 5,
+  maxShardCount: 11,
+});
 
 export class SquareMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
     super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
-  protected updateSpecial(deltaSeconds: number): void {
-    this.rotation += 4.2 * deltaSeconds;
+  protected override updateSpecial(context: UpdateContext): void {
+    this.rotation += 4.2 * context.deltaSeconds;
   }
 
   protected drawBody(context: CanvasRenderingContext2D): void {
@@ -37,12 +41,12 @@ export class SquareMonster extends Monster {
     );
   }
 
-  override createDeathEffect(): MonsterDeathEffect {
+  override addDeathEffect(result: UpdateResult): void {
     const pivot = {
       x: randomRange(-this.radius * 0.24, this.radius * 0.24),
       y: randomRange(-this.radius * 0.24, this.radius * 0.24),
     };
-    const particles: Particle[] = createPolygonShardParticles(
+    for (const particle of createPolygonShardParticles(
       this.x,
       this.y,
       this.color,
@@ -52,15 +56,11 @@ export class SquareMonster extends Monster {
       128,
       233,
       1.2,
-      createPolygonShardSplitterConfig({
-        minShardCount: 5,
-        maxShardCount: 11,
-      }),
-    );
-    return {
-      sound: { cue: AudioCue.MonsterShatter },
-      particles,
-    };
+      SHARD_SPLITTER_CONFIG,
+    )) {
+      result.addParticle(particle);
+    }
+    result.playSound(AudioCue.MonsterShatter, this.x);
   }
 
   private createOutline() {

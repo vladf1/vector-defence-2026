@@ -1,5 +1,5 @@
 import { createMissileExplosionParticles } from "../../game-engine/combat-effects";
-import type { Game } from "../../game-engine";
+import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { AudioCue } from "../../types";
 import type { Point } from "../../types";
 import { angleBetween, calculateDistance, clamp, isOutsideBounds, randomRange, turnAngleTowards, withinDistance } from "../../utils";
@@ -57,54 +57,55 @@ export class Missile {
     this.angle = initialAngle ?? angleBetween(source, trackedMonster);
   }
 
-  update(game: Game, deltaSeconds: number): void {
-    this.speedPerSecond += 180 * deltaSeconds;
+  update(context: UpdateContext, result: UpdateResult): void {
+    this.speedPerSecond += 180 * context.deltaSeconds;
     if (this.trackedMonster && this.trackedMonster.removed) {
       this.trackedMonster = undefined;
     }
     if (this.trackedMonster) {
       const targetAngle = angleBetween(this, this.trackedMonster);
-      this.angle = turnAngleTowards(this.angle, targetAngle, MISSILE_TURN_SPEED_PER_SECOND * deltaSeconds);
+      this.angle = turnAngleTowards(this.angle, targetAngle, MISSILE_TURN_SPEED_PER_SECOND * context.deltaSeconds);
     }
 
-    this.x += Math.cos(this.angle) * this.speedPerSecond * deltaSeconds;
-    this.y += Math.sin(this.angle) * this.speedPerSecond * deltaSeconds;
+    this.x += Math.cos(this.angle) * this.speedPerSecond * context.deltaSeconds;
+    this.y += Math.sin(this.angle) * this.speedPerSecond * context.deltaSeconds;
 
-    this.trailTimer += deltaSeconds;
+    this.trailTimer += context.deltaSeconds;
     if (this.trailTimer >= 0.02) {
       this.trailTimer = 0;
       const trailX = this.x + randomRange(-3, 3) - (Math.cos(this.angle) * 9);
       const trailY = this.y + randomRange(-3, 3) - (Math.sin(this.angle) * 9);
       const exhaustAngle = this.angle + Math.PI + randomRange(-0.35, 0.35);
-      game.addParticle(new Particle(trailX, trailY, randomRange(0.6, 1.2), "#fff0a8", 5.5, {
+      result.addParticle(new Particle(trailX, trailY, randomRange(0.6, 1.2), "#fff0a8", 5.5, {
         speedPerSecond: randomRange(36, 82),
         offset: 0,
         angle: exhaustAngle,
       }));
-      game.addParticle(new Particle(trailX, trailY, randomRange(0.8, 1.5), "#ff8f45", 3.8, {
+      result.addParticle(new Particle(trailX, trailY, randomRange(0.8, 1.5), "#ff8f45", 3.8, {
         speedPerSecond: randomRange(28, 68),
         offset: 1,
         angle: exhaustAngle,
       }));
-      game.addParticle(new Particle(trailX, trailY, 1, "#7e858c", 1.4, {
+      result.addParticle(new Particle(trailX, trailY, 1, "#7e858c", 1.4, {
         speedPerSecond: randomRange(22, 50),
         offset: 2,
         angle: exhaustAngle,
       }));
     }
 
-    if (isOutsideBounds(this, game.profile.fieldWidth, game.profile.fieldHeight, 20)) {
+    if (isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 20)) {
       this.removed = true;
       return;
     }
 
-    for (const monster of game.runtime.getActiveMonsters()) {
+    for (const monster of context.activeMonsters) {
       const hitDistance = monster.radius + (MISSILE_HALF_LENGTH * this.scale);
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         this.removed = true;
-        game.addParticles(createMissileExplosionParticles(this.x, this.y, this.angle, this.level));
-        game.playSound(AudioCue.MissileExplosion, this.x, 1.1);
-        for (const nearby of game.runtime.getActiveMonsters()) {
+        for (const particle of createMissileExplosionParticles(this.x, this.y, this.angle, this.level)) {
+          result.addParticle(particle);
+        }
+        for (const nearby of context.activeMonsters) {
           const dist = calculateDistance(this.x, this.y, nearby.x, nearby.y);
           if (dist <= this.effectRadius) {
             const ratio = (this.effectRadius - dist) / this.effectRadius;
@@ -116,6 +117,7 @@ export class Missile {
             nearby.takeDamage(this.damage * ratio);
           }
         }
+        result.playSound(AudioCue.MissileExplosion, this.x, 1.1);
         return;
       }
     }

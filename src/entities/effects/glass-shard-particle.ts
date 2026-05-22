@@ -1,3 +1,4 @@
+import type { UpdateContext } from "../../game-engine/update-context";
 import type { Point } from "../../types";
 import { drawPath, hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
 import { Particle } from "./particle";
@@ -38,15 +39,15 @@ export class GlassShardParticle extends Particle {
     this.alphaFadePerSecond = randomRange(0.8, 1.8);
   }
 
-  update(deltaSeconds: number, fieldWidth: number, fieldHeight: number): void {
-    const driftSlowdownFactor = 1 - (0.42 * deltaSeconds);
+  update(context: UpdateContext): void {
+    const driftSlowdownFactor = 1 - (0.42 * context.deltaSeconds);
     this.velocityXPerSecond *= driftSlowdownFactor;
     this.velocityYPerSecond *= driftSlowdownFactor;
-    this.x += this.velocityXPerSecond * deltaSeconds;
-    this.y += this.velocityYPerSecond * deltaSeconds;
-    this.rotation += this.angularVelocityPerSecond * deltaSeconds;
-    this.alpha = Math.max(0, this.alpha - (this.alphaFadePerSecond * deltaSeconds));
-    if (this.alpha <= 0 || isOutsideBounds(this, fieldWidth, fieldHeight, 28)) {
+    this.x += this.velocityXPerSecond * context.deltaSeconds;
+    this.y += this.velocityYPerSecond * context.deltaSeconds;
+    this.rotation += this.angularVelocityPerSecond * context.deltaSeconds;
+    this.alpha = Math.max(0, this.alpha - (this.alphaFadePerSecond * context.deltaSeconds));
+    if (this.alpha <= 0 || isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 28)) {
       this.removed = true;
     }
   }

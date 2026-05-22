@@ -1,3 +1,4 @@
+import type { UpdateContext } from "../../game-engine/update-context";
 import { hexWithAlpha } from "../../utils";
 import { Particle } from "./particle";
 
@@ -9,8 +10,8 @@ export class ShockwaveEffect extends Particle {
     this.alpha = 1;
   }
 
-  override update(deltaSeconds: number, _fieldWidth: number, _fieldHeight: number): void {
-    this.ageSeconds += deltaSeconds;
+  override update(context: UpdateContext): void {
+    this.ageSeconds += context.deltaSeconds;
     this.alpha = Math.max(0, 1 - (this.ageSeconds * 4.15));
     if (this.alpha <= 0) {
       this.removed = true;

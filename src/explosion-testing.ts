@@ -10,7 +10,7 @@ import { SquareMonster } from "./entities/monsters/square-monster";
 import { TankMonster } from "./entities/monsters/tank-monster";
 import { TriangleMonster } from "./entities/monsters/triangle-monster";
 import { Missile } from "./entities/projectiles/missile";
-import type { Game } from "./game-engine";
+import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
 import type { PathEntry } from "./route-path";
 
 const canvasElement = document.querySelector<HTMLCanvasElement>("#explosion-testing");
@@ -202,7 +202,7 @@ function updateScene(deltaSeconds: number): void {
 }
 
 function updateMonsterApproach(scene: ActiveScene, deltaSeconds: number): void {
-  scene.monster.update(deltaSeconds * MONSTER_TIME_SCALE);
+  scene.monster.update(createPreviewUpdateContext(scene, deltaSeconds * MONSTER_TIME_SCALE));
 
   const ratio = Math.min(1, scene.phaseSeconds / APPROACH_SECONDS);
   const easedRatio = easeOutCubic(ratio);
@@ -223,7 +223,9 @@ function updateMissileApproach(scene: ActiveScene, deltaSeconds: number): void {
   }
 
   const particleCountBeforeUpdate = scene.particles.length;
-  missile.update(createMissilePreviewGame(scene), deltaSeconds * MISSILE_TIME_SCALE);
+  const result = new UpdateResult();
+  missile.update(createPreviewUpdateContext(scene, deltaSeconds * MISSILE_TIME_SCALE), result);
+  applyPreviewUpdateResult(scene, result);
   scene.monster.x = CENTER.x;
   scene.monster.y = CENTER.y;
   scene.monster.angle = scene.spec.initialAngle ?? 0;
@@ -233,8 +235,8 @@ function updateMissileApproach(scene: ActiveScene, deltaSeconds: number): void {
   if (missile.removed) {
     scene.particles = scene.particles.slice(particleCountBeforeUpdate);
     if (scene.mode === "combined") {
-      scene.monster.update(0);
-      addMonsterDeathEffect(scene.monster, scene.particles);
+      scene.monster.update(createPreviewUpdateContext(scene, 0));
+      addMonsterDeathEffect(scene.monster, scene);
     }
     scene.phase = "explode";
     scene.phaseSeconds = 0;
@@ -253,7 +255,8 @@ function startExplosion(scene: ActiveScene): void {
   scene.monster.x = CENTER.x;
   scene.monster.y = CENTER.y;
   scene.monster.angle = scene.spec.initialAngle ?? 0;
-  scene.particles = scene.monster.createDeathEffect().particles;
+  scene.particles = [];
+  addMonsterDeathEffect(scene.monster, scene);
   scene.phase = "explode";
   scene.phaseSeconds = 0;
   updatePhaseName();
@@ -271,9 +274,15 @@ function repeatCurrentMonster(): void {
 }
 
 function updateParticles(particles: Particle[], deltaSeconds: number, fieldWidth: number, fieldHeight: number): void {
+  const context: UpdateContext = {
+    deltaSeconds,
+    fieldWidth,
+    fieldHeight,
+    activeMonsters: [],
+  };
   for (const particle of particles) {
     if (!particle.removed) {
-      particle.update(deltaSeconds, fieldWidth, fieldHeight);
+      particle.update(context);
     }
   }
 }
@@ -431,7 +440,7 @@ function createMonster(spec: MonsterSpec): Monster {
   }
   if (spec.lowHealthRatio !== undefined) {
     monster.hitPoints = monster.maxHitPoints * spec.lowHealthRatio;
-    monster.update(0);
+    monster.update(createPreviewMonsterUpdateContext(monster, 0));
     monster.speedPerSecond = displaySpeedPerSecond;
     monster.maxSpeedPerSecond = displaySpeedPerSecond;
   }
@@ -469,32 +478,34 @@ function prepareCombinedTarget(monster: Monster): void {
   monster.hitPoints = COMBINED_TARGET_HIT_POINTS;
 }
 
-function createMissilePreviewGame(scene: ActiveScene): Game {
-  const previewGame = {
-    profile: {
-      fieldWidth: EFFECT_FIELD_WIDTH,
-      fieldHeight: EFFECT_FIELD_HEIGHT,
-    },
-    runtime: {
-      particles: scene.particles,
-      getActiveMonsters() {
-        return scene.monster.removed ? [] : [scene.monster];
-      },
-    },
-    addParticle(particle: Particle) {
-      scene.particles.push(particle);
-    },
-    addParticles(particles: readonly Particle[]) {
-      scene.particles.push(...particles);
-    },
-    playSound() {},
+function createPreviewUpdateContext(scene: ActiveScene, deltaSeconds: number): UpdateContext {
+  return {
+    deltaSeconds,
+    fieldWidth: EFFECT_FIELD_WIDTH,
+    fieldHeight: EFFECT_FIELD_HEIGHT,
+    activeMonsters: scene.monster.removed ? [] : [scene.monster],
   };
-  return previewGame as unknown as Game;
 }
 
-function addMonsterDeathEffect(monster: Monster, particles: Particle[]): void {
-  const effect = monster.createDeathEffect();
-  particles.push(...effect.particles);
+function createPreviewMonsterUpdateContext(monster: Monster, deltaSeconds: number): UpdateContext {
+  return {
+    deltaSeconds,
+    fieldWidth: EFFECT_FIELD_WIDTH,
+    fieldHeight: EFFECT_FIELD_HEIGHT,
+    activeMonsters: monster.removed ? [] : [monster],
+  };
+}
+
+function applyPreviewUpdateResult(scene: ActiveScene, result: UpdateResult): void {
+  if (result.particles.length > 0) {
+    scene.particles.push(...result.particles);
+  }
+}
+
+function addMonsterDeathEffect(monster: Monster, scene: ActiveScene): void {
+  const result = new UpdateResult();
+  monster.addDeathEffect(result);
+  applyPreviewUpdateResult(scene, result);
 }
 
 function resizeCanvas(): void {

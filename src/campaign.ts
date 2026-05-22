@@ -1,4 +1,3 @@
-import { STARTING_MONEY } from "./constants";
 import { MonsterKind, type LevelData, type WaveData } from "./types";
 import { clamp } from "./utils";
 
@@ -136,7 +135,7 @@ export function createCampaignLevels(routes: LevelData[], mobile: boolean): Leve
       id: `campaign-${levelIndex + 1}`,
       levelNumber: levelIndex + 1,
       subtitle: route.subtitle ?? "Hold the route and keep scaling your defense.",
-      startingMoney: route.startingMoney ?? STARTING_MONEY,
+      startingMoney: route.startingMoney,
       waves,
       monsterCount: waves.reduce((total, wave) => total + wave.count, 0),
       monsterSequence: waves.flatMap((wave) => wave.monsterSequence),

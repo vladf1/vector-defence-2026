@@ -1,9 +1,9 @@
-import type { Particle } from "../effects/particle";
+import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { drawPath, randomRange } from "../../utils";
 import { createPolygonShardParticles } from "./death-effect-helpers";
-import { Monster, type MonsterDeathEffect } from "./monster";
+import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
 const BASE_COLOR = "#ff7a4f";
@@ -25,6 +25,10 @@ const OUTLINE = [
   { x: -RADIUS * 0.1, y: RADIUS * 1.08 },
   { x: RADIUS * 0.4, y: RADIUS * 0.8 },
 ];
+const SHARD_SPLITTER_CONFIG = createPolygonShardSplitterConfig({
+  minShardCount: 5,
+  maxShardCount: 11,
+});
 
 export class BerserkerMonster extends Monster {
   private rageStage = 0;
@@ -33,7 +37,7 @@ export class BerserkerMonster extends Monster {
     super(path, BASE_COLOR, BASE_SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
-  protected updateSpecial(deltaSeconds: number): void {
+  protected override updateSpecial(context: UpdateContext): void {
     const nextStage = this.hitPoints <= this.maxHitPoints * 0.2
       ? 2
       : (this.hitPoints <= this.maxHitPoints * 0.5 ? 1 : 0);
@@ -50,7 +54,7 @@ export class BerserkerMonster extends Monster {
     if (this.speedPerSecond < this.maxSpeedPerSecond) {
       this.speedPerSecond = Math.min(
         this.maxSpeedPerSecond,
-        this.speedPerSecond + ((50.4 + (this.rageStage * 43.2)) * this.speedScale * deltaSeconds),
+        this.speedPerSecond + ((50.4 + (this.rageStage * 43.2)) * this.speedScale * context.deltaSeconds),
       );
     } else if (this.speedPerSecond > this.maxSpeedPerSecond) {
       this.speedPerSecond = this.maxSpeedPerSecond;
@@ -82,12 +86,12 @@ export class BerserkerMonster extends Monster {
     }
   }
 
-  override createDeathEffect(): MonsterDeathEffect {
+  override addDeathEffect(result: UpdateResult): void {
     const pivot = {
       x: randomRange(-this.radius * 0.15, this.radius * 0.22),
       y: randomRange(-this.radius * 0.15, this.radius * 0.15),
     };
-    const particles: Particle[] = createPolygonShardParticles(
+    for (const particle of createPolygonShardParticles(
       this.x,
       this.y,
       this.color,
@@ -97,16 +101,11 @@ export class BerserkerMonster extends Monster {
       140,
       230,
       0,
-      createPolygonShardSplitterConfig({
-        minShardCount: 5,
-        maxShardCount: 11,
-      }),
-    );
-
-    return {
-      sound: { cue: AudioCue.MonsterHeavyDeath, intensity: 1.05 },
-      particles,
-    };
+      SHARD_SPLITTER_CONFIG,
+    )) {
+      result.addParticle(particle);
+    }
+    result.playSound(AudioCue.MonsterHeavyDeath, this.x, 1.05);
   }
 
   private getStageColor(): string {

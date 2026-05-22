@@ -7,7 +7,6 @@ export const TOWER_UPGRADE_RING_OFFSET = 1.2;
 export const TOWER_UPGRADE_RING_GROWTH = 0.45;
 export const TOWER_RANGE_UPGRADE_STEP = 4;
 export const MAX_TOWER_LEVEL = 6;
-export const STARTING_MONEY = 26;
 export const UPGRADE_COST = 5;
 export const MIN_DISTANCE_TO_OTHER_TOWERS = 32;
 export const ROAD_TURN_RADIUS = 24;

@@ -1,10 +1,10 @@
 import { TankTurretParticle } from "../effects/tank-turret-particle";
-import type { Particle } from "../effects/particle";
+import type { UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
 import { createPolygonShardParticles, rotatePoint } from "./death-effect-helpers";
-import { Monster, type MonsterDeathEffect } from "./monster";
+import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 import { drawTankTurret } from "./tank-turret-rendering";
 
@@ -25,6 +25,10 @@ const HULL_OUTLINE = [
   { x: HULL_RECT.x + HULL_RECT.width, y: HULL_RECT.y + HULL_RECT.height },
   { x: HULL_RECT.x, y: HULL_RECT.y + HULL_RECT.height },
 ];
+const SHARD_SPLITTER_CONFIG = createPolygonShardSplitterConfig({
+  minShardCount: 6,
+  maxShardCount: 13,
+});
 
 export class TankMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
@@ -38,7 +42,7 @@ export class TankMonster extends Monster {
     drawTankTurret(context, this.radius, 0.42, 1.52);
   }
 
-  override createDeathEffect(): MonsterDeathEffect {
+  override addDeathEffect(result: UpdateResult): void {
     const hullPivot = {
       x: randomRange(-this.radius * 0.15, this.radius * 0.35),
       y: randomRange(-this.radius * 0.22, this.radius * 0.22),
@@ -47,35 +51,28 @@ export class TankMonster extends Monster {
       { x: this.radius * 0.38, y: 0 },
       this.angle,
     );
-    const particles: Particle[] = [
-      ...createPolygonShardParticles(
-        this.x,
-        this.y,
-        this.color,
-        HULL_OUTLINE,
-        hullPivot,
-        this.angle,
-        125,
-        220,
-        0,
-        createPolygonShardSplitterConfig({
-          minShardCount: 6,
-          maxShardCount: 13,
-        }),
-      ),
-      new TankTurretParticle(
-        this.x + turretCenterOffset.x,
-        this.y + turretCenterOffset.y,
-        this.radius,
-        this.color,
-        this.angle,
-      ),
-    ];
-
-    return {
-      sound: { cue: AudioCue.MonsterHeavyDeath, intensity: 1.25 },
-      particles,
-    };
+    for (const particle of createPolygonShardParticles(
+      this.x,
+      this.y,
+      this.color,
+      HULL_OUTLINE,
+      hullPivot,
+      this.angle,
+      125,
+      220,
+      0,
+      SHARD_SPLITTER_CONFIG,
+    )) {
+      result.addParticle(particle);
+    }
+    result.addParticle(new TankTurretParticle(
+      this.x + turretCenterOffset.x,
+      this.y + turretCenterOffset.y,
+      this.radius,
+      this.color,
+      this.angle,
+    ));
+    result.playSound(AudioCue.MonsterHeavyDeath, this.x, 1.25);
   }
 
 }

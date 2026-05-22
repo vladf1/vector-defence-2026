@@ -1,9 +1,9 @@
-import type { Particle } from "../effects/particle";
+import type { UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { drawPath, randomRange } from "../../utils";
 import { createPolygonShardParticles } from "./death-effect-helpers";
-import { Monster, type MonsterDeathEffect } from "./monster";
+import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
 
 const COLOR = "#ffba4f";
@@ -17,6 +17,10 @@ const OUTLINE = [
   { x: -OUTLINE_RADIUS, y: -OUTLINE_RADIUS },
   { x: -OUTLINE_RADIUS, y: OUTLINE_RADIUS },
 ];
+const SHARD_SPLITTER_CONFIG = createPolygonShardSplitterConfig({
+  minShardCount: 5,
+  maxShardCount: 11,
+});
 
 export class TriangleMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
@@ -28,12 +32,12 @@ export class TriangleMonster extends Monster {
     drawPath(context, OUTLINE, true);
   }
 
-  override createDeathEffect(): MonsterDeathEffect {
+  override addDeathEffect(result: UpdateResult): void {
     const pivot = {
       x: randomRange(-OUTLINE_RADIUS * 0.1, OUTLINE_RADIUS * 0.14),
       y: randomRange(-OUTLINE_RADIUS * 0.12, OUTLINE_RADIUS * 0.12),
     };
-    const particles: Particle[] = createPolygonShardParticles(
+    for (const particle of createPolygonShardParticles(
       this.x,
       this.y,
       this.color,
@@ -43,15 +47,11 @@ export class TriangleMonster extends Monster {
       115,
       195,
       1.4,
-      createPolygonShardSplitterConfig({
-        minShardCount: 5,
-        maxShardCount: 11,
-      }),
-    );
-    return {
-      sound: { cue: AudioCue.MonsterShatter },
-      particles,
-    };
+      SHARD_SPLITTER_CONFIG,
+    )) {
+      result.addParticle(particle);
+    }
+    result.playSound(AudioCue.MonsterShatter, this.x);
   }
 
 }

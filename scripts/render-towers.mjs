@@ -36,6 +36,7 @@ const html = String.raw`
       import { SlowTower } from "/src/entities/towers/slow-tower.ts";
       import { Missile } from "/src/entities/projectiles/missile.ts";
       import { Projectile } from "/src/entities/projectiles/projectile.ts";
+      import { UpdateResult } from "/src/game-engine/update-context.ts";
 
       const towerRows = [
         { label: "Gun", TowerClass: GunTower, angle: -Math.PI / 4 },
@@ -158,7 +159,7 @@ const html = String.raw`
       }
 
       function drawProjectileSample(context, centerX, centerY, level) {
-        const projectile = new Projectile({ x: 0, y: 0 }, { x: 36, y: 0 }, level);
+        const projectile = new Projectile({ x: 0, y: 0 }, { x: 36, y: -36 * Math.tan(Math.PI / 8) }, level);
         projectile.x = 0;
         projectile.y = 0;
         context.save();
@@ -196,22 +197,23 @@ const html = String.raw`
         missile.x = explosionX;
         missile.y = explosionY;
         missile.speedPerSecond = 0;
-        missile.update({
-          profile: { fieldWidth: FIELD_WIDTH, fieldHeight: FIELD_HEIGHT },
-          runtime: {
-            particles,
-            getActiveMonsters() {
-              return [target];
-            },
-          },
-          addParticle(particle) {
-            particles.push(particle);
-          },
-          playSound() {},
-        }, 0);
+        const updateContext = {
+          deltaSeconds: 0,
+          fieldWidth: FIELD_WIDTH,
+          fieldHeight: FIELD_HEIGHT,
+          activeMonsters: [target],
+        };
+        const updateResult = new UpdateResult();
+        missile.update(updateContext, updateResult);
+        particles.push(...updateResult.particles);
 
         for (const particle of particles) {
-          particle.update(0.075);
+          particle.update({
+            deltaSeconds: 0.075,
+            fieldWidth: FIELD_WIDTH,
+            fieldHeight: FIELD_HEIGHT,
+            activeMonsters: [],
+          });
         }
 
         context.save();

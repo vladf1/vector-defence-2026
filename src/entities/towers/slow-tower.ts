@@ -1,5 +1,5 @@
 import { TOWER_RADIUS } from "../../constants";
-import type { Game } from "../../game-engine";
+import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { AudioCue, TowerKind } from "../../types";
 import { withinDistance } from "../../utils";
 import { LinkEffect } from "../effects/link-effect";
@@ -23,21 +23,21 @@ export class SlowTower extends Tower {
     super(x, y);
   }
 
-  protected onUpdate(game: Game, deltaSeconds: number): void {
-    this.pulse += 4.8 * deltaSeconds;
-    this.orbit += this.getOrbitSpeedPerSecond() * deltaSeconds;
+  protected onUpdate(context: UpdateContext, result: UpdateResult): void {
+    this.pulse += 4.8 * context.deltaSeconds;
+    this.orbit += this.getOrbitSpeedPerSecond() * context.deltaSeconds;
     if (!this.ready()) {
       return;
     }
 
     let affected = 0;
     const maxTargets = this.level + 2;
-    for (const monster of game.runtime.getActiveMonsters()) {
+    for (const monster of context.activeMonsters) {
       if (!withinDistance(this.x, this.y, monster.x, monster.y, this.range)) {
         continue;
       }
       monster.slowDown(SLOW_FACTOR, RECOVERY_SPEED_PER_SECOND);
-      game.addLink(new LinkEffect(monster, "#d8ff4f", 1, this));
+      result.addLink(new LinkEffect(monster, "#d8ff4f", 1, this));
       affected += 1;
       if (affected === maxTargets) {
         break;
@@ -49,7 +49,7 @@ export class SlowTower extends Tower {
     }
 
     this.resetCooldown(1);
-    game.playSound(AudioCue.SlowPulse, this.x, 0.85 + (affected * 0.1));
+    result.playSound(AudioCue.SlowPulse, this.x, 0.85 + (affected * 0.1));
   }
 
   private getOrbitSpeedPerSecond(): number {

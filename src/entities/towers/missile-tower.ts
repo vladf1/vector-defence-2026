@@ -1,4 +1,4 @@
-import type { Game } from "../../game-engine";
+import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { AudioCue, TowerKind } from "../../types";
 import { angleBetween, randomRange, turnAngleTowards } from "../../utils";
 import { Missile } from "../projectiles/missile";
@@ -22,14 +22,14 @@ export class MissileTower extends Tower {
     super(x, y);
   }
 
-  protected onUpdate(game: Game, deltaSeconds: number): void {
-    this.muzzleFlashSeconds = Math.max(0, this.muzzleFlashSeconds - deltaSeconds);
-    const tracked = this.getTrackedMonster(game);
+  protected onUpdate(context: UpdateContext, result: UpdateResult): void {
+    this.muzzleFlashSeconds = Math.max(0, this.muzzleFlashSeconds - context.deltaSeconds);
+    const tracked = this.getTrackedMonster(context);
     let alignedToTarget = false;
 
     if (tracked) {
       const targetAngle = angleBetween(this, tracked);
-      this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * deltaSeconds);
+      this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * context.deltaSeconds);
       alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle, MISSILE_FIRING_ANGLE_TOLERANCE);
     }
 
@@ -38,10 +38,10 @@ export class MissileTower extends Tower {
         x: this.x + (Math.cos(this.angle) * 14),
         y: this.y + (Math.sin(this.angle) * 14),
       };
-      game.runtime.missiles.push(new Missile(source, tracked, this.level, this.angle));
       this.muzzleFlashSeconds = 0.12;
-      game.playSound(AudioCue.MissileLaunch, source.x, 1 + (this.level * 0.09));
       this.resetCooldown(2 - (0.2 * this.level));
+      result.addMissile(new Missile(source, tracked, this.level, this.angle));
+      result.playSound(AudioCue.MissileLaunch, source.x, 1 + (this.level * 0.09));
     }
   }
 

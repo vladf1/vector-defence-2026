@@ -105,7 +105,7 @@ export interface LevelData {
   levelNumber?: number;
   subtitle?: string;
   initialBuildTime?: number;
-  startingMoney?: number;
+  startingMoney: number;
   waveCount?: number;
   waves?: WaveData[];
 }
@@ -114,7 +114,7 @@ export interface LevelJsonData {
   name: string;
   subtitle?: string;
   initialBuildTime?: number;
-  startingMoney?: number;
+  startingMoney: number;
   waveCount?: number;
   monsterCount: number;
   allowEscape: number;

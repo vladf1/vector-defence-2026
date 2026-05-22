@@ -1,3 +1,4 @@
+import type { UpdateContext } from "../../game-engine/update-context";
 import { hexWithAlpha } from "../../utils";
 import type { Monster } from "../monsters/monster";
 
@@ -28,12 +29,12 @@ export class LinkEffect {
     this.alpha = color === "#d8ff4f" ? 0.8 : 0.7;
   }
 
-  update(deltaSeconds: number): void {
+  update(context: UpdateContext): void {
     if (this.target.removed || this.source.removed) {
       this.alpha = 0;
     } else {
-      this.ageSeconds += deltaSeconds;
-      this.alpha -= this.alphaFadePerSecond * deltaSeconds;
+      this.ageSeconds += context.deltaSeconds;
+      this.alpha -= this.alphaFadePerSecond * context.deltaSeconds;
     }
     if (this.alpha <= 0) {
       this.removed = true;

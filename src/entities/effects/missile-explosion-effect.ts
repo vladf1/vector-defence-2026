@@ -1,3 +1,4 @@
+import type { UpdateContext } from "../../game-engine/update-context";
 import { hexWithAlpha, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
@@ -26,9 +27,9 @@ export class SmokeParticle extends Particle {
     this.growthPerSecond = 12 * scale;
   }
 
-  override update(deltaSeconds: number, fieldWidth: number, fieldHeight: number): void {
-    super.update(deltaSeconds, fieldWidth, fieldHeight);
-    this.size = Math.min(this.maxSize, this.size + (this.growthPerSecond * deltaSeconds));
+  override update(context: UpdateContext): void {
+    super.update(context);
+    this.size = Math.min(this.maxSize, this.size + (this.growthPerSecond * context.deltaSeconds));
   }
 
   override draw(context: CanvasRenderingContext2D): void {
