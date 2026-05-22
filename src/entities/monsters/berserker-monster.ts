@@ -4,7 +4,7 @@ import { AudioCue } from "../../types";
 import { drawPath, randomRange } from "../../utils";
 import { createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster } from "./monster";
-import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
+import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
 
 const BASE_COLOR = "#ff7a4f";
 const ENRAGED_COLOR = "#ff5a36";
@@ -25,10 +25,10 @@ const OUTLINE = [
   { x: -RADIUS * 0.1, y: RADIUS * 1.08 },
   { x: RADIUS * 0.4, y: RADIUS * 0.8 },
 ];
-const SHARD_SPLITTER_CONFIG = createPolygonShardSplitterConfig({
+const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig({
   minShardCount: 5,
   maxShardCount: 11,
-});
+}));
 
 export class BerserkerMonster extends Monster {
   private rageStage = 0;
@@ -91,7 +91,8 @@ export class BerserkerMonster extends Monster {
       x: randomRange(-this.radius * 0.15, this.radius * 0.22),
       y: randomRange(-this.radius * 0.15, this.radius * 0.15),
     };
-    for (const particle of createPolygonShardParticles(
+    createPolygonShardParticles(
+      result,
       this.x,
       this.y,
       this.color,
@@ -101,10 +102,8 @@ export class BerserkerMonster extends Monster {
       140,
       230,
       0,
-      SHARD_SPLITTER_CONFIG,
-    )) {
-      result.addParticle(particle);
-    }
+      SHARD_SPLITTER,
+    );
     result.playSound(AudioCue.MonsterHeavyDeath, this.x, 1.05);
   }
 

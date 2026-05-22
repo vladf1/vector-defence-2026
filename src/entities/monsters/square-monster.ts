@@ -4,17 +4,17 @@ import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
 import { createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster } from "./monster";
-import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
+import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
 
 const COLOR = "#ff6f62";
 const SPEED_PER_SECOND = 68;
 const HIT_POINTS = 165;
 const BOUNTY = 3;
 const RADIUS = 6.5;
-const SHARD_SPLITTER_CONFIG = createPolygonShardSplitterConfig({
+const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig({
   minShardCount: 5,
   maxShardCount: 11,
-});
+}));
 
 export class SquareMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
@@ -46,7 +46,8 @@ export class SquareMonster extends Monster {
       x: randomRange(-this.radius * 0.24, this.radius * 0.24),
       y: randomRange(-this.radius * 0.24, this.radius * 0.24),
     };
-    for (const particle of createPolygonShardParticles(
+    createPolygonShardParticles(
+      result,
       this.x,
       this.y,
       this.color,
@@ -56,10 +57,8 @@ export class SquareMonster extends Monster {
       128,
       233,
       1.2,
-      SHARD_SPLITTER_CONFIG,
-    )) {
-      result.addParticle(particle);
-    }
+      SHARD_SPLITTER,
+    );
     result.playSound(AudioCue.MonsterShatter, this.x);
   }
 

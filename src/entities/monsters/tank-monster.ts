@@ -5,7 +5,7 @@ import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
 import { createPolygonShardParticles, rotatePoint } from "./death-effect-helpers";
 import { Monster } from "./monster";
-import { createPolygonShardSplitterConfig } from "./polygon-shard-splitter";
+import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
 import { drawTankTurret } from "./tank-turret-rendering";
 
 const COLOR = "#9fb6ff";
@@ -25,10 +25,10 @@ const HULL_OUTLINE = [
   { x: HULL_RECT.x + HULL_RECT.width, y: HULL_RECT.y + HULL_RECT.height },
   { x: HULL_RECT.x, y: HULL_RECT.y + HULL_RECT.height },
 ];
-const SHARD_SPLITTER_CONFIG = createPolygonShardSplitterConfig({
+const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig({
   minShardCount: 6,
   maxShardCount: 13,
-});
+}));
 
 export class TankMonster extends Monster {
   constructor(path: PathEntry[], speedScale: number) {
@@ -51,7 +51,8 @@ export class TankMonster extends Monster {
       { x: this.radius * 0.38, y: 0 },
       this.angle,
     );
-    for (const particle of createPolygonShardParticles(
+    createPolygonShardParticles(
+      result,
       this.x,
       this.y,
       this.color,
@@ -61,10 +62,8 @@ export class TankMonster extends Monster {
       125,
       220,
       0,
-      SHARD_SPLITTER_CONFIG,
-    )) {
-      result.addParticle(particle);
-    }
+      SHARD_SPLITTER,
+    );
     result.addParticle(new TankTurretParticle(
       this.x + turretCenterOffset.x,
       this.y + turretCenterOffset.y,
