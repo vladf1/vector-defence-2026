@@ -75,7 +75,7 @@ export class LightningTower extends Tower {
         if (targets.includes(monster)) {
           continue;
         }
-        if (!withinDistance(source.x, source.y, monster.x, monster.y, chainRange)) {
+        if (!withinDistance(source, monster, chainRange)) {
           continue;
         }
 

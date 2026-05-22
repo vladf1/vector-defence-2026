@@ -81,7 +81,7 @@ export class LaserTower extends Tower {
       if (isWithinDistanceToSegment(monster, source, this.beamTarget, monster.radius)) {
         monster.takeDamage(this.damagePerSecond * context.deltaSeconds * this.beamAlpha);
         if (shouldCreateSparks && sparkBurstsCreated < 2) {
-          const impact = closestPointOnSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
+          const impact = closestPointOnSegment(monster, source, this.beamTarget);
           for (const particle of createLaserImpactParticles(impact.x, impact.y, this.angle, colors.accent)) {
             result.addParticle(particle);
           }
@@ -121,7 +121,7 @@ export class LaserTower extends Tower {
     const source = this.getBeamSource();
 
     for (const monster of context.activeMonsters) {
-      if (!withinDistance(this.x, this.y, monster.x, monster.y, this.range)) {
+      if (!withinDistance(this, monster, this.range)) {
         continue;
       }
 

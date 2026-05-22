@@ -75,7 +75,7 @@ export function createPathEntries(points: Point[]): PathEntry[] {
     const point = points[index];
     if (index > 0) {
       const previous = points[index - 1];
-      totalDistance += calculateDistance(previous.x, previous.y, point.x, point.y);
+      totalDistance += calculateDistance(previous, point);
     }
     entries.push({
       x: point.x,
@@ -105,7 +105,7 @@ export function createPathEntriesFromDistance(source: readonly PathEntry[], star
   for (let index = firstTailIndex; index < source.length; index += 1) {
     const entry = source[index];
     const totalDistance = entry.totalDistance - clampedDistance;
-    if (totalDistance <= 0 && calculateDistance(spawnPoint.x, spawnPoint.y, entry.x, entry.y) <= 0) {
+    if (totalDistance <= 0 && calculateDistance(spawnPoint, entry) <= 0) {
       continue;
     }
     entries.push({
@@ -240,8 +240,8 @@ function createRoundedTurns(points: readonly Point[], roadTurnRadius: number): R
     const previous = points[index - 1];
     const control = points[index];
     const next = points[index + 1];
-    const previousLength = calculateDistance(previous.x, previous.y, control.x, control.y);
-    const nextLength = calculateDistance(control.x, control.y, next.x, next.y);
+    const previousLength = calculateDistance(previous, control);
+    const nextLength = calculateDistance(control, next);
     const turnDistance = Math.min(roadTurnRadius, previousLength * 0.45, nextLength * 0.45);
 
     if (turnDistance <= 1) {
@@ -260,7 +260,7 @@ function createRoundedTurns(points: readonly Point[], roadTurnRadius: number): R
 }
 
 function pointToward(source: Point, target: Point, distance: number): Point {
-  const total = calculateDistance(source.x, source.y, target.x, target.y);
+  const total = calculateDistance(source, target);
   if (total === 0) {
     return { x: source.x, y: source.y };
   }
@@ -273,7 +273,7 @@ function pointToward(source: Point, target: Point, distance: number): Point {
 }
 
 function appendLine(commands: RoutePathCommand[], entries: PathEntry[], start: Point, end: Point): void {
-  const length = calculateDistance(start.x, start.y, end.x, end.y);
+  const length = calculateDistance(start, end);
   if (length <= 0) {
     return;
   }
@@ -294,8 +294,8 @@ function appendQuadratic(
   routeCurveSampleStep: number,
 ): void {
   commands.push({ kind: "quadratic", control, point: end });
-  const estimatedLength = calculateDistance(start.x, start.y, control.x, control.y)
-    + calculateDistance(control.x, control.y, end.x, end.y);
+  const estimatedLength = calculateDistance(start, control)
+    + calculateDistance(control, end);
   const steps = Math.max(4, Math.ceil(estimatedLength / routeCurveSampleStep));
 
   for (let step = 1; step <= steps; step += 1) {
@@ -318,7 +318,7 @@ function appendQuadratic(
 
 function appendPoint(entries: PathEntry[], point: Point, heading: PathEntryHeading): void {
   const previous = entries[entries.length - 1];
-  const segmentLength = calculateDistance(previous.x, previous.y, point.x, point.y);
+  const segmentLength = calculateDistance(previous, point);
   if (segmentLength <= 0) {
     return;
   }

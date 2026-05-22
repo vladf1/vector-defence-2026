@@ -41,7 +41,7 @@ export function canPlaceTower(
   }
 
   for (const tower of towers) {
-    if (withinDistance(point.x, point.y, tower.x, tower.y, geometry.minDistanceToOtherTowers)) {
+    if (withinDistance(point, tower, geometry.minDistanceToOtherTowers)) {
       return false;
     }
   }
@@ -65,7 +65,7 @@ export function findTowerAtPoint(
 ): Tower | undefined {
   for (let index = towers.length - 1; index >= 0; index -= 1) {
     const tower = towers[index];
-    if (withinDistance(point.x, point.y, tower.x, tower.y, towerRadius + towerSelectionPadding)) {
+    if (withinDistance(point, tower, towerRadius + towerSelectionPadding)) {
       return tower;
     }
   }

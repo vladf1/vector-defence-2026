@@ -16,7 +16,6 @@ import { LevelRuntime } from "./level-runtime";
 import { canPlaceTower, findTowerAtPoint } from "./placement-rules";
 import {
   formatMoney,
-  normalizeLevels,
   randomRange,
 } from "./utils";
 import {
@@ -50,6 +49,24 @@ export const TEMPORARILY_UNLOCK_ALL_LEVELS = true;
 
 export function createLevels(gameMode: GameModeValue): LevelData[] {
   return createCampaignLevels(normalizeLevels(levelsJson as LevelJsonData[], gameMode), gameMode === GameMode.Mobile);
+}
+
+function normalizeLevels(data: LevelJsonData[], gameMode: GameModeValue): LevelData[] {
+  return data.map((level) => {
+    const overrides = gameMode === GameMode.Mobile ? level.mobile : undefined;
+    const normalized = {
+      ...level,
+      ...overrides,
+    };
+    delete normalized.mobile;
+
+    return {
+      ...normalized,
+      monsterSequence: normalized.monsterSequence.filter(
+        (value): value is MonsterKind => Object.values(MonsterKind).includes(value as MonsterKind),
+      ),
+    };
+  });
 }
 
 export class Game {

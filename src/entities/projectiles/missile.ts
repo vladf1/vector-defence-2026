@@ -100,13 +100,13 @@ export class Missile {
 
     for (const monster of context.activeMonsters) {
       const hitDistance = monster.radius + (MISSILE_HALF_LENGTH * this.scale);
-      if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
+      if (withinDistance(this, monster, hitDistance)) {
         this.removed = true;
         for (const particle of createMissileExplosionParticles(this.x, this.y, this.angle, this.level)) {
           result.addParticle(particle);
         }
         for (const nearby of context.activeMonsters) {
-          const dist = calculateDistance(this.x, this.y, nearby.x, nearby.y);
+          const dist = calculateDistance(this, nearby);
           if (dist <= this.effectRadius) {
             const ratio = (this.effectRadius - dist) / this.effectRadius;
             const shakeStrength = getShakeStrengthFromSplashRatio(ratio);

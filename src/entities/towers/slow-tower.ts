@@ -33,7 +33,7 @@ export class SlowTower extends Tower {
     let affected = 0;
     const maxTargets = this.level + 2;
     for (const monster of context.activeMonsters) {
-      if (!withinDistance(this.x, this.y, monster.x, monster.y, this.range)) {
+      if (!withinDistance(this, monster, this.range)) {
         continue;
       }
       monster.slowDown(SLOW_FACTOR, RECOVERY_SPEED_PER_SECOND);

@@ -39,7 +39,7 @@ export class Projectile {
 
     for (const monster of context.activeMonsters) {
       const hitDistance = monster.radius + this.radius;
-      if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
+      if (withinDistance(this, monster, hitDistance)) {
         monster.takeDamage(this.damage);
         this.removed = true;
         for (const particle of createHitImpactParticles(this.x, this.y, "#9fffe4", this.angle)) {
