@@ -1,4 +1,4 @@
-import { createHitImpactEffect } from "../../game-engine/combat-effects";
+import { createHitImpactParticles } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
 import { AudioCue } from "../../types";
 import type { Point } from "../../types";
@@ -40,7 +40,7 @@ export class Projectile {
       const hitDistance = monster.radius + this.radius;
       if (withinDistance(this.x, this.y, monster.x, monster.y, hitDistance)) {
         monster.takeDamage(this.damage);
-        createHitImpactEffect(game, this.x, this.y, "#9fffe4", Math.atan2(this.velocityYPerSecond, this.velocityXPerSecond));
+        game.addParticles(createHitImpactParticles(this.x, this.y, "#9fffe4", Math.atan2(this.velocityYPerSecond, this.velocityXPerSecond)));
         game.playSound(AudioCue.ProjectileImpact, this.x);
         this.removed = true;
         return;

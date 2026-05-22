@@ -2,7 +2,7 @@ import levelsJson from "../game-levels.json";
 import { createCampaignLevels } from "./campaign";
 import { GameMode, type GameMode as GameModeValue, type GameProfile } from "./game-profile";
 import type { GameAudio } from "./game-audio";
-import { createEscapeBurstEffect } from "./game-engine/combat-effects";
+import { createEscapeBurstParticles } from "./game-engine/combat-effects";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { GameRenderer, type FieldBounds } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
@@ -102,6 +102,12 @@ export class Game {
   addParticle(particle: Particle): void {
     if (this.runtime.particles.length < MAX_PARTICLES) {
       this.runtime.particles.push(particle);
+    }
+  }
+
+  addParticles(particles: readonly Particle[]): void {
+    for (const particle of particles) {
+      this.addParticle(particle);
     }
   }
 
@@ -245,9 +251,7 @@ export class Game {
     this.runtime.money += monster.bounty;
     const effect = monster.createDeathEffect();
     this.playSound(effect.sound.cue, monster.x, effect.sound.intensity);
-    for (const particle of effect.particles) {
-      this.addParticle(particle);
-    }
+    this.addParticles(effect.particles);
     this.requestHudSync();
   }
 
@@ -264,7 +268,7 @@ export class Game {
 
   onMonsterEscaped(monster: Monster): void {
     this.playSound(AudioCue.EscapeBurst, monster.x);
-    createEscapeBurstEffect(this, monster.x, monster.y);
+    this.addParticles(createEscapeBurstParticles(monster.x, monster.y));
     this.runtime.escapesLeft = Math.max(0, this.runtime.escapesLeft - 1);
     if (this.runtime.escapesLeft === 0) {
       this.loseLevel();

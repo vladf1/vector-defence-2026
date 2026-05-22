@@ -484,6 +484,9 @@ function createMissilePreviewGame(scene: ActiveScene): Game {
     addParticle(particle: Particle) {
       scene.particles.push(particle);
     },
+    addParticles(particles: readonly Particle[]) {
+      scene.particles.push(...particles);
+    },
     playSound() {},
   };
   return previewGame as unknown as Game;

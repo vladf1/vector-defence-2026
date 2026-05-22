@@ -1,4 +1,4 @@
-import { createLaserImpactEffect } from "../../game-engine/combat-effects";
+import { createLaserImpactParticles } from "../../game-engine/combat-effects";
 import type { Game } from "../../game-engine";
 import { AudioCue, type Point, TowerKind } from "../../types";
 import { angleBetween, closestPointOnSegment, isWithinDistanceToSegment, randomRange, turnAngleTowards, withinDistance } from "../../utils";
@@ -82,7 +82,7 @@ export class LaserTower extends Tower {
         monster.takeDamage(this.damagePerSecond * deltaSeconds * this.beamAlpha);
         if (shouldCreateSparks && sparkBurstsCreated < 2) {
           const impact = closestPointOnSegment(monster.x, monster.y, source.x, source.y, this.beamTarget.x, this.beamTarget.y);
-          createLaserImpactEffect(game, impact.x, impact.y, this.angle, colors.accent);
+          game.addParticles(createLaserImpactParticles(impact.x, impact.y, this.angle, colors.accent));
           sparkBurstsCreated += 1;
         }
       }
