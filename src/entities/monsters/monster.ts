@@ -9,7 +9,7 @@ const HIT_SHAKE_HORIZONTAL_FREQUENCY_PER_SECOND = 92;
 const HIT_SHAKE_VERTICAL_FREQUENCY_PER_SECOND = 117;
 const HIT_SHAKE_VERTICAL_PHASE_SCALE = 0.7;
 
-export abstract class Monster extends EventTarget {
+export abstract class Monster {
   x: number;
   y: number;
   velocityXPerSecond = 0;
@@ -36,7 +36,6 @@ export abstract class Monster extends EventTarget {
   private hitShakeOffsetY = 0;
 
   constructor(path: PathEntry[], color: string, speedPerSecond: number, hitPoints: number, bounty: number, radius: number) {
-    super();
     const start = path[0] ?? { x: 0, y: 0 };
     this.x = start.x;
     this.y = start.y;
@@ -78,14 +77,14 @@ export abstract class Monster extends EventTarget {
     }
   }
 
-  update(context: UpdateContext): void {
+  update(context: UpdateContext, result: UpdateResult): void {
     if (this.removed) {
       return;
     }
 
     if (this.hitPoints <= 0) {
       this.removed = true;
-      this.dispatchEvent(new Event("killed"));
+      result.addKilledMonster(this);
       return;
     }
 
@@ -95,7 +94,7 @@ export abstract class Monster extends EventTarget {
       this.speedPerSecond = Math.min(this.maxSpeedPerSecond, this.speedPerSecond + (this.slowRecoverySpeedPerSecond * context.deltaSeconds));
     }
 
-    this.moveAlongPath(context.deltaSeconds);
+    this.moveAlongPath(context.deltaSeconds, result);
     if (this.removed) {
       return;
     }
@@ -130,7 +129,7 @@ export abstract class Monster extends EventTarget {
     context.restore();
   }
 
-  private moveAlongPath(deltaSeconds: number): void {
+  private moveAlongPath(deltaSeconds: number, result: UpdateResult): void {
     this.distanceAlongPath += this.speedPerSecond * deltaSeconds;
     const pathLength = getPathLength(this.path);
     if (this.distanceAlongPath >= pathLength) {
@@ -142,7 +141,7 @@ export abstract class Monster extends EventTarget {
       this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
       this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
       this.removed = true;
-      this.dispatchEvent(new Event("escaped"));
+      result.addEscapedMonster(this);
       return;
     }
 

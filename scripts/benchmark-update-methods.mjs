@@ -19,6 +19,7 @@ const html = String.raw`
       const { LinkEffect } = await import("/src/entities/effects/link-effect.ts");
       const { Projectile } = await import("/src/entities/projectiles/projectile.ts");
       const { Missile } = await import("/src/entities/projectiles/missile.ts");
+      const { UpdateResult } = await import("/src/game-engine/update-context.ts");
 
       const maxStressConfig = {
         monsterCount: 720,
@@ -110,27 +111,39 @@ const html = String.raw`
       }
 
       function profileOneRuntimeUpdate(game, deltaSeconds, buckets) {
+        let updateContext = createUpdateContext(game, deltaSeconds);
+        const updateResult = new UpdateResult();
         timeGroupedByConstructor(buckets, "monster", game.runtime.monsters, (monster) => {
-          monster.update(deltaSeconds);
+          monster.update(updateContext, updateResult);
         });
+        updateContext = createUpdateContext(game, deltaSeconds);
         timeGroup(buckets, "projectile:Projectile.update", game.runtime.projectiles, (projectile) => {
-          projectile.update(game, deltaSeconds);
+          projectile.update(updateContext, updateResult);
         });
         timeGroup(buckets, "projectile:Missile.update", game.runtime.missiles, (missile) => {
-          missile.update(game, deltaSeconds);
+          missile.update(updateContext, updateResult);
         });
         timeGroupedByConstructor(buckets, "particle", game.runtime.particles, (particle) => {
-          particle.update(deltaSeconds);
+          particle.update(updateContext);
         });
         timeGroupedByConstructor(buckets, "link", game.runtime.links, (link) => {
-          link.update(deltaSeconds);
+          link.update(updateContext);
         });
         timeGroupedByConstructor(buckets, "tower", game.runtime.towers, (tower) => {
-          tower.update(game, deltaSeconds);
+          tower.update(updateContext, updateResult);
         });
         timeGroup(buckets, "runtime:compactRemoved", [game.runtime], (runtime) => {
           runtime.compactRemoved();
         });
+      }
+
+      function createUpdateContext(game, deltaSeconds) {
+        return {
+          deltaSeconds,
+          fieldWidth: game.profile.fieldWidth,
+          fieldHeight: game.profile.fieldHeight,
+          activeMonsters: game.runtime.monsters.filter((monster) => !monster.removed && monster.hitPoints > 0),
+        };
       }
 
       function timeGroupedByConstructor(buckets, category, items, update) {

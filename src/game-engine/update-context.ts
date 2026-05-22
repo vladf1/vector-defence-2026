@@ -19,11 +19,21 @@ export interface UpdateSound {
 }
 
 export class UpdateResult {
+  readonly killedMonsters: Monster[] = [];
+  readonly escapedMonsters: Monster[] = [];
   readonly particles: Particle[] = [];
   readonly links: RuntimeLinkEffect[] = [];
   readonly projectiles: Projectile[] = [];
   readonly missiles: Missile[] = [];
   readonly sounds: UpdateSound[] = [];
+
+  addKilledMonster(monster: Monster): void {
+    this.killedMonsters.push(monster);
+  }
+
+  addEscapedMonster(monster: Monster): void {
+    this.escapedMonsters.push(monster);
+  }
 
   addParticle(particle: Particle): void {
     this.particles.push(particle);
@@ -46,6 +56,8 @@ export class UpdateResult {
   }
 
   clear(): void {
+    this.killedMonsters.length = 0;
+    this.escapedMonsters.length = 0;
     this.particles.length = 0;
     this.links.length = 0;
     this.projectiles.length = 0;
