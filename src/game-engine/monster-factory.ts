@@ -20,18 +20,6 @@ export function createMonster(game: Game, kind: MonsterKind, path: PathEntry[]):
   const levelHitPointMultiplier = getLevelHitPointMultiplier(game);
   monster.hitPoints *= levelHitPointMultiplier;
   monster.maxHitPoints *= levelHitPointMultiplier;
-
-  monster.addEventListener("killed", () => {
-    game.onMonsterKilled(monster);
-  });
-  if (monster instanceof SplitterMonster) {
-    monster.addEventListener("killed", () => {
-      game.spawnSplitters(monster);
-    });
-  }
-  monster.addEventListener("escaped", () => {
-    game.onMonsterEscaped(monster);
-  });
   return monster;
 }
 

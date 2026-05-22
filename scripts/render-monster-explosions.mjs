@@ -47,6 +47,7 @@ const html = String.raw`
       const { TankMonster } = await import("/src/entities/monsters/tank-monster.ts");
       const { BulwarkMonster } = await import("/src/entities/monsters/bulwark-monster.ts");
       const { BerserkerMonster } = await import("/src/entities/monsters/berserker-monster.ts");
+      const { UpdateResult } = await import("/src/game-engine/update-context.ts");
 
       const monsterSpecs = [
         { slug: "packman", label: "PackMan", MonsterClass: PackManMonster, seed: 2201, zoom: 11.5, angle: 0 },
@@ -114,12 +115,21 @@ const html = String.raw`
         }
         if (spec.slug === "berserker") {
           monster.hitPoints = monster.maxHitPoints * 0.18;
-          monster.update(0);
+          monster.update(createStaticUpdateContext(monster), new UpdateResult());
           monster.x = 0;
           monster.y = 0;
           monster.angle = spec.angle;
         }
         return monster;
+      }
+
+      function createStaticUpdateContext(monster) {
+        return {
+          deltaSeconds: 0,
+          fieldWidth: FRAME_WIDTH,
+          fieldHeight: FRAME_HEIGHT,
+          activeMonsters: monster.removed ? [] : [monster],
+        };
       }
 
       function drawFrame(context, monster, particles, frameIndex, monsterSpec) {

@@ -8,6 +8,7 @@ import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
 import { GameRenderer, type FieldBounds } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
 import type { Monster } from "./entities/monsters/monster";
+import { SplitterMonster } from "./entities/monsters/splitter-monster";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import { Tower } from "./entities/towers/tower";
@@ -116,6 +117,22 @@ export class Game {
       this.playSound(sound.cue, sound.panX, sound.intensity);
     }
     result.clear();
+  }
+
+  private applyMonsterLifecycleResults(result: UpdateResult): void {
+    for (const monster of result.killedMonsters) {
+      this.onMonsterKilled(monster, result);
+      if (monster instanceof SplitterMonster) {
+        this.spawnSplitters(monster);
+      }
+    }
+
+    for (const monster of result.escapedMonsters) {
+      if (this.state !== GameState.Playing || this.runtime.escapesLeft === 0) {
+        break;
+      }
+      this.onMonsterEscaped(monster, result);
+    }
   }
 
   private getActiveMonsters(): Monster[] {
@@ -252,11 +269,9 @@ export class Game {
     this.runtime.monsters.push(createMonster(this, code, routePath.entries));
   }
 
-  onMonsterKilled(monster: Monster): void {
+  onMonsterKilled(monster: Monster, result: UpdateResult): void {
     this.runtime.money += monster.bounty;
-    const result = new UpdateResult();
     monster.addDeathEffect(result);
-    this.applyUpdateResult(result);
     this.requestHudSync();
   }
 
@@ -271,13 +286,11 @@ export class Game {
     this.playSound(AudioCue.SplitterBurst, monster.x);
   }
 
-  onMonsterEscaped(monster: Monster): void {
-    const result = new UpdateResult();
+  onMonsterEscaped(monster: Monster, result: UpdateResult): void {
     for (const particle of createEscapeBurstParticles(monster.x, monster.y)) {
       result.addParticle(particle);
     }
     result.playSound(AudioCue.EscapeBurst, monster.x);
-    this.applyUpdateResult(result);
     this.runtime.escapesLeft = Math.max(0, this.runtime.escapesLeft - 1);
     if (this.runtime.escapesLeft === 0) {
       this.loseLevel();
@@ -629,8 +642,10 @@ export class Game {
       const updateResult = new UpdateResult();
 
       for (const monster of this.runtime.monsters) {
-        monster.update(updateContext);
+        monster.update(updateContext, updateResult);
       }
+      this.applyMonsterLifecycleResults(updateResult);
+
       updateContext = {
         ...updateContext,
         activeMonsters: this.getActiveMonsters(),

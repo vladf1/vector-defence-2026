@@ -202,7 +202,9 @@ function updateScene(deltaSeconds: number): void {
 }
 
 function updateMonsterApproach(scene: ActiveScene, deltaSeconds: number): void {
-  scene.monster.update(createPreviewUpdateContext(scene, deltaSeconds * MONSTER_TIME_SCALE));
+  const result = new UpdateResult();
+  scene.monster.update(createPreviewUpdateContext(scene, deltaSeconds * MONSTER_TIME_SCALE), result);
+  applyPreviewUpdateResult(scene, result);
 
   const ratio = Math.min(1, scene.phaseSeconds / APPROACH_SECONDS);
   const easedRatio = easeOutCubic(ratio);
@@ -235,7 +237,8 @@ function updateMissileApproach(scene: ActiveScene, deltaSeconds: number): void {
   if (missile.removed) {
     scene.particles = scene.particles.slice(particleCountBeforeUpdate);
     if (scene.mode === "combined") {
-      scene.monster.update(createPreviewUpdateContext(scene, 0));
+      const result = new UpdateResult();
+      scene.monster.update(createPreviewUpdateContext(scene, 0), result);
       addMonsterDeathEffect(scene.monster, scene);
     }
     scene.phase = "explode";
@@ -440,7 +443,8 @@ function createMonster(spec: MonsterSpec): Monster {
   }
   if (spec.lowHealthRatio !== undefined) {
     monster.hitPoints = monster.maxHitPoints * spec.lowHealthRatio;
-    monster.update(createPreviewMonsterUpdateContext(monster, 0));
+    const result = new UpdateResult();
+    monster.update(createPreviewMonsterUpdateContext(monster, 0), result);
     monster.speedPerSecond = displaySpeedPerSecond;
     monster.maxSpeedPerSecond = displaySpeedPerSecond;
   }

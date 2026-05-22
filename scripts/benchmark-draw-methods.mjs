@@ -43,6 +43,7 @@ const html = String.raw`
       const { LaserTower } = await import("/src/entities/towers/laser-tower.ts");
       const { LightningTower } = await import("/src/entities/towers/lightning-tower.ts");
       const { MissileTower } = await import("/src/entities/towers/missile-tower.ts");
+      const { UpdateResult } = await import("/src/game-engine/update-context.ts");
       const { SlowTower } = await import("/src/entities/towers/slow-tower.ts");
 
       const canvas = document.getElementById("bench");
@@ -197,12 +198,21 @@ const html = String.raw`
         monster.rotation = 0.7;
         if (options.hitRatio !== undefined) {
           monster.hitPoints = monster.maxHitPoints * options.hitRatio;
-          monster.update(0);
+          monster.update(createStaticUpdateContext(monster), new UpdateResult());
           monster.x = 480;
           monster.y = 270;
           monster.angle = 0.4;
         }
         return monster;
+      }
+
+      function createStaticUpdateContext(monster) {
+        return {
+          deltaSeconds: 0,
+          fieldWidth: 960,
+          fieldHeight: 540,
+          activeMonsters: monster.removed ? [] : [monster],
+        };
       }
 
       function createTower(TowerClass, level) {
