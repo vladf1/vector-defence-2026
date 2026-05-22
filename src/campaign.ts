@@ -109,7 +109,6 @@ function buildWave(
   const spawnIntervalMin = baseSpawnIntervalMin * mobileSpawnScale;
   const spawnIntervalMax = clamp(baseSpawnIntervalMin + 0.34 - (Math.min(levelIndex, 6) * 0.01), baseSpawnIntervalMin + 0.12, 1.08) * mobileSpawnScale;
   const intermission = clamp(5.75 - (levelIndex * 0.18) - (waveIndex * 0.32), 2.5, 5.5);
-  const labelPool = ["Probe", "Push", "Break", "Surge", "Anvil", "Siege", "Overrun"];
 
   return {
     count,
@@ -118,7 +117,6 @@ function buildWave(
     spawnIntervalMax,
     buildTime: waveIndex === 0 ? initialBuildTime : intermission,
     reward: Math.round((65 + (levelIndex * 10) + (waveIndex * 14)) / 10),
-    label: labelPool[Math.min(labelPool.length - 1, waveIndex)] ?? `Wave ${waveIndex + 1}`,
   };
 }
 

@@ -92,7 +92,6 @@ export interface WaveData {
   spawnIntervalMax: number;
   buildTime: number;
   reward: number;
-  label: string;
 }
 
 export interface LevelData {
