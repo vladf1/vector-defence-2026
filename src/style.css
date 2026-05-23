@@ -605,6 +605,12 @@ textarea,
   overflow: hidden;
 }
 
+.selection-card.tower-border-panel {
+  border-color: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(8, 17, 14, 0.98), rgba(24, 43, 38, 0.96) 48%, rgba(8, 17, 14, 0.98));
+}
+
 .selection-header {
   display: flex;
   align-items: center;
