@@ -23,7 +23,7 @@ export class SlowTower extends Tower {
     super(x, y);
   }
 
-  protected onUpdate(context: UpdateContext, result: UpdateResult): void {
+  protected updateTower(context: UpdateContext, result: UpdateResult): void {
     this.pulse += 4.8 * context.deltaSeconds;
     this.orbit += this.getOrbitSpeedPerSecond() * context.deltaSeconds;
     if (!this.ready()) {

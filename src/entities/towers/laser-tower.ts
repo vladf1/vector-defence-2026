@@ -34,7 +34,7 @@ export class LaserTower extends Tower {
     super(x, y);
   }
 
-  protected onUpdate(context: UpdateContext, result: UpdateResult): void {
+  protected updateTower(context: UpdateContext, result: UpdateResult): void {
     this.beamAlpha = Math.max(0, this.beamAlpha - (0.9 * context.deltaSeconds));
     this.laserSparkCooldownSeconds = Math.max(0, this.laserSparkCooldownSeconds - context.deltaSeconds);
 
@@ -48,7 +48,7 @@ export class LaserTower extends Tower {
         this.fire(result);
       }
     } else {
-      const tracked = this.getTrackedMonster(context);
+      const tracked = this.findTrackedMonsterInContext(context);
       if (tracked) {
         const targetAngle = angleBetween(this, tracked);
         this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * context.deltaSeconds);

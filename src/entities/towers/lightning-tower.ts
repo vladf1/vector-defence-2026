@@ -32,13 +32,13 @@ export class LightningTower extends Tower {
     super(x, y);
   }
 
-  protected onUpdate(context: UpdateContext, result: UpdateResult): void {
+  protected updateTower(context: UpdateContext, result: UpdateResult): void {
     this.chargeSeconds = Math.max(0, this.chargeSeconds - context.deltaSeconds);
     if (!this.ready()) {
       return;
     }
 
-    const firstTarget = this.getClosestMonster(context);
+    const firstTarget = this.findClosestMonsterInContext(context);
     if (!firstTarget) {
       return;
     }
