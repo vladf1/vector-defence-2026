@@ -5,7 +5,7 @@ import type { Game } from "./game-engine";
 
 const ROAD_COLOR = "rgba(8, 40, 36, 0.96)";
 const ROAD_BORDER_COLOR = "rgb(18, 61, 54)";
-const ROAD_BORDER_WIDTH = 2;
+const ROAD_BORDER_WIDTH = 1.5;
 const EXIT_MARKER_RADIUS = 18;
 const UPGRADE_BUTTON_WIDTH = 32;
 const UPGRADE_BUTTON_HEIGHT = 26;
