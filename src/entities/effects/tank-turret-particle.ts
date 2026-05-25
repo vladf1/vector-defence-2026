@@ -4,12 +4,15 @@ import { drawTankTurret } from "../monsters/tank-turret-rendering";
 import { Particle } from "./particle";
 
 const TURRET_FILL = "#050908";
+const TURRET_RADIUS_SCALE = 0.48;
+const BARREL_END_SCALE = 1.7;
 
 export class TankTurretParticle extends Particle {
   alpha = 1;
   alphaFadePerSecond: number;
   radius: number;
   rotation: number;
+  barrelRotation: number;
   angularVelocityPerSecond: number;
 
   constructor(
@@ -18,6 +21,7 @@ export class TankTurretParticle extends Particle {
     radius: number,
     color: string,
     rotation: number,
+    barrelRotation: number,
   ) {
     super(x, y, radius * 2, color, 0, { speedPerSecond: 0, offset: 0 });
     const travelAngle = randomRange(-Math.PI, Math.PI);
@@ -26,6 +30,7 @@ export class TankTurretParticle extends Particle {
     this.velocityYPerSecond = Math.sin(travelAngle) * speedPerSecond;
     this.radius = radius;
     this.rotation = rotation;
+    this.barrelRotation = barrelRotation;
     this.angularVelocityPerSecond = randomRange(-12.5, 12.5);
     this.alphaFadePerSecond = randomRange(0.45, 0.78);
   }
@@ -50,7 +55,13 @@ export class TankTurretParticle extends Particle {
     context.fillStyle = hexWithAlpha(TURRET_FILL, this.alpha);
     context.strokeStyle = hexWithAlpha(this.color, Math.min(1, this.alpha + 0.08));
     context.lineWidth = 1.5;
-    drawTankTurret(context, this.radius, 0.48, 1.7);
+    drawTankTurret(
+      context,
+      this.radius,
+      TURRET_RADIUS_SCALE,
+      BARREL_END_SCALE,
+      this.barrelRotation,
+    );
     context.restore();
   }
 }
