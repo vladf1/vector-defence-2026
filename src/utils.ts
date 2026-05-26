@@ -58,19 +58,17 @@ export function turnAngleTowards(current: number, target: number, maxStep: numbe
 }
 
 export function closestPointOnSegment(point: Point, start: Point, end: Point): Point {
-  const segment = {
-    x: end.x - start.x,
-    y: end.y - start.y,
-  };
-  const segmentLengthSquared = (segment.x * segment.x) + (segment.y * segment.y);
+  const segmentX = end.x - start.x;
+  const segmentY = end.y - start.y;
+  const segmentLengthSquared = (segmentX * segmentX) + (segmentY * segmentY);
   if (segmentLengthSquared === 0) {
-    return { x: start.x, y: start.y };
+    return start;
   }
 
-  const projection = projectPointOntoSegment(point, start, segment, segmentLengthSquared);
+  const projection = projectPointOntoSegment(point, start, segmentX, segmentY, segmentLengthSquared);
   return {
-    x: start.x + (projection * segment.x),
-    y: start.y + (projection * segment.y),
+    x: start.x + (projection * segmentX),
+    y: start.y + (projection * segmentY),
   };
 }
 
@@ -84,25 +82,29 @@ export function isWithinDistanceToSegment(point: Point, start: Point, end: Point
     return false;
   }
 
-  const segment = {
-    x: end.x - start.x,
-    y: end.y - start.y,
-  };
-  const segmentLengthSquared = (segment.x * segment.x) + (segment.y * segment.y);
+  const segmentX = end.x - start.x;
+  const segmentY = end.y - start.y;
+  const segmentLengthSquared = (segmentX * segmentX) + (segmentY * segmentY);
   if (segmentLengthSquared === 0) {
     return withinDistance(point, start, maxDistance);
   }
 
-  const projection = projectPointOntoSegment(point, start, segment, segmentLengthSquared);
-  const closestX = start.x + (projection * segment.x);
-  const closestY = start.y + (projection * segment.y);
+  const projection = projectPointOntoSegment(point, start, segmentX, segmentY, segmentLengthSquared);
+  const closestX = start.x + (projection * segmentX);
+  const closestY = start.y + (projection * segmentY);
   const distanceX = closestX - point.x;
   const distanceY = closestY - point.y;
   return (distanceX * distanceX) + (distanceY * distanceY) <= (maxDistance * maxDistance);
 }
 
-function projectPointOntoSegment(point: Point, start: Point, segment: Point, segmentLengthSquared: number): number {
-  const dotProduct = ((point.x - start.x) * segment.x) + ((point.y - start.y) * segment.y);
+function projectPointOntoSegment(
+  point: Point,
+  start: Point,
+  segmentX: number,
+  segmentY: number,
+  segmentLengthSquared: number,
+): number {
+  const dotProduct = ((point.x - start.x) * segmentX) + ((point.y - start.y) * segmentY);
   return clamp(dotProduct / segmentLengthSquared, 0, 1);
 }
 

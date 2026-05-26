@@ -20,9 +20,9 @@ export class GunTower extends Tower {
     super(x, y);
   }
 
-  protected onUpdate(context: UpdateContext, result: UpdateResult): void {
+  protected updateTower(context: UpdateContext, result: UpdateResult): void {
     this.muzzleFlashSeconds = Math.max(0, this.muzzleFlashSeconds - context.deltaSeconds);
-    const tracked = this.getTrackedMonster(context);
+    const tracked = this.findTrackedMonsterInContext(context);
     if (!tracked) {
       return;
     }

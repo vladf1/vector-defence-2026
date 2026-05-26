@@ -4,6 +4,9 @@ import { GameState } from "./types";
 import type { Game } from "./game-engine";
 
 const ROAD_COLOR = "rgba(8, 40, 36, 0.96)";
+const ROAD_BORDER_COLOR = "rgb(18, 61, 54)";
+const ROAD_BORDER_WIDTH = 1.5;
+const EXIT_MARKER_RADIUS = 18;
 const UPGRADE_BUTTON_WIDTH = 32;
 const UPGRADE_BUTTON_HEIGHT = 26;
 const COMPACT_UPGRADE_BUTTON_WIDTH = 84;
@@ -319,8 +322,35 @@ export class GameRenderer {
     context.save();
     context.lineJoin = "round";
     context.lineCap = "round";
+
+    context.strokeStyle = ROAD_BORDER_COLOR;
+    context.lineWidth = this.game.profile.roadWidth + (ROAD_BORDER_WIDTH * 2);
+    this.traceRoutePath(context);
+    context.stroke();
+
+    context.fillStyle = ROAD_BORDER_COLOR;
+    context.beginPath();
+    context.arc(last.x, last.y, EXIT_MARKER_RADIUS + ROAD_BORDER_WIDTH, 0, Math.PI * 2);
+    context.fill();
+
     context.strokeStyle = ROAD_COLOR;
     context.lineWidth = this.game.profile.roadWidth;
+    this.traceRoutePath(context);
+    context.stroke();
+
+    context.fillStyle = ROAD_COLOR;
+    context.beginPath();
+    context.arc(last.x, last.y, EXIT_MARKER_RADIUS, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+
+  private traceRoutePath(context: CanvasRenderingContext2D): void {
+    const routePath = this.game.runtime.routePath;
+    if (!routePath) {
+      return;
+    }
+
     context.beginPath();
     context.moveTo(routePath.start.x, routePath.start.y);
     for (const command of routePath.commands) {
@@ -330,12 +360,6 @@ export class GameRenderer {
         context.quadraticCurveTo(command.control.x, command.control.y, command.point.x, command.point.y);
       }
     }
-    context.stroke();
-    context.fillStyle = ROAD_COLOR;
-    context.beginPath();
-    context.arc(last.x, last.y, 18, 0, Math.PI * 2);
-    context.fill();
-    context.restore();
   }
 
   private drawCanvasBackdrop(context: CanvasRenderingContext2D): void {

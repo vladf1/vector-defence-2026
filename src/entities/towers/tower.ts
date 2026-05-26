@@ -63,7 +63,7 @@ export abstract class Tower {
 
   update(context: UpdateContext, result: UpdateResult): void {
     this.cooldownSeconds = Math.max(0, this.cooldownSeconds - context.deltaSeconds);
-    this.onUpdate(context, result);
+    this.updateTower(context, result);
   }
 
   upgrade(): void {
@@ -76,16 +76,16 @@ export abstract class Tower {
     this.onUpgrade();
   }
 
-  protected getTrackedMonster(context: UpdateContext): Monster | undefined {
-    if (this.currentTarget && this.canTrack(this.currentTarget)) {
+  protected findTrackedMonsterInContext(context: UpdateContext): Monster | undefined {
+    if (this.currentTarget && this.canTrackMonster(this.currentTarget)) {
       return this.currentTarget;
     }
 
-    this.currentTarget = this.getClosestMonster(context);
+    this.currentTarget = this.findClosestMonsterInContext(context);
     return this.currentTarget;
   }
 
-  protected getClosestMonster(context: UpdateContext): Monster | undefined {
+  protected findClosestMonsterInContext(context: UpdateContext): Monster | undefined {
     let closest: Monster | undefined;
     let smallestDistanceSquared = Number.POSITIVE_INFINITY;
 
@@ -103,7 +103,7 @@ export abstract class Tower {
     return closest;
   }
 
-  protected canTrack(monster: Monster): boolean {
+  protected canTrackMonster(monster: Monster): boolean {
     return !monster.removed && this.getDistanceSquaredInRange(monster) !== null;
   }
 
@@ -188,7 +188,7 @@ export abstract class Tower {
     context.stroke();
   }
 
-  protected abstract onUpdate(context: UpdateContext, result: UpdateResult): void;
+  protected abstract updateTower(context: UpdateContext, result: UpdateResult): void;
   protected onUpgrade(): void {
   }
   abstract draw(context: CanvasRenderingContext2D, active: boolean): void;

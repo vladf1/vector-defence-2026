@@ -1,12 +1,12 @@
 import { TankTurretParticle } from "../effects/tank-turret-particle";
-import type { UpdateResult } from "../../game-engine/update-context";
+import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
 import { randomRange } from "../../utils";
 import { createPolygonShardParticles, rotatePoint } from "./death-effect-helpers";
 import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
-import { drawTankTurret } from "./tank-turret-rendering";
+import { drawTankTurret, getTankTurretCenterOffsetX } from "./tank-turret-rendering";
 
 const COLOR = "#9fb6ff";
 const SPEED_PER_SECOND = 41;
@@ -29,17 +29,40 @@ const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig
   minShardCount: 6,
   maxShardCount: 13,
 }));
+const TURRET_SPIN_INTERVAL_MIN_SECONDS = 10;
+const TURRET_SPIN_INTERVAL_MAX_SECONDS = 20;
+const TURRET_SPIN_DURATION_SECONDS = 1.1;
+const FULL_ROTATION = Math.PI * 2;
 
 export class TankMonster extends Monster {
+  private turretRotation = 0;
+  private turretSpinElapsedSeconds = 0;
+  private turretSpinDirection = 1;
+  private secondsUntilTurretSpin = randomRange(TURRET_SPIN_INTERVAL_MIN_SECONDS, TURRET_SPIN_INTERVAL_MAX_SECONDS);
+
   constructor(path: PathEntry[], speedScale: number) {
     super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
+  }
+
+  protected override updateSpecial(context: UpdateContext): void {
+    if (this.turretSpinElapsedSeconds > 0) {
+      this.advanceTurretSpin(context.deltaSeconds);
+      return;
+    }
+
+    this.secondsUntilTurretSpin -= context.deltaSeconds;
+    if (this.secondsUntilTurretSpin <= 0) {
+      this.turretSpinDirection = randomRange(0, 1) < 0.5 ? -1 : 1;
+      this.advanceTurretSpin(context.deltaSeconds);
+    }
   }
 
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
     context.fillRect(HULL_RECT.x, HULL_RECT.y, HULL_RECT.width, HULL_RECT.height);
     context.strokeRect(HULL_RECT.x, HULL_RECT.y, HULL_RECT.width, HULL_RECT.height);
-    drawTankTurret(context, this.radius, 0.42, 1.52);
+    context.translate(getTankTurretCenterOffsetX(this.radius), 0);
+    drawTankTurret(context, this.radius, 0.42, 1.52, this.turretRotation);
   }
 
   override addDeathEffect(result: UpdateResult): void {
@@ -48,7 +71,7 @@ export class TankMonster extends Monster {
       y: randomRange(-this.radius * 0.22, this.radius * 0.22),
     };
     const turretCenterOffset = rotatePoint(
-      { x: this.radius * 0.38, y: 0 },
+      { x: getTankTurretCenterOffsetX(this.radius), y: 0 },
       this.angle,
     );
     createPolygonShardParticles(
@@ -70,8 +93,20 @@ export class TankMonster extends Monster {
       this.radius,
       this.color,
       this.angle,
+      this.turretRotation,
     ));
     result.playSound(AudioCue.MonsterHeavyDeath, this.x, 1.25);
   }
 
+  private advanceTurretSpin(deltaSeconds: number): void {
+    this.turretSpinElapsedSeconds += deltaSeconds;
+    const progress = Math.min(1, this.turretSpinElapsedSeconds / TURRET_SPIN_DURATION_SECONDS);
+    this.turretRotation = this.turretSpinDirection * FULL_ROTATION * progress;
+
+    if (progress === 1) {
+      this.turretRotation = 0;
+      this.turretSpinElapsedSeconds = 0;
+      this.secondsUntilTurretSpin = randomRange(TURRET_SPIN_INTERVAL_MIN_SECONDS, TURRET_SPIN_INTERVAL_MAX_SECONDS);
+    }
+  }
 }
