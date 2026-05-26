@@ -26,7 +26,7 @@
   {#if $hud.showStatusHud}
     <section class="hud">
       {#each [
-        { label: "", value: $hud.levelName, className: "level-stat" },
+        { label: profile.mode === "mobile" ? "" : "Level", value: profile.mode === "mobile" ? $hud.levelName : $hud.levelName.replace("Level ", ""), className: "level-stat" },
         { label: profile.mode === "mobile" ? "" : "Money", value: $hud.money, className: "money-stat" },
         { label: profile.mode === "mobile" ? "" : "Wave", value: profile.mode === "mobile" ? formatMobileWave($hud.wave) : $hud.wave, className: "wave-stat" },
         ...(profile.mode === "mobile" || !$hud.monsters ? [] : [
