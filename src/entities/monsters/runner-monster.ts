@@ -12,14 +12,16 @@ const HIT_POINTS = 83;
 const BOUNTY = 2;
 const RADIUS = 5.5;
 const OUTLINE = [
-  { x: RADIUS * 1.7, y: 0 },
-  { x: -RADIUS * 0.1, y: -RADIUS * 0.82 },
-  { x: -RADIUS * 1.35, y: 0 },
-  { x: -RADIUS * 0.1, y: RADIUS * 0.82 },
+  { x: RADIUS * 1.8, y: 0 },
+  { x: RADIUS * 0.28, y: -RADIUS * 0.86 },
+  { x: -RADIUS * 1.35, y: -RADIUS * 0.58 },
+  { x: -RADIUS * 0.92, y: 0 },
+  { x: -RADIUS * 1.35, y: RADIUS * 0.58 },
+  { x: RADIUS * 0.28, y: RADIUS * 0.86 },
 ];
 const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig({
-  minShardCount: 5,
-  maxShardCount: 11,
+  minShardCount: 3,
+  maxShardCount: 6,
 }));
 
 export class RunnerMonster extends Monster {
@@ -30,12 +32,6 @@ export class RunnerMonster extends Monster {
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
     drawPath(context, OUTLINE, true);
-    context.beginPath();
-    context.moveTo(-this.radius * 0.95, 0);
-    context.lineTo(-this.radius * 1.5, -this.radius * 0.55);
-    context.moveTo(-this.radius * 0.95, 0);
-    context.lineTo(-this.radius * 1.5, this.radius * 0.55);
-    context.stroke();
   }
 
   override addDeathEffect(result: UpdateResult): void {

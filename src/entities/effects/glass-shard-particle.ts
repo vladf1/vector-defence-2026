@@ -5,6 +5,7 @@ import { Particle } from "./particle";
 
 const SHARD_FILL_COLOR = "#050908";
 const SHARD_STROKE_WIDTH = 1;
+const ANGULAR_VELOCITY_MAX_PER_SECOND = 9.9;
 
 export class GlassShardParticle extends Particle {
   alpha = 1;
@@ -35,7 +36,7 @@ export class GlassShardParticle extends Particle {
     this.y += Math.sin(travelAngle) * initialSeparation;
     this.vertices = vertices;
     this.rotation = rotation;
-    this.angularVelocityPerSecond = randomRange(-5.5, 5.5);
+    this.angularVelocityPerSecond = randomRange(-ANGULAR_VELOCITY_MAX_PER_SECOND, ANGULAR_VELOCITY_MAX_PER_SECOND);
     this.alphaFadePerSecond = randomRange(0.8, 1.8);
   }
 

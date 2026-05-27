@@ -29,8 +29,8 @@ const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig
   minShardCount: 6,
   maxShardCount: 13,
 }));
-const TURRET_SPIN_INTERVAL_MIN_SECONDS = 5;
-const TURRET_SPIN_INTERVAL_MAX_SECONDS = 20;
+const TURRET_SPIN_INTERVAL_MIN_SECONDS = 3;
+const TURRET_SPIN_INTERVAL_MAX_SECONDS = 10;
 const TURRET_SPIN_DURATION_SECONDS = 2.2;
 const FULL_ROTATION = Math.PI * 2;
 
