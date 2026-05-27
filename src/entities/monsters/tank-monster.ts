@@ -2,7 +2,7 @@ import { TankTurretParticle } from "../effects/tank-turret-particle";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
-import { randomRange } from "../../utils";
+import { easeInOutCubic, randomRange } from "../../utils";
 import { createPolygonShardParticles, rotatePoint } from "./death-effect-helpers";
 import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
@@ -31,7 +31,7 @@ const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig
 }));
 const TURRET_SPIN_INTERVAL_MIN_SECONDS = 5;
 const TURRET_SPIN_INTERVAL_MAX_SECONDS = 20;
-const TURRET_SPIN_DURATION_SECONDS = 1.1;
+const TURRET_SPIN_DURATION_SECONDS = 2.2;
 const FULL_ROTATION = Math.PI * 2;
 
 export class TankMonster extends Monster {
@@ -101,7 +101,7 @@ export class TankMonster extends Monster {
   private advanceTurretSpin(deltaSeconds: number): void {
     this.turretSpinElapsedSeconds += deltaSeconds;
     const progress = Math.min(1, this.turretSpinElapsedSeconds / TURRET_SPIN_DURATION_SECONDS);
-    this.turretRotation = this.turretSpinDirection * FULL_ROTATION * progress;
+    this.turretRotation = this.turretSpinDirection * FULL_ROTATION * easeInOutCubic(progress);
 
     if (progress === 1) {
       this.turretRotation = 0;

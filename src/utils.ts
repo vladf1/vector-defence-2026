@@ -4,6 +4,20 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+export function easeInOutCubic(progress: number): number {
+  // Progress is normalized from 0 to 1.
+  const clamped = clamp(progress, 0, 1);
+  return clamped < 0.5
+    ? 4 * clamped * clamped * clamped
+    : 1 - (Math.pow((-2 * clamped) + 2, 3) / 2);
+}
+
+export function easeInOutSine(progress: number): number {
+  // Progress is normalized from 0 to 1.
+  const clamped = clamp(progress, 0, 1);
+  return -(Math.cos(Math.PI * clamped) - 1) / 2;
+}
+
 export function calculateDistance(source: Point, target: Point): number {
   return Math.hypot(source.x - target.x, source.y - target.y);
 }

@@ -75,8 +75,9 @@ const html = String.raw`
       for (const monsterSpec of monsterSpecs) {
         Math.random = createSeededRandom(monsterSpec.seed);
         const monster = createMonster(monsterSpec);
-        const effect = monster.createDeathEffect();
-        const particles = effect.particles;
+        const result = new UpdateResult();
+        monster.addDeathEffect(result);
+        const particles = result.particles;
 
         sheetContext.fillStyle = "#020807";
         sheetContext.fillRect(0, 0, SHEET_WIDTH, SHEET_HEIGHT);
@@ -224,7 +225,7 @@ let browser;
 try {
   await server.listen(0);
   const url = server.resolvedUrls.local[0];
-  browser = await chromium.launch();
+  browser = await launchBrowser();
   const page = await browser.newPage({
     viewport: { width: 1600, height: 1000 },
     deviceScaleFactor: 1,
@@ -243,4 +244,15 @@ try {
 } finally {
   await browser?.close();
   await server.close();
+}
+
+async function launchBrowser() {
+  try {
+    return await chromium.launch();
+  } catch (error) {
+    if (String(error).includes("Executable doesn't exist")) {
+      return chromium.launch({ channel: "chrome" });
+    }
+    throw error;
+  }
 }

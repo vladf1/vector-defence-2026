@@ -131,8 +131,8 @@ const html = String.raw`
       ]);
 
       const deathParticleSpecs = monsterSpecs.map(([name, makeMonster]) => [
-        name.replace("monster:", "death-particles:").replace(".draw", ".createDeathEffect().particles.draw"),
-        () => makeMonster().createDeathEffect().particles,
+        name.replace("monster:", "death-particles:").replace(".draw", ".addDeathEffect(...).particles.draw"),
+        () => makeDeathParticles(makeMonster()),
       ]);
 
       const benchmarks = [
@@ -240,6 +240,12 @@ const html = String.raw`
             context.restore();
           },
         };
+      }
+
+      function makeDeathParticles(monster) {
+        const result = new UpdateResult();
+        monster.addDeathEffect(result);
+        return result.particles;
       }
 
       function warmed(drawable, seconds) {
