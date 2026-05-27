@@ -98,6 +98,8 @@ Gameplay / UI notes:
 - Later campaign waves introduce `bulwark` and `berserker` monsters; do not assume the early handcrafted `game-levels.json` sequences cover the full runtime enemy roster.
 - Monster spawning is orchestrated by `Game.spawnMonster(...)`, but monster construction and lifecycle event wiring are centralized in `src/game-engine/monster-factory.ts`; tower creation is centralized in `Game.createTower(...)`.
 - Monster classes should own their own body rendering. Shared monster rendering concerns belong in `Monster`.
+- Monster-specific visual animations, such as tank turret spins or packman mouth/body flourishes, should live on the concrete monster class and run through `updateSpecial(...)`; if an animation changes visible body geometry or orientation, keep that current shape reflected in the monster's `addDeathEffect(...)` outline/rotation so shards match the death frame.
+- Use shared easing helpers from `src/utils.ts` for monster animation progress, and keep mutually exclusive monster flourishes in one local state machine when they should not overlap.
 - Tower classes should own their own drawing and attack behavior. Shared tower rendering/selection concerns belong in `Tower`.
 - Svelte components should consume `HudSnapshot` and `ModalView` data rather than reaching into the `Game` object directly.
 - The HUD selection card supports upgrade, sell, and cancel-build actions; keep those interactions flowing through `GameSession` and the HUD snapshot rather than binding components directly to `Game`.
@@ -128,14 +130,14 @@ Tower render sheet:
 Monster explosion render sheets:
 
 - `node scripts/render-monster-explosions.mjs` generates large early-stage contact sheets for every monster under `artifacts/monster-explosion-sequence/`.
-- The script starts a temporary Vite server, opens it with Playwright, imports the real monster classes, calls each monster's actual `createDeathEffect()`, and renders detailed early explosion frames with the intact monster as frame 0.
+- The script starts a temporary Vite server, opens it with Playwright, imports the real monster classes, calls each monster's actual `addDeathEffect(...)`, and renders detailed early explosion frames with the intact monster as frame 0.
 - Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
 
 Monster explosion testing showcase:
 
 - `explosions.html` is a separate desktop-only Vite page for inspecting monsters zoomed way in as they move into center and explode in slow motion.
 - Its behavior lives in `src/explosion-testing.ts`; keep changes isolated there unless deliberately promoting the page into the main game runtime.
-- The page reuses the real monster classes and each monster's actual `createDeathEffect()` particles, and intentionally uses normal runtime randomness rather than seeded output.
+- The page reuses the real monster classes and each monster's actual `addDeathEffect(...)` particles, and intentionally uses normal runtime randomness rather than seeded output.
 - The production build emits `explosions.html` as a separate Rollup entry like `soundboard.html`; keep `src/explosion-testing.ts` out of the main game imports so the game does not load its testing-only JavaScript.
 
 Audio assets:
