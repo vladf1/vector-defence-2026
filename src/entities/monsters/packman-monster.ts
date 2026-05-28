@@ -125,9 +125,8 @@ export class PackManMonster extends Monster {
 
 function getPackManMouthAngle(animationProgress: number): number {
   const clampedProgress = Math.max(0, Math.min(1, animationProgress));
-  const mirroredProgress = clampedProgress <= 0.5
-    ? clampedProgress * 2
-    : (1 - clampedProgress) * 2;
+  const snapProgress = clampedProgress < 1 ? (clampedProgress * 2) % 1 : 1;
+  const mirroredProgress = snapProgress <= 0.5 ? snapProgress * 2 : (1 - snapProgress) * 2;
   const closeThenOpen = easeInOutSine(mirroredProgress);
   return MOUTH_OPEN_ANGLE - ((MOUTH_OPEN_ANGLE - MOUTH_CLOSED_ANGLE) * closeThenOpen);
 }
