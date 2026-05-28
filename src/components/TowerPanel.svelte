@@ -94,8 +94,10 @@
 
   {#if profile.mode === "mobile" && !$hud.hasSelectedTower && !$hud.placingTower}
     <div
+      class:disabled-selection-panel={$hud.towerButtonsDisabled}
       class:tower-border-panel={$hud.towerButtonsDisabled}
       class="control-card selection-card idle-selection-card"
+      aria-disabled={$hud.towerButtonsDisabled}
     >
       <div class="selection-header">
         <div class="selection-copy">
@@ -106,8 +108,10 @@
     </div>
   {:else if profile.mode !== "mobile" || $hud.hasSelectedTower || $hud.placingTower}
     <div
+      class:disabled-selection-panel={$hud.towerButtonsDisabled}
       class:tower-border-panel={$hud.towerButtonsDisabled || (!$hud.hasSelectedTower && !$hud.placingTower)}
       class="control-card selection-card"
+      aria-disabled={$hud.towerButtonsDisabled}
     >
       <div class="selection-header">
         <div class="selection-copy">

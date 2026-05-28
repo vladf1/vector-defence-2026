@@ -611,6 +611,10 @@ textarea,
   background: linear-gradient(180deg, rgba(8, 17, 14, 0.98), rgba(24, 43, 38, 0.96) 48%, rgba(8, 17, 14, 0.98));
 }
 
+.selection-card.disabled-selection-panel {
+  opacity: 0.45;
+}
+
 .selection-header {
   display: flex;
   align-items: center;
