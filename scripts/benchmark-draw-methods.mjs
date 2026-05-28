@@ -249,7 +249,12 @@ const html = String.raw`
       }
 
       function warmed(drawable, seconds) {
-        drawable.update(seconds);
+        drawable.update({
+          deltaSeconds: seconds,
+          fieldWidth: 960,
+          fieldHeight: 540,
+          activeMonsters: [],
+        });
         return drawable;
       }
 
