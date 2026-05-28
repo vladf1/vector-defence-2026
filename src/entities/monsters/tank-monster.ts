@@ -2,7 +2,7 @@ import { TankTurretParticle } from "../effects/tank-turret-particle";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { AudioCue } from "../../types";
-import { easeInOutCubic, randomRange } from "../../utils";
+import { easeInOutCubic, hexWithAlpha, randomRange } from "../../utils";
 import { createPolygonShardParticles, rotatePoint } from "./death-effect-helpers";
 import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
@@ -33,6 +33,13 @@ const TURRET_SPIN_INTERVAL_MIN_SECONDS = 3;
 const TURRET_SPIN_INTERVAL_MAX_SECONDS = 10;
 const TURRET_SPIN_DURATION_SECONDS = 2.2;
 const FULL_ROTATION = Math.PI * 2;
+const TREAD_MARK_SPACING = RADIUS * 0.26;
+const TREAD_MARK_HEIGHT = RADIUS * 0.18;
+const TREAD_TRACK_Y_OFFSET = RADIUS * 0.5;
+const TREAD_TRACK_WIDTH = RADIUS * 1.72;
+const TREAD_TRACK_LEFT = -RADIUS * 0.82;
+const TREAD_MARK_COLOR = "#d8e2ff";
+const TREAD_CRAWL_DISTANCE_SCALE = 0.28;
 
 export class TankMonster extends Monster {
   private turretRotation = 0;
@@ -60,6 +67,7 @@ export class TankMonster extends Monster {
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
     context.fillRect(HULL_RECT.x, HULL_RECT.y, HULL_RECT.width, HULL_RECT.height);
+    drawTankTreads(context, this.distanceAlongPath);
     context.strokeRect(HULL_RECT.x, HULL_RECT.y, HULL_RECT.width, HULL_RECT.height);
     context.translate(getTankTurretCenterOffsetX(this.radius), 0);
     drawTankTurret(context, this.radius, 0.42, 1.52, this.turretRotation);
@@ -108,5 +116,34 @@ export class TankMonster extends Monster {
       this.turretSpinElapsedSeconds = 0;
       this.secondsUntilTurretSpin = randomRange(TURRET_SPIN_INTERVAL_MIN_SECONDS, TURRET_SPIN_INTERVAL_MAX_SECONDS);
     }
+  }
+}
+
+function drawTankTreads(context: CanvasRenderingContext2D, distanceAlongPath: number): void {
+  context.save();
+  context.strokeStyle = hexWithAlpha(TREAD_MARK_COLOR, 0.68);
+  context.lineWidth = 1;
+  context.lineCap = "round";
+
+  drawTankTreadTrack(context, -TREAD_TRACK_Y_OFFSET, distanceAlongPath);
+  drawTankTreadTrack(context, TREAD_TRACK_Y_OFFSET, distanceAlongPath + (TREAD_MARK_SPACING * 0.5));
+
+  context.restore();
+}
+
+function drawTankTreadTrack(context: CanvasRenderingContext2D, centerY: number, distanceAlongPath: number): void {
+  const offset = (distanceAlongPath * TREAD_CRAWL_DISTANCE_SCALE) % TREAD_MARK_SPACING;
+  const firstMarkX = TREAD_TRACK_LEFT - TREAD_MARK_SPACING + offset;
+  const rightEdge = TREAD_TRACK_LEFT + TREAD_TRACK_WIDTH;
+
+  for (let markX = firstMarkX; markX <= rightEdge; markX += TREAD_MARK_SPACING) {
+    if (markX < TREAD_TRACK_LEFT || markX > rightEdge) {
+      continue;
+    }
+
+    context.beginPath();
+    context.moveTo(markX, centerY - (TREAD_MARK_HEIGHT / 2));
+    context.lineTo(markX, centerY + (TREAD_MARK_HEIGHT / 2));
+    context.stroke();
   }
 }
