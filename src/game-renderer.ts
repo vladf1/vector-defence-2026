@@ -1,6 +1,5 @@
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
-import { GameState } from "./types";
 import type { Game } from "./game-engine";
 
 const ROAD_COLOR = "rgba(8, 40, 36, 0.96)";
@@ -18,12 +17,6 @@ const COMPACT_UPGRADE_BUTTON_EDGE_GUTTER = 58;
 const UPGRADE_BUTTON_BELOW_OFFSET = 22;
 const UPGRADE_BUTTON_ABOVE_OFFSET = 22;
 const UPGRADE_BUTTON_ABOVE_THRESHOLD = 56;
-const PAUSE_BUTTON_WIDTH = 34;
-const PAUSE_BUTTON_HEIGHT = 24;
-const COMPACT_PAUSE_BUTTON_WIDTH = 64;
-const COMPACT_PAUSE_BUTTON_HEIGHT = 42;
-const PAUSE_BUTTON_TOP = 10;
-const PAUSE_BUTTON_RIGHT = 10;
 const COMPACT_CANVAS_WIDTH_THRESHOLD = 520;
 const GRID_FADE_EDGE_ALPHA = 0.035;
 const GRID_FADE_CENTER_ALPHA = 0.07;
@@ -179,32 +172,7 @@ export class GameRenderer {
     this.drawPreview(this.ctx);
     this.drawUpgradeButton(this.ctx);
     this.drawLaserLockButton(this.ctx);
-    this.drawPauseButton(this.ctx);
     this.ctx.restore();
-  }
-
-  getPauseButtonRect(): CanvasButtonRect | undefined {
-    if (!this.game.profile.ui.drawCanvasPauseButton || !this.canTogglePause()) {
-      return undefined;
-    }
-
-    const width = this.getPauseButtonWidth();
-    const height = this.getPauseButtonHeight();
-    return {
-      x: this.fieldWidth - PAUSE_BUTTON_RIGHT - width,
-      y: PAUSE_BUTTON_TOP,
-      width,
-      height,
-    };
-  }
-
-  isPointInPauseButton(point: { x: number; y: number }): boolean {
-    const rect = this.getPauseButtonRect();
-    return rect !== undefined
-      && point.x >= rect.x
-      && point.x <= rect.x + rect.width
-      && point.y >= rect.y
-      && point.y <= rect.y + rect.height;
   }
 
   getUpgradeButtonRect(): CanvasButtonRect | undefined {
@@ -453,14 +421,6 @@ export class GameRenderer {
     context.restore();
   }
 
-  private getPauseButtonWidth(): number {
-    return this.isCompactLayout ? COMPACT_PAUSE_BUTTON_WIDTH : PAUSE_BUTTON_WIDTH;
-  }
-
-  private getPauseButtonHeight(): number {
-    return this.isCompactLayout ? COMPACT_PAUSE_BUTTON_HEIGHT : PAUSE_BUTTON_HEIGHT;
-  }
-
   private getUpgradeButtonWidth(actionCount = 1): number {
     if (!this.isCompactLayout) {
       return UPGRADE_BUTTON_WIDTH;
@@ -471,54 +431,6 @@ export class GameRenderer {
 
   private getUpgradeButtonHeight(): number {
     return this.isCompactLayout ? COMPACT_UPGRADE_BUTTON_HEIGHT : UPGRADE_BUTTON_HEIGHT;
-  }
-
-  private drawPauseButton(context: CanvasRenderingContext2D): void {
-    const rect = this.getPauseButtonRect();
-    if (!rect) {
-      return;
-    }
-
-    const hovered = this.game.runtime.pointer ? this.isPointInPauseButton(this.game.runtime.pointer) : false;
-    context.save();
-    context.fillStyle = hovered ? "rgba(33, 57, 50, 0.52)" : "rgba(8, 16, 13, 0.86)";
-    context.strokeStyle = hovered ? "rgba(255, 255, 255, 0.34)" : "rgba(255, 255, 255, 0.16)";
-    context.lineWidth = 1;
-    context.beginPath();
-    context.roundRect(rect.x, rect.y, rect.width, rect.height, 8);
-    context.fill();
-    context.stroke();
-    context.fillStyle = "rgba(176, 255, 225, 0.96)";
-    const iconScale = this.isCompactLayout ? 1.45 : 1;
-    if (this.game.state === GameState.Paused) {
-      this.drawPlayIcon(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2), iconScale);
-    } else {
-      this.drawPauseIcon(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2), iconScale);
-    }
-    context.restore();
-  }
-
-  private drawPlayIcon(context: CanvasRenderingContext2D, centerX: number, centerY: number, scale = 1): void {
-    const halfHeight = 6 * scale;
-    context.beginPath();
-    context.moveTo(centerX - (4 * scale), centerY - halfHeight);
-    context.lineTo(centerX - (4 * scale), centerY + halfHeight);
-    context.lineTo(centerX + (7 * scale), centerY);
-    context.closePath();
-    context.fill();
-  }
-
-  private drawPauseIcon(context: CanvasRenderingContext2D, centerX: number, centerY: number, scale = 1): void {
-    const barWidth = 3 * scale;
-    const barHeight = 13 * scale;
-    const gap = 2.5 * scale;
-    const top = centerY - (barHeight / 2);
-    context.fillRect(centerX - gap - barWidth, top, barWidth, barHeight);
-    context.fillRect(centerX + gap, top, barWidth, barHeight);
-  }
-
-  private canTogglePause(): boolean {
-    return this.game.state === GameState.Playing || this.game.state === GameState.Paused;
   }
 
   private drawUpgradeButton(context: CanvasRenderingContext2D): void {

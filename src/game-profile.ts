@@ -36,7 +36,6 @@ export interface GameProfile {
   ui: {
     dragOnlyTowerPlacement: boolean;
     drawCanvasTowerActions: boolean;
-    drawCanvasPauseButton: boolean;
     showShortcutLabels: boolean;
     showTitle: boolean;
     showFootnote: boolean;
@@ -104,7 +103,6 @@ export const DESKTOP_GAME_PROFILE = createProfile({
   ui: {
     dragOnlyTowerPlacement: false,
     drawCanvasTowerActions: true,
-    drawCanvasPauseButton: false,
     showShortcutLabels: true,
     showTitle: true,
     showFootnote: true,
@@ -127,7 +125,6 @@ export const MOBILE_GAME_PROFILE = createProfile({
   ui: {
     dragOnlyTowerPlacement: false,
     drawCanvasTowerActions: false,
-    drawCanvasPauseButton: false,
     showShortcutLabels: false,
     showTitle: false,
     showFootnote: false,

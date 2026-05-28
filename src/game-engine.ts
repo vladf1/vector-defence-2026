@@ -391,11 +391,6 @@ export class Game {
       return;
     }
 
-    if (this.renderer.isPointInPauseButton(point)) {
-      this.togglePause();
-      return;
-    }
-
     if (!this.canPerformBattleAction()) {
       return;
     }
