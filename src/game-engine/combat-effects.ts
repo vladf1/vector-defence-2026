@@ -1,3 +1,4 @@
+import { EscapeFragmentParticle } from "../entities/effects/escape-fragment-particle";
 import { HitRingEffect } from "../entities/effects/hit-ring-effect";
 import { EmberStreakParticle, SmokeParticle } from "../entities/effects/missile-explosion-effect";
 import { Particle } from "../entities/effects/particle";
@@ -51,18 +52,42 @@ export function createMissileExplosionParticles(x: number, y: number, blastAngle
 
 export function createEscapeBurstParticles(x: number, y: number): Particle[] {
   const particles: Particle[] = [
-    new ShockwaveEffect(x, y, 1.65),
+    new ShockwaveEffect(x, y, 1.45),
     new HitRingEffect(x, y, "#b0ffe1", 24),
-    new HitRingEffect(x, y, "#ffe36f", 15),
+    new HitRingEffect(x, y, "#ffe36f", 12),
   ];
 
-  const colors = ["#b0ffe1", "#6df0c2", "#ffe36f", "#ffffff", "#7fd7ff"];
-  for (let index = 0; index < 130; index += 1) {
+  const colors = ["#b0ffe1", "#6df0c2", "#ffe36f", "#f4fff8", "#7fd7ff"];
+  for (let index = 0; index < 58; index += 1) {
     const color = colors[Math.floor(randomRange(0, colors.length))] ?? "#b0ffe1";
-    particles.push(new Particle(x, y, randomRange(1.5, 5.5), color, randomRange(1.1, 1.8), {
-      speedPerSecond: randomRange(150, 520),
-      offset: randomRange(1, 7),
-    }));
+    particles.push(new EscapeFragmentParticle(
+      x,
+      y,
+      color,
+      randomRange(-Math.PI, Math.PI),
+      randomRange(185, 500),
+      randomRange(5.5, 13),
+      randomRange(2.4, 5.2),
+      randomRange(3, 9),
+    ));
+  }
+
+  for (let index = 0; index < 30; index += 1) {
+    const color = colors[Math.floor(randomRange(0, colors.length))] ?? "#b0ffe1";
+    particles.push(new EscapeFragmentParticle(
+      x,
+      y,
+      color,
+      randomRange(-Math.PI, Math.PI),
+      randomRange(260, 620),
+      randomRange(2.8, 6.8),
+      randomRange(1.1, 2.6),
+      randomRange(2, 11),
+    ));
+  }
+
+  for (let index = 0; index < 18; index += 1) {
+    particles.push(new SmokeParticle(x, y, randomRange(-Math.PI, Math.PI), 2));
   }
   return particles;
 }

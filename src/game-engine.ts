@@ -46,6 +46,7 @@ export interface GameFrameTimings {
 }
 
 export const TEMPORARILY_UNLOCK_ALL_LEVELS = true;
+const ESCAPE_LOSS_DELAY_SECONDS = 1;
 
 export function createLevels(gameMode: GameModeValue): LevelData[] {
   return createCampaignLevels(normalizeLevels(levelsJson as LevelJsonData[], gameMode), gameMode === GameMode.Mobile);
@@ -84,6 +85,7 @@ export class Game {
   bannerTimer = 0;
   hudDirty = true;
   modalDirty = true;
+  private lossDelaySeconds = 0;
   readonly profile: GameProfile;
 
   constructor(
@@ -145,7 +147,7 @@ export class Game {
     }
 
     for (const monster of result.escapedMonsters) {
-      if (this.state !== GameState.Playing || this.runtime.escapesLeft === 0) {
+      if (this.state !== GameState.Playing || (this.runtime.escapesLeft === 0 && this.lossDelaySeconds === 0)) {
         break;
       }
       this.onMonsterEscaped(monster, result);
@@ -199,6 +201,7 @@ export class Game {
   startLevel(level: LevelData): void {
     this.currentLevelIndex = this.levels.findIndex((candidate) => candidate.id === level.id || candidate === level);
     this.runtime = new LevelRuntime(level, this.profile.roadTurnRadius, this.profile.routeCurveSampleStep);
+    this.lossDelaySeconds = 0;
     this.menuReturnState = undefined;
     this.setBanner(`Level ${level.levelNumber ?? "?"}: ${level.name}`, 2.4);
     this.setState(GameState.Playing);
@@ -308,9 +311,11 @@ export class Game {
       result.addParticle(particle);
     }
     result.playSound(AudioCue.EscapeBurst, monster.x);
+    const escapesLeftBefore = this.runtime.escapesLeft;
     this.runtime.escapesLeft = Math.max(0, this.runtime.escapesLeft - 1);
-    if (this.runtime.escapesLeft === 0) {
-      this.loseLevel();
+    if (escapesLeftBefore > 0 && this.runtime.escapesLeft === 0) {
+      this.lossDelaySeconds = ESCAPE_LOSS_DELAY_SECONDS;
+      this.setBanner("Base breached", ESCAPE_LOSS_DELAY_SECONDS);
     }
     this.requestHudSync();
   }
@@ -320,6 +325,7 @@ export class Game {
       return;
     }
 
+    this.lossDelaySeconds = 0;
     this.runtime.monsters.forEach((item) => {
       item.removed = true;
     });
@@ -622,6 +628,13 @@ export class Game {
       this.bannerTimer = Math.max(0, this.bannerTimer - deltaSeconds);
       if (previousBannerActive && this.bannerTimer === 0) {
         this.requestHudSync();
+      }
+    }
+
+    if (this.lossDelaySeconds > 0) {
+      this.lossDelaySeconds = Math.max(0, this.lossDelaySeconds - deltaSeconds);
+      if (this.lossDelaySeconds === 0) {
+        this.loseLevel();
       }
     }
 
