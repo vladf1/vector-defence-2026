@@ -23,7 +23,10 @@
   setGameSessionContext(session);
 </script>
 
-<div class={`shell ${profile.mode === "mobile" ? "mobile-shell" : ""}`}>
+<div
+  class={`shell ${profile.mode === "mobile" ? "mobile-shell" : ""}${showNerdStats ? " nerd-stats-open" : ""}`}
+  style={`--field-aspect-scale: ${profile.fieldAspectScale};`}
+>
   {#if profile.ui.portraitOnly}
     <div class="orientation-blocker">
       <strong>Rotate to portrait</strong>

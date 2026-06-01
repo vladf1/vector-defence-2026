@@ -46,10 +46,21 @@ textarea,
 }
 
 .shell {
-  width: min(1000px, 100%);
+  --desktop-board-height-reserve: 184px;
+  width: min(
+    calc(100vw - 24px),
+    calc((var(--app-viewport-height) - var(--desktop-board-height-reserve)) * var(--field-aspect-scale))
+  );
+  height: calc(var(--app-viewport-height) - 24px);
   margin: 0 auto;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  align-content: stretch;
   gap: 10px;
+}
+
+.shell.nerd-stats-open {
+  --desktop-board-height-reserve: 240px;
 }
 
 .orientation-blocker {
@@ -195,6 +206,7 @@ textarea,
 
 .board-card {
   position: relative;
+  min-height: 0;
   background: var(--panel-strong);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -207,6 +219,7 @@ textarea,
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 100%;
   border-radius: 10px;
   overflow: hidden;
   background: #07110d;
