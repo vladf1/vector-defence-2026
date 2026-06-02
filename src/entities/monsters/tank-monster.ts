@@ -34,12 +34,15 @@ const TURRET_SPIN_INTERVAL_MAX_SECONDS = 10;
 const TURRET_SPIN_DURATION_SECONDS = 2.2;
 const FULL_ROTATION = Math.PI * 2;
 const TREAD_MARK_SPACING = RADIUS * 0.26;
-const TREAD_MARK_HEIGHT = RADIUS * 0.18;
-const TREAD_TRACK_Y_OFFSET = RADIUS * 0.5;
-const TREAD_TRACK_WIDTH = RADIUS * 1.72;
-const TREAD_TRACK_LEFT = -RADIUS * 0.82;
+const TREAD_MARK_LENGTH = RADIUS * 0.22;
+const TREAD_MARK_OUTER_INSET = RADIUS * 0.14;
+const TREAD_TRAVEL_INSET = RADIUS * 0.08;
+const TREAD_TRACK_LEFT = HULL_RECT.x + TREAD_TRAVEL_INSET;
+const TREAD_TRACK_WIDTH = HULL_RECT.width - (TREAD_TRAVEL_INSET * 2);
 const TREAD_MARK_COLOR = "#d8e2ff";
 const TREAD_CRAWL_DISTANCE_SCALE = 0.28;
+const TREAD_MARK_COUNT = Math.ceil(TREAD_TRACK_WIDTH / TREAD_MARK_SPACING);
+const TREAD_MARK_STEP = TREAD_TRACK_WIDTH / TREAD_MARK_COUNT;
 
 export class TankMonster extends Monster {
   private turretRotation = 0;
@@ -125,25 +128,25 @@ function drawTankTreads(context: CanvasRenderingContext2D, distanceAlongPath: nu
   context.lineWidth = 1;
   context.lineCap = "round";
 
-  drawTankTreadTrack(context, -TREAD_TRACK_Y_OFFSET, distanceAlongPath);
-  drawTankTreadTrack(context, TREAD_TRACK_Y_OFFSET, distanceAlongPath + (TREAD_MARK_SPACING * 0.5));
+  drawTankTreadTrack(context, -1, -distanceAlongPath);
+  drawTankTreadTrack(context, 1, distanceAlongPath);
 
   context.restore();
 }
 
-function drawTankTreadTrack(context: CanvasRenderingContext2D, centerY: number, distanceAlongPath: number): void {
-  const offset = (distanceAlongPath * TREAD_CRAWL_DISTANCE_SCALE) % TREAD_MARK_SPACING;
-  const firstMarkX = TREAD_TRACK_LEFT - TREAD_MARK_SPACING + offset;
-  const rightEdge = TREAD_TRACK_LEFT + TREAD_TRACK_WIDTH;
+function drawTankTreadTrack(context: CanvasRenderingContext2D, direction: -1 | 1, distanceAlongPath: number): void {
+  const rawOffset = distanceAlongPath * TREAD_CRAWL_DISTANCE_SCALE;
+  const offset = ((rawOffset % TREAD_MARK_STEP) + TREAD_MARK_STEP) % TREAD_MARK_STEP;
+  const outerY = direction < 0
+    ? HULL_RECT.y + TREAD_MARK_OUTER_INSET
+    : HULL_RECT.y + HULL_RECT.height - TREAD_MARK_OUTER_INSET;
+  const innerY = outerY - (direction * TREAD_MARK_LENGTH);
 
-  for (let markX = firstMarkX; markX <= rightEdge; markX += TREAD_MARK_SPACING) {
-    if (markX < TREAD_TRACK_LEFT || markX > rightEdge) {
-      continue;
-    }
-
+  for (let index = 0; index < TREAD_MARK_COUNT; index += 1) {
+    const markX = TREAD_TRACK_LEFT + (((index * TREAD_MARK_STEP) + offset) % TREAD_TRACK_WIDTH);
     context.beginPath();
-    context.moveTo(markX, centerY - (TREAD_MARK_HEIGHT / 2));
-    context.lineTo(markX, centerY + (TREAD_MARK_HEIGHT / 2));
+    context.moveTo(markX, outerY);
+    context.lineTo(markX, innerY);
     context.stroke();
   }
 }
