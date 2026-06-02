@@ -24,6 +24,7 @@ import {
   TowerKind,
   MonsterKind,
   type AudioCue as AudioCueValue,
+  type LevelJsonPoint,
   type LevelData,
   type LevelJsonData,
   type Point,
@@ -63,11 +64,17 @@ function normalizeLevels(data: LevelJsonData[], gameMode: GameModeValue): LevelD
 
     return {
       ...normalized,
+      points: normalized.points.map(normalizeLevelPoint),
       monsterSequence: normalized.monsterSequence.filter(
         (value): value is MonsterKind => Object.values(MonsterKind).includes(value as MonsterKind),
       ),
     };
   });
+}
+
+function normalizeLevelPoint(point: LevelJsonPoint): Point {
+  const [x, y] = point;
+  return { x, y };
 }
 
 export class Game {

@@ -82,13 +82,20 @@ const html = String.raw`
 
       function normalizeLevels(data, mode) {
         return data.map((level) => {
-          if (mode !== GameMode.Mobile || !level.mobile) {
-            return level;
-          }
-          const normalized = { ...level, ...level.mobile };
+          const normalized = mode !== GameMode.Mobile || !level.mobile
+            ? { ...level }
+            : { ...level, ...level.mobile };
           delete normalized.mobile;
-          return normalized;
+          return {
+            ...normalized,
+            points: normalized.points.map(normalizeLevelPoint),
+          };
         });
+      }
+
+      function normalizeLevelPoint(point) {
+        const [x, y] = point;
+        return { x, y };
       }
 
       function drawLevel(context, level, profile, index, x, y, cellWidth, cellHeight, cellPadding, titleHeight, footerHeight) {

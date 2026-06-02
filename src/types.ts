@@ -85,6 +85,8 @@ export interface Point {
   y: number;
 }
 
+export type LevelJsonPoint = [number, number];
+
 export interface WaveData {
   count: number;
   monsterSequence: MonsterKind[];
@@ -118,7 +120,7 @@ export interface LevelJsonData {
   monsterCount: number;
   allowEscape: number;
   monsterSequence: string[];
-  points: Point[];
+  points: LevelJsonPoint[];
   mobile?: Partial<Omit<LevelJsonData, "mobile">>;
 }
 
