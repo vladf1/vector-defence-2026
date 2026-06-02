@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "render:levels": "node scripts/render-levels.mjs",
     "render:towers": "node scripts/render-towers.mjs",
     "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
     "build:pages": "svelte-check --tsconfig ./tsconfig.json && vite build --base=/vector-defence-2026/",
