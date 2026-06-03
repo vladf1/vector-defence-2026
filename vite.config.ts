@@ -7,6 +7,9 @@ const rootDir = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
   plugins: [svelte()],
+  server: {
+    allowedHosts: [".trycloudflare.com"],
+  },
   build: {
     rollupOptions: {
       input: {
