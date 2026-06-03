@@ -36,16 +36,16 @@ export function createLaserImpactParticles(x: number, y: number, beamAngle: numb
 }
 
 export function createMissileExplosionParticles(x: number, y: number, blastAngle: number, level: number): Particle[] {
-  const particles: Particle[] = [
-    new ShockwaveEffect(x, y, 0.8 + (0.06 * level)),
-  ];
-
-  for (let index = 0; index < 14; index += 1) {
-    particles.push(new EmberStreakParticle(x, y, blastAngle, level));
-  }
+  const particles: Particle[] = [];
 
   for (let index = 0; index < 10; index += 1) {
     particles.push(new SmokeParticle(x, y, blastAngle, level));
+  }
+
+  particles.push(new ShockwaveEffect(x, y, 0.8 + (0.06 * level)));
+
+  for (let index = 0; index < 14; index += 1) {
+    particles.push(new EmberStreakParticle(x, y, blastAngle, level));
   }
   return particles;
 }
