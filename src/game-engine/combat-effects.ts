@@ -51,14 +51,10 @@ export function createMissileExplosionParticles(x: number, y: number, blastAngle
 }
 
 export function createEscapeBurstParticles(x: number, y: number): Particle[] {
-  const particles: Particle[] = [
-    new ShockwaveEffect(x, y, 1.45),
-    new HitRingEffect(x, y, "#b0ffe1", 24),
-    new HitRingEffect(x, y, "#ffe36f", 12),
-  ];
+  const particles: Particle[] = [];
 
   const colors = ["#b0ffe1", "#6df0c2", "#ffe36f", "#f4fff8", "#7fd7ff"];
-  for (let index = 0; index < 58; index += 1) {
+  for (let index = 0; index < 88; index += 1) {
     const color = colors[Math.floor(randomRange(0, colors.length))] ?? "#b0ffe1";
     particles.push(new EscapeFragmentParticle(
       x,
@@ -72,7 +68,7 @@ export function createEscapeBurstParticles(x: number, y: number): Particle[] {
     ));
   }
 
-  for (let index = 0; index < 30; index += 1) {
+  for (let index = 0; index < 48; index += 1) {
     const color = colors[Math.floor(randomRange(0, colors.length))] ?? "#b0ffe1";
     particles.push(new EscapeFragmentParticle(
       x,
@@ -86,8 +82,5 @@ export function createEscapeBurstParticles(x: number, y: number): Particle[] {
     ));
   }
 
-  for (let index = 0; index < 18; index += 1) {
-    particles.push(new SmokeParticle(x, y, randomRange(-Math.PI, Math.PI), 2));
-  }
   return particles;
 }

@@ -1,8 +1,6 @@
 import { EscapeFragmentParticle } from "./entities/effects/escape-fragment-particle";
-import { HitRingEffect } from "./entities/effects/hit-ring-effect";
 import { SmokeParticle } from "./entities/effects/missile-explosion-effect";
 import type { Particle } from "./entities/effects/particle";
-import { ShockwaveEffect } from "./entities/effects/shockwave-effect";
 import type { UpdateContext } from "./game-engine/update-context";
 import { randomRange } from "./utils";
 
@@ -86,9 +84,9 @@ interface BurstSettings {
 }
 
 const DEFAULT_SETTINGS: BurstSettings = {
-  largeFragments: 58,
-  smallFragments: 30,
-  smokeCount: 18,
+  largeFragments: 88,
+  smallFragments: 48,
+  smokeCount: 0,
   speedScale: 1,
   timeScale: 1,
   zoomScale: 1,
@@ -215,11 +213,7 @@ function clearBursts(): void {
 }
 
 function createEscapeBurstParticles(x: number, y: number, settings: BurstSettings): Particle[] {
-  const burstParticles: Particle[] = [
-    new ShockwaveEffect(x, y, 1.45),
-    new HitRingEffect(x, y, "#b0ffe1", 24),
-    new HitRingEffect(x, y, "#ffe36f", 12),
-  ];
+  const burstParticles: Particle[] = [];
 
   for (let index = 0; index < settings.largeFragments; index += 1) {
     burstParticles.push(new EscapeFragmentParticle(

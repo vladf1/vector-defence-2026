@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "benchmark:escape-fragments": "node scripts/benchmark-escape-fragments.mjs",
     "render:levels": "node scripts/render-levels.mjs",
     "render:towers": "node scripts/render-towers.mjs",
     "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
