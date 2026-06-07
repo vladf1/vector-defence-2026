@@ -75,6 +75,14 @@ export function getCenteredFieldViewport(
   };
 }
 
+function getCanvasDisplayScale(rect: DOMRect, viewport: CenteredFieldViewport): number {
+  if (rect.width <= 0 || rect.height <= 0 || viewport.width <= 0 || viewport.height <= 0) {
+    return 1;
+  }
+
+  return Math.min(rect.width / viewport.width, rect.height / viewport.height);
+}
+
 export class GameRenderer {
   backgroundCanvas: HTMLCanvasElement;
   backgroundCtx: CanvasRenderingContext2D;
@@ -86,6 +94,7 @@ export class GameRenderer {
   private viewportHeight = 0;
   private fieldOffsetX = 0;
   private fieldOffsetY = 0;
+  private backingScale = window.devicePixelRatio || 1;
 
   constructor(
     backgroundCanvas: HTMLCanvasElement,
@@ -112,17 +121,19 @@ export class GameRenderer {
     this.currentDpr = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
     const viewport = getCenteredFieldViewport(rect.width, rect.height, this.fieldWidth, this.fieldHeight);
+    const displayScale = getCanvasDisplayScale(rect, viewport);
+    this.backingScale = displayScale * this.currentDpr;
     this.viewportWidth = viewport.width;
     this.viewportHeight = viewport.height;
     this.fieldOffsetX = viewport.fieldOffsetX;
     this.fieldOffsetY = this.getCenteredLevelOffsetY(viewport.height, viewport.fieldOffsetY);
     this.isCompactLayout = rect.width <= COMPACT_CANVAS_WIDTH_THRESHOLD;
-    this.backgroundCanvas.width = Math.round(this.viewportWidth * this.currentDpr);
-    this.backgroundCanvas.height = Math.round(this.viewportHeight * this.currentDpr);
-    this.backgroundCtx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
-    this.canvas.width = Math.round(this.viewportWidth * this.currentDpr);
-    this.canvas.height = Math.round(this.viewportHeight * this.currentDpr);
-    this.ctx.setTransform(this.currentDpr, 0, 0, this.currentDpr, 0, 0);
+    this.backgroundCanvas.width = Math.round(this.viewportWidth * this.backingScale);
+    this.backgroundCanvas.height = Math.round(this.viewportHeight * this.backingScale);
+    this.backgroundCtx.setTransform(this.backingScale, 0, 0, this.backingScale, 0, 0);
+    this.canvas.width = Math.round(this.viewportWidth * this.backingScale);
+    this.canvas.height = Math.round(this.viewportHeight * this.backingScale);
+    this.ctx.setTransform(this.backingScale, 0, 0, this.backingScale, 0, 0);
     this.renderBackgroundLayer();
   }
 
