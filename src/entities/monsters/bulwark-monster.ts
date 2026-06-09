@@ -10,7 +10,7 @@ import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygo
 const COLOR = "#78d7ff";
 const ARMOR_GLOW_COLOR = "#dff7ff";
 const SPEED_PER_SECOND = 49;
-const HIT_POINTS = 341;
+const HIT_POINTS = 409;
 const BOUNTY = 4;
 const RADIUS = 9.5;
 const ARMOR_PER_HIT = 3.5;

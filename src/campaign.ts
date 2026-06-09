@@ -1,6 +1,9 @@
 import { MonsterKind, type LevelData, type WaveData } from "./types";
 import { clamp } from "./utils";
 
+const MOBILE_WAVE_COUNT_RATIO = 0.65;
+const MOBILE_SPAWN_INTERVAL_RATIO = 1.19;
+
 function uniqueSequence(sequence: MonsterKind[]): MonsterKind[] {
   const seen = new Set<MonsterKind>();
   const result: MonsterKind[] = [];
@@ -98,16 +101,16 @@ function buildWave(
   initialBuildTime: number,
   mobile: boolean,
 ): WaveData {
-  const countBase = 13 + (levelIndex * 1.6);
-  const countStep = 4 + Math.floor(levelIndex / 3);
-  const lastWaveBonus = waveIndex === waveTotal - 1 ? 4 + Math.round(levelIndex * 0.8) : 0;
-  const countScale = mobile ? 0.68 : 1;
+  const countBase = 14 + (levelIndex * 1.8);
+  const countStep = 4.4 + Math.floor(levelIndex / 3);
+  const lastWaveBonus = waveIndex === waveTotal - 1 ? 4.4 + Math.round(levelIndex * 0.9) : 0;
+  const countScale = mobile ? MOBILE_WAVE_COUNT_RATIO : 1;
   const count = Math.round((countBase + (waveIndex * countStep) + lastWaveBonus) * countScale);
   const pressure = (levelIndex * 0.65) + (waveIndex * 0.55);
-  const mobileSpawnScale = mobile ? 1.15 : 1;
-  const baseSpawnIntervalMin = clamp(0.82 - (pressure * 0.07), 0.24, 0.82);
-  const spawnIntervalMin = baseSpawnIntervalMin * mobileSpawnScale;
-  const spawnIntervalMax = clamp(baseSpawnIntervalMin + 0.34 - (Math.min(levelIndex, 6) * 0.01), baseSpawnIntervalMin + 0.12, 1.08) * mobileSpawnScale;
+  const spawnIntervalScale = mobile ? MOBILE_SPAWN_INTERVAL_RATIO : 1;
+  const baseSpawnIntervalMin = clamp(0.78 - (pressure * 0.067), 0.23, 0.78);
+  const spawnIntervalMin = baseSpawnIntervalMin * spawnIntervalScale;
+  const spawnIntervalMax = clamp(baseSpawnIntervalMin + 0.32 - (Math.min(levelIndex, 6) * 0.01), baseSpawnIntervalMin + 0.11, 1.03) * spawnIntervalScale;
   const intermission = clamp(5.75 - (levelIndex * 0.18) - (waveIndex * 0.32), 2.5, 5.5);
 
   return {

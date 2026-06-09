@@ -8,7 +8,7 @@ import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygo
 
 const COLOR = "#ffba4f";
 const SPEED_PER_SECOND = 95;
-const HIT_POINTS = 110;
+const HIT_POINTS = 132;
 const BOUNTY = 3;
 const RADIUS = 7;
 const OUTLINE_RADIUS = 7;

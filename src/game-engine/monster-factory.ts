@@ -14,6 +14,7 @@ import { randomRange } from "../utils";
 
 const MIN_SPLITTER_CHILD_OFFSET_DISTANCE = 10;
 const MAX_SPLITTER_CHILD_OFFSET_DISTANCE = 18;
+const HIT_POINT_BONUS_PER_LEVEL = 0.06;
 
 export function createMonster(game: Game, kind: MonsterKind, path: PathEntry[]): Monster {
   const monster = createBaseMonster(kind, path, game.profile.monsterSpeedScale);
@@ -97,6 +98,5 @@ function createBaseMonster(kind: MonsterKind, path: PathEntry[], speedScale: num
 
 function getLevelHitPointMultiplier(game: Game): number {
   const levelOffset = Math.max(0, game.currentLevelIndex);
-  const bonusPerLevel = 0.05;
-  return 1 + (levelOffset * bonusPerLevel);
+  return 1 + (levelOffset * HIT_POINT_BONUS_PER_LEVEL);
 }

@@ -10,7 +10,7 @@ import { drawTankTurret, getTankTurretCenterOffsetX } from "./tank-turret-render
 
 const COLOR = "#9fb6ff";
 const SPEED_PER_SECOND = 41;
-const HIT_POINTS = 462;
+const HIT_POINTS = 554;
 const BOUNTY = 6;
 const RADIUS = 10.5;
 const HULL_RECT = {
