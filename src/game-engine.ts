@@ -320,6 +320,9 @@ export class Game {
     result.playSound(AudioCue.EscapeBurst, monster.x);
     const escapesLeftBefore = this.runtime.escapesLeft;
     this.runtime.escapesLeft = Math.max(0, this.runtime.escapesLeft - 1);
+    if (this.runtime.escapesLeft !== escapesLeftBefore) {
+      this.renderBackgroundLayer();
+    }
     if (escapesLeftBefore > 0 && this.runtime.escapesLeft === 0) {
       this.lossDelaySeconds = ESCAPE_LOSS_DELAY_SECONDS;
       this.setBanner("Base breached", ESCAPE_LOSS_DELAY_SECONDS);

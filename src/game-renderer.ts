@@ -154,7 +154,6 @@ export class GameRenderer {
     this.ctx.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
     this.ctx.save();
     this.ctx.translate(this.fieldOffsetX, this.fieldOffsetY);
-    this.drawEscapeAllowance(this.ctx);
 
     for (const link of runtime.links) {
       link.draw(this.ctx);
@@ -321,6 +320,8 @@ export class GameRenderer {
     context.beginPath();
     context.arc(last.x, last.y, EXIT_MARKER_RADIUS, 0, Math.PI * 2);
     context.fill();
+
+    this.drawEscapeAllowance(context);
     context.restore();
   }
 
