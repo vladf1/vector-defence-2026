@@ -46,8 +46,6 @@ export class LightningLinkEffect {
     context.globalCompositeOperation = "lighter";
     context.lineCap = "round";
     context.lineJoin = "round";
-    context.shadowColor = this.color;
-    context.shadowBlur = 10 + sourceLevel;
 
     context.strokeStyle = hexWithAlpha(this.color, this.alpha * 0.42);
     context.lineWidth = 5 + (sourceLevel * 0.32);
