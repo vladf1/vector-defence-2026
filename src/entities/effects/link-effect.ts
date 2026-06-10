@@ -81,8 +81,6 @@ export class LinkEffect {
     context.strokeStyle = hexWithAlpha(SLOW_ARC_COLOR, this.alpha * 0.72);
     context.lineWidth = 1.15;
     context.lineCap = "round";
-    context.shadowColor = SLOW_ARC_COLOR;
-    context.shadowBlur = 5;
 
     context.beginPath();
     for (let index = 0; index < SLOW_ARC_COUNT; index += 1) {
