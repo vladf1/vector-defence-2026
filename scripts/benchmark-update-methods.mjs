@@ -335,7 +335,7 @@ const html = String.raw`
       function refillParticles(game, count, frame) {
         while (game.runtime.particles.length < count) {
           const index = game.runtime.particles.length + frame;
-          game.addParticle(new Particle(
+          game.runtime.particles.push(new Particle(
             30 + ((index * 29) % 560),
             30 + ((index * 31) % 340),
             2 + (index % 4),
@@ -357,7 +357,7 @@ const html = String.raw`
             level: 6,
             removed: false,
           };
-          game.addLink(index % 2 === 0
+          game.runtime.links.push(index % 2 === 0
             ? new LightningLinkEffect(source, targetMonster, "#8ff7ff")
             : new LinkEffect(targetMonster, "#d8ff4f", 0.2, source));
         }
