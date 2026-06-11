@@ -46,14 +46,14 @@
         <div class="level-grid">
           {#each $modal.levelCards as item}
             <button
-              class={`level-card${item.unlocked ? "" : " locked"}${item.cleared ? " cleared" : ""}${item.current ? " current" : ""}`}
+              class={`level-card${(!item.unlocked || item.status === "Ready") ? " locked" : ""}${item.cleared ? " cleared" : ""}${item.current ? " current" : ""}`}
               type="button"
-              disabled={!item.unlocked}
+              disabled={!item.unlocked || item.status === "Ready"}
               onclick={() => session.selectLevel(item.index)}
             >
               <div class="level-card-heading">
                 <strong>{item.level.levelNumber ?? "?"} - {item.level.name}</strong>
-                <span class="level-pill">{item.status}</span>
+                <span class="level-pill">{(!item.unlocked || item.status === "Ready") ? "Locked" : item.status}</span>
               </div>
               <span>{trimFinalPeriod(item.level.subtitle ?? "Hold the route.")}</span>
               <small>{item.level.waves?.length ?? 1} waves · {item.level.monsterCount} enemies</small>
