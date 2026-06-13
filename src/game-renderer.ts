@@ -18,10 +18,7 @@ const UPGRADE_BUTTON_BELOW_OFFSET = 22;
 const UPGRADE_BUTTON_ABOVE_OFFSET = 22;
 const UPGRADE_BUTTON_ABOVE_THRESHOLD = 56;
 const COMPACT_CANVAS_WIDTH_THRESHOLD = 520;
-const GRID_FADE_EDGE_ALPHA = 0.035;
-const GRID_FADE_CENTER_ALPHA = 0.07;
-const GRID_FADE_CENTER_START = 0.18;
-const GRID_FADE_CENTER_END = 0.82;
+const GRID_LINE_COLOR = "rgb(15, 28, 24)";
 
 export interface CanvasButtonRect {
   x: number;
@@ -71,7 +68,7 @@ export function getCenteredFieldViewport(
     width: fieldWidth,
     height,
     fieldOffsetX: 0,
-    fieldOffsetY: (height - fieldHeight) / 2,
+    fieldOffsetY: 0,
   };
 }
 
@@ -126,7 +123,7 @@ export class GameRenderer {
     this.viewportWidth = viewport.width;
     this.viewportHeight = viewport.height;
     this.fieldOffsetX = viewport.fieldOffsetX;
-    this.fieldOffsetY = this.getCenteredLevelOffsetY(viewport.height, viewport.fieldOffsetY);
+    this.fieldOffsetY = viewport.fieldOffsetY;
     this.isCompactLayout = rect.width <= COMPACT_CANVAS_WIDTH_THRESHOLD;
     this.backgroundCanvas.width = Math.round(this.viewportWidth * this.backingScale);
     this.backgroundCanvas.height = Math.round(this.viewportHeight * this.backingScale);
@@ -138,7 +135,6 @@ export class GameRenderer {
   }
 
   renderBackgroundLayer(): void {
-    this.fieldOffsetY = this.getCenteredLevelOffsetY(this.viewportHeight, this.fieldOffsetY);
     this.backgroundCtx.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
     this.drawCanvasBackdrop(this.backgroundCtx);
     this.backgroundCtx.save();
@@ -150,7 +146,6 @@ export class GameRenderer {
   draw(): void {
     const runtime = this.game.runtime;
 
-    this.fieldOffsetY = this.getCenteredLevelOffsetY(this.viewportHeight, this.fieldOffsetY);
     this.ctx.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
     this.ctx.save();
     this.ctx.translate(this.fieldOffsetX, this.fieldOffsetY);
@@ -265,24 +260,20 @@ export class GameRenderer {
     context.fillRect(0, 0, this.fieldWidth, this.fieldHeight);
 
     context.save();
-    const gridGradient = context.createLinearGradient(0, 0, 0, this.fieldHeight);
-    gridGradient.addColorStop(0, `rgba(255, 255, 255, ${GRID_FADE_EDGE_ALPHA})`);
-    gridGradient.addColorStop(GRID_FADE_CENTER_START, `rgba(255, 255, 255, ${GRID_FADE_CENTER_ALPHA})`);
-    gridGradient.addColorStop(GRID_FADE_CENTER_END, `rgba(255, 255, 255, ${GRID_FADE_CENTER_ALPHA})`);
-    gridGradient.addColorStop(1, `rgba(255, 255, 255, ${GRID_FADE_EDGE_ALPHA})`);
-    context.strokeStyle = gridGradient;
+    context.strokeStyle = GRID_LINE_COLOR;
+    context.lineWidth = 1;
     for (let x = 0; x <= this.fieldWidth; x += 35) {
+      const crispX = x + 0.5;
       context.beginPath();
-      context.moveTo(x, 0);
-      context.lineTo(x, this.fieldHeight);
+      context.moveTo(crispX, 0);
+      context.lineTo(crispX, this.fieldHeight);
       context.stroke();
     }
     for (let y = 0; y <= this.fieldHeight; y += 35) {
-      const alpha = this.getGridFadeAlpha(y, this.fieldHeight);
-      context.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      const crispY = y + 0.5;
       context.beginPath();
-      context.moveTo(0, y);
-      context.lineTo(this.fieldWidth, y);
+      context.moveTo(0, crispY);
+      context.lineTo(this.fieldWidth, crispY);
       context.stroke();
     }
     context.restore();
@@ -351,33 +342,23 @@ export class GameRenderer {
     context.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
 
     context.save();
-    const gridGradient = context.createLinearGradient(0, 0, 0, this.viewportHeight);
-    gridGradient.addColorStop(0, `rgba(255, 255, 255, ${GRID_FADE_EDGE_ALPHA})`);
-    gridGradient.addColorStop(GRID_FADE_CENTER_START, "rgba(255, 255, 255, 0.055)");
-    gridGradient.addColorStop(GRID_FADE_CENTER_END, "rgba(255, 255, 255, 0.055)");
-    gridGradient.addColorStop(1, `rgba(255, 255, 255, ${GRID_FADE_EDGE_ALPHA})`);
-    context.strokeStyle = gridGradient;
+    context.strokeStyle = GRID_LINE_COLOR;
+    context.lineWidth = 1;
     for (let x = 0; x <= this.viewportWidth; x += 35) {
+      const crispX = x + 0.5;
       context.beginPath();
-      context.moveTo(x, 0);
-      context.lineTo(x, this.viewportHeight);
+      context.moveTo(crispX, 0);
+      context.lineTo(crispX, this.viewportHeight);
       context.stroke();
     }
     for (let y = 0; y <= this.viewportHeight; y += 35) {
-      const alpha = this.getGridFadeAlpha(y, this.viewportHeight, 0.055);
-      context.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      const crispY = y + 0.5;
       context.beginPath();
-      context.moveTo(0, y);
-      context.lineTo(this.viewportWidth, y);
+      context.moveTo(0, crispY);
+      context.lineTo(this.viewportWidth, crispY);
       context.stroke();
     }
     context.restore();
-  }
-
-  private getGridFadeAlpha(y: number, height: number, centerAlpha = GRID_FADE_CENTER_ALPHA): number {
-    const distanceFromCenter = Math.abs((y / height) - 0.5) * 2;
-    const fadeProgress = Math.max(0, 1 - Math.max(0, distanceFromCenter - (GRID_FADE_CENTER_END - GRID_FADE_CENTER_START)) / (1 - (GRID_FADE_CENTER_END - GRID_FADE_CENTER_START)));
-    return GRID_FADE_EDGE_ALPHA + ((centerAlpha - GRID_FADE_EDGE_ALPHA) * fadeProgress);
   }
 
   toFieldPoint(point: { x: number; y: number }): { x: number; y: number } {
@@ -394,25 +375,6 @@ export class GameRenderer {
       maxX: this.viewportWidth - this.fieldOffsetX,
       maxY: this.viewportHeight - this.fieldOffsetY,
     };
-  }
-
-  private getCenteredLevelOffsetY(viewportHeight: number, fallbackOffsetY: number): number {
-    const level = this.game.currentLevel;
-    if (!level || level.points.length === 0 || viewportHeight <= this.fieldHeight) {
-      return fallbackOffsetY;
-    }
-
-    const halfRoadWidth = this.game.profile.roadWidth / 2;
-    let minY = Infinity;
-    let maxY = -Infinity;
-    for (const point of level.points) {
-      minY = Math.min(minY, point.y - halfRoadWidth);
-      maxY = Math.max(maxY, point.y + halfRoadWidth);
-    }
-
-    const levelCenterY = (minY + maxY) / 2;
-    const centeredOffsetY = (viewportHeight / 2) - levelCenterY;
-    return Math.max(0, Math.min(viewportHeight - this.fieldHeight, centeredOffsetY));
   }
 
   private drawEscapeAllowance(context: CanvasRenderingContext2D): void {
