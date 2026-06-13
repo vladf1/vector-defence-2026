@@ -17,79 +17,34 @@ function uniqueSequence(sequence: MonsterKind[]): MonsterKind[] {
 }
 
 function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, waveIndex: number): MonsterKind[] {
-  if (levelIndex === 0) {
-    return buildLevelOneShowcaseSequence(baseSequence, waveIndex);
-  }
-
-  const pressure = (levelIndex * 0.85) + (waveIndex * 0.9);
-  const pool: MonsterKind[] = [...baseSequence];
-
-  if (pressure >= 1.2) {
-    pool.push(MonsterKind.Square, MonsterKind.Runner);
-  }
-  if (pressure >= 2.2) {
-    pool.push(MonsterKind.Triangle, MonsterKind.Triangle);
-  }
-  if (pressure >= 3.3) {
-    pool.push(MonsterKind.Tank);
-  }
-  if (pressure >= 3.7) {
-    pool.push(MonsterKind.Bulwark);
-  }
-  if (pressure >= 4.1) {
-    pool.push(MonsterKind.Berserker);
-  }
-  if (pressure >= 4.6) {
-    pool.push(MonsterKind.Runner, MonsterKind.Square, MonsterKind.Tank, MonsterKind.Splitter, MonsterKind.Berserker, MonsterKind.Bulwark);
-  }
-  if (pressure >= 6.1) {
-    pool.push(MonsterKind.Triangle, MonsterKind.Runner, MonsterKind.Tank, MonsterKind.Splitter, MonsterKind.Berserker, MonsterKind.Bulwark);
-  }
-  const source = uniqueSequence(pool);
-  const length = clamp(5 + waveIndex + Math.floor(levelIndex / 2), 5, 12);
+  const source = uniqueSequence(baseSequence.length > 0 ? baseSequence : [MonsterKind.PackMan]);
+  const length = clamp(4 + waveIndex + Math.floor(levelIndex / 2), 4, 12);
   const sequence: MonsterKind[] = [];
+  const opening = source.includes(MonsterKind.Runner) && waveIndex % 3 === 1
+    ? MonsterKind.Runner
+    : (source.includes(MonsterKind.PackMan) ? MonsterKind.PackMan : source[0]);
 
+  sequence.push(opening ?? MonsterKind.PackMan);
   for (let index = 0; index < length; index += 1) {
-    sequence.push(source[(index + waveIndex + (levelIndex * 2)) % source.length] ?? MonsterKind.PackMan);
+    sequence.push(source[(index + waveIndex + levelIndex) % source.length] ?? MonsterKind.PackMan);
   }
 
-  if (pressure < 2.4) {
-    sequence.unshift(MonsterKind.PackMan);
-  } else if (pressure < 4.4) {
-    sequence.unshift(MonsterKind.Runner);
-  } else {
-    sequence.unshift(MonsterKind.Square);
+  const finisherOptions = [
+    MonsterKind.Tank,
+    MonsterKind.Splitter,
+    MonsterKind.Bulwark,
+    MonsterKind.Berserker,
+    MonsterKind.Triangle,
+    MonsterKind.Square,
+  ].filter((kind) => source.includes(kind));
+
+  if (waveIndex >= 2 && finisherOptions.length > 0) {
+    const finisher = finisherOptions[(waveIndex + levelIndex) % finisherOptions.length];
+    if (finisher) {
+      sequence.push(finisher);
+    }
   }
 
-  if (pressure >= 3.1) {
-    sequence.push(
-      waveIndex % 3 === 0
-        ? MonsterKind.Berserker
-        : (waveIndex % 2 === 0 ? MonsterKind.Tank : MonsterKind.Triangle),
-    );
-  }
-  if (pressure >= 4.3) {
-    sequence.push(waveIndex % 2 === 0 ? MonsterKind.Bulwark : MonsterKind.Square);
-  }
-  if (pressure >= 5.4) {
-    sequence.push(
-      waveIndex % 3 === 1
-        ? MonsterKind.Berserker
-        : (waveIndex % 2 === 0 ? MonsterKind.Splitter : MonsterKind.Runner),
-    );
-  }
-  return sequence;
-}
-
-function buildLevelOneShowcaseSequence(baseSequence: MonsterKind[], waveIndex: number): MonsterKind[] {
-  const source = baseSequence.length > 0 ? baseSequence : [MonsterKind.PackMan];
-  const sequence: MonsterKind[] = [];
-  for (let index = 0; index < source.length + 2; index += 1) {
-    sequence.push(
-      source[(index + waveIndex) % source.length]
-      ?? MonsterKind.PackMan,
-    );
-  }
   return sequence;
 }
 
@@ -101,9 +56,9 @@ function buildWave(
   initialBuildTime: number,
   mobile: boolean,
 ): WaveData {
-  const countBase = 14 + (levelIndex * 1.8);
-  const countStep = 4.4 + Math.floor(levelIndex / 3);
-  const lastWaveBonus = waveIndex === waveTotal - 1 ? 4.4 + Math.round(levelIndex * 0.9) : 0;
+  const countBase = 12 + (levelIndex * 1.5);
+  const countStep = 3.8 + Math.floor(levelIndex / 4);
+  const lastWaveBonus = waveIndex === waveTotal - 1 ? 4 + Math.round(levelIndex * 0.8) : 0;
   const countScale = mobile ? MOBILE_WAVE_COUNT_RATIO : 1;
   const count = Math.round((countBase + (waveIndex * countStep) + lastWaveBonus) * countScale);
   const pressure = (levelIndex * 0.65) + (waveIndex * 0.55);
@@ -119,7 +74,7 @@ function buildWave(
     spawnIntervalMin,
     spawnIntervalMax,
     buildTime: waveIndex === 0 ? initialBuildTime : intermission,
-    reward: Math.round((65 + (levelIndex * 10) + (waveIndex * 14)) / 10),
+    reward: Math.round((60 + (levelIndex * 9) + (waveIndex * 13)) / 10),
   };
 }
 

@@ -46,7 +46,6 @@ export interface GameFrameTimings {
   drawMs: number;
 }
 
-export const TEMPORARILY_UNLOCK_ALL_LEVELS = true;
 const ESCAPE_LOSS_DELAY_SECONDS = 1;
 
 export function createLevels(gameMode: GameModeValue): LevelData[] {
@@ -83,6 +82,7 @@ export class Game {
   audio: GameAudio;
   currentLevelIndex = -1;
   highestUnlockedLevelIndex = 0;
+  debugAllLevelsUnlocked = false;
   campaignCleared = false;
   menuReturnState?: BattleState;
   state: GameState = GameState.Menu;
@@ -223,11 +223,18 @@ export class Game {
     if (!level) {
       return;
     }
-    if (!TEMPORARILY_UNLOCK_ALL_LEVELS && !this.campaignCleared && index > this.highestUnlockedLevelIndex) {
+    if (!this.debugAllLevelsUnlocked && !this.campaignCleared && index > this.highestUnlockedLevelIndex) {
       this.playSound(AudioCue.InvalidAction);
       return;
     }
     this.startLevel(level);
+  }
+
+  unlockAllLevelsForDebug(): void {
+    this.debugAllLevelsUnlocked = true;
+    this.setBanner("All levels unlocked", 1.8);
+    this.requestModalSync();
+    this.requestHudSync();
   }
 
   restart(): void {

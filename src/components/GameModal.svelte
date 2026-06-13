@@ -25,12 +25,24 @@
             {/each}
           </div>
         {/if}
-      {/if}
-
-      {#if $modal.levelCards}
+      {:else}
         <div class="level-map-header">
-          <h2>{$modal.title}</h2>
+          <div>
+            <h2>{$modal.title}</h2>
+            <p>{trimFinalPeriod($modal.description)}</p>
+          </div>
+
+          {#if $modal.actions.length > 0}
+            <div class="selection-actions">
+              {#each $modal.actions as item}
+                <button class={`modal-button modal-action-${item.action}`} type="button" onclick={() => session.handleModalAction(item.action)}>
+                  {item.label}
+                </button>
+              {/each}
+            </div>
+          {/if}
         </div>
+
         <div class="level-grid">
           {#each $modal.levelCards as item}
             <button

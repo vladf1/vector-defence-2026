@@ -1,7 +1,6 @@
 import { createBannerText } from "./banner-text";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { TOWER_CLASSES, getTowerClass } from "./entities/towers/tower-registry";
-import { TEMPORARILY_UNLOCK_ALL_LEVELS } from "./game-engine";
 import { formatMoney } from "./utils";
 import type { Game } from "./game-engine";
 import {
@@ -186,7 +185,7 @@ export function createModalView(game: Game): ModalView | null {
         action: game.menuReturnState && game.currentLevel ? ModalAction.Resume : ModalAction.PlayUnlocked,
         label: game.menuReturnState && game.currentLevel
           ? "Resume Battle"
-          : (game.campaignCleared ? "Replay Campaign" : "Play Next Campaign Level"),
+          : (game.campaignCleared ? "Replay Campaign" : "Play Next"),
       },
     ];
 
@@ -199,7 +198,7 @@ export function createModalView(game: Game): ModalView | null {
 
     return {
       title: "Campaign Map",
-      description: `${game.campaignLevelCount} campaign battles. Hold each route and finish the full run.`,
+      description: `${game.campaignLevelCount} campaign battles. Clear one route to unlock the next.`,
       actions,
       levelCards: createModalLevelCards(game),
     };
@@ -277,12 +276,13 @@ function assertNever(value: never): never {
 
 function createModalLevelCards(game: Game): ModalLevelCardView[] {
   return game.levels.map((level, index) => {
-    const unlocked = TEMPORARILY_UNLOCK_ALL_LEVELS || game.campaignCleared || index <= game.highestUnlockedLevelIndex;
+    const unlocked = game.debugAllLevelsUnlocked || game.campaignCleared || index <= game.highestUnlockedLevelIndex;
     const cleared = game.campaignCleared || index < game.highestUnlockedLevelIndex;
     const current = game.currentLevelIndex === index && !!game.currentLevel;
+    const nextIndex = Math.min(game.highestUnlockedLevelIndex, game.campaignLevelCount - 1);
     const status = !unlocked
       ? "Locked"
-      : (cleared ? "Cleared" : (index === Math.min(game.highestUnlockedLevelIndex, game.campaignLevelCount - 1) ? "Next" : "Ready"));
+      : (cleared ? "Cleared" : (index === nextIndex ? "Next" : "Ready"));
 
     return {
       index,

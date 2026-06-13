@@ -523,6 +523,14 @@ export function createGameSession(profile: GameProfile): GameSession {
       return;
     }
 
+    if (import.meta.env.DEV && key === "o") {
+      event.preventDefault();
+      withGame((currentGame) => {
+        currentGame.unlockAllLevelsForDebug();
+      }, true);
+      return;
+    }
+
     if (profile.ui.dragOnlyTowerPlacement) {
       return;
     }

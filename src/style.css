@@ -337,9 +337,12 @@ textarea,
 }
 
 .modal-panel.level-map-panel {
-  background: rgba(7, 15, 12, 0.96);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: rgba(6, 10, 9, 0.98);
   border: 0;
   border-radius: 0;
+  overflow: hidden;
 }
 
 .modal-panel.modal-sheet {
@@ -380,32 +383,56 @@ textarea,
 }
 
 .level-map-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(222, 255, 240, 0.1);
 }
 
 .level-map-header h2 {
   margin: 0;
-  text-align: right;
+  text-align: left;
+}
+
+.level-map-header p {
+  max-width: 40rem;
+  margin: 5px 0 0;
+  line-height: 1.35;
+}
+
+.level-map-header .selection-actions {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+.level-map-header .modal-button {
+  min-height: 46px;
+  padding: 8px 13px;
+  border-radius: 10px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .level-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 10px;
   margin-top: 0;
+  overflow: auto;
+  padding: 1px;
+  align-content: start;
 }
 
 .level-card {
   position: relative;
-  border-radius: 0;
-  padding: 11px;
+  border-radius: 8px;
+  padding: 10px;
   text-align: left;
-  border: 0;
-  background: rgba(11, 22, 18, 0.92);
+  border: 1px solid rgba(222, 255, 240, 0.09);
+  background: rgba(9, 14, 13, 0.9);
   cursor: pointer;
   color: inherit;
   display: grid;
@@ -420,14 +447,15 @@ textarea,
 }
 
 .level-card-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 4px;
   min-width: 0;
 }
 
 .level-card:hover:not(:disabled) {
+  border-color: rgba(222, 255, 240, 0.2);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26);
 }
 
@@ -460,6 +488,15 @@ textarea,
   font-size: 0.88rem;
 }
 
+.level-card > span {
+  display: -webkit-box;
+  min-height: 2.35em;
+  line-height: 1.18;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .level-card small {
   color: rgba(222, 255, 240, 0.72);
   font-size: 0.75rem;
@@ -468,7 +505,7 @@ textarea,
 
 .level-card.locked {
   cursor: not-allowed;
-  background: rgba(5, 10, 8, 0.96);
+  background: rgba(5, 8, 8, 0.96);
   color: rgba(205, 220, 213, 0.62);
 }
 
@@ -485,6 +522,7 @@ textarea,
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  justify-self: start;
   min-height: 22px;
   padding: 0 8px;
   border-radius: 999px;
@@ -1162,6 +1200,8 @@ textarea,
   .modal-panel.level-map-panel {
     border: 0;
     border-radius: 0;
+    padding: 14px;
+    overflow: hidden;
   }
 
   .modal-panel h2 {
@@ -1169,9 +1209,11 @@ textarea,
   }
 
   .level-map-header {
-    gap: 4px;
-    margin-bottom: 14px;
-    padding: 2px 2px 6px;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 2px 2px 12px;
   }
 
   .level-map-header h2 {
@@ -1179,10 +1221,30 @@ textarea,
     letter-spacing: 0.02em;
   }
 
+  .level-map-header p {
+    margin-top: 4px;
+    font-size: 0.85rem;
+    line-height: 1.3;
+  }
+
+  .level-map-header .selection-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .level-map-header .modal-button {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+
   .level-grid {
     grid-template-columns: 1fr;
     gap: 0;
     margin-inline: -2px;
+    padding: 0 2px 4px;
   }
 
   .level-card {
@@ -1212,7 +1274,10 @@ textarea,
   }
 
   .level-card-heading {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
+    gap: 8px;
   }
 
   .level-card strong {
