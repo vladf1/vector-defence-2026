@@ -1431,8 +1431,22 @@ textarea,
     align-self: stretch;
     border: 0;
     border-radius: 0;
+    padding-top: 6px;
+    position: relative;
     background: transparent;
     box-shadow: none;
+  }
+
+  .mobile-shell .board-card::before {
+    content: "";
+    position: absolute;
+    right: 0;
+    left: 0;
+    top: 0;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(158, 255, 210, 0.28), rgba(158, 255, 210, 0.34) 50%, rgba(158, 255, 210, 0.28));
+    box-shadow: 0 5px 18px rgba(58, 255, 171, 0.08);
   }
 
   .mobile-shell .board-frame {
@@ -1484,7 +1498,7 @@ textarea,
     top: 0;
     height: 1px;
     pointer-events: none;
-    background: linear-gradient(90deg, transparent, rgba(158, 255, 210, 0.28) 12%, rgba(158, 255, 210, 0.34) 50%, rgba(158, 255, 210, 0.28) 88%, transparent);
+    background: linear-gradient(90deg, rgba(158, 255, 210, 0.28), rgba(158, 255, 210, 0.34) 50%, rgba(158, 255, 210, 0.28));
     box-shadow: 0 5px 18px rgba(58, 255, 171, 0.08);
   }
 
@@ -1598,6 +1612,7 @@ textarea,
   .mobile-shell .selection-copy {
     align-content: center;
     gap: 3px;
+    padding-left: 6px;
   }
 
   .mobile-shell .selected-tower-controls .selection-copy {
