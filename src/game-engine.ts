@@ -36,6 +36,7 @@ type BattleState = typeof GameState.Playing | typeof GameState.Paused;
 
 const HIGHEST_UNLOCKED_LEVEL_STORAGE_KEY = "vector-defence-2026:highest-unlocked-level:v1";
 const CAMPAIGN_CLEARED_STORAGE_KEY = "vector-defence-2026:campaign-cleared:v1";
+const LEVEL_STARS_STORAGE_KEY_PREFIX = "vector-defence-2026:level-stars:v1:";
 
 export function isBattleState(state: GameState): state is BattleState {
   return state === GameState.Playing || state === GameState.Paused;
@@ -86,6 +87,8 @@ export class Game {
   audio: GameAudio;
   currentLevelIndex = -1;
   highestUnlockedLevelIndex = 0;
+  levelStars: number[] = [];
+  lastAwardedStars = 0;
   debugAllLevelsUnlocked = false;
   campaignCleared = false;
   menuReturnState?: BattleState;
@@ -113,6 +116,7 @@ export class Game {
     this.profile = profile;
     this.renderer = new GameRenderer(backgroundCanvas, backgroundCtx, canvas, ctx, this);
     this.loadCampaignProgress();
+    this.loadLevelStars();
   }
 
   get activeWave(): WaveData | undefined {
@@ -212,6 +216,7 @@ export class Game {
 
   startLevel(level: LevelData): void {
     this.currentLevelIndex = this.levels.findIndex((candidate) => candidate.id === level.id || candidate === level);
+    this.lastAwardedStars = 0;
     this.runtime = new LevelRuntime(level, this.profile.roadTurnRadius, this.profile.routeCurveSampleStep);
     this.lossDelaySeconds = 0;
     this.menuReturnState = undefined;
@@ -253,8 +258,13 @@ export class Game {
   restartCampaign(): void {
     this.highestUnlockedLevelIndex = 0;
     this.campaignCleared = false;
+    this.levelStars = this.levels.map(() => 0);
+    this.lastAwardedStars = 0;
     window.localStorage.removeItem(HIGHEST_UNLOCKED_LEVEL_STORAGE_KEY);
     window.localStorage.removeItem(CAMPAIGN_CLEARED_STORAGE_KEY);
+    for (let index = 0; index < this.levels.length; index += 1) {
+      window.localStorage.removeItem(`${LEVEL_STARS_STORAGE_KEY_PREFIX}${index}`);
+    }
     this.startLevelByIndex(0);
   }
 
@@ -618,6 +628,8 @@ export class Game {
 
     const finalCampaignLevelIndex = this.campaignLevelCount - 1;
     const isFinalCampaignLevel = this.currentLevelIndex >= finalCampaignLevelIndex;
+    this.lastAwardedStars = this.calculateLevelStars();
+    this.recordLevelStars(this.lastAwardedStars);
     this.menuReturnState = undefined;
 
     if (isFinalCampaignLevel) {
@@ -653,6 +665,13 @@ export class Game {
       : clamp(highestUnlockedLevelIndex, 0, finalCampaignLevelIndex);
   }
 
+  private loadLevelStars(): void {
+    this.levelStars = this.levels.map((_, index) => {
+      const savedStars = Number(window.localStorage.getItem(`${LEVEL_STARS_STORAGE_KEY_PREFIX}${index}`) ?? 0);
+      return Number.isInteger(savedStars) ? clamp(savedStars, 0, 3) : 0;
+    });
+  }
+
   private saveCampaignProgress(): void {
     if (this.debugAllLevelsUnlocked) {
       return;
@@ -663,6 +682,30 @@ export class Game {
       window.localStorage.setItem(CAMPAIGN_CLEARED_STORAGE_KEY, "true");
     } else {
       window.localStorage.removeItem(CAMPAIGN_CLEARED_STORAGE_KEY);
+    }
+  }
+
+  private calculateLevelStars(): number {
+    if (!this.currentLevel) {
+      return 0;
+    }
+
+    if (this.runtime.escapesLeft >= this.currentLevel.allowEscape) {
+      return 3;
+    }
+
+    return this.runtime.escapesLeft >= Math.ceil(this.currentLevel.allowEscape / 2) ? 2 : 1;
+  }
+
+  private recordLevelStars(stars: number): void {
+    if (this.currentLevelIndex < 0) {
+      return;
+    }
+
+    const bestStars = Math.max(this.levelStars[this.currentLevelIndex] ?? 0, stars);
+    this.levelStars[this.currentLevelIndex] = bestStars;
+    if (!this.debugAllLevelsUnlocked) {
+      window.localStorage.setItem(`${LEVEL_STARS_STORAGE_KEY_PREFIX}${this.currentLevelIndex}`, String(bestStars));
     }
   }
 

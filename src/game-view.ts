@@ -10,6 +10,7 @@ import {
   type HudSnapshot,
   type ModalActionView,
   type ModalLevelCardView,
+  type ModalStarAwardView,
   type ModalView,
 } from "./types";
 
@@ -209,6 +210,7 @@ export function createModalView(game: Game): ModalView | null {
       title: "Level Clear",
       description: `Level ${game.currentLevel?.levelNumber ?? "?"} secured. Next route unlocked!`,
       sheet: true,
+      starAward: createModalStarAward(game),
       actions: [
         { action: ModalAction.NextLevel, label: `Continue to Level ${(game.currentLevel?.levelNumber ?? 0) + 1}` },
         { action: ModalAction.CampaignMap, label: "Campaign Map" },
@@ -222,6 +224,7 @@ export function createModalView(game: Game): ModalView | null {
       title: "You Won the Campaign",
       description: `All ${game.campaignLevelCount} campaign levels are secure.`,
       sheet: true,
+      starAward: createModalStarAward(game),
       actions: [
         { action: ModalAction.RestartCampaign, label: "Restart Campaign" },
         { action: ModalAction.CampaignMap, label: "Campaign Map" },
@@ -289,8 +292,18 @@ function createModalLevelCards(game: Game): ModalLevelCardView[] {
       unlocked,
       cleared,
       current,
+      stars: game.levelStars[index] ?? 0,
       status,
       level,
     };
   });
+}
+
+function createModalStarAward(game: Game): ModalStarAwardView {
+  const bestStars = game.currentLevelIndex >= 0 ? (game.levelStars[game.currentLevelIndex] ?? 0) : 0;
+  return {
+    stars: game.lastAwardedStars,
+    bestStars,
+    perfect: game.lastAwardedStars === 3,
+  };
 }

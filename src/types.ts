@@ -171,11 +171,18 @@ export interface ModalActionView {
   label: string;
 }
 
+export interface ModalStarAwardView {
+  stars: number;
+  bestStars: number;
+  perfect: boolean;
+}
+
 export interface ModalLevelCardView {
   index: number;
   unlocked: boolean;
   cleared: boolean;
   current: boolean;
+  stars: number;
   status: string;
   level: LevelData;
 }
@@ -186,4 +193,5 @@ export interface ModalView {
   actions: ModalActionView[];
   sheet?: boolean;
   levelCards?: ModalLevelCardView[];
+  starAward?: ModalStarAwardView;
 }

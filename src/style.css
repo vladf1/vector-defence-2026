@@ -382,6 +382,76 @@ textarea,
   background: linear-gradient(180deg, rgba(54, 145, 105, 0.98), rgba(21, 87, 61, 0.98));
 }
 
+.star-award {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  margin: 8px 0 20px;
+  padding: 2px 0 14px;
+  border-bottom: 1px solid rgba(255, 227, 111, 0.16);
+}
+
+.star-award-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.star-award-row span {
+  color: rgba(255, 255, 255, 0.16);
+  font-size: 2.8rem;
+  line-height: 1;
+  text-shadow: none;
+  transform: translateY(2px) scale(0.94);
+}
+
+.star-award-row span.earned {
+  color: #ffe36f;
+  text-shadow:
+    0 0 10px rgba(255, 227, 111, 0.36),
+    0 4px 16px rgba(255, 174, 43, 0.2);
+  transform: translateY(0) scale(1);
+}
+
+.star-award.perfect-award .star-award-row span.earned {
+  animation: star-pop 360ms ease-out both;
+}
+
+.star-award.perfect-award .star-award-row span.earned:nth-child(2) {
+  animation-delay: 80ms;
+}
+
+.star-award.perfect-award .star-award-row span.earned:nth-child(3) {
+  animation-delay: 160ms;
+}
+
+.star-award strong {
+  color: #fff4b3;
+  font-size: 1.08rem;
+}
+
+.star-award > span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+@keyframes star-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.62) rotate(-9deg);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.14) rotate(4deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0);
+  }
+}
+
 .level-map-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -495,6 +565,25 @@ textarea,
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.level-card > .level-stars {
+  display: flex;
+  gap: 3px;
+  min-height: 0;
+  line-height: 1;
+  overflow: visible;
+}
+
+.level-stars span {
+  color: rgba(255, 255, 255, 0.16);
+  font-size: 0.86rem;
+  line-height: 1;
+}
+
+.level-stars span.earned {
+  color: #ffe36f;
+  text-shadow: 0 0 7px rgba(255, 227, 111, 0.28);
 }
 
 .level-card small {
@@ -1152,6 +1241,23 @@ textarea,
     line-height: 1.25;
   }
 
+  .modal-panel.modal-sheet .star-award {
+    margin: 6px 0 14px;
+    padding-bottom: 12px;
+  }
+
+  .modal-panel.modal-sheet .star-award-row {
+    gap: 8px;
+  }
+
+  .modal-panel.modal-sheet .star-award-row span {
+    font-size: 2.25rem;
+  }
+
+  .modal-panel.modal-sheet .star-award strong {
+    font-size: 1rem;
+  }
+
   .modal-panel.modal-sheet .selection-actions {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -1294,6 +1400,21 @@ textarea,
   .level-card span {
     font-size: 0.82rem;
     line-height: 1.22;
+  }
+
+  .level-card > .level-stars {
+    min-height: 0;
+    line-height: 1;
+  }
+
+  .level-stars span {
+    color: rgba(255, 255, 255, 0.16);
+    font-size: 0.82rem;
+    line-height: 1;
+  }
+
+  .level-stars span.earned {
+    color: #ffe36f;
   }
 
   .level-card small {
