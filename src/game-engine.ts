@@ -15,6 +15,7 @@ import { Tower } from "./entities/towers/tower";
 import { LevelRuntime } from "./level-runtime";
 import { canPlaceTower, findTowerAtPoint } from "./placement-rules";
 import {
+  clamp,
   formatMoney,
   randomRange,
 } from "./utils";
@@ -32,6 +33,9 @@ import {
 } from "./types";
 
 type BattleState = typeof GameState.Playing | typeof GameState.Paused;
+
+const HIGHEST_UNLOCKED_LEVEL_STORAGE_KEY = "vector-defence-2026:highest-unlocked-level:v1";
+const CAMPAIGN_CLEARED_STORAGE_KEY = "vector-defence-2026:campaign-cleared:v1";
 
 export function isBattleState(state: GameState): state is BattleState {
   return state === GameState.Playing || state === GameState.Paused;
@@ -108,6 +112,7 @@ export class Game {
     this.audio = audio;
     this.profile = profile;
     this.renderer = new GameRenderer(backgroundCanvas, backgroundCtx, canvas, ctx, this);
+    this.loadCampaignProgress();
   }
 
   get activeWave(): WaveData | undefined {
@@ -248,6 +253,8 @@ export class Game {
   restartCampaign(): void {
     this.highestUnlockedLevelIndex = 0;
     this.campaignCleared = false;
+    window.localStorage.removeItem(HIGHEST_UNLOCKED_LEVEL_STORAGE_KEY);
+    window.localStorage.removeItem(CAMPAIGN_CLEARED_STORAGE_KEY);
     this.startLevelByIndex(0);
   }
 
@@ -623,7 +630,40 @@ export class Game {
       this.setState(GameState.Won);
       this.playSound(AudioCue.LevelWin);
     }
+    this.saveCampaignProgress();
     this.requestModalSync();
+  }
+
+  private loadCampaignProgress(): void {
+    const savedLevelIndex = window.localStorage.getItem(HIGHEST_UNLOCKED_LEVEL_STORAGE_KEY);
+    const campaignCleared = window.localStorage.getItem(CAMPAIGN_CLEARED_STORAGE_KEY) === "true";
+    if (savedLevelIndex === null && !campaignCleared) {
+      return;
+    }
+
+    const highestUnlockedLevelIndex = Number(savedLevelIndex ?? 0);
+    if (!Number.isInteger(highestUnlockedLevelIndex)) {
+      return;
+    }
+
+    const finalCampaignLevelIndex = Math.max(this.campaignLevelCount - 1, 0);
+    this.campaignCleared = campaignCleared;
+    this.highestUnlockedLevelIndex = campaignCleared
+      ? finalCampaignLevelIndex
+      : clamp(highestUnlockedLevelIndex, 0, finalCampaignLevelIndex);
+  }
+
+  private saveCampaignProgress(): void {
+    if (this.debugAllLevelsUnlocked) {
+      return;
+    }
+
+    window.localStorage.setItem(HIGHEST_UNLOCKED_LEVEL_STORAGE_KEY, String(this.highestUnlockedLevelIndex));
+    if (this.campaignCleared) {
+      window.localStorage.setItem(CAMPAIGN_CLEARED_STORAGE_KEY, "true");
+    } else {
+      window.localStorage.removeItem(CAMPAIGN_CLEARED_STORAGE_KEY);
+    }
   }
 
   resize(): void {
