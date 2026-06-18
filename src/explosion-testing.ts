@@ -184,6 +184,7 @@ function updateScene(deltaSeconds: number): void {
     } else {
       updateMissileApproach(activeScene, deltaSeconds);
     }
+    updateParticles(activeScene.particles, deltaSeconds, EFFECT_FIELD_WIDTH, EFFECT_FIELD_HEIGHT);
     if (activeScene.phaseSeconds >= APPROACH_SECONDS) {
       startExplosion(activeScene);
     }
@@ -203,8 +204,10 @@ function updateScene(deltaSeconds: number): void {
 
 function updateMonsterApproach(scene: ActiveScene, deltaSeconds: number): void {
   const result = new UpdateResult();
-  scene.monster.update(createPreviewUpdateContext(scene, deltaSeconds * MONSTER_TIME_SCALE), result);
-  applyPreviewUpdateResult(scene, result);
+  if (!(scene.monster instanceof TankMonster)) {
+    scene.monster.update(createPreviewUpdateContext(scene, deltaSeconds * MONSTER_TIME_SCALE), result);
+    applyPreviewUpdateResult(scene, result);
+  }
 
   const ratio = Math.min(1, scene.phaseSeconds / APPROACH_SECONDS);
   const easedRatio = easeOutCubic(ratio);
@@ -216,6 +219,11 @@ function updateMonsterApproach(scene: ActiveScene, deltaSeconds: number): void {
   scene.monster.angle = scene.spec.initialAngle ?? 0;
   scene.monster.velocityXPerSecond = Math.cos(scene.monster.angle) * scene.monster.speedPerSecond;
   scene.monster.velocityYPerSecond = Math.sin(scene.monster.angle) * scene.monster.speedPerSecond;
+
+  if (scene.monster instanceof TankMonster) {
+    scene.monster.update(createPreviewUpdateContext(scene, 0), result);
+    applyPreviewUpdateResult(scene, result);
+  }
 }
 
 function updateMissileApproach(scene: ActiveScene, deltaSeconds: number): void {
@@ -258,7 +266,6 @@ function startExplosion(scene: ActiveScene): void {
   scene.monster.x = CENTER.x;
   scene.monster.y = CENTER.y;
   scene.monster.angle = scene.spec.initialAngle ?? 0;
-  scene.particles = [];
   addMonsterDeathEffect(scene.monster, scene);
   scene.phase = "explode";
   scene.phaseSeconds = 0;
@@ -333,20 +340,26 @@ function drawScene(): void {
   context.translate(-CENTER.x, -CENTER.y);
 
   if (activeScene.phase === "approach") {
+    drawParticles(activeScene.particles, true);
     drawMonsterBody(activeScene.monster);
     if (activeScene.missile) {
       activeScene.missile.draw(context);
     }
+    drawParticles(activeScene.particles, false);
   } else {
-    for (const particle of activeScene.particles) {
-      if (!particle.removed) {
-        particle.draw(context);
-      }
-    }
+    drawParticles(activeScene.particles);
   }
   context.restore();
 
   drawOverlay();
+}
+
+function drawParticles(particles: Particle[], drawsUnderEntities?: boolean): void {
+  for (const particle of particles) {
+    if (!particle.removed && (drawsUnderEntities === undefined || particle.drawsUnderEntities === drawsUnderEntities)) {
+      particle.draw(context);
+    }
+  }
 }
 
 function drawBackdrop(): void {

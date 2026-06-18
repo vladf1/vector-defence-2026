@@ -16,6 +16,7 @@ export class Particle {
   color: string;
   alpha = 1;
   alphaFadePerSecond: number;
+  drawsUnderEntities = false;
   removed = false;
 
   constructor(

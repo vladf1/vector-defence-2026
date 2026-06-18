@@ -150,6 +150,12 @@ export class GameRenderer {
     this.ctx.save();
     this.ctx.translate(this.fieldOffsetX, this.fieldOffsetY);
 
+    for (const particle of runtime.particles) {
+      if (particle.drawsUnderEntities) {
+        particle.draw(this.ctx);
+      }
+    }
+
     for (const link of runtime.links) {
       link.draw(this.ctx);
     }
@@ -171,7 +177,9 @@ export class GameRenderer {
     }
 
     for (const particle of runtime.particles) {
-      particle.draw(this.ctx);
+      if (!particle.drawsUnderEntities) {
+        particle.draw(this.ctx);
+      }
     }
 
     this.drawPreview(this.ctx);

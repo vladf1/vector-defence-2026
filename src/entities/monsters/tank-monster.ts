@@ -1,8 +1,9 @@
 import { TankTurretParticle } from "../effects/tank-turret-particle";
+import { TankTrackPrintParticle } from "../effects/tank-track-print-particle";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
-import { AudioCue } from "../../types";
-import { easeInOutCubic, hexWithAlpha, randomRange } from "../../utils";
+import { AudioCue, type Point } from "../../types";
+import { easeInOutCubic, randomRange } from "../../utils";
 import { createPolygonShardParticles, rotatePoint } from "./death-effect-helpers";
 import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
@@ -33,25 +34,29 @@ const TURRET_SPIN_INTERVAL_MIN_SECONDS = 3;
 const TURRET_SPIN_INTERVAL_MAX_SECONDS = 10;
 const TURRET_SPIN_DURATION_SECONDS = 2.2;
 const FULL_ROTATION = Math.PI * 2;
-const TREAD_MARK_SPACING = RADIUS * 0.26;
-const TREAD_MARK_LENGTH = RADIUS * 0.22;
-const TREAD_MARK_OUTER_INSET = RADIUS * 0.14;
-const TREAD_TRAVEL_INSET = RADIUS * 0.08;
-const TREAD_TRACK_LEFT = HULL_RECT.x + TREAD_TRAVEL_INSET;
-const TREAD_TRACK_WIDTH = HULL_RECT.width - (TREAD_TRAVEL_INSET * 2);
-const TREAD_MARK_COLOR = "#d8e2ff";
-const TREAD_CRAWL_DISTANCE_SCALE = 0.28;
-const TREAD_MARK_COUNT = Math.ceil(TREAD_TRACK_WIDTH / TREAD_MARK_SPACING);
-const TREAD_MARK_STEP = TREAD_TRACK_WIDTH / TREAD_MARK_COUNT;
+const TRACK_PRINT_INTERVAL = RADIUS * 0.72;
+const TRACK_PRINT_SIDE_OFFSET = RADIUS * 0.62;
+const TRACK_PRINT_REAR_OFFSET = RADIUS * 0.48;
+const TRACK_PRINT_LENGTH = RADIUS * 0.54;
+const TRACK_PRINT_WIDTH = RADIUS * 0.18;
 
 export class TankMonster extends Monster {
   private turretRotation = 0;
   private turretSpinElapsedSeconds = 0;
   private turretSpinDirection = 1;
   private secondsUntilTurretSpin = randomRange(TURRET_SPIN_INTERVAL_MIN_SECONDS, TURRET_SPIN_INTERVAL_MAX_SECONDS);
+  private lastLeftTrackPrint?: Point;
+  private lastRightTrackPrint?: Point;
 
   constructor(path: PathEntry[], speedScale: number) {
     super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
+  }
+
+  override update(context: UpdateContext, result: UpdateResult): void {
+    super.update(context, result);
+    if (!this.removed) {
+      this.addTrackPrints(result);
+    }
   }
 
   protected override updateSpecial(context: UpdateContext): void {
@@ -70,7 +75,6 @@ export class TankMonster extends Monster {
   protected drawBody(context: CanvasRenderingContext2D): void {
     context.rotate(this.angle);
     context.fillRect(HULL_RECT.x, HULL_RECT.y, HULL_RECT.width, HULL_RECT.height);
-    drawTankTreads(context, this.distanceAlongPath);
     context.strokeRect(HULL_RECT.x, HULL_RECT.y, HULL_RECT.width, HULL_RECT.height);
     context.translate(getTankTurretCenterOffsetX(this.radius), 0);
     drawTankTurret(context, this.radius, 0.42, 1.52, this.turretRotation);
@@ -120,33 +124,30 @@ export class TankMonster extends Monster {
       this.secondsUntilTurretSpin = randomRange(TURRET_SPIN_INTERVAL_MIN_SECONDS, TURRET_SPIN_INTERVAL_MAX_SECONDS);
     }
   }
-}
 
-function drawTankTreads(context: CanvasRenderingContext2D, distanceAlongPath: number): void {
-  context.save();
-  context.strokeStyle = hexWithAlpha(TREAD_MARK_COLOR, 0.68);
-  context.lineWidth = 1;
-  context.lineCap = "round";
+  private addTrackPrints(result: UpdateResult): void {
+    const forwardX = this.velocityXPerSecond / this.speedPerSecond;
+    const forwardY = this.velocityYPerSecond / this.speedPerSecond;
+    const sideX = -forwardY;
+    const sideY = forwardX;
+    const baseX = this.x - (forwardX * TRACK_PRINT_REAR_OFFSET);
+    const baseY = this.y - (forwardY * TRACK_PRINT_REAR_OFFSET);
+    const leftTrackPrint = { x: baseX - (sideX * TRACK_PRINT_SIDE_OFFSET), y: baseY - (sideY * TRACK_PRINT_SIDE_OFFSET) };
+    const rightTrackPrint = { x: baseX + (sideX * TRACK_PRINT_SIDE_OFFSET), y: baseY + (sideY * TRACK_PRINT_SIDE_OFFSET) };
 
-  drawTankTreadTrack(context, -1, -distanceAlongPath);
-  drawTankTreadTrack(context, 1, distanceAlongPath);
+    this.lastLeftTrackPrint = this.addTrackPrintIfReady(result, leftTrackPrint, this.lastLeftTrackPrint);
+    this.lastRightTrackPrint = this.addTrackPrintIfReady(result, rightTrackPrint, this.lastRightTrackPrint);
+  }
 
-  context.restore();
-}
+  private addTrackPrintIfReady(result: UpdateResult, point: Point, lastPoint?: Point): Point {
+    if (!lastPoint || Math.hypot(point.x - lastPoint.x, point.y - lastPoint.y) >= TRACK_PRINT_INTERVAL) {
+      this.addTrackPrint(result, point.x, point.y);
+      return point;
+    }
+    return lastPoint;
+  }
 
-function drawTankTreadTrack(context: CanvasRenderingContext2D, direction: -1 | 1, distanceAlongPath: number): void {
-  const rawOffset = distanceAlongPath * TREAD_CRAWL_DISTANCE_SCALE;
-  const offset = ((rawOffset % TREAD_MARK_STEP) + TREAD_MARK_STEP) % TREAD_MARK_STEP;
-  const outerY = direction < 0
-    ? HULL_RECT.y + TREAD_MARK_OUTER_INSET
-    : HULL_RECT.y + HULL_RECT.height - TREAD_MARK_OUTER_INSET;
-  const innerY = outerY - (direction * TREAD_MARK_LENGTH);
-
-  for (let index = 0; index < TREAD_MARK_COUNT; index += 1) {
-    const markX = TREAD_TRACK_LEFT + (((index * TREAD_MARK_STEP) + offset) % TREAD_TRACK_WIDTH);
-    context.beginPath();
-    context.moveTo(markX, outerY);
-    context.lineTo(markX, innerY);
-    context.stroke();
+  private addTrackPrint(result: UpdateResult, x: number, y: number): void {
+    result.addParticle(new TankTrackPrintParticle(x, y, this.angle, TRACK_PRINT_LENGTH, TRACK_PRINT_WIDTH));
   }
 }
