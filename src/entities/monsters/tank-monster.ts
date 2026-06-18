@@ -34,11 +34,10 @@ const TURRET_SPIN_INTERVAL_MIN_SECONDS = 3;
 const TURRET_SPIN_INTERVAL_MAX_SECONDS = 10;
 const TURRET_SPIN_DURATION_SECONDS = 2.2;
 const FULL_ROTATION = Math.PI * 2;
-const TRACK_PRINT_INTERVAL = RADIUS * 0.72;
+const TRACK_PRINT_INTERVAL = RADIUS * 0.44;
 const TRACK_PRINT_SIDE_OFFSET = RADIUS * 0.62;
-const TRACK_PRINT_REAR_OFFSET = RADIUS * 0.48;
-const TRACK_PRINT_LENGTH = RADIUS * 0.54;
-const TRACK_PRINT_WIDTH = RADIUS * 0.18;
+const TRACK_PRINT_LENGTH = RADIUS * 0.24;
+const TRACK_PRINT_WIDTH = RADIUS * 0.14;
 
 export class TankMonster extends Monster {
   private turretRotation = 0;
@@ -130,8 +129,8 @@ export class TankMonster extends Monster {
     const forwardY = this.velocityYPerSecond / this.speedPerSecond;
     const sideX = -forwardY;
     const sideY = forwardX;
-    const baseX = this.x - (forwardX * TRACK_PRINT_REAR_OFFSET);
-    const baseY = this.y - (forwardY * TRACK_PRINT_REAR_OFFSET);
+    const baseX = this.x;
+    const baseY = this.y;
     const leftTrackPrint = { x: baseX - (sideX * TRACK_PRINT_SIDE_OFFSET), y: baseY - (sideY * TRACK_PRINT_SIDE_OFFSET) };
     const rightTrackPrint = { x: baseX + (sideX * TRACK_PRINT_SIDE_OFFSET), y: baseY + (sideY * TRACK_PRINT_SIDE_OFFSET) };
 

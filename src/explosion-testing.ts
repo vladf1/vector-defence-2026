@@ -192,7 +192,8 @@ function updateScene(deltaSeconds: number): void {
   }
 
   if (activeScene.phase === "explode") {
-    updateParticles(activeScene.particles, deltaSeconds * EXPLOSION_TIME_SCALE, EFFECT_FIELD_WIDTH, EFFECT_FIELD_HEIGHT);
+    updateParticles(activeScene.particles, deltaSeconds, EFFECT_FIELD_WIDTH, EFFECT_FIELD_HEIGHT, true);
+    updateParticles(activeScene.particles, deltaSeconds * EXPLOSION_TIME_SCALE, EFFECT_FIELD_WIDTH, EFFECT_FIELD_HEIGHT, false);
     if (
       (activeScene.phaseSeconds >= MIN_EXPLOSION_SECONDS && allParticlesOffScreen(activeScene.particles))
       || activeScene.phaseSeconds >= EXPLOSION_SECONDS
@@ -283,7 +284,7 @@ function repeatCurrentMonster(): void {
   updateHudLabels();
 }
 
-function updateParticles(particles: Particle[], deltaSeconds: number, fieldWidth: number, fieldHeight: number): void {
+function updateParticles(particles: Particle[], deltaSeconds: number, fieldWidth: number, fieldHeight: number, drawsUnderEntities?: boolean): void {
   const context: UpdateContext = {
     deltaSeconds,
     fieldWidth,
@@ -291,7 +292,7 @@ function updateParticles(particles: Particle[], deltaSeconds: number, fieldWidth
     activeMonsters: [],
   };
   for (const particle of particles) {
-    if (!particle.removed) {
+    if (!particle.removed && (drawsUnderEntities === undefined || particle.drawsUnderEntities === drawsUnderEntities)) {
       particle.update(context);
     }
   }
@@ -347,7 +348,8 @@ function drawScene(): void {
     }
     drawParticles(activeScene.particles, false);
   } else {
-    drawParticles(activeScene.particles);
+    drawParticles(activeScene.particles, true);
+    drawParticles(activeScene.particles, false);
   }
   context.restore();
 

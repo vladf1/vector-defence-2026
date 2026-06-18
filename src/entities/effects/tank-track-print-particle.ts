@@ -2,9 +2,9 @@ import type { UpdateContext } from "../../game-engine/update-context";
 import { hexWithAlpha } from "../../utils";
 import { Particle } from "./particle";
 
-const PRINT_COLOR = "#6f8c7f";
-const PRINT_ALPHA = 0.34;
-const PRINT_FADE_PER_SECOND = 0.18;
+const PRINT_COLOR = "#86ad99";
+const PRINT_ALPHA = 0.46;
+const PRINT_FADE_PER_SECOND = 0.234;
 
 export class TankTrackPrintParticle extends Particle {
   override drawsUnderEntities = true;
@@ -36,9 +36,7 @@ export class TankTrackPrintParticle extends Particle {
     context.translate(this.x, this.y);
     context.rotate(this.angle);
     context.fillStyle = hexWithAlpha(this.color, this.alpha);
-    context.beginPath();
-    context.roundRect(-this.length / 2, -this.width / 2, this.length, this.width, this.width / 2);
-    context.fill();
+    context.fillRect(-this.length / 2, -this.width / 2, this.length, this.width);
     context.restore();
   }
 }
