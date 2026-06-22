@@ -285,9 +285,9 @@
     "allowEscape": 9,
     "monsterSequence": ["runner", "splitter", "square", "tank", "bulwark", "triangle", "berserker", "runner", "tank"],
     "points": [
-      [95, 425],
+      [95, 450],
       [95, 70],
-      [315, 300],
+      [275, 250],
       [315, 110],
       [590, 110],
       [590, 345],

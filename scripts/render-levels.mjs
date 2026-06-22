@@ -36,7 +36,6 @@ const html = String.raw`
       const ROAD_COLOR = "rgba(8, 40, 36, 0.96)";
       const ROAD_BORDER_COLOR = "rgb(18, 61, 54)";
       const BLOCKED_TOWER_COLOR = "rgba(255, 126, 126, 0.38)";
-      const FIELD_BORDER_COLOR = "rgba(220, 255, 238, 0.34)";
       const EXIT_MARKER_RADIUS = 18;
 
       const canvas = document.getElementById("level-render");
@@ -114,7 +113,6 @@ const html = String.raw`
         drawBlockedPlacementMask(context, placementMask);
         drawRoute(context, routePath, level, profile);
         drawTurnCoordinates(context, level);
-        drawFieldBorder(context, profile);
         context.restore();
 
         drawFooter(context, level, profile, placementMask.coverage, pathLength, x, fieldY + profile.fieldHeight, cellWidth, footerHeight);
@@ -234,7 +232,7 @@ const html = String.raw`
         context.textBaseline = "middle";
         for (let index = 0; index < level.points.length; index += 1) {
           const point = level.points[index];
-          const label = Math.round(point.x) + "," + Math.round(point.y);
+          const label = (index + 1) + ": " + Math.round(point.x) + "," + Math.round(point.y);
           const metrics = context.measureText(label);
           const labelWidth = Math.ceil(metrics.width) + 7;
           const labelHeight = 13;
@@ -246,14 +244,6 @@ const html = String.raw`
           context.fillStyle = "rgba(239, 255, 247, 0.96)";
           context.fillText(label, point.x, point.y + 0.5);
         }
-        context.restore();
-      }
-
-      function drawFieldBorder(context, profile) {
-        context.save();
-        context.strokeStyle = FIELD_BORDER_COLOR;
-        context.lineWidth = 1.5;
-        context.strokeRect(0.75, 0.75, profile.fieldWidth - 1.5, profile.fieldHeight - 1.5);
         context.restore();
       }
 
