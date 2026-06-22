@@ -30,13 +30,13 @@ const html = String.raw`
     <script type="module">
       import levelsJson from "/game-levels.json";
       import { DESKTOP_GAME_PROFILE, MOBILE_GAME_PROFILE, GameMode } from "/src/game-profile.ts";
+      import { canPlaceTower } from "/src/placement-rules.ts";
       import { createRouteMotionPath } from "/src/route-path.ts";
-      import { calculateDistance, isWithinDistanceToSegment, withinDistance } from "/src/utils.ts";
 
       const ROAD_COLOR = "rgba(8, 40, 36, 0.96)";
       const ROAD_BORDER_COLOR = "rgb(18, 61, 54)";
-      const VALID_TOWER_COLOR = "rgba(91, 255, 158, 0.6)";
-      const VALID_TOWER_RING = "rgba(91, 255, 158, 0.22)";
+      const BLOCKED_TOWER_COLOR = "rgba(255, 126, 126, 0.38)";
+      const FIELD_BORDER_COLOR = "rgba(220, 255, 238, 0.34)";
       const EXIT_MARKER_RADIUS = 18;
 
       const canvas = document.getElementById("level-render");
@@ -102,7 +102,7 @@ const html = String.raw`
         const fieldX = x + cellPadding;
         const fieldY = y + titleHeight + cellPadding;
         const routePath = createRouteMotionPath(level.points, profile.roadTurnRadius, profile.routeCurveSampleStep);
-        const candidates = findPlacementCandidates(routePath, profile);
+        const placementMask = createPlacementMask(routePath, profile);
         const pathLength = routePath.entries[routePath.entries.length - 1]?.totalDistance ?? 0;
 
         drawCardBackground(context, x, y, cellWidth, cellHeight);
@@ -111,16 +111,18 @@ const html = String.raw`
         context.save();
         context.translate(fieldX, fieldY);
         drawField(context, profile);
-        drawPlacementCandidates(context, candidates, profile);
+        drawBlockedPlacementMask(context, placementMask);
         drawRoute(context, routePath, level, profile);
+        drawTurnCoordinates(context, level);
+        drawFieldBorder(context, profile);
         context.restore();
 
-        drawFooter(context, level, profile, candidates.length, pathLength, x, fieldY + profile.fieldHeight, cellWidth, footerHeight);
+        drawFooter(context, level, profile, placementMask.coverage, pathLength, x, fieldY + profile.fieldHeight, cellWidth, footerHeight);
 
         return {
           level: index + 1,
           name: level.name,
-          candidates: candidates.length,
+          placeableCoverage: placementMask.coverage,
           pathLength: Math.round(pathLength),
           pointCount: level.points.length,
         };
@@ -145,13 +147,13 @@ const html = String.raw`
         context.restore();
       }
 
-      function drawFooter(context, level, profile, candidateCount, pathLength, x, y, width, footerHeight) {
+      function drawFooter(context, level, profile, placementCoverage, pathLength, x, y, width, footerHeight) {
         context.save();
         context.fillStyle = "rgba(239, 255, 247, 0.72)";
         context.font = "700 13px Inter, system-ui, sans-serif";
         context.textAlign = "center";
         context.textBaseline = "middle";
-        const text = profile.mode + "  |  " + candidateCount + " tower gaps  |  route " + Math.round(pathLength) + "px  |  $" + level.startingMoney;
+        const text = profile.mode + "  |  " + Math.round(placementCoverage * 100) + "% placeable  |  route " + Math.round(pathLength) + "px  |  $" + level.startingMoney;
         context.fillText(text, x + (width / 2), y + (footerHeight / 2));
         context.restore();
       }
@@ -182,19 +184,11 @@ const html = String.raw`
         context.restore();
       }
 
-      function drawPlacementCandidates(context, candidates, profile) {
+      function drawBlockedPlacementMask(context, placementMask) {
         context.save();
-        for (const candidate of candidates) {
-          context.fillStyle = VALID_TOWER_COLOR;
-          context.beginPath();
-          context.arc(candidate.x, candidate.y, profile.mode === GameMode.Mobile ? 2.5 : 3, 0, Math.PI * 2);
-          context.fill();
-        }
-        for (const candidate of candidates) {
-          context.strokeStyle = VALID_TOWER_RING;
-          context.beginPath();
-          context.arc(candidate.x, candidate.y, profile.towerRadius, 0, Math.PI * 2);
-          context.stroke();
+        context.fillStyle = BLOCKED_TOWER_COLOR;
+        for (const cell of placementMask.blockedCells) {
+          context.fillRect(cell.x, cell.y, cell.size, cell.size);
         }
         context.restore();
       }
@@ -233,6 +227,36 @@ const html = String.raw`
         context.restore();
       }
 
+      function drawTurnCoordinates(context, level) {
+        context.save();
+        context.font = "800 10px Inter, system-ui, sans-serif";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        for (let index = 0; index < level.points.length; index += 1) {
+          const point = level.points[index];
+          const label = Math.round(point.x) + "," + Math.round(point.y);
+          const metrics = context.measureText(label);
+          const labelWidth = Math.ceil(metrics.width) + 7;
+          const labelHeight = 13;
+          context.fillStyle = "rgba(1, 8, 7, 0.82)";
+          context.fillRect(point.x - (labelWidth / 2), point.y - (labelHeight / 2), labelWidth, labelHeight);
+          context.strokeStyle = "rgba(239, 255, 247, 0.55)";
+          context.lineWidth = 0.75;
+          context.strokeRect(point.x - (labelWidth / 2), point.y - (labelHeight / 2), labelWidth, labelHeight);
+          context.fillStyle = "rgba(239, 255, 247, 0.96)";
+          context.fillText(label, point.x, point.y + 0.5);
+        }
+        context.restore();
+      }
+
+      function drawFieldBorder(context, profile) {
+        context.save();
+        context.strokeStyle = FIELD_BORDER_COLOR;
+        context.lineWidth = 1.5;
+        context.strokeRect(0.75, 0.75, profile.fieldWidth - 1.5, profile.fieldHeight - 1.5);
+        context.restore();
+      }
+
       function traceRoutePath(context, routePath) {
         context.beginPath();
         context.moveTo(routePath.start.x, routePath.start.y);
@@ -245,36 +269,30 @@ const html = String.raw`
         }
       }
 
-      function findPlacementCandidates(routePath, profile) {
-        const candidates = [];
-        const step = profile.mode === GameMode.Mobile ? 27 : 32;
-        const start = profile.towerRadius + 2;
-        for (let y = start; y <= profile.fieldHeight - profile.towerRadius; y += step) {
-          for (let x = start; x <= profile.fieldWidth - profile.towerRadius; x += step) {
-            const point = { x, y };
-            if (!canPlaceCandidate(point, routePath, candidates, profile)) {
+      function createPlacementMask(routePath, profile) {
+        const blockedCells = [];
+        const sampleSize = 3;
+        const halfSample = sampleSize / 2;
+        let validCells = 0;
+        let sampledCells = 0;
+        for (let y = 0; y < profile.fieldHeight; y += sampleSize) {
+          for (let x = 0; x < profile.fieldWidth; x += sampleSize) {
+            sampledCells += 1;
+            const point = {
+              x: x + halfSample,
+              y: y + halfSample,
+            };
+            if (!canPlaceTower(point, routePath, [], profile.placement)) {
+              blockedCells.push({ x, y, size: sampleSize });
               continue;
             }
-            candidates.push(point);
+            validCells += 1;
           }
         }
-        return candidates;
-      }
-
-      function canPlaceCandidate(point, routePath, candidates, profile) {
-        for (const candidate of candidates) {
-          if (withinDistance(point, candidate, profile.placement.minDistanceToOtherTowers)) {
-            return false;
-          }
-        }
-        for (let index = 0; index < routePath.entries.length - 1; index += 1) {
-          const start = routePath.entries[index];
-          const end = routePath.entries[index + 1];
-          if (isWithinDistanceToSegment(point, start, end, profile.placement.minDistanceToRoad)) {
-            return false;
-          }
-        }
-        return true;
+        return {
+          blockedCells,
+          coverage: sampledCells === 0 ? 0 : validCells / sampledCells,
+        };
       }
     </script>
   </body>
