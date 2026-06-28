@@ -256,15 +256,7 @@ export class Game {
   }
 
   restartCampaign(): void {
-    this.highestUnlockedLevelIndex = 0;
-    this.campaignCleared = false;
-    this.levelStars = this.levels.map(() => 0);
     this.lastAwardedStars = 0;
-    window.localStorage.removeItem(HIGHEST_UNLOCKED_LEVEL_STORAGE_KEY);
-    window.localStorage.removeItem(CAMPAIGN_CLEARED_STORAGE_KEY);
-    for (let index = 0; index < this.levels.length; index += 1) {
-      window.localStorage.removeItem(`${LEVEL_STARS_STORAGE_KEY_PREFIX}${index}`);
-    }
     this.startLevelByIndex(0);
   }
 
