@@ -451,7 +451,7 @@ export function createGameSession(profile: GameProfile): GameSession {
       if (releasePoint) {
         game?.setPointer(releasePoint);
         withGame((currentGame) => {
-          if (currentGame.canPlaceTower(releasePoint) && currentGame.canAffordTower(drag.kind)) {
+          if (currentGame.isTowerAvailable(drag.kind) && currentGame.canPlaceTower(releasePoint) && currentGame.canAffordTower(drag.kind)) {
             currentGame.placeTower(drag.kind, releasePoint);
           } else {
             currentGame.cancelTowerPlacement();
@@ -484,6 +484,10 @@ export function createGameSession(profile: GameProfile): GameSession {
     }
 
     if (!game?.canPerformBattleAction()) {
+      event.preventDefault();
+      return;
+    }
+    if (!game.isTowerAvailable(kind)) {
       event.preventDefault();
       return;
     }
@@ -561,7 +565,7 @@ export function createGameSession(profile: GameProfile): GameSession {
       return;
     }
 
-    const towerKind = findTowerShortcut(key);
+    const towerKind = findTowerShortcut(key, game.currentLevel?.availableTowers ?? []);
     if (!towerKind) {
       return;
     }

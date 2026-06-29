@@ -290,6 +290,7 @@ function updateParticles(particles: Particle[], deltaSeconds: number, fieldWidth
     fieldWidth,
     fieldHeight,
     activeMonsters: [],
+    activeDrones: [],
   };
   for (const particle of particles) {
     if (!particle.removed && (drawsUnderEntities === undefined || particle.drawsUnderEntities === drawsUnderEntities)) {
@@ -503,6 +504,7 @@ function createPreviewUpdateContext(scene: ActiveScene, deltaSeconds: number): U
     fieldWidth: EFFECT_FIELD_WIDTH,
     fieldHeight: EFFECT_FIELD_HEIGHT,
     activeMonsters: scene.monster.removed ? [] : [scene.monster],
+    activeDrones: [],
   };
 }
 
@@ -512,6 +514,7 @@ function createPreviewMonsterUpdateContext(monster: Monster, deltaSeconds: numbe
     fieldWidth: EFFECT_FIELD_WIDTH,
     fieldHeight: EFFECT_FIELD_HEIGHT,
     activeMonsters: monster.removed ? [] : [monster],
+    activeDrones: [],
   };
 }
 

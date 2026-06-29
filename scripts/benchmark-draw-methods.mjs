@@ -212,6 +212,7 @@ const html = String.raw`
           fieldWidth: 960,
           fieldHeight: 540,
           activeMonsters: monster.removed ? [] : [monster],
+          activeDrones: [],
         };
       }
 
@@ -254,6 +255,7 @@ const html = String.raw`
           fieldWidth: 960,
           fieldHeight: 540,
           activeMonsters: [],
+          activeDrones: [],
         });
         return drawable;
       }

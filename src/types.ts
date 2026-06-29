@@ -27,6 +27,7 @@ export const TowerKind = {
   Laser: "laser",
   Missile: "missile",
   Slow: "slow",
+  Drone: "drone",
   Lightning: "lightning",
 } as const;
 
@@ -102,6 +103,7 @@ export interface LevelData {
   allowEscape: number;
   monsterSequence: MonsterKind[];
   points: Point[];
+  availableTowers: TowerKind[];
   id?: string;
   levelNumber?: number;
   subtitle?: string;
@@ -120,6 +122,7 @@ export interface LevelJsonData {
   monsterCount: number;
   allowEscape: number;
   monsterSequence: string[];
+  availableTowers: string[];
   points: LevelJsonPoint[];
   mobile?: Partial<Omit<LevelJsonData, "mobile">>;
 }
@@ -150,6 +153,7 @@ export interface HudSnapshot {
   dragOnlyTowerPlacement: boolean;
   placingTower?: TowerKind;
   towerButtonsDisabled: boolean;
+  availableTowers: TowerKind[];
   affordableTowers: Record<TowerKind, boolean>;
   nerdStats: NerdStatsSnapshot;
 }

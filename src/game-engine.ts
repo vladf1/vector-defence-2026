@@ -72,8 +72,32 @@ function normalizeLevels(data: LevelJsonData[], gameMode: GameModeValue): LevelD
       monsterSequence: normalized.monsterSequence.filter(
         (value): value is MonsterKind => Object.values(MonsterKind).includes(value as MonsterKind),
       ),
+      availableTowers: normalizeAvailableTowers(normalized.name, normalized.availableTowers),
     };
   });
+}
+
+function normalizeAvailableTowers(levelName: string, values: string[]): TowerKind[] {
+  if (!Array.isArray(values)) {
+    throw new Error(`Level "${levelName}" must define availableTowers.`);
+  }
+
+  const towerKinds = Object.values(TowerKind);
+  const availableTowers: TowerKind[] = [];
+  for (const value of values) {
+    if (!towerKinds.includes(value as TowerKind)) {
+      throw new Error(`Level "${levelName}" has invalid tower "${value}" in availableTowers.`);
+    }
+    const kind = value as TowerKind;
+    if (!availableTowers.includes(kind)) {
+      availableTowers.push(kind);
+    }
+  }
+
+  if (availableTowers.length === 0) {
+    throw new Error(`Level "${levelName}" must have at least one available tower.`);
+  }
+  return availableTowers;
 }
 
 function normalizeLevelPoint(point: LevelJsonPoint): Point {
@@ -148,6 +172,7 @@ export class Game {
     }
     this.runtime.projectiles.push(...result.projectiles);
     this.runtime.missiles.push(...result.missiles);
+    this.runtime.drones.push(...result.drones);
     for (const sound of result.sounds) {
       this.playSound(sound.cue, sound.panX, sound.intensity);
     }
@@ -401,6 +426,10 @@ export class Game {
     if (!this.currentLevel || !this.canPerformBattleAction()) {
       return;
     }
+    if (!this.isTowerAvailable(kind)) {
+      this.playSound(AudioCue.InvalidAction);
+      return;
+    }
 
     this.runtime.selectedTower = undefined;
     this.runtime.placingTower = kind;
@@ -409,6 +438,10 @@ export class Game {
 
   toggleTowerPlacement(kind: TowerKind): void {
     if (!this.currentLevel || !this.canPerformBattleAction()) {
+      return;
+    }
+    if (!this.isTowerAvailable(kind)) {
+      this.playSound(AudioCue.InvalidAction);
       return;
     }
 
@@ -475,6 +508,10 @@ export class Game {
 
   placeTower(kind: TowerKind, point: Point): void {
     if (!this.canPerformBattleAction()) {
+      return;
+    }
+    if (!this.isTowerAvailable(kind)) {
+      this.playSound(AudioCue.InvalidAction, point.x);
       return;
     }
 
@@ -571,6 +608,10 @@ export class Game {
 
   canAffordTower(kind: TowerKind): boolean {
     return this.runtime.money >= getTowerClass(kind).baseCost;
+  }
+
+  isTowerAvailable(kind: TowerKind): boolean {
+    return this.currentLevel?.availableTowers.includes(kind) ?? false;
   }
 
   toggleSelectedLaserLock(): void {
@@ -755,6 +796,7 @@ export class Game {
         fieldWidth: this.profile.fieldWidth,
         fieldHeight: this.profile.fieldHeight,
         activeMonsters: this.getActiveMonsters(),
+        activeDrones: this.runtime.drones,
       };
       const updateResult = new UpdateResult();
 
@@ -774,6 +816,10 @@ export class Game {
 
       for (const missile of this.runtime.missiles) {
         missile.update(updateContext, updateResult);
+      }
+
+      for (const drone of this.runtime.drones) {
+        drone.update(updateContext, updateResult);
       }
 
       for (const particle of this.runtime.particles) {

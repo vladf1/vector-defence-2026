@@ -130,6 +130,7 @@ const html = String.raw`
           fieldWidth: FRAME_WIDTH,
           fieldHeight: FRAME_HEIGHT,
           activeMonsters: monster.removed ? [] : [monster],
+          activeDrones: [],
         };
       }
 

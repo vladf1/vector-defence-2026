@@ -53,11 +53,13 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   paused: false,
   dragOnlyTowerPlacement: false,
   towerButtonsDisabled: true,
+  availableTowers: [],
   affordableTowers: {
     [TowerKind.Gun]: false,
     [TowerKind.Laser]: false,
     [TowerKind.Missile]: false,
     [TowerKind.Slow]: false,
+    [TowerKind.Drone]: false,
     [TowerKind.Lightning]: false,
   },
   nerdStats: {
@@ -128,7 +130,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     mobileSelectionBody = `Tap field to build · ${formatMoney(towerClass.baseCost)}`;
   }
 
-  const shotsTracked = runtime.projectiles.length + runtime.missiles.length;
+  const shotsTracked = runtime.projectiles.length + runtime.missiles.length + runtime.drones.length;
   const effectsTracked = runtime.particles.length + runtime.links.length;
   const trackedObjects = runtime.towers.length + runtime.monsters.length + shotsTracked + effectsTracked;
   const upgradeUnaffordable = selected !== undefined
@@ -164,6 +166,7 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     dragOnlyTowerPlacement: game.profile.ui.dragOnlyTowerPlacement,
     placingTower: runtime.placingTower,
     towerButtonsDisabled: battleActionsDisabled,
+    availableTowers: currentLevel?.availableTowers ?? [],
     affordableTowers: createAffordableTowers(runtime.money),
     nerdStats: {
       fps: String(Math.max(0, Math.round(runtimeStats.fps))),

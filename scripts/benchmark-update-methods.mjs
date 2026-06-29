@@ -17,7 +17,7 @@ const html = String.raw`
       const { Particle } = await import("/src/entities/effects/particle.ts");
       const { LightningLinkEffect } = await import("/src/entities/effects/lightning-link-effect.ts");
       const { LinkEffect } = await import("/src/entities/effects/link-effect.ts");
-      const { Projectile } = await import("/src/entities/projectiles/projectile.ts");
+      const { Projectile, ProjectileKind } = await import("/src/entities/projectiles/projectile.ts");
       const { Missile } = await import("/src/entities/projectiles/missile.ts");
       const { UpdateResult } = await import("/src/game-engine/update-context.ts");
 
@@ -143,6 +143,7 @@ const html = String.raw`
           fieldWidth: game.profile.fieldWidth,
           fieldHeight: game.profile.fieldHeight,
           activeMonsters: game.runtime.monsters.filter((monster) => !monster.removed && monster.hitPoints > 0),
+          activeDrones: game.runtime.drones,
         };
       }
 
@@ -303,6 +304,7 @@ const html = String.raw`
             { x: 40 + ((index * 37) % 500), y: 40 + ((index * 53) % 300) },
             { x: targetMonster.x + ((index % 5) * 6), y: targetMonster.y },
             0,
+            ProjectileKind.Gun,
           );
           projectile.x = 4 + (index % 7);
           projectile.y = 4 + (index % 11);
