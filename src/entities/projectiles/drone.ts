@@ -11,7 +11,10 @@ const DRONE_LOITER_RADIUS = 25;
 const DRONE_LOITER_SPEED_PER_SECOND = 1.65;
 const DRONE_ARRIVE_DISTANCE = 6;
 const DRONE_TARGET_STANDOFF_MIN = 34;
-const DRONE_TARGET_STANDOFF_MAX = 42;
+const DRONE_TARGET_ORBIT_RADIUS_MAX = 42;
+const DRONE_TARGET_ORBIT_SPEED_MIN = 0.95;
+const DRONE_TARGET_ORBIT_SPEED_MAX = 1.45;
+const DRONE_TARGET_ORBIT_PHASE_JITTER = 0.7;
 const DRONE_SEPARATION_DISTANCE = 24;
 const DRONE_SEPARATION_SPEED_PER_SECOND = 96;
 const DRONE_EXIT_SPEED_PER_SECOND = 330;
@@ -22,12 +25,6 @@ const DRONE_TARGET_PROGRESS_BONUS = 70;
 const DRONE_TARGET_STICKINESS_BONUS = 42;
 const DRONE_RETARGET_INTERVAL_SECONDS = 0.55;
 const DRONE_RETARGET_JITTER_SECONDS = 0.18;
-const DRONE_TARGET_OFFSET_ANGLES = [
-  -Math.PI * 0.25,
-  Math.PI * 0.25,
-  Math.PI * 0.75,
-  -Math.PI * 0.75,
-] as const;
 const DRONE_PROPELLERS = [
   { x: -6.9, y: -6.9 },
   { x: 6.9, y: -6.9 },
@@ -36,6 +33,12 @@ const DRONE_PROPELLERS = [
 ] as const;
 
 let nextDroneId = 1;
+
+interface DroneTargetOrbit {
+  angle: number;
+  angularSpeedPerSecond: number;
+  radius: number;
+}
 
 export class Drone {
   readonly id = nextDroneId;
@@ -57,7 +60,7 @@ export class Drone {
   private fireCooldownSeconds = 0.18;
   private retargetCooldownSeconds = 0;
   private target?: Monster;
-  private targetOffset = createTargetOffset();
+  private targetOrbit = createTargetOrbit(undefined, undefined);
   private exiting = false;
   private exitVelocityXPerSecond = 0;
   private exitVelocityYPerSecond = 0;
@@ -96,9 +99,10 @@ export class Drone {
     this.updateTarget(context);
 
     if (this.target) {
+      this.advanceTargetOrbit(context.deltaSeconds);
       this.moveTowardPosition(
-        this.target.x + this.targetOffset.x,
-        this.target.y + this.targetOffset.y,
+        this.target.x + (Math.cos(this.targetOrbit.angle) * this.targetOrbit.radius),
+        this.target.y + (Math.sin(this.targetOrbit.angle) * this.targetOrbit.radius),
         context.deltaSeconds,
       );
     } else {
@@ -186,7 +190,7 @@ export class Drone {
 
     const nextTarget = this.getTrackedTarget(context);
     if (nextTarget !== this.target) {
-      this.targetOffset = createTargetOffset();
+      this.targetOrbit = createTargetOrbit(this, nextTarget);
     }
     this.target = nextTarget;
     this.retargetCooldownSeconds = getRetargetCooldownSeconds();
@@ -257,9 +261,13 @@ export class Drone {
       return;
     }
 
-    const angle = distance > 0.001 ? Math.atan2(dy, dx) : Math.atan2(this.targetOffset.y, this.targetOffset.x);
+    const angle = distance > 0.001 ? Math.atan2(dy, dx) : this.targetOrbit.angle;
     this.x = target.x + (Math.cos(angle) * DRONE_TARGET_STANDOFF_MIN);
     this.y = target.y + (Math.sin(angle) * DRONE_TARGET_STANDOFF_MIN);
+  }
+
+  private advanceTargetOrbit(deltaSeconds: number): void {
+    this.targetOrbit.angle += this.targetOrbit.angularSpeedPerSecond * deltaSeconds;
   }
 
   private applyDroneSeparation(context: UpdateContext): void {
@@ -359,13 +367,14 @@ export class Drone {
 
 }
 
-function createTargetOffset(): Point {
-  const baseAngle = DRONE_TARGET_OFFSET_ANGLES[Math.floor(randomRange(0, DRONE_TARGET_OFFSET_ANGLES.length))] ?? DRONE_TARGET_OFFSET_ANGLES[0];
-  const angle = baseAngle + randomRange(-0.22, 0.22);
-  const distance = randomRange(DRONE_TARGET_STANDOFF_MIN, DRONE_TARGET_STANDOFF_MAX);
+function createTargetOrbit(source: Point | undefined, target: Point | undefined): DroneTargetOrbit {
+  const fallbackAngle = randomRange(0, Math.PI * 2);
+  const approachAngle = source && target ? Math.atan2(source.y - target.y, source.x - target.x) : fallbackAngle;
+  const direction = randomRange(0, 1) < 0.5 ? -1 : 1;
   return {
-    x: Math.cos(angle) * distance,
-    y: Math.sin(angle) * distance,
+    angle: approachAngle + randomRange(-DRONE_TARGET_ORBIT_PHASE_JITTER, DRONE_TARGET_ORBIT_PHASE_JITTER),
+    angularSpeedPerSecond: randomRange(DRONE_TARGET_ORBIT_SPEED_MIN, DRONE_TARGET_ORBIT_SPEED_MAX) * direction,
+    radius: randomRange(DRONE_TARGET_STANDOFF_MIN, DRONE_TARGET_ORBIT_RADIUS_MAX),
   };
 }
 
