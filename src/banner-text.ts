@@ -16,7 +16,7 @@ export function createBannerText(source: BannerTextSource): string {
   const activeWave = source.runtime.activeWave;
 
   if (source.state === GameState.Playing && activeWave && source.runtime.spawnDelay > 0) {
-    return `Wave ${source.runtime.currentWaveIndex + 1} in ${Math.ceil(source.runtime.spawnDelay)}`;
+    return `NEXT WAVE IN ${Math.ceil(source.runtime.spawnDelay)}`;
   }
 
   if (source.state === GameState.Won || source.state === GameState.CampaignWon || source.state === GameState.Lost) {
