@@ -4,24 +4,7 @@ import { AudioCue } from "../../types";
 import type { Point } from "../../types";
 import { angleBetween, isOutsideBounds, withinDistance } from "../../utils";
 
-const PROJECTILE_DAMAGE_BASE = 10;
-const PROJECTILE_SIZE_BASE = 3;
-const PROJECTILE_SIZE_PER_LEVEL = 0.5;
-const PROJECTILE_SPEED_PER_SECOND = 420;
-export const DRONE_PROJECTILE_SPEED_PER_SECOND = 560;
-const DRONE_PROJECTILE_DAMAGE_BASE = 4.32;
-const DRONE_PROJECTILE_DAMAGE_PER_LEVEL = 0.96;
-const DRONE_PROJECTILE_RADIUS_BASE = 1.25;
-const DRONE_PROJECTILE_RADIUS_PER_LEVEL = 0.04;
-
-export const ProjectileKind = {
-  Gun: "gun",
-  Drone: "drone",
-} as const;
-
-export type ProjectileKind = typeof ProjectileKind[keyof typeof ProjectileKind];
-
-export class Projectile {
+export abstract class Projectile {
   x: number;
   y: number;
   velocityXPerSecond: number;
@@ -29,21 +12,24 @@ export class Projectile {
   damage: number;
   radius: number;
   angle: number;
-  kind: ProjectileKind;
-  impactColor: string;
   removed = false;
 
-  constructor(source: Point, target: Point, level: number, kind: ProjectileKind) {
+  protected constructor(
+    source: Point,
+    target: Point,
+    speedPerSecond: number,
+    damage: number,
+    radius: number,
+    private readonly impactColor: string,
+    private readonly impactSoundIntensity?: number,
+  ) {
     this.angle = angleBetween(source, target);
     this.x = source.x;
     this.y = source.y;
-    this.kind = kind;
-    this.impactColor = getProjectileColor(kind, level);
-    const speedPerSecond = getProjectileSpeedPerSecond(kind);
     this.velocityXPerSecond = Math.cos(this.angle) * speedPerSecond;
     this.velocityYPerSecond = Math.sin(this.angle) * speedPerSecond;
-    this.damage = getProjectileDamage(kind, level);
-    this.radius = getProjectileRadius(kind, level);
+    this.damage = damage;
+    this.radius = radius;
   }
 
   update(context: UpdateContext, result: UpdateResult): void {
@@ -62,20 +48,19 @@ export class Projectile {
         for (const particle of createHitImpactParticles(this.x, this.y, this.impactColor, this.angle)) {
           result.addParticle(particle);
         }
-        result.playSound(AudioCue.ProjectileImpact, this.x, this.kind === ProjectileKind.Drone ? 0.08 : undefined);
+        result.playSound(AudioCue.ProjectileImpact, this.x, this.impactSoundIntensity);
         return;
       }
     }
   }
 
-  draw(context: CanvasRenderingContext2D): void {
-    const visualLevel = this.getVisualLevel();
-    const length = this.kind === ProjectileKind.Drone
-      ? 4.6 + (this.radius * 0.8)
-      : (9.8 + (visualLevel * 1.45)) * 0.6;
-    const halfWidth = this.kind === ProjectileKind.Drone
-      ? 0.85 + (this.radius * 0.14)
-      : (1.8 + (visualLevel * 0.22)) * 0.66;
+  protected drawDart(
+    context: CanvasRenderingContext2D,
+    length: number,
+    halfWidth: number,
+    fillStyle: string,
+    drawHighlight: boolean,
+  ): void {
     const tailX = -(length * 0.55);
     const noseX = length * 0.55;
 
@@ -84,7 +69,7 @@ export class Projectile {
     context.rotate(this.angle);
     context.globalCompositeOperation = "lighter";
 
-    context.fillStyle = this.kind === ProjectileKind.Drone ? this.impactColor : "#d9fff3";
+    context.fillStyle = fillStyle;
     context.beginPath();
     context.moveTo(noseX, 0);
     context.lineTo(noseX - (length * 0.28), -halfWidth);
@@ -94,47 +79,12 @@ export class Projectile {
     context.closePath();
     context.fill();
 
-    if (this.kind === ProjectileKind.Drone) {
+    if (drawHighlight) {
       context.fillStyle = "#effff7";
       context.fillRect(tailX + 0.8, -0.36, length * 0.42, 0.72);
     }
     context.restore();
   }
 
-  private getVisualLevel(): number {
-    if (this.kind === ProjectileKind.Drone) {
-      return this.levelFromDroneRadius();
-    }
-
-    return (this.radius - (PROJECTILE_SIZE_BASE / 2)) / (PROJECTILE_SIZE_PER_LEVEL / 2);
-  }
-
-  private levelFromDroneRadius(): number {
-    return (this.radius - DRONE_PROJECTILE_RADIUS_BASE) / DRONE_PROJECTILE_RADIUS_PER_LEVEL;
-  }
-}
-
-function getProjectileSpeedPerSecond(kind: ProjectileKind): number {
-  return kind === ProjectileKind.Drone ? DRONE_PROJECTILE_SPEED_PER_SECOND : PROJECTILE_SPEED_PER_SECOND;
-}
-
-function getProjectileDamage(kind: ProjectileKind, level: number): number {
-  return kind === ProjectileKind.Drone
-    ? DRONE_PROJECTILE_DAMAGE_BASE + (level * DRONE_PROJECTILE_DAMAGE_PER_LEVEL)
-    : PROJECTILE_DAMAGE_BASE + level;
-}
-
-function getProjectileRadius(kind: ProjectileKind, level: number): number {
-  return kind === ProjectileKind.Drone
-    ? DRONE_PROJECTILE_RADIUS_BASE + (level * DRONE_PROJECTILE_RADIUS_PER_LEVEL)
-    : (PROJECTILE_SIZE_BASE + (level * PROJECTILE_SIZE_PER_LEVEL)) / 2;
-}
-
-function getProjectileColor(kind: ProjectileKind, level: number): string {
-  if (kind !== ProjectileKind.Drone) {
-    return "#9fffe4";
-  }
-
-  const colors = ["#9dffd7", "#d8ff4f", "#ffe27a", "#ffad4f", "#ff8edb", "#b58cff", "#7fd7ff"] as const;
-  return colors[Math.min(level, colors.length - 1)];
+  abstract draw(context: CanvasRenderingContext2D): void;
 }

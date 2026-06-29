@@ -1,7 +1,7 @@
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { AudioCue, TowerKind } from "../../types";
 import { angleBetween, randomRange, turnAngleTowards } from "../../utils";
-import { Projectile, ProjectileKind } from "../projectiles/projectile";
+import { GunProjectile } from "../projectiles/gun-projectile";
 import { Tower } from "./tower";
 
 export class GunTower extends Tower {
@@ -43,7 +43,7 @@ export class GunTower extends Tower {
       };
       this.muzzleFlashSeconds = 0.055;
       this.resetCooldown(0.2);
-      result.addProjectile(new Projectile(actualSource, target, this.level, ProjectileKind.Gun));
+      result.addProjectile(new GunProjectile(actualSource, target, this.level));
       result.playSound(AudioCue.GunFire, actualSource.x, 0.92 + (this.level * 0.08));
     }
   }

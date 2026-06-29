@@ -2,7 +2,7 @@ import type { UpdateContext, UpdateResult } from "../../game-engine/update-conte
 import { AudioCue, type Point } from "../../types";
 import { angleBetween, clamp, isOutsideBounds, randomRange, turnAngleTowards, withinDistance } from "../../utils";
 import type { Monster } from "../monsters/monster";
-import { DRONE_PROJECTILE_SPEED_PER_SECOND, Projectile, ProjectileKind } from "./projectile";
+import { DRONE_PROJECTILE_SPEED_PER_SECOND, DroneProjectile } from "./drone-projectile";
 
 const DRONE_SPEED_BASE = 158.6;
 const DRONE_SPEED_PER_LEVEL = 10.4;
@@ -294,7 +294,7 @@ export class Drone {
     }
 
     this.fireCooldownSeconds = this.getFireIntervalSeconds();
-    result.addProjectile(new Projectile(this, this.calculateIntercept(this.target), this.level, ProjectileKind.Drone));
+    result.addProjectile(new DroneProjectile(this, this.calculateIntercept(this.target), this.level));
     result.playSound(AudioCue.GunFire, this.x, 0.14 + (this.level * 0.018));
   }
 
