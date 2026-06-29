@@ -1,6 +1,7 @@
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { AudioCue, type Point } from "../../types";
-import { angleBetween, clamp, isOutsideBounds, randomRange, turnAngleTowards, withinDistance } from "../../utils";
+import { clamp, isOutsideBounds, randomRange, turnAngleTowards, withinDistance } from "../../utils";
+import { DRONE_ACCENT_COLORS } from "../drone-visuals";
 import type { Monster } from "../monsters/monster";
 import { DRONE_PROJECTILE_SPEED_PER_SECOND, DroneProjectile } from "./drone-projectile";
 
@@ -15,11 +16,23 @@ const DRONE_SEPARATION_DISTANCE = 24;
 const DRONE_SEPARATION_SPEED_PER_SECOND = 96;
 const DRONE_EXIT_SPEED_PER_SECOND = 330;
 const DRONE_EXIT_MARGIN = 42;
+const DRONE_TARGET_DISTANCE_WEIGHT = 1;
+const DRONE_TARGET_ASSIGNED_PENALTY = 90;
+const DRONE_TARGET_PROGRESS_BONUS = 70;
+const DRONE_TARGET_STICKINESS_BONUS = 42;
+const DRONE_RETARGET_INTERVAL_SECONDS = 0.55;
+const DRONE_RETARGET_JITTER_SECONDS = 0.18;
 const DRONE_TARGET_OFFSET_ANGLES = [
   -Math.PI * 0.25,
   Math.PI * 0.25,
   Math.PI * 0.75,
   -Math.PI * 0.75,
+] as const;
+const DRONE_PROPELLERS = [
+  { x: -6.9, y: -6.9 },
+  { x: 6.9, y: -6.9 },
+  { x: -6.9, y: 6.9 },
+  { x: 6.9, y: 6.9 },
 ] as const;
 
 let nextDroneId = 1;
@@ -33,8 +46,16 @@ export class Drone {
   private readonly home: Point;
   private readonly level: number;
   private readonly lifetimeSeconds: number;
+  private readonly movementSpeedPerSecond: number;
+  private readonly visualScale: number;
+  private readonly propellerRadius: number;
+  private readonly motorAccentRadius: number;
+  private readonly fireIntervalSeconds: number;
+  private readonly attackRange: number;
+  private readonly accentColor: string;
   private ageSeconds = 0;
   private fireCooldownSeconds = 0.18;
+  private retargetCooldownSeconds = 0;
   private target?: Monster;
   private targetOffset = createTargetOffset();
   private exiting = false;
@@ -46,6 +67,13 @@ export class Drone {
     this.home = { ...home };
     this.level = level;
     this.lifetimeSeconds = 20 + (level * 5);
+    this.movementSpeedPerSecond = DRONE_SPEED_BASE + (level * DRONE_SPEED_PER_LEVEL);
+    this.visualScale = 0.752 + (level * 0.025);
+    this.propellerRadius = 2.85 + (level * 0.18);
+    this.motorAccentRadius = 1.2 + (level * 0.1);
+    this.fireIntervalSeconds = clamp(0.58 - (level * 0.035), 0.35, 0.58);
+    this.attackRange = 44 + (level * 4);
+    this.accentColor = DRONE_ACCENT_COLORS[Math.min(level, DRONE_ACCENT_COLORS.length - 1)];
     this.x = home.x;
     this.y = home.y;
   }
@@ -64,10 +92,23 @@ export class Drone {
     }
 
     this.fireCooldownSeconds = Math.max(0, this.fireCooldownSeconds - context.deltaSeconds);
+    this.retargetCooldownSeconds = Math.max(0, this.retargetCooldownSeconds - context.deltaSeconds);
     this.updateTarget(context);
 
-    const destination = this.target ? this.getTargetStandOffPoint(this.target) : this.getLoiterPoint();
-    this.moveToward(destination, context.deltaSeconds);
+    if (this.target) {
+      this.moveTowardPosition(
+        this.target.x + this.targetOffset.x,
+        this.target.y + this.targetOffset.y,
+        context.deltaSeconds,
+      );
+    } else {
+      const loiterAngle = this.ageSeconds * DRONE_LOITER_SPEED_PER_SECOND;
+      this.moveTowardPosition(
+        this.home.x + (Math.cos(loiterAngle) * DRONE_LOITER_RADIUS),
+        this.home.y + (Math.sin(loiterAngle) * DRONE_LOITER_RADIUS),
+        context.deltaSeconds,
+      );
+    }
     if (this.target) {
       this.enforceTargetStandOff(this.target);
     }
@@ -79,14 +120,12 @@ export class Drone {
   }
 
   draw(context: CanvasRenderingContext2D): void {
-    const accent = this.getAccentColor();
-    const visualScale = 0.752 + (this.level * 0.025);
     const propellerAlpha = 0.22 + (0.18 * Math.sin(this.ageSeconds * 52));
 
     context.save();
     context.translate(this.x, this.y);
     context.rotate(this.angle);
-    context.scale(visualScale, visualScale);
+    context.scale(this.visualScale, this.visualScale);
     context.globalCompositeOperation = "lighter";
 
     context.strokeStyle = "rgba(224, 255, 246, 0.92)";
@@ -99,22 +138,15 @@ export class Drone {
     context.lineTo(-6.9, 6.9);
     context.stroke();
 
-    const propellerRadius = 2.85 + (this.level * 0.18);
-    const propellers = [
-      { x: -6.9, y: -6.9 },
-      { x: 6.9, y: -6.9 },
-      { x: -6.9, y: 6.9 },
-      { x: 6.9, y: 6.9 },
-    ];
-    for (const propeller of propellers) {
+    for (const propeller of DRONE_PROPELLERS) {
       context.fillStyle = `rgba(239, 255, 247, ${propellerAlpha})`;
       context.beginPath();
-      context.arc(propeller.x, propeller.y, propellerRadius, 0, Math.PI * 2);
+      context.arc(propeller.x, propeller.y, this.propellerRadius, 0, Math.PI * 2);
       context.fill();
 
-      context.fillStyle = accent;
+      context.fillStyle = this.accentColor;
       context.beginPath();
-      context.arc(propeller.x, propeller.y, 1.2 + (this.level * 0.1), 0, Math.PI * 2);
+      context.arc(propeller.x, propeller.y, this.motorAccentRadius, 0, Math.PI * 2);
       context.fill();
     }
 
@@ -126,11 +158,11 @@ export class Drone {
     context.fill();
     context.stroke();
 
-    context.fillStyle = accent;
+    context.fillStyle = this.accentColor;
     context.fillRect(-1.8, -0.9, 3.6 + (this.level * 0.16), 1.8);
 
     if (this.level >= 3) {
-      context.strokeStyle = accent;
+      context.strokeStyle = this.accentColor;
       context.lineWidth = 0.75;
       context.beginPath();
       context.moveTo(-2.8, -5.2);
@@ -143,59 +175,68 @@ export class Drone {
     context.restore();
   }
 
+  isTracking(monster: Monster): boolean {
+    return this.target === monster && this.isActiveTarget(monster);
+  }
+
   private updateTarget(context: UpdateContext): void {
+    if (this.target && this.isActiveTarget(this.target) && this.retargetCooldownSeconds > 0) {
+      return;
+    }
+
     const nextTarget = this.getTrackedTarget(context);
     if (nextTarget !== this.target) {
       this.targetOffset = createTargetOffset();
     }
     this.target = nextTarget;
+    this.retargetCooldownSeconds = getRetargetCooldownSeconds();
   }
 
   private getTrackedTarget(context: UpdateContext): Monster | undefined {
-    if (this.target && this.isActiveTarget(this.target)) {
-      return this.target;
-    }
-
-    let closest: Monster | undefined;
-    let closestDistanceSquared = Number.POSITIVE_INFINITY;
+    let bestTarget: Monster | undefined;
+    let bestScore = Number.POSITIVE_INFINITY;
     for (const monster of context.activeMonsters) {
       if (!this.isActiveTarget(monster)) {
         continue;
       }
 
-      const dx = monster.x - this.x;
-      const dy = monster.y - this.y;
-      const distanceSquared = (dx * dx) + (dy * dy);
-      if (distanceSquared < closestDistanceSquared) {
-        closestDistanceSquared = distanceSquared;
-        closest = monster;
+      const score = this.scoreTarget(monster, context);
+      if (score < bestScore) {
+        bestScore = score;
+        bestTarget = monster;
       }
     }
-    return closest;
+    return bestTarget;
   }
 
   private isActiveTarget(monster: Monster): boolean {
     return !monster.removed && monster.hitPoints > 0;
   }
 
-  private getLoiterPoint(): Point {
-    const angle = this.ageSeconds * DRONE_LOITER_SPEED_PER_SECOND;
-    return {
-      x: this.home.x + (Math.cos(angle) * DRONE_LOITER_RADIUS),
-      y: this.home.y + (Math.sin(angle) * DRONE_LOITER_RADIUS),
-    };
+  private scoreTarget(monster: Monster, context: UpdateContext): number {
+    const dx = monster.x - this.x;
+    const dy = monster.y - this.y;
+    const distanceScore = Math.hypot(dx, dy) * DRONE_TARGET_DISTANCE_WEIGHT;
+    const assignedDronePenalty = this.countOtherDronesTracking(monster, context) * DRONE_TARGET_ASSIGNED_PENALTY;
+    const progressBonus = monster.getPathProgress() * DRONE_TARGET_PROGRESS_BONUS;
+    const stickinessBonus = monster === this.target ? DRONE_TARGET_STICKINESS_BONUS : 0;
+
+    return distanceScore + assignedDronePenalty - progressBonus - stickinessBonus;
   }
 
-  private getTargetStandOffPoint(target: Monster): Point {
-    return {
-      x: target.x + this.targetOffset.x,
-      y: target.y + this.targetOffset.y,
-    };
+  private countOtherDronesTracking(monster: Monster, context: UpdateContext): number {
+    let count = 0;
+    for (const drone of context.activeDrones) {
+      if (drone !== this && !drone.removed && drone.isTracking(monster)) {
+        count += 1;
+      }
+    }
+    return count;
   }
 
-  private moveToward(destination: Point, deltaSeconds: number): void {
-    const dx = destination.x - this.x;
-    const dy = destination.y - this.y;
+  private moveTowardPosition(destinationX: number, destinationY: number, deltaSeconds: number): void {
+    const dx = destinationX - this.x;
+    const dy = destinationY - this.y;
     const distance = Math.hypot(dx, dy);
     if (distance <= DRONE_ARRIVE_DISTANCE) {
       return;
@@ -203,8 +244,7 @@ export class Drone {
 
     const targetAngle = Math.atan2(dy, dx);
     this.angle = turnAngleTowards(this.angle, targetAngle, 10 * deltaSeconds);
-    const speed = DRONE_SPEED_BASE + (this.level * DRONE_SPEED_PER_LEVEL);
-    const travel = Math.min(distance - DRONE_ARRIVE_DISTANCE, speed * deltaSeconds);
+    const travel = Math.min(distance - DRONE_ARRIVE_DISTANCE, this.movementSpeedPerSecond * deltaSeconds);
     this.x += Math.cos(targetAngle) * travel;
     this.y += Math.sin(targetAngle) * travel;
   }
@@ -264,11 +304,9 @@ export class Drone {
   private startExit(context: UpdateContext): void {
     this.exiting = true;
     this.target = undefined;
-    const fieldCenter = {
-      x: context.fieldWidth / 2,
-      y: context.fieldHeight / 2,
-    };
-    const awayFromCenter = angleBetween(fieldCenter, this);
+    const fieldCenterX = context.fieldWidth / 2;
+    const fieldCenterY = context.fieldHeight / 2;
+    const awayFromCenter = Math.atan2(this.y - fieldCenterY, this.x - fieldCenterX);
     const exitAngle = awayFromCenter + randomRange(-0.35, 0.35);
     this.angle = exitAngle;
     this.exitVelocityXPerSecond = Math.cos(exitAngle) * DRONE_EXIT_SPEED_PER_SECOND;
@@ -288,26 +326,23 @@ export class Drone {
       return;
     }
 
-    const attackRange = this.getAttackRange();
-    if (!withinDistance(this, this.target, attackRange)) {
+    if (!withinDistance(this, this.target, this.attackRange)) {
       return;
     }
 
-    this.fireCooldownSeconds = this.getFireIntervalSeconds();
+    this.fireCooldownSeconds = this.fireIntervalSeconds;
     result.addProjectile(new DroneProjectile(this, this.calculateIntercept(this.target), this.level));
     result.playSound(AudioCue.GunFire, this.x, 0.14 + (this.level * 0.018));
   }
 
   private calculateIntercept(target: Monster): Point {
-    const relativeTarget = {
-      x: target.x - this.x,
-      y: target.y - this.y,
-    };
+    const relativeTargetX = target.x - this.x;
+    const relativeTargetY = target.y - this.y;
     const projectileSpeedSquared = DRONE_PROJECTILE_SPEED_PER_SECOND * DRONE_PROJECTILE_SPEED_PER_SECOND;
     const targetSpeedSquared = (target.velocityXPerSecond * target.velocityXPerSecond) + (target.velocityYPerSecond * target.velocityYPerSecond);
     const a = projectileSpeedSquared - targetSpeedSquared;
-    const b = (relativeTarget.x * target.velocityXPerSecond) + (relativeTarget.y * target.velocityYPerSecond);
-    const c = (relativeTarget.x * relativeTarget.x) + (relativeTarget.y * relativeTarget.y);
+    const b = (relativeTargetX * target.velocityXPerSecond) + (relativeTargetY * target.velocityYPerSecond);
+    const c = (relativeTargetX * relativeTargetX) + (relativeTargetY * relativeTargetY);
     const discriminant = (b * b) + (a * c);
     let timeSeconds = 0;
     if (discriminant >= 0 && a !== 0) {
@@ -322,18 +357,6 @@ export class Drone {
     };
   }
 
-  private getFireIntervalSeconds(): number {
-    return clamp(0.58 - (this.level * 0.035), 0.35, 0.58);
-  }
-
-  private getAttackRange(): number {
-    return 44 + (this.level * 4);
-  }
-
-  private getAccentColor(): string {
-    const colors = ["#9dffd7", "#d8ff4f", "#ffe27a", "#ffad4f", "#ff8edb", "#b58cff", "#7fd7ff"] as const;
-    return colors[Math.min(this.level, colors.length - 1)];
-  }
 }
 
 function createTargetOffset(): Point {
@@ -344,4 +367,8 @@ function createTargetOffset(): Point {
     x: Math.cos(angle) * distance,
     y: Math.sin(angle) * distance,
   };
+}
+
+function getRetargetCooldownSeconds(): number {
+  return DRONE_RETARGET_INTERVAL_SECONDS + randomRange(-DRONE_RETARGET_JITTER_SECONDS, DRONE_RETARGET_JITTER_SECONDS);
 }

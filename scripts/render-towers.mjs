@@ -36,6 +36,7 @@ const html = String.raw`
       import { MissileTower } from "/src/entities/towers/missile-tower.ts";
       import { SlowTower } from "/src/entities/towers/slow-tower.ts";
       import { Missile } from "/src/entities/projectiles/missile.ts";
+      import { DroneProjectile } from "/src/entities/projectiles/drone-projectile.ts";
       import { GunProjectile } from "/src/entities/projectiles/gun-projectile.ts";
       import { UpdateResult } from "/src/game-engine/update-context.ts";
 
@@ -49,6 +50,7 @@ const html = String.raw`
       ];
       const projectileRows = [
         { label: "Projectile", draw: drawProjectileSample },
+        { label: "Drone Projectile", draw: drawDroneProjectileSample },
         { label: "Missile", draw: drawMissileSample },
         { label: "Missile Explosion", draw: drawMissileExplosionSample },
       ];
@@ -162,6 +164,17 @@ const html = String.raw`
 
       function drawProjectileSample(context, centerX, centerY, level) {
         const projectile = new GunProjectile({ x: 0, y: 0 }, { x: 36, y: -36 * Math.tan(Math.PI / 8) }, level);
+        projectile.x = 0;
+        projectile.y = 0;
+        context.save();
+        context.translate(centerX, centerY);
+        context.scale(gameArtScale, gameArtScale);
+        projectile.draw(context);
+        context.restore();
+      }
+
+      function drawDroneProjectileSample(context, centerX, centerY, level) {
+        const projectile = new DroneProjectile({ x: 0, y: 0 }, { x: 36, y: -36 * Math.tan(Math.PI / 8) }, level);
         projectile.x = 0;
         projectile.y = 0;
         context.save();
