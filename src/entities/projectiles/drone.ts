@@ -1,6 +1,6 @@
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { AudioCue, type Point } from "../../types";
-import { clamp, isOutsideBounds, randomRange, turnAngleTowards, withinDistance } from "../../utils";
+import { calculateDistance, clamp, isOutsideBounds, randomRange, turnAngleTowards, withinDistance } from "../../utils";
 import { DRONE_ACCENT_COLORS } from "../drone-visuals";
 import type { Monster } from "../monsters/monster";
 import { DRONE_PROJECTILE_SPEED_PER_SECOND, DroneProjectile } from "./drone-projectile";
@@ -116,8 +116,8 @@ export class Drone {
     if (this.target) {
       this.enforceTargetStandOff(this.target);
     }
-    this.applyDroneSeparation(context);
-    if (this.target) {
+    const separated = this.applyDroneSeparation(context);
+    if (separated && this.target) {
       this.enforceTargetStandOff(this.target);
     }
     this.tryFire(result);
@@ -125,6 +125,7 @@ export class Drone {
 
   draw(context: CanvasRenderingContext2D): void {
     const propellerAlpha = 0.22 + (0.18 * Math.sin(this.ageSeconds * 52));
+    const propellerFillStyle = `rgba(239, 255, 247, ${propellerAlpha})`;
 
     context.save();
     context.translate(this.x, this.y);
@@ -143,7 +144,7 @@ export class Drone {
     context.stroke();
 
     for (const propeller of DRONE_PROPELLERS) {
-      context.fillStyle = `rgba(239, 255, 247, ${propellerAlpha})`;
+      context.fillStyle = propellerFillStyle;
       context.beginPath();
       context.arc(propeller.x, propeller.y, this.propellerRadius, 0, Math.PI * 2);
       context.fill();
@@ -270,7 +271,7 @@ export class Drone {
     this.targetOrbit.angle += this.targetOrbit.angularSpeedPerSecond * deltaSeconds;
   }
 
-  private applyDroneSeparation(context: UpdateContext): void {
+  private applyDroneSeparation(context: UpdateContext): boolean {
     let pushX = 0;
     let pushY = 0;
 
@@ -279,13 +280,13 @@ export class Drone {
         continue;
       }
 
-      let dx = this.x - drone.x;
-      let dy = this.y - drone.y;
-      let distance = Math.hypot(dx, dy);
-      if (distance >= DRONE_SEPARATION_DISTANCE) {
+      if (!withinDistance(this, drone, DRONE_SEPARATION_DISTANCE)) {
         continue;
       }
 
+      let dx = this.x - drone.x;
+      let dy = this.y - drone.y;
+      let distance = calculateDistance(this, drone);
       if (distance < 0.001) {
         const angle = (this.id * 2.399963) % (Math.PI * 2);
         dx = Math.cos(angle);
@@ -300,13 +301,14 @@ export class Drone {
 
     const pushDistance = Math.hypot(pushX, pushY);
     if (pushDistance <= 0) {
-      return;
+      return false;
     }
 
     const maxStep = DRONE_SEPARATION_SPEED_PER_SECOND * context.deltaSeconds;
     const step = Math.min(maxStep, pushDistance * DRONE_SEPARATION_DISTANCE * 0.45);
     this.x += (pushX / pushDistance) * step;
     this.y += (pushY / pushDistance) * step;
+    return true;
   }
 
   private startExit(context: UpdateContext): void {
