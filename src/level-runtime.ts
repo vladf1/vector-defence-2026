@@ -2,6 +2,7 @@ import type { LightningLinkEffect } from "./entities/effects/lightning-link-effe
 import type { LinkEffect } from "./entities/effects/link-effect";
 import type { Particle } from "./entities/effects/particle";
 import type { Monster } from "./entities/monsters/monster";
+import type { Drone } from "./entities/projectiles/drone";
 import type { Missile } from "./entities/projectiles/missile";
 import type { Projectile } from "./entities/projectiles/projectile";
 import type { Tower } from "./entities/towers/tower";
@@ -24,6 +25,7 @@ export class LevelRuntime {
   waveSpawnedMonsters = 0;
   towers: Tower[] = [];
   monsters: Monster[] = [];
+  drones: Drone[] = [];
   projectiles: Projectile[] = [];
   missiles: Missile[] = [];
   particles: Particle[] = [];
@@ -69,6 +71,7 @@ export class LevelRuntime {
 
   compactRemoved(): void {
     compactInPlace(this.monsters);
+    compactInPlace(this.drones);
     compactInPlace(this.projectiles);
     compactInPlace(this.missiles);
     compactInPlace(this.particles);

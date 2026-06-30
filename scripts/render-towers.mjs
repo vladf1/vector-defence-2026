@@ -29,13 +29,15 @@ const html = String.raw`
     <canvas id="tower-render"></canvas>
     <script type="module">
       import { FIELD_HEIGHT, FIELD_WIDTH, MAX_TOWER_LEVEL } from "/src/constants.ts";
+      import { DroneTower } from "/src/entities/towers/drone-tower.ts";
       import { GunTower } from "/src/entities/towers/gun-tower.ts";
       import { LaserTower } from "/src/entities/towers/laser-tower.ts";
       import { LightningTower } from "/src/entities/towers/lightning-tower.ts";
       import { MissileTower } from "/src/entities/towers/missile-tower.ts";
       import { SlowTower } from "/src/entities/towers/slow-tower.ts";
       import { Missile } from "/src/entities/projectiles/missile.ts";
-      import { Projectile } from "/src/entities/projectiles/projectile.ts";
+      import { DroneProjectile } from "/src/entities/projectiles/drone-projectile.ts";
+      import { GunProjectile } from "/src/entities/projectiles/gun-projectile.ts";
       import { UpdateResult } from "/src/game-engine/update-context.ts";
 
       const towerRows = [
@@ -43,10 +45,12 @@ const html = String.raw`
         { label: "Laser", TowerClass: LaserTower, angle: -Math.PI / 4 },
         { label: "Missile", TowerClass: MissileTower, angle: -Math.PI / 4 },
         { label: "Slow", TowerClass: SlowTower, pulse: Math.PI / 2 },
+        { label: "Drone", TowerClass: DroneTower },
         { label: "Lightning", TowerClass: LightningTower },
       ];
       const projectileRows = [
         { label: "Projectile", draw: drawProjectileSample },
+        { label: "Drone Projectile", draw: drawDroneProjectileSample },
         { label: "Missile", draw: drawMissileSample },
         { label: "Missile Explosion", draw: drawMissileExplosionSample },
       ];
@@ -159,7 +163,18 @@ const html = String.raw`
       }
 
       function drawProjectileSample(context, centerX, centerY, level) {
-        const projectile = new Projectile({ x: 0, y: 0 }, { x: 36, y: -36 * Math.tan(Math.PI / 8) }, level);
+        const projectile = new GunProjectile({ x: 0, y: 0 }, { x: 36, y: -36 * Math.tan(Math.PI / 8) }, level);
+        projectile.x = 0;
+        projectile.y = 0;
+        context.save();
+        context.translate(centerX, centerY);
+        context.scale(gameArtScale, gameArtScale);
+        projectile.draw(context);
+        context.restore();
+      }
+
+      function drawDroneProjectileSample(context, centerX, centerY, level) {
+        const projectile = new DroneProjectile({ x: 0, y: 0 }, { x: 36, y: -36 * Math.tan(Math.PI / 8) }, level);
         projectile.x = 0;
         projectile.y = 0;
         context.save();
@@ -202,6 +217,7 @@ const html = String.raw`
           fieldWidth: FIELD_WIDTH,
           fieldHeight: FIELD_HEIGHT,
           activeMonsters: [target],
+          activeDrones: [],
         };
         const updateResult = new UpdateResult();
         missile.update(updateContext, updateResult);
@@ -213,6 +229,7 @@ const html = String.raw`
             fieldWidth: FIELD_WIDTH,
             fieldHeight: FIELD_HEIGHT,
             activeMonsters: [],
+            activeDrones: [],
           });
         }
 

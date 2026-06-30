@@ -1,6 +1,6 @@
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { getPathHeadingAngle, type PathEntry } from "../../route-path";
-import { angleBetween, randomRange } from "../../utils";
+import { angleBetween, clamp, randomRange } from "../../utils";
 
 const MONSTER_STROKE_WIDTH = 1.5;
 const HIT_SHAKE_DURATION_SECONDS = 0.16;
@@ -21,7 +21,8 @@ export abstract class Monster {
   bounty: number;
   radius: number;
   color: string;
-  path: PathEntry[];
+  readonly path: PathEntry[];
+  private readonly pathLength: number;
   distanceAlongPath = 0;
   targetIndex = 1;
   rotation = randomRange(0, Math.PI * 2);
@@ -47,6 +48,7 @@ export abstract class Monster {
     this.radius = radius;
     this.color = color;
     this.path = path;
+    this.pathLength = getPathLength(path);
     this.angle = angleBetween(start, path[1] ?? start);
     this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
     this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
@@ -58,6 +60,13 @@ export abstract class Monster {
 
   shakeFromHit(): void {
     this.shake(HIT_SHAKE_DURATION_SECONDS, HIT_SHAKE_DISTANCE);
+  }
+
+  getPathProgress(): number {
+    if (this.pathLength <= 0) {
+      return 0;
+    }
+    return clamp(this.distanceAlongPath / this.pathLength, 0, 1);
   }
 
   shake(durationSeconds: number, distance: number): void {
@@ -131,13 +140,12 @@ export abstract class Monster {
 
   private moveAlongPath(deltaSeconds: number, result: UpdateResult): void {
     this.distanceAlongPath += this.speedPerSecond * deltaSeconds;
-    const pathLength = getPathLength(this.path);
-    if (this.distanceAlongPath >= pathLength) {
+    if (this.distanceAlongPath >= this.pathLength) {
       const end = this.path[this.path.length - 1] ?? { x: this.x, y: this.y };
       this.x = end.x;
       this.y = end.y;
       this.targetIndex = Math.max(0, this.path.length - 1);
-      this.angle = getPathHeadingAngle(this.path, pathLength, this.targetIndex);
+      this.angle = getPathHeadingAngle(this.path, this.pathLength, this.targetIndex);
       this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
       this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
       this.removed = true;

@@ -176,6 +176,10 @@ export class GameRenderer {
       tower.draw(this.ctx, tower === runtime.selectedTower);
     }
 
+    for (const drone of runtime.drones) {
+      drone.draw(this.ctx);
+    }
+
     for (const particle of runtime.particles) {
       if (!particle.drawsUnderEntities) {
         particle.draw(this.ctx);

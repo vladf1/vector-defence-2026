@@ -2,11 +2,12 @@
   {
     "name": "Outer Line",
     "subtitle": "The invasion begins with a probing strike on the outer line.",
-    "waveCount": 4,
+    "waveCount": 5,
     "initialBuildTime": 11,
     "startingMoney": 32,
     "monsterCount": 75,
     "allowEscape": 16,
+    "availableTowers": ["gun", "laser", "missile", "slow", "drone"],
     "monsterSequence": ["packman", "packman", "runner", "square", "triangle"],
     "points": [
       [90, 0],
@@ -41,6 +42,7 @@
     "startingMoney": 34,
     "monsterCount": 82,
     "allowEscape": 15,
+    "availableTowers": ["gun", "laser", "missile", "slow", "lightning"],
     "monsterSequence": ["packman", "runner", "square", "runner", "triangle", "square"],
     "points": [
       [150, 0],
@@ -75,6 +77,7 @@
     "startingMoney": 36,
     "monsterCount": 119,
     "allowEscape": 14,
+    "availableTowers": ["gun", "laser", "missile", "slow", "drone"],
     "monsterSequence": ["packman", "runner", "square", "triangle", "runner", "tank"],
     "points": [
       [0, 90],
@@ -112,6 +115,7 @@
     "startingMoney": 38,
     "monsterCount": 126,
     "allowEscape": 13,
+    "availableTowers": ["gun", "laser", "missile", "slow", "lightning"],
     "monsterSequence": ["runner", "triangle", "packman", "runner", "square", "tank", "splitter"],
     "points": [
       [255, 0],
@@ -147,6 +151,7 @@
     "startingMoney": 40,
     "monsterCount": 145,
     "allowEscape": 12,
+    "availableTowers": ["gun", "laser", "missile", "slow", "drone"],
     "monsterSequence": ["packman", "runner", "square", "triangle", "splitter", "tank", "runner"],
     "points": [
       [410, 0],
@@ -182,6 +187,7 @@
     "startingMoney": 42,
     "monsterCount": 198,
     "allowEscape": 12,
+    "availableTowers": ["gun", "laser", "missile", "slow", "lightning"],
     "monsterSequence": ["packman", "runner", "square", "triangle", "tank", "splitter", "runner", "bulwark"],
     "points": [
       [65, 0],
@@ -218,6 +224,7 @@
     "startingMoney": 44,
     "monsterCount": 207,
     "allowEscape": 11,
+    "availableTowers": ["gun", "laser", "missile", "slow", "drone"],
     "monsterSequence": ["runner", "square", "splitter", "triangle", "tank", "runner", "berserker", "bulwark"],
     "points": [
       [45, 390],
@@ -251,6 +258,7 @@
     "startingMoney": 46,
     "monsterCount": 216,
     "allowEscape": 10,
+    "availableTowers": ["gun", "laser", "missile", "slow", "lightning"],
     "monsterSequence": ["square", "runner", "triangle", "splitter", "tank", "bulwark", "runner", "berserker"],
     "points": [
       [40, 90],
@@ -283,6 +291,7 @@
     "startingMoney": 49,
     "monsterCount": 300,
     "allowEscape": 9,
+    "availableTowers": ["gun", "laser", "missile", "slow", "drone"],
     "monsterSequence": ["runner", "splitter", "square", "tank", "bulwark", "triangle", "berserker", "runner", "tank"],
     "points": [
       [95, 450],
@@ -320,6 +329,7 @@
     "startingMoney": 52,
     "monsterCount": 311,
     "allowEscape": 8,
+    "availableTowers": ["gun", "laser", "missile", "slow", "lightning"],
     "monsterSequence": ["runner", "splitter", "berserker", "square", "triangle", "bulwark", "tank", "runner", "splitter", "bulwark", "berserker"],
     "points": [
       [0, 400],

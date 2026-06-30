@@ -96,6 +96,7 @@ const html = String.raw`
           fieldWidth: 1200,
           fieldHeight: 720,
           activeMonsters: monster.removed ? [] : [monster],
+          activeDrones: [],
         };
       }
 

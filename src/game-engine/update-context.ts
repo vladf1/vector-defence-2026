@@ -1,5 +1,6 @@
 import type { Particle } from "../entities/effects/particle";
 import type { Monster } from "../entities/monsters/monster";
+import type { Drone } from "../entities/projectiles/drone";
 import type { Missile } from "../entities/projectiles/missile";
 import type { Projectile } from "../entities/projectiles/projectile";
 import type { RuntimeLinkEffect } from "../level-runtime";
@@ -9,7 +10,9 @@ export interface UpdateContext {
   readonly deltaSeconds: number;
   readonly fieldWidth: number;
   readonly fieldHeight: number;
-  readonly activeMonsters: readonly Monster[];
+  activeMonsters: readonly Monster[];
+  readonly activeDrones: readonly Drone[];
+  droneAssignments: ReadonlyMap<Monster, number>;
 }
 
 export interface UpdateSound {
@@ -23,6 +26,7 @@ export class UpdateResult {
   readonly escapedMonsters: Monster[] = [];
   readonly particles: Particle[] = [];
   readonly links: RuntimeLinkEffect[] = [];
+  readonly drones: Drone[] = [];
   readonly projectiles: Projectile[] = [];
   readonly missiles: Missile[] = [];
   readonly sounds: UpdateSound[] = [];
@@ -43,6 +47,10 @@ export class UpdateResult {
     this.links.push(link);
   }
 
+  addDrone(drone: Drone): void {
+    this.drones.push(drone);
+  }
+
   addProjectile(projectile: Projectile): void {
     this.projectiles.push(projectile);
   }
@@ -60,6 +68,7 @@ export class UpdateResult {
     this.escapedMonsters.length = 0;
     this.particles.length = 0;
     this.links.length = 0;
+    this.drones.length = 0;
     this.projectiles.length = 0;
     this.missiles.length = 0;
     this.sounds.length = 0;

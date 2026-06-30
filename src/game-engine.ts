@@ -8,6 +8,7 @@ import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
 import { GameRenderer, type FieldBounds } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
 import type { Monster } from "./entities/monsters/monster";
+import type { Drone } from "./entities/projectiles/drone";
 import { SplitterMonster } from "./entities/monsters/splitter-monster";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
@@ -72,13 +73,49 @@ function normalizeLevels(data: LevelJsonData[], gameMode: GameModeValue): LevelD
       monsterSequence: normalized.monsterSequence.filter(
         (value): value is MonsterKind => Object.values(MonsterKind).includes(value as MonsterKind),
       ),
+      availableTowers: normalizeAvailableTowers(normalized.name, normalized.availableTowers),
     };
   });
+}
+
+function normalizeAvailableTowers(levelName: string, values: string[]): TowerKind[] {
+  if (!Array.isArray(values)) {
+    throw new Error(`Level "${levelName}" must define availableTowers.`);
+  }
+
+  const towerKinds = Object.values(TowerKind);
+  const availableTowers: TowerKind[] = [];
+  for (const value of values) {
+    if (!towerKinds.includes(value as TowerKind)) {
+      throw new Error(`Level "${levelName}" has invalid tower "${value}" in availableTowers.`);
+    }
+    const kind = value as TowerKind;
+    if (!availableTowers.includes(kind)) {
+      availableTowers.push(kind);
+    }
+  }
+
+  if (availableTowers.length === 0) {
+    throw new Error(`Level "${levelName}" must have at least one available tower.`);
+  }
+  return availableTowers;
 }
 
 function normalizeLevelPoint(point: LevelJsonPoint): Point {
   const [x, y] = point;
   return { x, y };
+}
+
+function createDroneAssignments(drones: readonly Drone[]): Map<Monster, number> {
+  const assignments = new Map<Monster, number>();
+  for (const drone of drones) {
+    const target = drone.getAssignedTarget();
+    if (!target) {
+      continue;
+    }
+    assignments.set(target, (assignments.get(target) ?? 0) + 1);
+  }
+  return assignments;
 }
 
 export class Game {
@@ -148,6 +185,7 @@ export class Game {
     }
     this.runtime.projectiles.push(...result.projectiles);
     this.runtime.missiles.push(...result.missiles);
+    this.runtime.drones.push(...result.drones);
     for (const sound of result.sounds) {
       this.playSound(sound.cue, sound.panX, sound.intensity);
     }
@@ -401,6 +439,10 @@ export class Game {
     if (!this.currentLevel || !this.canPerformBattleAction()) {
       return;
     }
+    if (!this.isTowerAvailable(kind)) {
+      this.playSound(AudioCue.InvalidAction);
+      return;
+    }
 
     this.runtime.selectedTower = undefined;
     this.runtime.placingTower = kind;
@@ -409,6 +451,10 @@ export class Game {
 
   toggleTowerPlacement(kind: TowerKind): void {
     if (!this.currentLevel || !this.canPerformBattleAction()) {
+      return;
+    }
+    if (!this.isTowerAvailable(kind)) {
+      this.playSound(AudioCue.InvalidAction);
       return;
     }
 
@@ -475,6 +521,10 @@ export class Game {
 
   placeTower(kind: TowerKind, point: Point): void {
     if (!this.canPerformBattleAction()) {
+      return;
+    }
+    if (!this.isTowerAvailable(kind)) {
+      this.playSound(AudioCue.InvalidAction, point.x);
       return;
     }
 
@@ -571,6 +621,10 @@ export class Game {
 
   canAffordTower(kind: TowerKind): boolean {
     return this.runtime.money >= getTowerClass(kind).baseCost;
+  }
+
+  isTowerAvailable(kind: TowerKind): boolean {
+    return this.currentLevel?.availableTowers.includes(kind) ?? false;
   }
 
   toggleSelectedLaserLock(): void {
@@ -755,6 +809,8 @@ export class Game {
         fieldWidth: this.profile.fieldWidth,
         fieldHeight: this.profile.fieldHeight,
         activeMonsters: this.getActiveMonsters(),
+        activeDrones: this.runtime.drones,
+        droneAssignments: new Map(),
       };
       const updateResult = new UpdateResult();
 
@@ -763,10 +819,7 @@ export class Game {
       }
       this.applyMonsterLifecycleResults(updateResult);
 
-      updateContext = {
-        ...updateContext,
-        activeMonsters: this.getActiveMonsters(),
-      };
+      updateContext.activeMonsters = this.getActiveMonsters();
 
       for (const projectile of this.runtime.projectiles) {
         projectile.update(updateContext, updateResult);
@@ -774,6 +827,12 @@ export class Game {
 
       for (const missile of this.runtime.missiles) {
         missile.update(updateContext, updateResult);
+      }
+
+      updateContext.droneAssignments = createDroneAssignments(this.runtime.drones);
+
+      for (const drone of this.runtime.drones) {
+        drone.update(updateContext, updateResult);
       }
 
       for (const particle of this.runtime.particles) {

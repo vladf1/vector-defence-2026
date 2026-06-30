@@ -4,12 +4,7 @@ import { AudioCue } from "../../types";
 import type { Point } from "../../types";
 import { angleBetween, isOutsideBounds, withinDistance } from "../../utils";
 
-const PROJECTILE_DAMAGE_BASE = 10;
-const PROJECTILE_SIZE_BASE = 3;
-const PROJECTILE_SIZE_PER_LEVEL = 0.5;
-const PROJECTILE_SPEED_PER_SECOND = 420;
-
-export class Projectile {
+export abstract class Projectile {
   x: number;
   y: number;
   velocityXPerSecond: number;
@@ -19,14 +14,22 @@ export class Projectile {
   angle: number;
   removed = false;
 
-  constructor(source: Point, target: Point, level: number) {
+  protected constructor(
+    source: Point,
+    target: Point,
+    speedPerSecond: number,
+    damage: number,
+    radius: number,
+    private readonly impactColor: string,
+    private readonly impactSoundIntensity?: number,
+  ) {
     this.angle = angleBetween(source, target);
     this.x = source.x;
     this.y = source.y;
-    this.velocityXPerSecond = Math.cos(this.angle) * PROJECTILE_SPEED_PER_SECOND;
-    this.velocityYPerSecond = Math.sin(this.angle) * PROJECTILE_SPEED_PER_SECOND;
-    this.damage = PROJECTILE_DAMAGE_BASE + level;
-    this.radius = (PROJECTILE_SIZE_BASE + (level * PROJECTILE_SIZE_PER_LEVEL)) / 2;
+    this.velocityXPerSecond = Math.cos(this.angle) * speedPerSecond;
+    this.velocityYPerSecond = Math.sin(this.angle) * speedPerSecond;
+    this.damage = damage;
+    this.radius = radius;
   }
 
   update(context: UpdateContext, result: UpdateResult): void {
@@ -42,19 +45,22 @@ export class Projectile {
       if (withinDistance(this, monster, hitDistance)) {
         monster.takeDamage(this.damage);
         this.removed = true;
-        for (const particle of createHitImpactParticles(this.x, this.y, "#9fffe4", this.angle)) {
+        for (const particle of createHitImpactParticles(this.x, this.y, this.impactColor, this.angle)) {
           result.addParticle(particle);
         }
-        result.playSound(AudioCue.ProjectileImpact, this.x);
+        result.playSound(AudioCue.ProjectileImpact, this.x, this.impactSoundIntensity);
         return;
       }
     }
   }
 
-  draw(context: CanvasRenderingContext2D): void {
-    const visualLevel = (this.radius - (PROJECTILE_SIZE_BASE / 2)) / (PROJECTILE_SIZE_PER_LEVEL / 2);
-    const length = (9.8 + (visualLevel * 1.45)) * 0.6;
-    const halfWidth = (1.8 + (visualLevel * 0.22)) * 0.66;
+  protected drawDart(
+    context: CanvasRenderingContext2D,
+    length: number,
+    halfWidth: number,
+    fillStyle: string,
+    drawHighlight: boolean,
+  ): void {
     const tailX = -(length * 0.55);
     const noseX = length * 0.55;
 
@@ -63,7 +69,7 @@ export class Projectile {
     context.rotate(this.angle);
     context.globalCompositeOperation = "lighter";
 
-    context.fillStyle = "#d9fff3";
+    context.fillStyle = fillStyle;
     context.beginPath();
     context.moveTo(noseX, 0);
     context.lineTo(noseX - (length * 0.28), -halfWidth);
@@ -72,7 +78,13 @@ export class Projectile {
     context.lineTo(noseX - (length * 0.28), halfWidth);
     context.closePath();
     context.fill();
+
+    if (drawHighlight) {
+      context.fillStyle = "#effff7";
+      context.fillRect(tailX + 0.8, -0.36, length * 0.42, 0.72);
+    }
     context.restore();
   }
 
+  abstract draw(context: CanvasRenderingContext2D): void;
 }
