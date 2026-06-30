@@ -20,7 +20,7 @@ const DRONE_SEPARATION_SPEED_PER_SECOND = 96;
 const DRONE_EXIT_SPEED_PER_SECOND = 330;
 const DRONE_EXIT_MARGIN = 42;
 const DRONE_TARGET_DISTANCE_WEIGHT = 1;
-const DRONE_TARGET_ASSIGNED_PENALTY = 90;
+const DRONE_TARGET_ASSIGNED_PENALTY = 150;
 const DRONE_TARGET_PROGRESS_BONUS = 70;
 const DRONE_TARGET_STICKINESS_BONUS = 42;
 const DRONE_RETARGET_INTERVAL_SECONDS = 0.55;
@@ -180,8 +180,8 @@ export class Drone {
     context.restore();
   }
 
-  isTracking(monster: Monster): boolean {
-    return this.target === monster && this.isActiveTarget(monster);
+  getAssignedTarget(): Monster | undefined {
+    return this.target && this.isActiveTarget(this.target) ? this.target : undefined;
   }
 
   private updateTarget(context: UpdateContext): void {
@@ -222,21 +222,13 @@ export class Drone {
     const dx = monster.x - this.x;
     const dy = monster.y - this.y;
     const distanceScore = Math.hypot(dx, dy) * DRONE_TARGET_DISTANCE_WEIGHT;
-    const assignedDronePenalty = this.countOtherDronesTracking(monster, context) * DRONE_TARGET_ASSIGNED_PENALTY;
+    const assignedDroneCount = context.droneAssignments.get(monster) ?? 0;
+    const otherDroneCount = monster === this.target ? Math.max(0, assignedDroneCount - 1) : assignedDroneCount;
+    const assignedDronePenalty = otherDroneCount * DRONE_TARGET_ASSIGNED_PENALTY;
     const progressBonus = monster.getPathProgress() * DRONE_TARGET_PROGRESS_BONUS;
     const stickinessBonus = monster === this.target ? DRONE_TARGET_STICKINESS_BONUS : 0;
 
     return distanceScore + assignedDronePenalty - progressBonus - stickinessBonus;
-  }
-
-  private countOtherDronesTracking(monster: Monster, context: UpdateContext): number {
-    let count = 0;
-    for (const drone of context.activeDrones) {
-      if (drone !== this && !drone.removed && drone.isTracking(monster)) {
-        count += 1;
-      }
-    }
-    return count;
   }
 
   private moveTowardPosition(destinationX: number, destinationY: number, deltaSeconds: number): void {

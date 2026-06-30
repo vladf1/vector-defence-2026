@@ -265,6 +265,7 @@ function updateParticles(deltaSeconds: number): void {
     fieldHeight: FIELD_HEIGHT,
     activeMonsters: [],
     activeDrones: [],
+    droneAssignments: new Map(),
   };
   for (const particle of particles) {
     if (!particle.removed) {

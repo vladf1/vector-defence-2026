@@ -8,6 +8,7 @@ import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
 import { GameRenderer, type FieldBounds } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES } from "./constants";
 import type { Monster } from "./entities/monsters/monster";
+import type { Drone } from "./entities/projectiles/drone";
 import { SplitterMonster } from "./entities/monsters/splitter-monster";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
@@ -103,6 +104,18 @@ function normalizeAvailableTowers(levelName: string, values: string[]): TowerKin
 function normalizeLevelPoint(point: LevelJsonPoint): Point {
   const [x, y] = point;
   return { x, y };
+}
+
+function createDroneAssignments(drones: readonly Drone[]): Map<Monster, number> {
+  const assignments = new Map<Monster, number>();
+  for (const drone of drones) {
+    const target = drone.getAssignedTarget();
+    if (!target) {
+      continue;
+    }
+    assignments.set(target, (assignments.get(target) ?? 0) + 1);
+  }
+  return assignments;
 }
 
 export class Game {
@@ -797,6 +810,7 @@ export class Game {
         fieldHeight: this.profile.fieldHeight,
         activeMonsters: this.getActiveMonsters(),
         activeDrones: this.runtime.drones,
+        droneAssignments: new Map(),
       };
       const updateResult = new UpdateResult();
 
@@ -805,10 +819,7 @@ export class Game {
       }
       this.applyMonsterLifecycleResults(updateResult);
 
-      updateContext = {
-        ...updateContext,
-        activeMonsters: this.getActiveMonsters(),
-      };
+      updateContext.activeMonsters = this.getActiveMonsters();
 
       for (const projectile of this.runtime.projectiles) {
         projectile.update(updateContext, updateResult);
@@ -817,6 +828,8 @@ export class Game {
       for (const missile of this.runtime.missiles) {
         missile.update(updateContext, updateResult);
       }
+
+      updateContext.droneAssignments = createDroneAssignments(this.runtime.drones);
 
       for (const drone of this.runtime.drones) {
         drone.update(updateContext, updateResult);

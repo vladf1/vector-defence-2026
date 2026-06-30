@@ -10,8 +10,9 @@ export interface UpdateContext {
   readonly deltaSeconds: number;
   readonly fieldWidth: number;
   readonly fieldHeight: number;
-  readonly activeMonsters: readonly Monster[];
+  activeMonsters: readonly Monster[];
   readonly activeDrones: readonly Drone[];
+  droneAssignments: ReadonlyMap<Monster, number>;
 }
 
 export interface UpdateSound {
