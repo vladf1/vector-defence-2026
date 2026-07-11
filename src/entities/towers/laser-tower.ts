@@ -78,6 +78,9 @@ export class LaserTower extends Tower {
     const colors = this.getLaserColors();
 
     for (const monster of context.activeMonsters) {
+      if (!this.isMonsterActive(monster)) {
+        continue;
+      }
       if (isWithinDistanceToSegment(monster, source, this.beamTarget, monster.radius)) {
         monster.takeDamage(this.damagePerSecond * context.deltaSeconds * this.beamAlpha);
         if (shouldCreateSparks && sparkBurstsCreated < 2) {
@@ -121,6 +124,9 @@ export class LaserTower extends Tower {
     const source = this.getBeamSource();
 
     for (const monster of context.activeMonsters) {
+      if (!this.isMonsterActive(monster)) {
+        continue;
+      }
       if (!withinDistance(this, monster, this.range)) {
         continue;
       }

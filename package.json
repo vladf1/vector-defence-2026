@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "benchmark:update": "node scripts/benchmark-update-methods.mjs",
-    "validate:collisions": "node scripts/validate-collision-index.mjs",
     "render:levels": "node scripts/render-levels.mjs",
     "render:towers": "node scripts/render-towers.mjs",
     "build": "svelte-check --tsconfig ./tsconfig.json && vite build",

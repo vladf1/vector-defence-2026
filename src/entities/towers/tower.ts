@@ -90,6 +90,9 @@ export abstract class Tower {
     let smallestDistanceSquared = Number.POSITIVE_INFINITY;
 
     for (const monster of context.activeMonsters) {
+      if (!this.isMonsterActive(monster)) {
+        continue;
+      }
       const distanceSquared = this.getDistanceSquaredInRange(monster);
       if (distanceSquared === null) {
         continue;
@@ -104,7 +107,11 @@ export abstract class Tower {
   }
 
   protected canTrackMonster(monster: Monster): boolean {
-    return !monster.removed && this.getDistanceSquaredInRange(monster) !== null;
+    return this.isMonsterActive(monster) && this.getDistanceSquaredInRange(monster) !== null;
+  }
+
+  protected isMonsterActive(monster: Monster): boolean {
+    return !monster.removed && monster.hitPoints > 0;
   }
 
   private getDistanceSquaredInRange(monster: Monster): number | null {

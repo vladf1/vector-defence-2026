@@ -72,7 +72,7 @@ export class LightningTower extends Tower {
       let closestDistanceSquared = Number.POSITIVE_INFINITY;
 
       for (const monster of context.activeMonsters) {
-        if (targets.includes(monster)) {
+        if (!this.isMonsterActive(monster) || targets.includes(monster)) {
           continue;
         }
         if (!withinDistance(source, monster, chainRange)) {
