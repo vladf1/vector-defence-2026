@@ -12,6 +12,8 @@ const HIT_SHAKE_VERTICAL_PHASE_SCALE = 0.7;
 export abstract class Monster {
   x: number;
   y: number;
+  previousX: number;
+  previousY: number;
   velocityXPerSecond = 0;
   velocityYPerSecond = 0;
   speedPerSecond: number;
@@ -40,6 +42,8 @@ export abstract class Monster {
     const start = path[0] ?? { x: 0, y: 0 };
     this.x = start.x;
     this.y = start.y;
+    this.previousX = start.x;
+    this.previousY = start.y;
     this.maxSpeedPerSecond = speedPerSecond;
     this.speedPerSecond = speedPerSecond;
     this.hitPoints = hitPoints;
@@ -97,6 +101,8 @@ export abstract class Monster {
       return;
     }
 
+    this.previousX = this.x;
+    this.previousY = this.y;
     this.clearHitShakeOffset();
 
     if (this.speedPerSecond < this.maxSpeedPerSecond) {

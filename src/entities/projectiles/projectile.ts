@@ -1,12 +1,15 @@
 import { createHitImpactParticles } from "../../game-engine/combat-effects";
+import { findEarliestActiveCircleSweepCollision } from "../../game-engine/collision-detection";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { AudioCue } from "../../types";
 import type { Point } from "../../types";
-import { angleBetween, isOutsideBounds, withinDistance } from "../../utils";
+import { angleBetween, isOutsideBounds } from "../../utils";
 
 export abstract class Projectile {
   x: number;
   y: number;
+  previousX: number;
+  previousY: number;
   velocityXPerSecond: number;
   velocityYPerSecond: number;
   damage: number;
@@ -26,6 +29,8 @@ export abstract class Projectile {
     this.angle = angleBetween(source, target);
     this.x = source.x;
     this.y = source.y;
+    this.previousX = source.x;
+    this.previousY = source.y;
     this.velocityXPerSecond = Math.cos(this.angle) * speedPerSecond;
     this.velocityYPerSecond = Math.sin(this.angle) * speedPerSecond;
     this.damage = damage;
@@ -33,24 +38,26 @@ export abstract class Projectile {
   }
 
   update(context: UpdateContext, result: UpdateResult): void {
+    this.previousX = this.x;
+    this.previousY = this.y;
     this.x += this.velocityXPerSecond * context.deltaSeconds;
     this.y += this.velocityYPerSecond * context.deltaSeconds;
-    if (isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 20)) {
+
+    const collision = findEarliestActiveCircleSweepCollision(this, context.activeMonsters);
+    if (collision) {
+      this.x = collision.x;
+      this.y = collision.y;
+      collision.target.takeDamage(this.damage);
       this.removed = true;
+      for (const particle of createHitImpactParticles(this.x, this.y, this.impactColor, this.angle)) {
+        result.addParticle(particle);
+      }
+      result.playSound(AudioCue.ProjectileImpact, this.x, this.impactSoundIntensity);
       return;
     }
 
-    for (const monster of context.activeMonsters) {
-      const hitDistance = monster.radius + this.radius;
-      if (withinDistance(this, monster, hitDistance)) {
-        monster.takeDamage(this.damage);
-        this.removed = true;
-        for (const particle of createHitImpactParticles(this.x, this.y, this.impactColor, this.angle)) {
-          result.addParticle(particle);
-        }
-        result.playSound(AudioCue.ProjectileImpact, this.x, this.impactSoundIntensity);
-        return;
-      }
+    if (isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 20)) {
+      this.removed = true;
     }
   }
 
