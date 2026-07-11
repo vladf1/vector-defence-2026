@@ -7,12 +7,12 @@ import type { RuntimeLinkEffect } from "../level-runtime";
 import type { AudioCue as AudioCueValue } from "../types";
 
 export interface UpdateContext {
-  readonly deltaSeconds: number;
+  deltaSeconds: number;
   readonly fieldWidth: number;
   readonly fieldHeight: number;
-  activeMonsters: readonly Monster[];
-  readonly activeDrones: readonly Drone[];
-  droneAssignments: ReadonlyMap<Monster, number>;
+  readonly activeMonsters: readonly Monster[];
+  activeDrones: readonly Drone[];
+  readonly droneAssignments: ReadonlyMap<Monster, number>;
 }
 
 export interface UpdateSound {

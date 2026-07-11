@@ -106,8 +106,8 @@ function normalizeLevelPoint(point: LevelJsonPoint): Point {
   return { x, y };
 }
 
-function createDroneAssignments(drones: readonly Drone[]): Map<Monster, number> {
-  const assignments = new Map<Monster, number>();
+function refreshDroneAssignments(drones: readonly Drone[], assignments: Map<Monster, number>): void {
+  assignments.clear();
   for (const drone of drones) {
     const target = drone.getAssignedTarget();
     if (!target) {
@@ -115,7 +115,6 @@ function createDroneAssignments(drones: readonly Drone[]): Map<Monster, number> 
     }
     assignments.set(target, (assignments.get(target) ?? 0) + 1);
   }
-  return assignments;
 }
 
 export class Game {
@@ -137,6 +136,10 @@ export class Game {
   hudDirty = true;
   modalDirty = true;
   private breachResolutionDelaySeconds = 0;
+  private readonly activeMonsters: Monster[] = [];
+  private readonly droneAssignments = new Map<Monster, number>();
+  private readonly updateResult = new UpdateResult();
+  private readonly updateContext: UpdateContext;
   readonly profile: GameProfile;
 
   constructor(
@@ -151,6 +154,14 @@ export class Game {
     this.levels = levelList;
     this.audio = audio;
     this.profile = profile;
+    this.updateContext = {
+      deltaSeconds: 0,
+      fieldWidth: profile.fieldWidth,
+      fieldHeight: profile.fieldHeight,
+      activeMonsters: this.activeMonsters,
+      activeDrones: this.runtime.drones,
+      droneAssignments: this.droneAssignments,
+    };
     this.renderer = new GameRenderer(backgroundCanvas, backgroundCtx, canvas, ctx, this);
     this.loadCampaignProgress();
     this.loadLevelStars();
@@ -208,8 +219,13 @@ export class Game {
     }
   }
 
-  private getActiveMonsters(): Monster[] {
-    return this.runtime.monsters.filter((monster) => !monster.removed && monster.hitPoints > 0);
+  private refreshActiveMonsters(): void {
+    this.activeMonsters.length = 0;
+    for (const monster of this.runtime.monsters) {
+      if (!monster.removed && monster.hitPoints > 0) {
+        this.activeMonsters.push(monster);
+      }
+    }
   }
 
   playSound(cue: AudioCueValue, panX?: number, intensity?: number): void {
@@ -810,22 +826,18 @@ export class Game {
         }
       }
 
-      let updateContext: UpdateContext = {
-        deltaSeconds,
-        fieldWidth: this.profile.fieldWidth,
-        fieldHeight: this.profile.fieldHeight,
-        activeMonsters: this.getActiveMonsters(),
-        activeDrones: this.runtime.drones,
-        droneAssignments: new Map(),
-      };
-      const updateResult = new UpdateResult();
+      const { updateContext, updateResult } = this;
+      updateResult.clear();
+      updateContext.deltaSeconds = deltaSeconds;
+      updateContext.activeDrones = this.runtime.drones;
+      this.refreshActiveMonsters();
 
       for (const monster of this.runtime.monsters) {
         monster.update(updateContext, updateResult);
       }
       this.applyMonsterLifecycleResults(updateResult);
 
-      updateContext.activeMonsters = this.getActiveMonsters();
+      this.refreshActiveMonsters();
 
       for (const projectile of this.runtime.projectiles) {
         projectile.update(updateContext, updateResult);
@@ -835,7 +847,7 @@ export class Game {
         missile.update(updateContext, updateResult);
       }
 
-      updateContext.droneAssignments = createDroneAssignments(this.runtime.drones);
+      refreshDroneAssignments(this.runtime.drones, this.droneAssignments);
 
       for (const drone of this.runtime.drones) {
         drone.update(updateContext, updateResult);
