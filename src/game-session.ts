@@ -14,7 +14,7 @@ import {
   performModalAction,
   type RuntimeHudStats,
 } from "./game-view";
-import { AudioCue, type HudSnapshot, type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
+import { AudioCue, GameState, type HudSnapshot, type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
 import { readonly, writable, type Readable } from "svelte/store";
 
 const MAX_FRAME_DELTA = 1 / 15;
@@ -77,6 +77,28 @@ export function createGameSession(profile: GameProfile): GameSession {
     }
     | null = null;
 
+  function requestGameFrame(): void {
+    if (!game || game.state !== GameState.Playing || frameId !== 0) {
+      return;
+    }
+
+    previousFrameTime = 0;
+    frameId = window.requestAnimationFrame(frame);
+  }
+
+  function syncAnimationLoop(): void {
+    if (game?.state === GameState.Playing) {
+      requestGameFrame();
+      return;
+    }
+
+    if (frameId !== 0) {
+      window.cancelAnimationFrame(frameId);
+      frameId = 0;
+    }
+    previousFrameTime = 0;
+  }
+
   const publish = (forceHud = false, forceModal = false): void => {
     if (!game) {
       return;
@@ -101,6 +123,7 @@ export function createGameSession(profile: GameProfile): GameSession {
     audio.unlock();
     action(game);
     publish(force, force);
+    syncAnimationLoop();
   };
 
   const toCanvasPoint = (event: PointerEvent): Point | null => {
@@ -144,8 +167,10 @@ export function createGameSession(profile: GameProfile): GameSession {
     lastNerdStatsSampleTime = 0;
   };
 
-  const frame = (timestamp: number): void => {
-    if (!game) {
+  function frame(timestamp: number): void {
+    frameId = 0;
+    if (!game || game.state !== GameState.Playing) {
+      previousFrameTime = 0;
       return;
     }
 
@@ -183,9 +208,13 @@ export function createGameSession(profile: GameProfile): GameSession {
       }
     }
     publish();
-    frameId = window.requestAnimationFrame(frame);
     previousFrameTime = timestamp;
-  };
+    if (game.state === GameState.Playing) {
+      frameId = window.requestAnimationFrame(frame);
+    } else {
+      previousFrameTime = 0;
+    }
+  }
 
   const mount = (nextBackgroundCanvas: HTMLCanvasElement, nextCanvas: HTMLCanvasElement): void => {
     if (canvas === nextCanvas && game) {
@@ -228,7 +257,7 @@ export function createGameSession(profile: GameProfile): GameSession {
     resetNerdStatsSamples();
     publish(true, true);
     previousFrameTime = 0;
-    frameId = window.requestAnimationFrame(frame);
+    requestGameFrame();
   };
 
   const destroy = (): void => {
