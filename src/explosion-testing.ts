@@ -10,8 +10,11 @@ import { SquareMonster } from "./entities/monsters/square-monster";
 import { TankMonster } from "./entities/monsters/tank-monster";
 import { TriangleMonster } from "./entities/monsters/triangle-monster";
 import { Missile } from "./entities/projectiles/missile";
+import { LinearActiveCircleSweepCollisionIndex } from "./game-engine/collision-detection";
 import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
 import type { PathEntry } from "./route-path";
+
+const EMPTY_MONSTER_COLLISION_INDEX = new LinearActiveCircleSweepCollisionIndex<Monster>([]);
 
 const canvasElement = document.querySelector<HTMLCanvasElement>("#explosion-testing");
 if (!canvasElement) {
@@ -290,6 +293,7 @@ function updateParticles(particles: Particle[], deltaSeconds: number, fieldWidth
     fieldWidth,
     fieldHeight,
     activeMonsters: [],
+    monsterCollisionIndex: EMPTY_MONSTER_COLLISION_INDEX,
     activeDrones: [],
     droneAssignments: new Map(),
   };
@@ -500,22 +504,26 @@ function prepareCombinedTarget(monster: Monster): void {
 }
 
 function createPreviewUpdateContext(scene: ActiveScene, deltaSeconds: number): UpdateContext {
+  const activeMonsters = scene.monster.removed ? [] : [scene.monster];
   return {
     deltaSeconds,
     fieldWidth: EFFECT_FIELD_WIDTH,
     fieldHeight: EFFECT_FIELD_HEIGHT,
-    activeMonsters: scene.monster.removed ? [] : [scene.monster],
+    activeMonsters,
+    monsterCollisionIndex: new LinearActiveCircleSweepCollisionIndex(activeMonsters),
     activeDrones: [],
     droneAssignments: new Map(),
   };
 }
 
 function createPreviewMonsterUpdateContext(monster: Monster, deltaSeconds: number): UpdateContext {
+  const activeMonsters = monster.removed ? [] : [monster];
   return {
     deltaSeconds,
     fieldWidth: EFFECT_FIELD_WIDTH,
     fieldHeight: EFFECT_FIELD_HEIGHT,
-    activeMonsters: monster.removed ? [] : [monster],
+    activeMonsters,
+    monsterCollisionIndex: new LinearActiveCircleSweepCollisionIndex(activeMonsters),
     activeDrones: [],
     droneAssignments: new Map(),
   };

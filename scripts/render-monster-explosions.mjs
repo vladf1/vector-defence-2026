@@ -48,6 +48,7 @@ const html = String.raw`
       const { BulwarkMonster } = await import("/src/entities/monsters/bulwark-monster.ts");
       const { BerserkerMonster } = await import("/src/entities/monsters/berserker-monster.ts");
       const { UpdateResult } = await import("/src/game-engine/update-context.ts");
+      const { LinearActiveCircleSweepCollisionIndex } = await import("/src/game-engine/collision-detection.ts");
 
       const monsterSpecs = [
         { slug: "packman", label: "PackMan", MonsterClass: PackManMonster, seed: 2201, zoom: 11.5, angle: 0 },
@@ -125,12 +126,15 @@ const html = String.raw`
       }
 
       function createStaticUpdateContext(monster) {
+        const activeMonsters = monster.removed ? [] : [monster];
         return {
           deltaSeconds: 0,
           fieldWidth: FRAME_WIDTH,
           fieldHeight: FRAME_HEIGHT,
-          activeMonsters: monster.removed ? [] : [monster],
+          activeMonsters,
+          monsterCollisionIndex: new LinearActiveCircleSweepCollisionIndex(activeMonsters),
           activeDrones: [],
+          droneAssignments: new Map(),
         };
       }
 

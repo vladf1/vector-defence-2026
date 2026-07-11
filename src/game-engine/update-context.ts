@@ -5,12 +5,14 @@ import type { Missile } from "../entities/projectiles/missile";
 import type { Projectile } from "../entities/projectiles/projectile";
 import type { RuntimeLinkEffect } from "../level-runtime";
 import type { AudioCue as AudioCueValue } from "../types";
+import type { ActiveCircleSweepCollisionQuery } from "./collision-detection";
 
 export interface UpdateContext {
   deltaSeconds: number;
   readonly fieldWidth: number;
   readonly fieldHeight: number;
   readonly activeMonsters: readonly Monster[];
+  readonly monsterCollisionIndex: ActiveCircleSweepCollisionQuery<Monster>;
   activeDrones: readonly Drone[];
   readonly droneAssignments: ReadonlyMap<Monster, number>;
 }

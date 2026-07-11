@@ -3,6 +3,7 @@ import { createCampaignLevels } from "./campaign";
 import { GameMode, type GameMode as GameModeValue, type GameProfile } from "./game-profile";
 import type { GameAudio } from "./game-audio";
 import { createEscapeBurstParticles } from "./game-engine/combat-effects";
+import { ActiveCircleSweepCollisionIndex } from "./game-engine/collision-detection";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
 import { GameRenderer, type FieldBounds } from "./game-renderer";
@@ -53,6 +54,7 @@ export interface GameFrameTimings {
 }
 
 const BREACH_DEFEAT_DELAY_SECONDS = 1;
+const MONSTER_COLLISION_CELL_SIZE = 64;
 
 export function createLevels(gameMode: GameModeValue): LevelData[] {
   return createCampaignLevels(normalizeLevels(levelsJson as LevelJsonData[], gameMode), gameMode === GameMode.Mobile);
@@ -137,6 +139,7 @@ export class Game {
   modalDirty = true;
   private breachResolutionDelaySeconds = 0;
   private readonly activeMonsters: Monster[] = [];
+  private readonly monsterCollisionIndex = new ActiveCircleSweepCollisionIndex<Monster>(MONSTER_COLLISION_CELL_SIZE);
   private readonly droneAssignments = new Map<Monster, number>();
   private readonly updateResult = new UpdateResult();
   private readonly updateContext: UpdateContext;
@@ -159,6 +162,7 @@ export class Game {
       fieldWidth: profile.fieldWidth,
       fieldHeight: profile.fieldHeight,
       activeMonsters: this.activeMonsters,
+      monsterCollisionIndex: this.monsterCollisionIndex,
       activeDrones: this.runtime.drones,
       droneAssignments: this.droneAssignments,
     };
@@ -838,6 +842,7 @@ export class Game {
       this.applyMonsterLifecycleResults(updateResult);
 
       this.refreshActiveMonsters();
+      this.monsterCollisionIndex.rebuild(this.activeMonsters);
 
       for (const projectile of this.runtime.projectiles) {
         projectile.update(updateContext, updateResult);

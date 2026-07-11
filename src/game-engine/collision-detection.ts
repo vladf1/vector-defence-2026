@@ -18,6 +18,114 @@ export interface CircleSweepCollision<T extends CircleSweep> {
   readonly y: number;
 }
 
+export interface ActiveCircleSweepCollisionQuery<T extends ActiveCircleSweep> {
+  findEarliestCollision(source: CircleSweep): CircleSweepCollision<T> | undefined;
+}
+
+export class LinearActiveCircleSweepCollisionIndex<T extends ActiveCircleSweep>
+implements ActiveCircleSweepCollisionQuery<T> {
+  constructor(private readonly targets: readonly T[]) {
+  }
+
+  findEarliestCollision(source: CircleSweep): CircleSweepCollision<T> | undefined {
+    return findEarliestActiveCircleSweepCollision(source, this.targets);
+  }
+}
+
+export class ActiveCircleSweepCollisionIndex<T extends ActiveCircleSweep>
+implements ActiveCircleSweepCollisionQuery<T> {
+  private readonly cells = new Map<number, T[]>();
+  private readonly populatedCells: T[][] = [];
+  private readonly queryMarks = new WeakMap<T, number>();
+  private readonly targetOrder = new WeakMap<T, number>();
+  private queryId = 0;
+
+  constructor(private readonly cellSize: number) {
+  }
+
+  rebuild(targets: readonly T[]): void {
+    for (const cell of this.populatedCells) {
+      cell.length = 0;
+    }
+    this.populatedCells.length = 0;
+
+    for (let targetIndex = 0; targetIndex < targets.length; targetIndex += 1) {
+      const target = targets[targetIndex];
+      if (target.removed || target.hitPoints <= 0) {
+        continue;
+      }
+      this.targetOrder.set(target, targetIndex);
+
+      const minCellX = this.toCell(Math.min(target.previousX, target.x) - target.radius);
+      const maxCellX = this.toCell(Math.max(target.previousX, target.x) + target.radius);
+      const minCellY = this.toCell(Math.min(target.previousY, target.y) - target.radius);
+      const maxCellY = this.toCell(Math.max(target.previousY, target.y) + target.radius);
+      for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+        for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+          const key = this.getCellKey(cellX, cellY);
+          let cell = this.cells.get(key);
+          if (!cell) {
+            cell = [];
+            this.cells.set(key, cell);
+          }
+          if (cell.length === 0) {
+            this.populatedCells.push(cell);
+          }
+          cell.push(target);
+        }
+      }
+    }
+  }
+
+  findEarliestCollision(source: CircleSweep): CircleSweepCollision<T> | undefined {
+    this.queryId += 1;
+    let hitTarget: T | undefined;
+    let hitTime = Number.POSITIVE_INFINITY;
+    let hitOrder = Number.POSITIVE_INFINITY;
+    const minCellX = this.toCell(Math.min(source.previousX, source.x) - source.radius);
+    const maxCellX = this.toCell(Math.max(source.previousX, source.x) + source.radius);
+    const minCellY = this.toCell(Math.min(source.previousY, source.y) - source.radius);
+    const maxCellY = this.toCell(Math.max(source.previousY, source.y) + source.radius);
+
+    for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+      for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+        const cell = this.cells.get(this.getCellKey(cellX, cellY));
+        if (!cell) {
+          continue;
+        }
+
+        for (const target of cell) {
+          if (this.queryMarks.get(target) === this.queryId) {
+            continue;
+          }
+          this.queryMarks.set(target, this.queryId);
+          if (target.removed || target.hitPoints <= 0) {
+            continue;
+          }
+
+          const collisionTime = getSweptCircleCollisionTime(source, target);
+          const order = this.targetOrder.get(target) ?? Number.POSITIVE_INFINITY;
+          if (collisionTime !== undefined && (collisionTime < hitTime || (collisionTime === hitTime && order < hitOrder))) {
+            hitTarget = target;
+            hitTime = collisionTime;
+            hitOrder = order;
+          }
+        }
+      }
+    }
+
+    return hitTarget ? createCollision(source, hitTarget, hitTime) : undefined;
+  }
+
+  private toCell(value: number): number {
+    return Math.floor(value / this.cellSize);
+  }
+
+  private getCellKey(cellX: number, cellY: number): number {
+    return ((cellX * 73_856_093) ^ (cellY * 19_349_663));
+  }
+}
+
 export function findEarliestActiveCircleSweepCollision<T extends ActiveCircleSweep>(
   source: CircleSweep,
   targets: readonly T[],
@@ -41,11 +149,19 @@ export function findEarliestActiveCircleSweepCollision<T extends ActiveCircleSwe
     return undefined;
   }
 
+  return createCollision(source, hitTarget, hitTime);
+}
+
+function createCollision<T extends CircleSweep>(
+  source: CircleSweep,
+  target: T,
+  time: number,
+): CircleSweepCollision<T> {
   return {
-    target: hitTarget,
-    time: hitTime,
-    x: source.previousX + ((source.x - source.previousX) * hitTime),
-    y: source.previousY + ((source.y - source.previousY) * hitTime),
+    target,
+    time,
+    x: source.previousX + ((source.x - source.previousX) * time),
+    y: source.previousY + ((source.y - source.previousY) * time),
   };
 }
 

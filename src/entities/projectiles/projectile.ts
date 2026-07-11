@@ -1,5 +1,4 @@
 import { createHitImpactParticles } from "../../game-engine/combat-effects";
-import { findEarliestActiveCircleSweepCollision } from "../../game-engine/collision-detection";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { AudioCue } from "../../types";
 import type { Point } from "../../types";
@@ -43,7 +42,7 @@ export abstract class Projectile {
     this.x += this.velocityXPerSecond * context.deltaSeconds;
     this.y += this.velocityYPerSecond * context.deltaSeconds;
 
-    const collision = findEarliestActiveCircleSweepCollision(this, context.activeMonsters);
+    const collision = context.monsterCollisionIndex.findEarliestCollision(this);
     if (collision) {
       this.x = collision.x;
       this.y = collision.y;

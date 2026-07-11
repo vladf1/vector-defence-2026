@@ -1,5 +1,17 @@
 import { runBenchmarkPage } from "./benchmark-browser-harness.mjs";
 
+const benchmarkConfig = {
+  monsterCount: readNumber("MONSTER_COUNT", 720),
+  towerRows: readNumber("TOWER_ROWS", 18),
+  projectileCount: readNumber("PROJECTILE_COUNT", 1_200),
+  missileCount: readNumber("MISSILE_COUNT", 180),
+  particleCount: readNumber("PARTICLE_COUNT", 2_000),
+  linkCount: readNumber("LINK_COUNT", 120),
+  warmupFrames: readNumber("WARMUP_FRAMES", 18),
+  measuredFrames: readNumber("MEASURED_FRAMES", 60),
+};
+const useCollisionIndex = process.env.COLLISION_INDEX !== "off";
+
 const html = String.raw`
 <!doctype html>
 <html>
@@ -10,6 +22,10 @@ const html = String.raw`
   <body>
     <script type="module">
       const { Game, createLevels } = await import("/src/game-engine.ts");
+      const {
+        ActiveCircleSweepCollisionIndex,
+        LinearActiveCircleSweepCollisionIndex,
+      } = await import("/src/game-engine/collision-detection.ts");
       const { DESKTOP_GAME_PROFILE } = await import("/src/game-profile.ts");
       const { createMonster } = await import("/src/game-engine/monster-factory.ts");
       const { createPathEntriesFromDistance } = await import("/src/route-path.ts");
@@ -21,16 +37,8 @@ const html = String.raw`
       const { Missile } = await import("/src/entities/projectiles/missile.ts");
       const { UpdateResult } = await import("/src/game-engine/update-context.ts");
 
-      const maxStressConfig = {
-        monsterCount: 720,
-        towerRows: 18,
-        projectileCount: 1200,
-        missileCount: 180,
-        particleCount: 2000,
-        linkCount: 120,
-        warmupFrames: 18,
-        measuredFrames: 60,
-      };
+      const maxStressConfig = ${JSON.stringify(benchmarkConfig)};
+      const useCollisionIndex = ${JSON.stringify(useCollisionIndex)};
 
       const profile = runMaxStressUpdateProfile(maxStressConfig);
       window.__benchmarkResults = {
@@ -111,12 +119,19 @@ const html = String.raw`
       }
 
       function profileOneRuntimeUpdate(game, deltaSeconds, buckets) {
-        let updateContext = createUpdateContext(game, deltaSeconds);
+        let activeMonsters = game.runtime.monsters.filter((monster) => !monster.removed && monster.hitPoints > 0);
+        let updateContext = createUpdateContext(game, deltaSeconds, activeMonsters);
         const updateResult = new UpdateResult();
         timeGroupedByConstructor(buckets, "monster", game.runtime.monsters, (monster) => {
           monster.update(updateContext, updateResult);
         });
-        updateContext = createUpdateContext(game, deltaSeconds);
+        activeMonsters = game.runtime.monsters.filter((monster) => !monster.removed && monster.hitPoints > 0);
+        if (useCollisionIndex) {
+          timeGroup(buckets, "collision:ActiveCircleSweepCollisionIndex.rebuild", [game.benchmarkMonsterCollisionIndex], (index) => {
+            index.rebuild(activeMonsters);
+          });
+        }
+        updateContext = createUpdateContext(game, deltaSeconds, activeMonsters);
         timeGroup(buckets, "projectile:Projectile.update", game.runtime.projectiles, (projectile) => {
           projectile.update(updateContext, updateResult);
         });
@@ -137,13 +152,17 @@ const html = String.raw`
         });
       }
 
-      function createUpdateContext(game, deltaSeconds) {
+      function createUpdateContext(game, deltaSeconds, activeMonsters) {
         return {
           deltaSeconds,
           fieldWidth: game.profile.fieldWidth,
           fieldHeight: game.profile.fieldHeight,
-          activeMonsters: game.runtime.monsters.filter((monster) => !monster.removed && monster.hitPoints > 0),
+          activeMonsters,
+          monsterCollisionIndex: useCollisionIndex
+            ? game.benchmarkMonsterCollisionIndex
+            : new LinearActiveCircleSweepCollisionIndex(activeMonsters),
           activeDrones: game.runtime.drones,
+          droneAssignments: new Map(),
         };
       }
 
@@ -201,7 +220,8 @@ const html = String.raw`
           audio,
           DESKTOP_GAME_PROFILE,
         );
-        game.startLevelByIndex(9);
+        game.benchmarkMonsterCollisionIndex = new ActiveCircleSweepCollisionIndex(64);
+        game.startLevel(game.levels[9]);
         game.runtime.spawnDelay = 999;
         game.runtime.waveSpawnedMonsters = game.activeWave?.count ?? 999;
         game.runtime.spawnedMonsters = game.currentLevel?.monsterCount ?? 999;
@@ -383,3 +403,11 @@ console.log("Total frame impact");
 console.table(value.totalImpact);
 console.log("Per update invocation");
 console.table(value.perInvocation);
+
+function readNumber(name, fallback) {
+  const value = Number(process.env[name] ?? fallback);
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`Invalid ${name}: ${process.env[name]}`);
+  }
+  return value;
+}

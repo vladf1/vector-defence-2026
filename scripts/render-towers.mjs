@@ -39,6 +39,7 @@ const html = String.raw`
       import { DroneProjectile } from "/src/entities/projectiles/drone-projectile.ts";
       import { GunProjectile } from "/src/entities/projectiles/gun-projectile.ts";
       import { UpdateResult } from "/src/game-engine/update-context.ts";
+      import { LinearActiveCircleSweepCollisionIndex } from "/src/game-engine/collision-detection.ts";
 
       const towerRows = [
         { label: "Gun", TowerClass: GunTower, angle: -Math.PI / 4 },
@@ -217,7 +218,9 @@ const html = String.raw`
           fieldWidth: FIELD_WIDTH,
           fieldHeight: FIELD_HEIGHT,
           activeMonsters: [target],
+          monsterCollisionIndex: new LinearActiveCircleSweepCollisionIndex([target]),
           activeDrones: [],
+          droneAssignments: new Map(),
         };
         const updateResult = new UpdateResult();
         missile.update(updateContext, updateResult);
@@ -229,7 +232,9 @@ const html = String.raw`
             fieldWidth: FIELD_WIDTH,
             fieldHeight: FIELD_HEIGHT,
             activeMonsters: [],
+            monsterCollisionIndex: new LinearActiveCircleSweepCollisionIndex([]),
             activeDrones: [],
+            droneAssignments: new Map(),
           });
         }
 

@@ -30,6 +30,7 @@ const html = String.raw`
     <script type="module">
       const { BerserkerMonster } = await import("/src/entities/monsters/berserker-monster.ts");
       const { UpdateResult } = await import("/src/game-engine/update-context.ts");
+      const { LinearActiveCircleSweepCollisionIndex } = await import("/src/game-engine/collision-detection.ts");
 
       const FRAME_COUNT = 12;
       const ROWS = [
@@ -91,12 +92,15 @@ const html = String.raw`
       }
 
       function createUpdateContext(deltaSeconds, monster) {
+        const activeMonsters = monster.removed ? [] : [monster];
         return {
           deltaSeconds,
           fieldWidth: 1200,
           fieldHeight: 720,
-          activeMonsters: monster.removed ? [] : [monster],
+          activeMonsters,
+          monsterCollisionIndex: new LinearActiveCircleSweepCollisionIndex(activeMonsters),
           activeDrones: [],
+          droneAssignments: new Map(),
         };
       }
 

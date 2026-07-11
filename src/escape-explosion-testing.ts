@@ -3,8 +3,12 @@ import { HitRingEffect } from "./entities/effects/hit-ring-effect";
 import { SmokeParticle } from "./entities/effects/missile-explosion-effect";
 import type { Particle } from "./entities/effects/particle";
 import { ShockwaveEffect } from "./entities/effects/shockwave-effect";
+import type { Monster } from "./entities/monsters/monster";
+import { LinearActiveCircleSweepCollisionIndex } from "./game-engine/collision-detection";
 import type { UpdateContext } from "./game-engine/update-context";
 import { randomRange } from "./utils";
+
+const EMPTY_MONSTER_COLLISION_INDEX = new LinearActiveCircleSweepCollisionIndex<Monster>([]);
 
 const canvasTarget = document.querySelector<HTMLCanvasElement>("#escape-explosion-testing");
 if (!canvasTarget) {
@@ -264,6 +268,7 @@ function updateParticles(deltaSeconds: number): void {
     fieldWidth: FIELD_WIDTH,
     fieldHeight: FIELD_HEIGHT,
     activeMonsters: [],
+    monsterCollisionIndex: EMPTY_MONSTER_COLLISION_INDEX,
     activeDrones: [],
     droneAssignments: new Map(),
   };

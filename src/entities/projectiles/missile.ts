@@ -1,5 +1,4 @@
 import { createMissileExplosionParticles } from "../../game-engine/combat-effects";
-import { findEarliestActiveCircleSweepCollision } from "../../game-engine/collision-detection";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { AudioCue } from "../../types";
 import type { Point } from "../../types";
@@ -79,7 +78,7 @@ export class Missile {
     this.x += Math.cos(this.angle) * this.speedPerSecond * context.deltaSeconds;
     this.y += Math.sin(this.angle) * this.speedPerSecond * context.deltaSeconds;
 
-    const collision = findEarliestActiveCircleSweepCollision(this, context.activeMonsters);
+    const collision = context.monsterCollisionIndex.findEarliestCollision(this);
     if (collision) {
       this.x = collision.x;
       this.y = collision.y;
