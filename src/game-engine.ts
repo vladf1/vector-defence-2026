@@ -52,7 +52,7 @@ export interface GameFrameTimings {
   drawMs: number;
 }
 
-const ESCAPE_LOSS_DELAY_SECONDS = 1;
+const BREACH_DEFEAT_DELAY_SECONDS = 1;
 
 export function createLevels(gameMode: GameModeValue): LevelData[] {
   return createCampaignLevels(normalizeLevels(levelsJson as LevelJsonData[], gameMode), gameMode === GameMode.Mobile);
@@ -136,7 +136,7 @@ export class Game {
   bannerTimer = 0;
   hudDirty = true;
   modalDirty = true;
-  private lossDelaySeconds = 0;
+  private breachResolutionDelaySeconds = 0;
   readonly profile: GameProfile;
 
   constructor(
@@ -201,7 +201,7 @@ export class Game {
     }
 
     for (const monster of result.escapedMonsters) {
-      if (this.state !== GameState.Playing || (this.runtime.escapesLeft === 0 && this.lossDelaySeconds === 0)) {
+      if (this.state !== GameState.Playing || (this.runtime.escapesLeft === 0 && this.breachResolutionDelaySeconds === 0)) {
         break;
       }
       this.onMonsterEscaped(monster, result);
@@ -226,6 +226,10 @@ export class Game {
 
   canPerformBattleAction(): boolean {
     return this.state === GameState.Playing;
+  }
+
+  needsAnimationFrame(): boolean {
+    return this.state === GameState.Playing || this.breachResolutionDelaySeconds > 0;
   }
 
   setBanner(text: string, duration = 1.6): void {
@@ -256,7 +260,7 @@ export class Game {
     this.currentLevelIndex = this.levels.findIndex((candidate) => candidate.id === level.id || candidate === level);
     this.lastAwardedStars = 0;
     this.runtime = new LevelRuntime(level, this.profile.roadTurnRadius, this.profile.routeCurveSampleStep);
-    this.lossDelaySeconds = 0;
+    this.breachResolutionDelaySeconds = 0;
     this.menuReturnState = undefined;
     this.setBanner(`Level ${level.levelNumber ?? "?"}: ${level.name}`, 2.4);
     this.setState(GameState.Playing);
@@ -378,8 +382,8 @@ export class Game {
       this.renderBackgroundLayer();
     }
     if (escapesLeftBefore > 0 && this.runtime.escapesLeft === 0) {
-      this.lossDelaySeconds = ESCAPE_LOSS_DELAY_SECONDS;
-      this.setBanner("Base breached", ESCAPE_LOSS_DELAY_SECONDS);
+      this.breachResolutionDelaySeconds = BREACH_DEFEAT_DELAY_SECONDS;
+      this.setBanner("Base breached", BREACH_DEFEAT_DELAY_SECONDS);
     }
     this.requestHudSync();
   }
@@ -389,7 +393,7 @@ export class Game {
       return;
     }
 
-    this.lossDelaySeconds = 0;
+    this.breachResolutionDelaySeconds = 0;
     this.runtime.monsters.forEach((item) => {
       item.removed = true;
     });
@@ -777,9 +781,11 @@ export class Game {
       }
     }
 
-    if (this.lossDelaySeconds > 0) {
-      this.lossDelaySeconds = Math.max(0, this.lossDelaySeconds - deltaSeconds);
-      if (this.lossDelaySeconds === 0) {
+    // Reaching zero escapes commits the defeat. This delay is presentation-only,
+    // so it intentionally continues while paused or while the campaign map is open.
+    if (this.breachResolutionDelaySeconds > 0) {
+      this.breachResolutionDelaySeconds = Math.max(0, this.breachResolutionDelaySeconds - deltaSeconds);
+      if (this.breachResolutionDelaySeconds === 0) {
         this.loseLevel();
       }
     }

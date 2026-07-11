@@ -14,7 +14,7 @@ import {
   performModalAction,
   type RuntimeHudStats,
 } from "./game-view";
-import { AudioCue, GameState, type HudSnapshot, type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
+import { AudioCue, type HudSnapshot, type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
 import { readonly, writable, type Readable } from "svelte/store";
 
 const MAX_FRAME_DELTA = 1 / 15;
@@ -78,7 +78,7 @@ export function createGameSession(profile: GameProfile): GameSession {
     | null = null;
 
   function requestGameFrame(): void {
-    if (!game || game.state !== GameState.Playing || frameId !== 0) {
+    if (!game?.needsAnimationFrame() || frameId !== 0) {
       return;
     }
 
@@ -87,7 +87,7 @@ export function createGameSession(profile: GameProfile): GameSession {
   }
 
   function syncAnimationLoop(): void {
-    if (game?.state === GameState.Playing) {
+    if (game?.needsAnimationFrame()) {
       requestGameFrame();
       return;
     }
@@ -169,7 +169,7 @@ export function createGameSession(profile: GameProfile): GameSession {
 
   function frame(timestamp: number): void {
     frameId = 0;
-    if (!game || game.state !== GameState.Playing) {
+    if (!game?.needsAnimationFrame()) {
       previousFrameTime = 0;
       return;
     }
@@ -209,7 +209,7 @@ export function createGameSession(profile: GameProfile): GameSession {
     }
     publish();
     previousFrameTime = timestamp;
-    if (game.state === GameState.Playing) {
+    if (game.needsAnimationFrame()) {
       frameId = window.requestAnimationFrame(frame);
     } else {
       previousFrameTime = 0;
