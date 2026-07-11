@@ -1,4 +1,5 @@
 import { findTowerShortcut } from "./entities/towers/tower-registry";
+import { createBrowserCampaignProgressStore } from "./campaign-progress";
 import { type GameProfile } from "./game-profile";
 import { GameAudio } from "./game-audio";
 import { getCenteredFieldViewport } from "./game-renderer";
@@ -54,6 +55,7 @@ export function createGameSession(profile: GameProfile): GameSession {
   const modalStore = writable<ModalView | null>(null);
   const soundEnabledStore = writable(true);
   const audio = new GameAudio(profile.fieldWidth);
+  const progressStore = createBrowserCampaignProgressStore(window);
   let canvas: HTMLCanvasElement | null = null;
   let game: Game | null = null;
   let soundEnabled = true;
@@ -241,6 +243,7 @@ export function createGameSession(profile: GameProfile): GameSession {
       ctx,
       audio,
       profile,
+      progressStore,
     );
     game.resize();
     game.draw();

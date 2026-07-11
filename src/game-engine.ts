@@ -1,5 +1,6 @@
 import levelsJson from "../game-levels.json";
 import { createCampaignLevels } from "./campaign";
+import type { CampaignProgressStore } from "./campaign-progress";
 import { GameMode, type GameMode as GameModeValue, type GameProfile } from "./game-profile";
 import type { GameAudio } from "./game-audio";
 import { createEscapeBurstParticles } from "./game-engine/combat-effects";
@@ -17,7 +18,6 @@ import { Tower } from "./entities/towers/tower";
 import { LevelRuntime } from "./level-runtime";
 import { canPlaceTower, findTowerAtPoint } from "./placement-rules";
 import {
-  clamp,
   formatMoney,
   randomRange,
 } from "./utils";
@@ -35,10 +35,6 @@ import {
 } from "./types";
 
 type BattleState = typeof GameState.Playing | typeof GameState.Paused;
-
-const HIGHEST_UNLOCKED_LEVEL_STORAGE_KEY = "vector-defence-2026:highest-unlocked-level:v1";
-const CAMPAIGN_CLEARED_STORAGE_KEY = "vector-defence-2026:campaign-cleared:v1";
-const LEVEL_STARS_STORAGE_KEY_PREFIX = "vector-defence-2026:level-stars:v1:";
 
 export function isBattleState(state: GameState): state is BattleState {
   return state === GameState.Playing || state === GameState.Paused;
@@ -153,6 +149,7 @@ export class Game {
     ctx: CanvasRenderingContext2D,
     audio: GameAudio,
     profile: GameProfile,
+    private readonly progressStore: CampaignProgressStore,
   ) {
     this.levels = levelList;
     this.audio = audio;
@@ -717,29 +714,13 @@ export class Game {
   }
 
   private loadCampaignProgress(): void {
-    const savedLevelIndex = window.localStorage.getItem(HIGHEST_UNLOCKED_LEVEL_STORAGE_KEY);
-    const campaignCleared = window.localStorage.getItem(CAMPAIGN_CLEARED_STORAGE_KEY) === "true";
-    if (savedLevelIndex === null && !campaignCleared) {
-      return;
-    }
-
-    const highestUnlockedLevelIndex = Number(savedLevelIndex ?? 0);
-    if (!Number.isInteger(highestUnlockedLevelIndex)) {
-      return;
-    }
-
-    const finalCampaignLevelIndex = Math.max(this.campaignLevelCount - 1, 0);
-    this.campaignCleared = campaignCleared;
-    this.highestUnlockedLevelIndex = campaignCleared
-      ? finalCampaignLevelIndex
-      : clamp(highestUnlockedLevelIndex, 0, finalCampaignLevelIndex);
+    const progress = this.progressStore.loadCampaignProgress(this.campaignLevelCount);
+    this.campaignCleared = progress.campaignCleared;
+    this.highestUnlockedLevelIndex = progress.highestUnlockedLevelIndex;
   }
 
   private loadLevelStars(): void {
-    this.levelStars = this.levels.map((_, index) => {
-      const savedStars = Number(window.localStorage.getItem(`${LEVEL_STARS_STORAGE_KEY_PREFIX}${index}`) ?? 0);
-      return Number.isInteger(savedStars) ? clamp(savedStars, 0, 3) : 0;
-    });
+    this.levelStars = this.progressStore.loadLevelStars(this.campaignLevelCount);
   }
 
   private saveCampaignProgress(): void {
@@ -747,12 +728,7 @@ export class Game {
       return;
     }
 
-    window.localStorage.setItem(HIGHEST_UNLOCKED_LEVEL_STORAGE_KEY, String(this.highestUnlockedLevelIndex));
-    if (this.campaignCleared) {
-      window.localStorage.setItem(CAMPAIGN_CLEARED_STORAGE_KEY, "true");
-    } else {
-      window.localStorage.removeItem(CAMPAIGN_CLEARED_STORAGE_KEY);
-    }
+    this.progressStore.saveCampaignProgress(this.highestUnlockedLevelIndex, this.campaignCleared);
   }
 
   private calculateLevelStars(): number {
@@ -775,7 +751,7 @@ export class Game {
     const bestStars = Math.max(this.levelStars[this.currentLevelIndex] ?? 0, stars);
     this.levelStars[this.currentLevelIndex] = bestStars;
     if (!this.debugAllLevelsUnlocked) {
-      window.localStorage.setItem(`${LEVEL_STARS_STORAGE_KEY_PREFIX}${this.currentLevelIndex}`, String(bestStars));
+      this.progressStore.saveLevelStars(this.currentLevelIndex, bestStars);
     }
   }
 

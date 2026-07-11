@@ -27,6 +27,7 @@ const html = String.raw`
         LinearActiveCircleSweepCollisionIndex,
       } = await import("/src/game-engine/collision-detection.ts");
       const { DESKTOP_GAME_PROFILE } = await import("/src/game-profile.ts");
+      const { CampaignProgressStore } = await import("/src/campaign-progress.ts");
       const { createMonster } = await import("/src/game-engine/monster-factory.ts");
       const { createPathEntriesFromDistance } = await import("/src/route-path.ts");
       const { GameState, MonsterKind, TowerKind } = await import("/src/types.ts");
@@ -219,6 +220,7 @@ const html = String.raw`
           gameCanvas.getContext("2d"),
           audio,
           DESKTOP_GAME_PROFILE,
+          new CampaignProgressStore(undefined),
         );
         game.benchmarkMonsterCollisionIndex = new ActiveCircleSweepCollisionIndex(64);
         game.startLevel(game.levels[9]);
