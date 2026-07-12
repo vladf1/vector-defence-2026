@@ -94,8 +94,8 @@ Gameplay / UI notes:
 - The campaign is a fixed 10-level progression with unlocks stored in memory for the current session.
 - Initial build time is campaign-driven, not a fixed global delay: early levels start around 10 seconds and later ones reach 14 seconds.
 - Intermission build windows between later waves are shorter and are generated per wave in `src/campaign.ts` (roughly 2.5 to 5.5 seconds).
-- Level 1 uses a showcase sequence that includes the full current monster roster across waves. Splitters burst into weakened runner children when killed.
-- Later campaign waves introduce `bulwark` and `berserker` monsters; do not assume the early handcrafted `game-levels.json` sequences cover the full runtime enemy roster.
+- Level 1 is an introductory route and is not intended to showcase the full monster roster; its generated waves should stay within the monster pool authored for `Outer Line` in `game-levels.json`.
+- Later campaign waves introduce heavier and specialist monsters such as `tank`, `splitter`, `bulwark`, and `berserker`. Splitters burst into weakened runner children when killed.
 - Monster spawning is orchestrated by `Game.spawnMonster(...)`, but monster construction and lifecycle event wiring are centralized in `src/game-engine/monster-factory.ts`; tower creation is centralized in `Game.createTower(...)`.
 - Monster classes should own their own body rendering. Shared monster rendering concerns belong in `Monster`.
 - Monster-specific visual animations, such as tank turret spins or packman mouth/body flourishes, should live on the concrete monster class and run through `updateSpecial(...)`; if an animation changes visible body geometry or orientation, keep that current shape reflected in the monster's `addDeathEffect(...)` outline/rotation so shards match the death frame.
