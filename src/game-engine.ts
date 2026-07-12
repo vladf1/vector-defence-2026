@@ -213,7 +213,8 @@ export class Game {
     }
 
     for (const monster of result.escapedMonsters) {
-      if (this.state !== GameState.Playing || (this.runtime.escapesLeft === 0 && this.breachResolutionDelaySeconds === 0)) {
+      const canResolveEscape = this.state === GameState.Playing || this.state === GameState.DefeatPending;
+      if (!canResolveEscape || (this.runtime.escapesLeft === 0 && this.breachResolutionDelaySeconds === 0)) {
         break;
       }
       this.onMonsterEscaped(monster, result);
@@ -226,6 +227,16 @@ export class Game {
       if (!monster.removed && monster.hitPoints > 0) {
         this.activeMonsters.push(monster);
       }
+    }
+  }
+
+  private updatePresentationEffects(context: UpdateContext): void {
+    for (const particle of this.runtime.particles) {
+      particle.update(context);
+    }
+
+    for (const link of this.runtime.links) {
+      link.update(context);
     }
   }
 
@@ -261,6 +272,8 @@ export class Game {
       this.statusText = "Playing";
     } else if (next === GameState.Paused) {
       this.statusText = "Paused";
+    } else if (next === GameState.DefeatPending) {
+      this.statusText = "Base breached";
     } else if (next === GameState.Won) {
       this.statusText = "Level secured";
     } else if (next === GameState.CampaignWon) {
@@ -400,6 +413,8 @@ export class Game {
     }
     if (escapesLeftBefore > 0 && this.runtime.escapesLeft === 0) {
       this.breachResolutionDelaySeconds = BREACH_DEFEAT_DELAY_SECONDS;
+      this.clearTowerPlacement();
+      this.setState(GameState.DefeatPending);
       this.setBanner("Base breached", BREACH_DEFEAT_DELAY_SECONDS);
     }
     this.requestHudSync();
@@ -817,50 +832,54 @@ export class Game {
       }
       this.applyMonsterLifecycleResults(updateResult);
 
-      this.refreshActiveMonsters();
-      this.monsterCollisionIndex.rebuild(this.activeMonsters);
-
-      for (const projectile of this.runtime.projectiles) {
-        projectile.update(updateContext, updateResult);
-      }
-
-      for (const missile of this.runtime.missiles) {
-        missile.update(updateContext, updateResult);
-      }
-
-      refreshDroneAssignments(this.runtime.drones, this.droneAssignments);
-
-      for (const drone of this.runtime.drones) {
-        drone.update(updateContext, updateResult);
-      }
-
-      for (const particle of this.runtime.particles) {
-        particle.update(updateContext);
-      }
-
-      for (const link of this.runtime.links) {
-        link.update(updateContext);
-      }
-
-      for (const tower of this.runtime.towers) {
-        tower.update(updateContext, updateResult);
-      }
-
-      this.applyUpdateResult(updateResult);
-      this.runtime.compactRemoved();
-
-      if (wave && this.runtime.waveSpawnedMonsters >= wave.count && this.runtime.monsters.length === 0) {
-        this.completeCurrentWave();
-      }
-
-      if (!this.activeWave && this.currentLevel && this.runtime.spawnedMonsters >= this.currentLevel.monsterCount && this.runtime.monsters.length === 0) {
-        this.runtime.winDelay += deltaSeconds;
-        if (this.runtime.winDelay >= 0.6 && this.state === GameState.Playing) {
-          this.finishLevel();
-        }
+      if (!this.canPerformBattleAction()) {
+        this.updatePresentationEffects(updateContext);
+        this.applyUpdateResult(updateResult);
+        this.runtime.compactRemoved();
       } else {
-        this.runtime.winDelay = 0;
+        this.refreshActiveMonsters();
+        this.monsterCollisionIndex.rebuild(this.activeMonsters);
+
+        for (const projectile of this.runtime.projectiles) {
+          projectile.update(updateContext, updateResult);
+        }
+
+        for (const missile of this.runtime.missiles) {
+          missile.update(updateContext, updateResult);
+        }
+
+        refreshDroneAssignments(this.runtime.drones, this.droneAssignments);
+
+        for (const drone of this.runtime.drones) {
+          drone.update(updateContext, updateResult);
+        }
+
+        this.updatePresentationEffects(updateContext);
+
+        for (const tower of this.runtime.towers) {
+          tower.update(updateContext, updateResult);
+        }
+
+        this.applyUpdateResult(updateResult);
+        this.runtime.compactRemoved();
+
+        if (wave && this.runtime.waveSpawnedMonsters >= wave.count && this.runtime.monsters.length === 0) {
+          this.completeCurrentWave();
+        }
+
+        if (!this.activeWave && this.currentLevel && this.runtime.spawnedMonsters >= this.currentLevel.monsterCount && this.runtime.monsters.length === 0) {
+          this.runtime.winDelay += deltaSeconds;
+          if (this.runtime.winDelay >= 0.6 && this.state === GameState.Playing) {
+            this.finishLevel();
+          }
+        } else {
+          this.runtime.winDelay = 0;
+        }
       }
+    } else if (this.state === GameState.DefeatPending) {
+      this.updateContext.deltaSeconds = deltaSeconds;
+      this.updatePresentationEffects(this.updateContext);
+      this.runtime.compactRemoved();
     }
 
     const updateEnd = performance.now();

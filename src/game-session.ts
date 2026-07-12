@@ -21,7 +21,12 @@ import { readonly, writable, type Readable } from "svelte/store";
 const MAX_FRAME_DELTA = 1 / 15;
 const NERD_STATS_SAMPLE_MS = 500;
 const TOWER_DRAG_THRESHOLD_PX = 6;
-const NATIVE_KEYBOARD_CONTROL_SELECTOR = "a[href], button, input, select, summary, textarea";
+const KEYBOARD_INPUT_SELECTOR = "input, select, textarea";
+const KEYBOARD_ACTIVATION_SELECTOR = "a[href], button, summary, [role='button'], [role='link']";
+
+function eventPathMatches(event: KeyboardEvent, selector: string): boolean {
+  return event.composedPath().some((target) => target instanceof HTMLElement && target.matches(selector));
+}
 
 function shouldIgnoreGameShortcut(event: KeyboardEvent): boolean {
   if (
@@ -36,13 +41,15 @@ function shouldIgnoreGameShortcut(event: KeyboardEvent): boolean {
     return true;
   }
 
-  return event.composedPath().some((target) =>
-    target instanceof HTMLElement
-    && (
-      target.isContentEditable
-      || target.tabIndex >= 0
-      || target.matches(NATIVE_KEYBOARD_CONTROL_SELECTOR)
-    ));
+  const path = event.composedPath();
+  const isTextEntry = eventPathMatches(event, KEYBOARD_INPUT_SELECTOR)
+    || path.some((target) => target instanceof HTMLElement && target.isContentEditable);
+  if (isTextEntry) {
+    return true;
+  }
+
+  const isNativeActivationKey = event.code === "Space" || event.key === "Enter";
+  return isNativeActivationKey && eventPathMatches(event, KEYBOARD_ACTIVATION_SELECTOR);
 }
 
 export interface GameSession {

@@ -2,6 +2,7 @@ export const GameState = {
   Menu: "menu",
   Playing: "playing",
   Paused: "paused",
+  DefeatPending: "defeat-pending",
   Won: "won",
   Lost: "lost",
   CampaignWon: "campaign-won",
