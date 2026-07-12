@@ -21,6 +21,29 @@ import { readonly, writable, type Readable } from "svelte/store";
 const MAX_FRAME_DELTA = 1 / 15;
 const NERD_STATS_SAMPLE_MS = 500;
 const TOWER_DRAG_THRESHOLD_PX = 6;
+const NATIVE_KEYBOARD_CONTROL_SELECTOR = "a[href], button, input, select, summary, textarea";
+
+function shouldIgnoreGameShortcut(event: KeyboardEvent): boolean {
+  if (
+    event.defaultPrevented
+    || event.repeat
+    || event.isComposing
+    || event.altKey
+    || event.ctrlKey
+    || event.metaKey
+    || event.shiftKey
+  ) {
+    return true;
+  }
+
+  return event.composedPath().some((target) =>
+    target instanceof HTMLElement
+    && (
+      target.isContentEditable
+      || target.tabIndex >= 0
+      || target.matches(NATIVE_KEYBOARD_CONTROL_SELECTOR)
+    ));
+}
 
 export interface GameSession {
   profile: GameProfile;
@@ -541,6 +564,10 @@ export function createGameSession(profile: GameProfile): GameSession {
   };
 
   const handleKeyDown = (event: KeyboardEvent): void => {
+    if (shouldIgnoreGameShortcut(event)) {
+      return;
+    }
+
     const key = event.key.toLowerCase();
 
     if (import.meta.env.DEV && key === "j") {
@@ -568,10 +595,6 @@ export function createGameSession(profile: GameProfile): GameSession {
     }
 
     if (profile.ui.dragOnlyTowerPlacement) {
-      return;
-    }
-
-    if (event.defaultPrevented) {
       return;
     }
 
