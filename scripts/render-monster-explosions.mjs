@@ -79,6 +79,7 @@ const html = String.raw`
         const result = new UpdateResult();
         monster.addDeathEffect(result);
         const particles = result.particles;
+        const particleUpdateContext = createParticleUpdateContext();
 
         sheetContext.fillStyle = "#020807";
         sheetContext.fillRect(0, 0, SHEET_WIDTH, SHEET_HEIGHT);
@@ -91,7 +92,7 @@ const html = String.raw`
 
           if (frameIndex > 0) {
             for (const particle of particles) {
-              particle.update(DELTA_SECONDS);
+              particle.update(particleUpdateContext);
             }
           }
         }
@@ -129,6 +130,19 @@ const html = String.raw`
         const activeMonsters = monster.removed ? [] : [monster];
         return {
           deltaSeconds: 0,
+          fieldWidth: FRAME_WIDTH,
+          fieldHeight: FRAME_HEIGHT,
+          activeMonsters,
+          monsterCollisionIndex: new LinearActiveCircleSweepCollisionIndex(activeMonsters),
+          activeDrones: [],
+          droneAssignments: new Map(),
+        };
+      }
+
+      function createParticleUpdateContext() {
+        const activeMonsters = [];
+        return {
+          deltaSeconds: DELTA_SECONDS,
           fieldWidth: FRAME_WIDTH,
           fieldHeight: FRAME_HEIGHT,
           activeMonsters,
