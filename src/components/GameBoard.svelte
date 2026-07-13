@@ -23,7 +23,7 @@
   }
 </script>
 
-<svelte:window onkeydown={session.handleKeyDown} onresize={session.handleResize} />
+<svelte:window onkeydown={session.handleKeyDown} />
 
 <section class="board-card">
   <div class="board-frame">

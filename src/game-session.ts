@@ -61,7 +61,6 @@ export interface GameSession {
   setNerdStatsEnabled(enabled: boolean): void;
   mount(backgroundCanvas: HTMLCanvasElement, gameCanvas: HTMLCanvasElement): void;
   destroy(): void;
-  handleResize(): void;
   handleKeyDown(event: KeyboardEvent): void;
   handleCanvasMove(event: PointerEvent): void;
   handleCanvasDown(event: PointerEvent): void;
@@ -334,13 +333,6 @@ export function createGameSession(profile: GameProfile): GameSession {
       audio.play(AudioCue.SoundToggle);
     }
     soundEnabledStore.set(soundEnabled);
-  };
-
-  const handleResize = (): void => {
-    withGame((currentGame) => {
-      currentGame.resize();
-      currentGame.draw();
-    }, true);
   };
 
   const togglePause = (): void => {
@@ -645,7 +637,6 @@ export function createGameSession(profile: GameProfile): GameSession {
     setNerdStatsEnabled,
     mount,
     destroy,
-    handleResize,
     handleKeyDown,
     handleCanvasMove,
     handleCanvasDown,
