@@ -834,8 +834,8 @@ export class Game {
 
       if (!this.canPerformBattleAction()) {
         this.updatePresentationEffects(updateContext);
-        this.applyUpdateResult(updateResult);
         this.runtime.compactRemoved();
+        this.applyUpdateResult(updateResult);
       } else {
         this.refreshActiveMonsters();
         this.monsterCollisionIndex.rebuild(this.activeMonsters);
@@ -860,8 +860,8 @@ export class Game {
           tower.update(updateContext, updateResult);
         }
 
-        this.applyUpdateResult(updateResult);
         this.runtime.compactRemoved();
+        this.applyUpdateResult(updateResult);
 
         if (wave && this.runtime.waveSpawnedMonsters >= wave.count && this.runtime.monsters.length === 0) {
           this.completeCurrentWave();
