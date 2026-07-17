@@ -378,17 +378,19 @@ Add consistent scripts such as:
 Keep permanent scripts limited to reusable project checks rather than one-off
 implementation validators.
 
-### 31. [ ] Declare the supported Node and npm versions
+### 31. [x] Declare the supported Node and npm versions
 
-CI uses Node 20 while the package does not declare `engines`. Define the
-supported range and keep local Vite/TypeScript behavior aligned with CI.
+`package.json` now declares the Node and npm ranges required by Vite and the
+Svelte plugin. `.nvmrc` pins Node 20.20.2 for local development, and CI reads
+that same file instead of resolving an unspecified Node 20 release.
 
-### 32. [ ] Upgrade dependencies with current advisories
+### 32. [x] Upgrade dependencies with current advisories
 
-The 2026-07-17 full `npm audit` reported fixable advisory groups for Svelte,
-Vite, and transitive `devalue`. Some apply to SSR or Windows development
-servers rather than this static production build, but dependencies should be
-updated deliberately and followed by build and browser verification.
+Updated Svelte, Vite, the Svelte Vite plugin, `svelte-check`, Playwright, and
+their transitive dependencies within their current major versions. TypeScript
+7 remains deferred as an unrelated major upgrade. The full `npm audit` now
+reports zero vulnerabilities; local, Pages, Node 20, and browser verification
+all pass.
 
 ## UI, accessibility, and maintainability
 

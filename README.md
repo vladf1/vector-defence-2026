@@ -8,8 +8,8 @@ Play online: [https://vladf1.github.io/vector-defence-2026/](https://vladf1.gith
 
 ## Requirements
 
-- Node.js
-- npm
+- Node.js 20.19+, 22.12+, or 24+
+- npm 10.8.2+
 
 ## Getting Started
 
