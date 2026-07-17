@@ -2,7 +2,7 @@ import { findTowerShortcut } from "./entities/towers/tower-registry";
 import { createBrowserCampaignProgressStore } from "./campaign-progress";
 import { type GameProfile } from "./game-profile";
 import { GameAudio } from "./game-audio";
-import { getCenteredFieldViewport } from "./game-renderer";
+import { getCenteredFieldViewport, type CenteredFieldViewport } from "./game-renderer";
 import { runBoundedSimulationSubsteps } from "./simulation-timing";
 import {
   Game,
@@ -23,6 +23,11 @@ const NERD_STATS_SAMPLE_MS = 500;
 const TOWER_DRAG_THRESHOLD_PX = 6;
 const KEYBOARD_INPUT_SELECTOR = "input, select, textarea";
 const KEYBOARD_ACTIVATION_SELECTOR = "a[href], button, summary, [role='button'], [role='link']";
+
+interface CanvasGeometry {
+  rect: DOMRect;
+  viewport: CenteredFieldViewport;
+}
 
 function eventPathMatches(event: KeyboardEvent, selector: string): boolean {
   return event.composedPath().some((target) => target instanceof HTMLElement && target.matches(selector));
@@ -99,6 +104,7 @@ export function createGameSession(profile: GameProfile): GameSession {
   let lastNerdStatsSampleTime = 0;
   let nerdStatsEnabled = false;
   let canvasResizeObserver: ResizeObserver | null = null;
+  let canvasGeometry: CanvasGeometry | null = null;
   let towerDrag:
     | {
       kind: TowerKind;
@@ -167,33 +173,46 @@ export function createGameSession(profile: GameProfile): GameSession {
     syncAnimationLoop();
   };
 
-  const toCanvasPoint = (event: PointerEvent): Point | null => {
+  const refreshCanvasGeometry = (): void => {
     if (!canvas) {
-      return null;
+      canvasGeometry = null;
+      return;
     }
 
     const rect = canvas.getBoundingClientRect();
+    canvasGeometry = {
+      rect,
+      viewport: getCenteredFieldViewport(rect.width, rect.height, profile.fieldWidth, profile.fieldHeight),
+    };
+  };
+
+  const toCanvasPoint = (event: PointerEvent): Point | null => {
+    const geometry = canvasGeometry;
+    if (!geometry) {
+      return null;
+    }
+
+    const { rect, viewport } = geometry;
     if (rect.width === 0 || rect.height === 0) {
       return null;
     }
 
-    const viewport = getCenteredFieldViewport(rect.width, rect.height, profile.fieldWidth, profile.fieldHeight);
     const viewportPoint = {
       x: ((event.clientX - rect.left) / rect.width) * viewport.width,
       y: ((event.clientY - rect.top) / rect.height) * viewport.height,
     };
-    return game?.renderer.toFieldPoint(viewportPoint) ?? {
+    return {
       x: viewportPoint.x - viewport.fieldOffsetX,
       y: viewportPoint.y - viewport.fieldOffsetY,
     };
   };
 
   const isPointerInsideCanvas = (event: PointerEvent): boolean => {
-    if (!canvas) {
+    if (!canvasGeometry) {
       return false;
     }
 
-    const rect = canvas.getBoundingClientRect();
+    const { rect } = canvasGeometry;
     return event.clientX >= rect.left
       && event.clientX <= rect.right
       && event.clientY >= rect.top
@@ -302,6 +321,7 @@ export function createGameSession(profile: GameProfile): GameSession {
       progressStore,
     );
     game.resize();
+    refreshCanvasGeometry();
     game.draw();
     canvasResizeObserver = new ResizeObserver(() => {
       if (!game) {
@@ -309,9 +329,14 @@ export function createGameSession(profile: GameProfile): GameSession {
       }
 
       game.resize();
+      refreshCanvasGeometry();
       game.draw();
     });
     canvasResizeObserver.observe(canvas);
+    window.addEventListener("resize", refreshCanvasGeometry);
+    window.addEventListener("scroll", refreshCanvasGeometry, true);
+    window.visualViewport?.addEventListener("resize", refreshCanvasGeometry);
+    window.visualViewport?.addEventListener("scroll", refreshCanvasGeometry);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
     resetNerdStatsSamples();
@@ -330,11 +355,16 @@ export function createGameSession(profile: GameProfile): GameSession {
 
     canvasResizeObserver?.disconnect();
     canvasResizeObserver = null;
+    window.removeEventListener("resize", refreshCanvasGeometry);
+    window.removeEventListener("scroll", refreshCanvasGeometry, true);
+    window.visualViewport?.removeEventListener("resize", refreshCanvasGeometry);
+    window.visualViewport?.removeEventListener("scroll", refreshCanvasGeometry);
     document.removeEventListener("visibilitychange", handleVisibilityChange);
 
     resetFrameClock();
     runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
     resetNerdStatsSamples();
+    canvasGeometry = null;
     canvas = null;
     game = null;
   };
@@ -453,6 +483,7 @@ export function createGameSession(profile: GameProfile): GameSession {
       return;
     }
 
+    refreshCanvasGeometry();
     const point = toCanvasPoint(event);
     if (!point) {
       return;
@@ -579,6 +610,7 @@ export function createGameSession(profile: GameProfile): GameSession {
       event.preventDefault();
     }
 
+    refreshCanvasGeometry();
     towerDrag = {
       kind,
       pointerId: event.pointerId,

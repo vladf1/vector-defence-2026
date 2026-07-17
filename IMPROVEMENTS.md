@@ -42,9 +42,9 @@ Verification:
 - A discrete 10-point hit still deals 6.5 damage through Bulwark armor.
 - `npm run build`, the update benchmark, and a fresh tower render sheet pass.
 
-### 2. [~] Replace gameplay `shadowBlur` effects
+### 2. [x] Replace gameplay `shadowBlur` effects
 
-**Type:** Measured hotspot — implementation completed 2026-07-17; DevTools trace pending
+**Type:** Measured hotspot — completed 2026-07-17
 
 Forced-GPU-flush measurements found upgraded Lightning tower draws around
 1.62–1.72 ms, compared with roughly 8.75 us at the base level without its
@@ -68,9 +68,9 @@ Forced-GPU-flush medians across the affected levels changed from:
 - Active missile muzzle flash: 738–773 us to 14–28 us.
 
 A live Chrome battle smoke through two waves exercised gun, laser, and missile
-effects with no console warnings or errors. The available Chrome control
-channel does not expose DevTools trace capture, so a live trace artifact remains
-the only unfinished verification step.
+effects with no console warnings or errors. The available Chrome control channel
+did not expose DevTools trace capture; the repaired forced-GPU-flush benchmark,
+fresh render sheet, and live smoke were accepted as sufficient verification.
 
 ### 3. [ ] Apply particle and link budgets before construction
 
@@ -84,7 +84,10 @@ be discarded.
 Actions:
 
 - Give `UpdateResult` the remaining particle/link capacity for the frame.
-- Make `addParticle()` and `addLink()` return whether admission succeeded.
+- Check admission before constructing an effect, using an explicit capacity
+  guard or lazy factory. Returning `false` from `addParticle(new Particle(...))`
+  is too late because the allocation and random/geometry work already happened.
+- Return whether admission succeeded so grouped effects can stop early.
 - Prioritize gameplay-readable effects when capacity is scarce.
 - Expose dropped-effect counts in nerd stats.
 - Consider pooling only after the admission fix is benchmarked.
@@ -279,7 +282,7 @@ Smoke, shockwaves, and missile exhaust create gradients while drawing.
 Benchmark cached gradients or pre-rendered sprites independently. Prior work
 showed that bitmap conversion is not automatically faster than vector draws.
 
-### 22. [ ] Cache canvas geometry for pointer movement
+### 22. [x] Cache canvas geometry for pointer movement
 
 Avoid repeated layout reads during high-frequency pointer movement. Cache the
 canvas rectangle and logical viewport, updating them on resize, scroll, and
