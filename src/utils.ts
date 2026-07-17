@@ -1,5 +1,76 @@
 import type { Point } from "./types";
 
+interface VelocityDecayTarget extends Point {
+  velocityXPerSecond: number;
+  velocityYPerSecond: number;
+}
+
+/**
+ * Converts legacy per-update linear slowdown into continuous decay while
+ * preserving its velocity and displacement at the chosen reference rate.
+ */
+export class CalibratedExponentialDecay {
+  private readonly decayRatePerSecond: number;
+  private readonly displacementScale: number;
+  private cachedDeltaSeconds = Number.NaN;
+  private cachedDisplacementSeconds = 0;
+  private cachedVelocityFactor = 1;
+
+  constructor(linearSlowdownPerSecond: number, referenceUpdatesPerSecond: number) {
+    if (
+      !Number.isFinite(linearSlowdownPerSecond)
+      || !Number.isFinite(referenceUpdatesPerSecond)
+      || linearSlowdownPerSecond < 0
+      || referenceUpdatesPerSecond <= 0
+      || linearSlowdownPerSecond >= referenceUpdatesPerSecond
+    ) {
+      throw new RangeError("Velocity decay requires 0 <= slowdown < reference update rate.");
+    }
+
+    if (linearSlowdownPerSecond === 0) {
+      this.decayRatePerSecond = 0;
+      this.displacementScale = 1;
+      return;
+    }
+
+    const referenceDeltaSeconds = 1 / referenceUpdatesPerSecond;
+    const referenceVelocityFactor = 1 - (linearSlowdownPerSecond * referenceDeltaSeconds);
+    this.decayRatePerSecond = -Math.log(referenceVelocityFactor) * referenceUpdatesPerSecond;
+    this.displacementScale = (
+      referenceVelocityFactor
+      * referenceDeltaSeconds
+      * this.decayRatePerSecond
+    ) / (1 - referenceVelocityFactor);
+  }
+
+  apply(target: VelocityDecayTarget, deltaSeconds: number): void {
+    if (deltaSeconds <= 0) {
+      return;
+    }
+
+    if (this.cachedDeltaSeconds !== deltaSeconds) {
+      this.cachedDeltaSeconds = deltaSeconds;
+      if (this.decayRatePerSecond === 0) {
+        this.cachedVelocityFactor = 1;
+        this.cachedDisplacementSeconds = deltaSeconds;
+      } else {
+        this.cachedVelocityFactor = Math.exp(-this.decayRatePerSecond * deltaSeconds);
+        this.cachedDisplacementSeconds = (
+          this.displacementScale
+          * (1 - this.cachedVelocityFactor)
+        ) / this.decayRatePerSecond;
+      }
+    }
+
+    const velocityXPerSecond = target.velocityXPerSecond;
+    const velocityYPerSecond = target.velocityYPerSecond;
+    target.x += velocityXPerSecond * this.cachedDisplacementSeconds;
+    target.y += velocityYPerSecond * this.cachedDisplacementSeconds;
+    target.velocityXPerSecond = velocityXPerSecond * this.cachedVelocityFactor;
+    target.velocityYPerSecond = velocityYPerSecond * this.cachedVelocityFactor;
+  }
+}
+
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }

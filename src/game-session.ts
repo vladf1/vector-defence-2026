@@ -3,6 +3,7 @@ import { createBrowserCampaignProgressStore } from "./campaign-progress";
 import { type GameProfile } from "./game-profile";
 import { GameAudio } from "./game-audio";
 import { getCenteredFieldViewport } from "./game-renderer";
+import { runBoundedSimulationSubsteps } from "./simulation-timing";
 import {
   Game,
   createLevels,
@@ -18,7 +19,6 @@ import {
 import { AudioCue, type HudSnapshot, type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
 import { readonly, writable, type Readable } from "svelte/store";
 
-const MAX_FRAME_DELTA = 1 / 15;
 const NERD_STATS_SAMPLE_MS = 500;
 const TOWER_DRAG_THRESHOLD_PX = 6;
 const KEYBOARD_INPUT_SELECTOR = "input, select, textarea";
@@ -90,6 +90,7 @@ export function createGameSession(profile: GameProfile): GameSession {
   let soundEnabled = true;
   let frameId = 0;
   let previousFrameTime = 0;
+  let pendingSimulationSeconds = 0;
   let runtimeStats: RuntimeHudStats = { ...INITIAL_RUNTIME_HUD_STATS };
   let sampledFrameCount = 0;
   let sampledFrameDurationMs = 0;
@@ -108,12 +109,21 @@ export function createGameSession(profile: GameProfile): GameSession {
     }
     | null = null;
 
+  function resetFrameClock(): void {
+    previousFrameTime = 0;
+    pendingSimulationSeconds = 0;
+  }
+
+  function handleVisibilityChange(): void {
+    resetFrameClock();
+  }
+
   function requestGameFrame(): void {
     if (!game?.needsAnimationFrame() || frameId !== 0) {
       return;
     }
 
-    previousFrameTime = 0;
+    resetFrameClock();
     frameId = window.requestAnimationFrame(frame);
   }
 
@@ -127,7 +137,7 @@ export function createGameSession(profile: GameProfile): GameSession {
       window.cancelAnimationFrame(frameId);
       frameId = 0;
     }
-    previousFrameTime = 0;
+    resetFrameClock();
   }
 
   const publish = (forceHud = false, forceModal = false): void => {
@@ -200,16 +210,16 @@ export function createGameSession(profile: GameProfile): GameSession {
 
   function frame(timestamp: number): void {
     frameId = 0;
-    if (!game?.needsAnimationFrame()) {
-      previousFrameTime = 0;
+    const activeGame = game;
+    if (!activeGame?.needsAnimationFrame()) {
+      resetFrameClock();
       return;
     }
 
-    const deltaSeconds = previousFrameTime === 0
-      ? 0
-      : Math.min((timestamp - previousFrameTime) / 1000, MAX_FRAME_DELTA);
+    const hasPreviousFrame = previousFrameTime !== 0;
+    const elapsedSeconds = hasPreviousFrame ? (timestamp - previousFrameTime) / 1000 : 0;
 
-    if (nerdStatsEnabled && previousFrameTime !== 0) {
+    if (nerdStatsEnabled && hasPreviousFrame) {
       sampledFrameCount += 1;
       sampledFrameDurationMs += timestamp - previousFrameTime;
 
@@ -218,10 +228,27 @@ export function createGameSession(profile: GameProfile): GameSession {
       }
     }
 
-    const frameTimings = game.update(deltaSeconds);
-    if (nerdStatsEnabled && previousFrameTime !== 0) {
-      sampledUpdateDurationMs += frameTimings.updateMs;
-      sampledDrawDurationMs += frameTimings.drawMs;
+    const updateStart = performance.now();
+    if (!hasPreviousFrame) {
+      activeGame.updateSimulation(0);
+    } else {
+      const substeps = runBoundedSimulationSubsteps(
+        pendingSimulationSeconds + elapsedSeconds,
+        (deltaSeconds) => {
+          activeGame.updateSimulation(deltaSeconds);
+          return activeGame.needsAnimationFrame();
+        },
+      );
+      pendingSimulationSeconds = activeGame.needsAnimationFrame() ? substeps.remainingSeconds : 0;
+    }
+    const updateDurationMs = performance.now() - updateStart;
+    const drawStart = performance.now();
+    activeGame.draw();
+    const drawDurationMs = performance.now() - drawStart;
+
+    if (nerdStatsEnabled && hasPreviousFrame) {
+      sampledUpdateDurationMs += updateDurationMs;
+      sampledDrawDurationMs += drawDurationMs;
 
       if (timestamp - lastNerdStatsSampleTime >= NERD_STATS_SAMPLE_MS && sampledFrameDurationMs > 0) {
         runtimeStats = {
@@ -235,15 +262,15 @@ export function createGameSession(profile: GameProfile): GameSession {
         sampledUpdateDurationMs = 0;
         sampledDrawDurationMs = 0;
         lastNerdStatsSampleTime = timestamp;
-        game.requestHudSync();
+        activeGame.requestHudSync();
       }
     }
     publish();
     previousFrameTime = timestamp;
-    if (game.needsAnimationFrame()) {
+    if (activeGame.needsAnimationFrame()) {
       frameId = window.requestAnimationFrame(frame);
     } else {
-      previousFrameTime = 0;
+      resetFrameClock();
     }
   }
 
@@ -285,10 +312,11 @@ export function createGameSession(profile: GameProfile): GameSession {
       game.draw();
     });
     canvasResizeObserver.observe(canvas);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
     resetNerdStatsSamples();
     publish(true, true);
-    previousFrameTime = 0;
+    resetFrameClock();
     requestGameFrame();
   };
 
@@ -302,8 +330,9 @@ export function createGameSession(profile: GameProfile): GameSession {
 
     canvasResizeObserver?.disconnect();
     canvasResizeObserver = null;
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
 
-    previousFrameTime = 0;
+    resetFrameClock();
     runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
     resetNerdStatsSamples();
     canvas = null;

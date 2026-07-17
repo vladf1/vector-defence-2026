@@ -1,9 +1,10 @@
 import type { UpdateContext } from "../../game-engine/update-context";
 import type { Point } from "../../types";
-import { drawPath, hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
+import { CalibratedExponentialDecay, drawPath, hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
 const FRAGMENT_FILL = "#050908";
+const DRIFT_VELOCITY_DECAY = new CalibratedExponentialDecay(0.58, 60);
 
 export class EscapeFragmentParticle extends Particle {
   alpha = 1;
@@ -34,11 +35,7 @@ export class EscapeFragmentParticle extends Particle {
   }
 
   override update(context: UpdateContext): void {
-    const driftSlowdownFactor = 1 - (0.58 * context.deltaSeconds);
-    this.velocityXPerSecond *= driftSlowdownFactor;
-    this.velocityYPerSecond *= driftSlowdownFactor;
-    this.x += this.velocityXPerSecond * context.deltaSeconds;
-    this.y += this.velocityYPerSecond * context.deltaSeconds;
+    DRIFT_VELOCITY_DECAY.apply(this, context.deltaSeconds);
     this.rotation += this.angularVelocityPerSecond * context.deltaSeconds;
     this.alpha = Math.max(0, this.alpha - (this.alphaFadePerSecond * context.deltaSeconds));
     if (this.alpha <= 0 || isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 34)) {

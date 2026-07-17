@@ -32,8 +32,6 @@ Implemented:
   `src/entities/monsters/bulwark-monster.ts`.
 - Analytically integrated the fading laser beam in
   `src/entities/towers/laser-tower.ts`.
-- Added `npm run test:damage` via
-  `scripts/check-damage-consistency.mjs`.
 - Updated the tower render fixture for the new monster damage method.
 
 Verification:
@@ -78,41 +76,48 @@ Actions:
 - Expose dropped-effect counts in nerd stats.
 - Consider pooling only after the admission fix is benchmarked.
 
-### 4. [ ] Use a fixed simulation timestep
+### 4. [x] Recover elapsed time with bounded simulation substeps
 
-**Type:** Correctness and consistency
+**Type:** Correctness and consistency — completed 2026-07-17
 
-The current frame loop passes one variable delta and clamps away elapsed time
-over 66.7 ms. Gameplay slows during stalls and some calculations remain
-timestep-sensitive.
+The old frame loop discarded elapsed time beyond 66.7 ms. The replacement
+preserves native high-refresh updates while splitting slow frames into steps no
+larger than 1/60 second, then draws only once.
 
-Actions:
+Implemented:
 
-- Separate simulation advancement from rendering.
-- Use an accumulator with an explicit step such as 1/60 second.
-- Cap catch-up work to prevent a spiral after backgrounding or a long stall.
-- Track discarded backlog time in diagnostics.
-- Test wave timing, movement, targeting, cooldowns, and damage at multiple
-  render rates.
+- Added bounded timing policy in `src/simulation-timing.ts`.
+- A 120 Hz frame receives one 1/120-second update; it does not duplicate a
+  60 Hz simulation frame.
+- A 100 ms frame receives six updates of at most 1/60 second.
+- At most eight substeps run in one rendered frame; remaining time is retained
+  for subsequent frames.
+- Backlog is capped at 500 ms to prevent unbounded catch-up work.
+- The frame clock and backlog reset when animation stops or tab visibility
+  changes, so background-tab time is intentionally frozen.
+- Split `Game.updateSimulation()` from the once-per-frame `Game.draw()`.
+- A one-off timing validator passed before being removed.
 
-### 5. [ ] Replace linear velocity damping with exponential damping
+### 5. [x] Replace linear velocity damping with exponential damping
 
-**Type:** Correctness
+**Type:** Correctness — completed 2026-07-17
 
-Particles multiply velocity by expressions such as `1 - k * deltaSeconds`.
-Motion therefore changes with timestep and can become invalid for unusually
-large deltas.
+Replaced the four `1 - k * deltaSeconds` particle damping paths with shared,
+analytically integrated exponential decay.
 
-Actions:
+Implemented:
 
-- Use `Math.exp(-k * deltaSeconds)` for continuous damping, or define damping
-  per fixed simulation step after item 4.
-- Cover base particles and specialized escape, glass, and turret fragments.
-- Compare motion envelopes visually before and after the change.
+- Covered base particles plus escape fragments, glass shards, and tank turrets.
+- Calibrated each decay to preserve the old 60 Hz velocity and displacement.
+- Integrated displacement analytically so both position and velocity are
+  invariant across refresh rates, not only final velocity.
+- Cached decay factors per timestep so a particle class performs at most one
+  `Math.exp` calculation per distinct substep rather than one per particle.
+- A one-off 15–144 Hz damping validator passed before being removed.
 
-### 6. [~] Establish an automated test suite
+### 6. [ ] Establish an automated test suite
 
-**Type:** Correctness infrastructure — targeted damage check now exists
+**Type:** Correctness infrastructure
 
 The repository still lacks a general unit/integration test command. Start
 with deterministic simulation boundaries:
@@ -166,11 +171,16 @@ Campaign stars are keyed by array index. Reordering or inserting routes can
 attach saved results to the wrong level. Store by stable campaign ID and add a
 one-time migration from the current index keys.
 
-### 12. [ ] Remove or restore ownership of authored `monsterCount`
+### 12. [x] Remove or restore ownership of authored `monsterCount`
 
-Each JSON route contains `monsterCount`, but campaign generation overwrites it
-with the generated wave total. Remove the dead authored field or make it the
-explicit target used by generation.
+**Type:** Correctness and data ownership — completed 2026-07-17
+
+Removed the dead authored `monsterCount` values from `game-levels.json` and
+from the JSON input type. `CampaignRouteData` now represents normalized route
+input without a count, while playable `LevelData` requires the count derived
+from its generated waves. A one-off validator confirmed every desktop and
+mobile level reports exactly the sum of its generated wave counts, then was
+removed.
 
 ### 13. [ ] Validate tower shortcut uniqueness
 
@@ -336,7 +346,8 @@ Add consistent scripts such as:
 - `lint`
 - `format:check`
 
-`test:damage` now exists as the first focused regression command.
+Keep permanent scripts limited to reusable project checks rather than one-off
+implementation validators.
 
 ### 31. [ ] Declare the supported Node and npm versions
 
@@ -405,7 +416,10 @@ As of 2026-07-17:
 
 - `npm run build`: passes with zero Svelte errors and warnings.
 - `npm run build:pages`: passes.
-- `npm run test:damage`: passes across 15–144 Hz.
+- A one-off campaign validator confirmed derived desktop/mobile totals.
+- A one-off damage validator passed across 15–144 Hz.
+- A one-off damping validator preserved position and velocity across 15–144 Hz.
+- A one-off timing validator confirmed native 120 Hz updates and bounded catch-up.
 - All `scripts/*.mjs` pass Node syntax checking.
 - Ten desktop/mobile routes pass identifier, coordinate, and numeric checks.
 - Desktop campaign selection, placement, and pause smoke checks pass.
@@ -416,9 +430,7 @@ As of 2026-07-17:
 ## Recommended implementation order
 
 1. Items 2 and 3: remove measured rendering waste and saturated-effect waste.
-2. Items 4 and 5: establish deterministic simulation and motion.
-3. Item 6, then items 7–18: build coverage and harden correctness boundaries.
-4. Items 19–22: measure and optimize remaining runtime hotspots.
-5. Items 26–32: make benchmarks and CI enforce the intended behavior.
-6. Items 33–40: accessibility, documentation, and structural cleanup.
-
+2. Item 6, then items 7–18: build coverage and harden correctness boundaries.
+3. Items 19–22: measure and optimize remaining runtime hotspots.
+4. Items 26–32: make benchmarks and CI enforce the intended behavior.
+5. Items 33–40: accessibility, documentation, and structural cleanup.

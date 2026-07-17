@@ -98,19 +98,22 @@ export interface WaveData {
   reward: number;
 }
 
-export interface LevelData {
+export interface CampaignRouteData {
   name: string;
-  monsterCount: number;
   allowEscape: number;
   monsterSequence: MonsterKind[];
   points: Point[];
   availableTowers: TowerKind[];
-  id?: string;
-  levelNumber?: number;
   subtitle?: string;
   initialBuildTime?: number;
   startingMoney: number;
   waveCount?: number;
+}
+
+export interface LevelData extends CampaignRouteData {
+  monsterCount: number;
+  id?: string;
+  levelNumber?: number;
   waves?: WaveData[];
 }
 
@@ -120,7 +123,6 @@ export interface LevelJsonData {
   initialBuildTime?: number;
   startingMoney: number;
   waveCount?: number;
-  monsterCount: number;
   allowEscape: number;
   monsterSequence: string[];
   availableTowers: string[];

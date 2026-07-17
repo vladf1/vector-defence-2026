@@ -1,5 +1,7 @@
 import type { UpdateContext } from "../../game-engine/update-context";
-import { hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
+import { CalibratedExponentialDecay, hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
+
+const VELOCITY_DECAY = new CalibratedExponentialDecay(2.4, 60);
 
 interface ParticleOptions {
   speedPerSecond?: number;
@@ -40,11 +42,7 @@ export class Particle {
   }
 
   update(context: UpdateContext): void {
-    const slowDownFactor = 1 - (2.4 * context.deltaSeconds);
-    this.velocityXPerSecond *= slowDownFactor;
-    this.velocityYPerSecond *= slowDownFactor;
-    this.x += this.velocityXPerSecond * context.deltaSeconds;
-    this.y += this.velocityYPerSecond * context.deltaSeconds;
+    VELOCITY_DECAY.apply(this, context.deltaSeconds);
     this.alpha -= this.alphaFadePerSecond * context.deltaSeconds;
     if (this.alpha <= 0 || isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 20)) {
       this.removed = true;

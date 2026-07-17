@@ -1,11 +1,12 @@
 import type { UpdateContext } from "../../game-engine/update-context";
-import { hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
+import { CalibratedExponentialDecay, hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
 import { drawTankTurret } from "../monsters/tank-turret-rendering";
 import { Particle } from "./particle";
 
 const TURRET_FILL = "#050908";
 const TURRET_RADIUS_SCALE = 0.48;
 const BARREL_END_SCALE = 1.7;
+const DRIFT_VELOCITY_DECAY = new CalibratedExponentialDecay(0.34, 60);
 
 export class TankTurretParticle extends Particle {
   alpha = 1;
@@ -36,11 +37,7 @@ export class TankTurretParticle extends Particle {
   }
 
   update(context: UpdateContext): void {
-    const driftSlowdownFactor = 1 - (0.34 * context.deltaSeconds);
-    this.velocityXPerSecond *= driftSlowdownFactor;
-    this.velocityYPerSecond *= driftSlowdownFactor;
-    this.x += this.velocityXPerSecond * context.deltaSeconds;
-    this.y += this.velocityYPerSecond * context.deltaSeconds;
+    DRIFT_VELOCITY_DECAY.apply(this, context.deltaSeconds);
     this.rotation += this.angularVelocityPerSecond * context.deltaSeconds;
     this.alpha = Math.max(0, this.alpha - (this.alphaFadePerSecond * context.deltaSeconds));
     if (this.alpha <= 0 || isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 34)) {

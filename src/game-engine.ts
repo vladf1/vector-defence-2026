@@ -27,6 +27,7 @@ import {
   TowerKind,
   MonsterKind,
   type AudioCue as AudioCueValue,
+  type CampaignRouteData,
   type LevelJsonPoint,
   type LevelData,
   type LevelJsonData,
@@ -44,11 +45,6 @@ export function isModalState(state: GameState): boolean {
   return state === GameState.Menu || state === GameState.Won || state === GameState.Lost || state === GameState.CampaignWon;
 }
 
-export interface GameFrameTimings {
-  updateMs: number;
-  drawMs: number;
-}
-
 const BREACH_DEFEAT_DELAY_SECONDS = 1;
 const MONSTER_COLLISION_CELL_SIZE = 64;
 
@@ -56,7 +52,7 @@ export function createLevels(gameMode: GameModeValue): LevelData[] {
   return createCampaignLevels(normalizeLevels(levelsJson as LevelJsonData[], gameMode), gameMode === GameMode.Mobile);
 }
 
-function normalizeLevels(data: LevelJsonData[], gameMode: GameModeValue): LevelData[] {
+function normalizeLevels(data: LevelJsonData[], gameMode: GameModeValue): CampaignRouteData[] {
   return data.map((level) => {
     const overrides = gameMode === GameMode.Mobile ? level.mobile : undefined;
     const normalized = {
@@ -778,8 +774,7 @@ export class Game {
     this.renderer.renderBackgroundLayer();
   }
 
-  update(deltaSeconds: number): GameFrameTimings {
-    const updateStart = performance.now();
+  updateSimulation(deltaSeconds: number): void {
     const previousPreWaveSecond = this.state === GameState.Playing && this.activeWave && this.runtime.spawnDelay > 0
       ? Math.ceil(this.runtime.spawnDelay)
       : -1;
@@ -881,14 +876,6 @@ export class Game {
       this.updatePresentationEffects(this.updateContext);
       this.runtime.compactRemoved();
     }
-
-    const updateEnd = performance.now();
-    const drawStart = performance.now();
-    this.draw();
-    return {
-      updateMs: updateEnd - updateStart,
-      drawMs: performance.now() - drawStart,
-    };
   }
 
   draw(): void {

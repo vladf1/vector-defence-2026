@@ -1,11 +1,12 @@
 import type { UpdateContext } from "../../game-engine/update-context";
 import type { Point } from "../../types";
-import { drawPath, hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
+import { CalibratedExponentialDecay, drawPath, hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
 const SHARD_FILL_COLOR = "#050908";
 const SHARD_STROKE_WIDTH = 1;
 const ANGULAR_VELOCITY_MAX_PER_SECOND = 9.9;
+const DRIFT_VELOCITY_DECAY = new CalibratedExponentialDecay(0.42, 60);
 
 export class GlassShardParticle extends Particle {
   alpha = 1;
@@ -41,11 +42,7 @@ export class GlassShardParticle extends Particle {
   }
 
   update(context: UpdateContext): void {
-    const driftSlowdownFactor = 1 - (0.42 * context.deltaSeconds);
-    this.velocityXPerSecond *= driftSlowdownFactor;
-    this.velocityYPerSecond *= driftSlowdownFactor;
-    this.x += this.velocityXPerSecond * context.deltaSeconds;
-    this.y += this.velocityYPerSecond * context.deltaSeconds;
+    DRIFT_VELOCITY_DECAY.apply(this, context.deltaSeconds);
     this.rotation += this.angularVelocityPerSecond * context.deltaSeconds;
     this.alpha = Math.max(0, this.alpha - (this.alphaFadePerSecond * context.deltaSeconds));
     if (this.alpha <= 0 || isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 28)) {

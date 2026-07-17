@@ -1,4 +1,4 @@
-import { MonsterKind, type LevelData, type WaveData } from "./types";
+import { MonsterKind, type CampaignRouteData, type LevelData, type WaveData } from "./types";
 import { clamp } from "./utils";
 
 const MOBILE_WAVE_COUNT_RATIO = 0.65;
@@ -78,7 +78,7 @@ function buildWave(
   };
 }
 
-export function createCampaignLevels(routes: LevelData[], mobile: boolean): LevelData[] {
+export function createCampaignLevels(routes: CampaignRouteData[], mobile: boolean): LevelData[] {
   return routes.map((route, levelIndex) => {
     const waveTotal = route.waveCount ?? 6;
     const buildTime = route.initialBuildTime ?? 12;
