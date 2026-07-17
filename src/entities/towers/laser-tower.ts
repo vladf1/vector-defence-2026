@@ -13,6 +13,7 @@ const LASER_COLORS = [
   { body: "#b58cff", accent: "#78a7ff", ring: "181, 140, 255", beam: "181, 140, 255" },
   { body: "#4f8cff", accent: "#f6f0ff", ring: "79, 140, 255", beam: "79, 140, 255" },
 ] as const;
+const BEAM_FADE_PER_SECOND = 0.9;
 
 export class LaserTower extends Tower {
   static readonly kind = TowerKind.Laser;
@@ -35,7 +36,6 @@ export class LaserTower extends Tower {
   }
 
   protected updateTower(context: UpdateContext, result: UpdateResult): void {
-    this.beamAlpha = Math.max(0, this.beamAlpha - (0.9 * context.deltaSeconds));
     this.laserSparkCooldownSeconds = Math.max(0, this.laserSparkCooldownSeconds - context.deltaSeconds);
 
     this.beamTarget = {
@@ -64,7 +64,8 @@ export class LaserTower extends Tower {
       }
     }
 
-    if (this.beamAlpha <= 0) {
+    const integratedBeamStrengthSeconds = this.advanceBeam(context.deltaSeconds);
+    if (integratedBeamStrengthSeconds <= 0) {
       return;
     }
 
@@ -82,7 +83,7 @@ export class LaserTower extends Tower {
         continue;
       }
       if (isWithinDistanceToSegment(monster, source, this.beamTarget, monster.radius)) {
-        monster.takeDamage(this.damagePerSecond * context.deltaSeconds * this.beamAlpha);
+        monster.takeContinuousDamage(this.damagePerSecond * integratedBeamStrengthSeconds);
         if (shouldCreateSparks && sparkBurstsCreated < 2) {
           const impact = closestPointOnSegment(monster, source, this.beamTarget);
           for (const particle of createLaserImpactParticles(impact.x, impact.y, this.angle, colors.accent)) {
@@ -96,6 +97,18 @@ export class LaserTower extends Tower {
     if (sparkBurstsCreated > 0) {
       this.laserSparkCooldownSeconds = 0.055;
     }
+  }
+
+  private advanceBeam(deltaSeconds: number): number {
+    if (this.beamAlpha <= 0 || deltaSeconds <= 0) {
+      return 0;
+    }
+
+    const startingAlpha = this.beamAlpha;
+    const activeSeconds = Math.min(deltaSeconds, startingAlpha / BEAM_FADE_PER_SECOND);
+    const endingAlpha = Math.max(0, startingAlpha - (BEAM_FADE_PER_SECOND * activeSeconds));
+    this.beamAlpha = endingAlpha;
+    return activeSeconds * ((startingAlpha + endingAlpha) / 2);
   }
 
   protected onUpgrade(): void {

@@ -208,6 +208,7 @@ const html = String.raw`
           removed: false,
           shake() {},
           takeDamage() {},
+          takeContinuousDamage() {},
         };
         const missile = new Missile({ x: explosionX, y: explosionY }, target, level, 0);
         missile.x = explosionX;

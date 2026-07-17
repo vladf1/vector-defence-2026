@@ -59,6 +59,14 @@ export abstract class Monster {
   }
 
   takeDamage(amount: number): void {
+    this.applyDamage(amount);
+  }
+
+  takeContinuousDamage(amount: number): void {
+    this.applyDamage(amount);
+  }
+
+  private applyDamage(amount: number): void {
     this.hitPoints = Math.max(0, this.hitPoints - amount);
   }
 

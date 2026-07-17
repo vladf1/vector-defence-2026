@@ -53,6 +53,8 @@ export class BulwarkMonster extends Monster {
     super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
+  // Flat armor applies once per discrete impact. Continuous effects use
+  // Monster.takeContinuousDamage() so their result cannot depend on tick rate.
   override takeDamage(amount: number): void {
     if (amount <= 0) {
       return;
