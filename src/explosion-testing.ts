@@ -143,6 +143,7 @@ let labMode: LabMode = "monster";
 let sceneIndex = 0;
 let activeScene = createScene(sceneIndex);
 let lastTimestamp = performance.now();
+let animationFrameId: number | null = null;
 let isPaused = false;
 let approachSpeed = DEFAULT_SPEED;
 let explosionSpeed = DEFAULT_SPEED;
@@ -166,16 +167,43 @@ updateSpeedValues();
 updateZoomValue();
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
-requestAnimationFrame(animate);
+document.addEventListener("visibilitychange", handleVisibilityChange);
+scheduleAnimationFrame();
+
+function scheduleAnimationFrame(): void {
+  if (document.hidden || animationFrameId !== null) {
+    return;
+  }
+
+  animationFrameId = requestAnimationFrame(animate);
+}
+
+function handleVisibilityChange(): void {
+  if (document.hidden) {
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+    return;
+  }
+
+  lastTimestamp = performance.now();
+  scheduleAnimationFrame();
+}
 
 function animate(timestamp: number): void {
+  animationFrameId = null;
+  if (document.hidden) {
+    return;
+  }
+
   const deltaSeconds = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
   lastTimestamp = timestamp;
   if (!isPaused) {
     updateScene(deltaSeconds * getActivePhaseSpeed());
   }
   drawScene();
-  requestAnimationFrame(animate);
+  scheduleAnimationFrame();
 }
 
 function updateScene(deltaSeconds: number): void {

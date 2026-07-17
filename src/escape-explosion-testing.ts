@@ -114,6 +114,7 @@ let viewportHeight = 0;
 let devicePixelRatio = 1;
 let particles: Particle[] = [];
 let lastTimestamp = performance.now();
+let animationFrameId: number | null = null;
 let autoRepeat = false;
 let autoRepeatTimer = AUTO_REPEAT_SECONDS;
 
@@ -138,9 +139,36 @@ resizeCanvas();
 updateControlLabels();
 triggerBurst();
 window.addEventListener("resize", resizeCanvas);
-requestAnimationFrame(animate);
+document.addEventListener("visibilitychange", handleVisibilityChange);
+scheduleAnimationFrame();
+
+function scheduleAnimationFrame(): void {
+  if (document.hidden || animationFrameId !== null) {
+    return;
+  }
+
+  animationFrameId = requestAnimationFrame(animate);
+}
+
+function handleVisibilityChange(): void {
+  if (document.hidden) {
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+    return;
+  }
+
+  lastTimestamp = performance.now();
+  scheduleAnimationFrame();
+}
 
 function animate(timestamp: number): void {
+  animationFrameId = null;
+  if (document.hidden) {
+    return;
+  }
+
   const deltaSeconds = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
   lastTimestamp = timestamp;
 
@@ -154,7 +182,7 @@ function animate(timestamp: number): void {
 
   updateParticles(deltaSeconds * readSettings().timeScale);
   drawScene();
-  requestAnimationFrame(animate);
+  scheduleAnimationFrame();
 }
 
 function readSettings(): BurstSettings {

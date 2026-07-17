@@ -305,7 +305,7 @@ rendering would add complexity while most of the scene is animated. Revisit
 only if fresh live profiling shows full redraw is the limiting factor after
 items 2, 3, 19, and 20.
 
-### 25. [ ] Pause auxiliary animation pages while hidden
+### 25. [x] Pause auxiliary animation pages while hidden
 
 The explosion and escape labs continuously request frames. Suspend their
 loops on `visibilitychange` and resume without a large accumulated delta.
