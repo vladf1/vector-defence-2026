@@ -204,24 +204,32 @@ Drone and Lightning both accept `5`. Current campaign availability happens to
 avoid the collision, while lookup simply returns the first match. Assign
 distinct global shortcuts or validate uniqueness within every level.
 
-### 14. [ ] Make audio loading recoverable
+### 14. [x] Make audio loading recoverable
 
-Rejected buffer promises remain cached, and callers do not handle rejection.
-A failed fetch/decode can permanently disable a cue and produce an unhandled
-promise rejection.
+**Type:** Reliability — completed 2026-07-17
 
-Actions:
+Failed fetches and decodes now remove their cached promise so the next preload
+or playback request retries the asset. Each cue reports its first load failure
+once, and preload/playback callers consume the rejected promise without an
+unhandled rejection.
 
-- Remove failed promises from the cache.
-- Log each asset failure once and permit retry.
-- Avoid queueing many transient sounds behind one unresolved load.
-- Preload important cues or deliberately drop uncached rapid-fire cues.
+The existing unlock path still preloads every cue. While a cue is loading, at
+most one playback waits for it; later rapid-fire requests are deliberately
+dropped instead of building a delayed burst.
 
-### 15. [ ] Use `AudioBufferSourceNode.onended` for cleanup
+### 15. [x] Use `AudioBufferSourceNode.onended` for cleanup
 
-Audio nodes are disconnected with duration-based timers even though playback
-rate varies. Use `onended` for exact cleanup and retain a defensive fallback
-only if necessary.
+**Type:** Reliability — completed 2026-07-17
+
+Source, gain, and optional stereo-panner nodes now disconnect through an
+idempotent `AudioBufferSourceNode.onended` handler. The old duration timer was
+removed, so playback-rate variation no longer makes cleanup early or late. A
+synchronous `start()` failure also runs the same cleanup path.
+
+A focused browser validator confirmed retry after fetch and decode failures,
+one-time failure reporting, single queued playback per loading cue, and
+exactly-once node cleanup before it was removed. The production build passes
+with zero Svelte errors or warnings.
 
 ### 16. [ ] Model non-empty geometry explicitly
 

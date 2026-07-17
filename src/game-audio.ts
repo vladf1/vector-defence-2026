@@ -27,6 +27,8 @@ export class GameAudio {
   private recentCueTimes = new Map<AudioCueValue, number>();
   private bufferPromises = new Map<AudioCueValue, Promise<AudioBuffer>>();
   private buffers = new Map<AudioCueValue, AudioBuffer>();
+  private pendingPlaybackCues = new Set<AudioCueValue>();
+  private reportedLoadFailures = new Set<AudioCueValue>();
   private enabled = true;
 
   constructor(private readonly fieldWidth = FIELD_WIDTH) {
@@ -55,7 +57,7 @@ export class GameAudio {
     }
 
     for (const cue of Object.values(AudioCue)) {
-      void this.loadBuffer(cue, context);
+      void this.loadBuffer(cue, context).catch(() => undefined);
     }
   }
 
@@ -94,20 +96,32 @@ export class GameAudio {
     if (now - previousTime < cue.cooldownSeconds) {
       return;
     }
-    this.recentCueTimes.set(cue, now);
 
     const intensity = clamp(options.intensity ?? DEFAULT_INTENSITY, 0.25, 2.2);
     const cachedBuffer = this.buffers.get(cue);
     if (cachedBuffer) {
+      this.recentCueTimes.set(cue, now);
       this.playBuffer(cue, cachedBuffer, options.panX, intensity);
       return;
     }
 
-    void this.loadBuffer(cue, context).then((buffer) => {
-      if (this.enabled) {
-        this.playBuffer(cue, buffer, options.panX, intensity);
-      }
-    });
+    if (this.pendingPlaybackCues.has(cue)) {
+      return;
+    }
+
+    this.recentCueTimes.set(cue, now);
+    this.pendingPlaybackCues.add(cue);
+    void this.loadBuffer(cue, context)
+      .then((buffer) => {
+        if (this.enabled) {
+          this.recentCueTimes.set(cue, context.currentTime);
+          this.playBuffer(cue, buffer, options.panX, intensity);
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        this.pendingPlaybackCues.delete(cue);
+      });
   }
 
   private getContext(): AudioContext | undefined {
@@ -160,7 +174,15 @@ export class GameAudio {
       .then((data) => context.decodeAudioData(data))
       .then((buffer) => {
         this.buffers.set(cue, buffer);
+        this.bufferPromises.delete(cue);
         return buffer;
+      }, (error: unknown) => {
+        this.bufferPromises.delete(cue);
+        if (!this.reportedLoadFailures.has(cue)) {
+          this.reportedLoadFailures.add(cue);
+          console.warn(`Unable to load audio asset "${cue.id}". Playback will retry on the next request.`, error);
+        }
+        throw error;
       });
 
     this.bufferPromises.set(cue, bufferPromise);
@@ -181,24 +203,34 @@ export class GameAudio {
 
     source.connect(gain);
 
+    let panner: StereoPannerNode | undefined;
     if (panX !== undefined && "createStereoPanner" in context) {
-      const panner = context.createStereoPanner();
+      panner = context.createStereoPanner();
       panner.pan.value = clamp((panX / this.fieldWidth) * 1.5 - 0.75, -0.75, 0.75);
       gain.connect(panner);
       panner.connect(this.output);
-      window.setTimeout(() => {
-        source.disconnect();
-        gain.disconnect();
-        panner.disconnect();
-      }, Math.ceil((buffer.duration + 0.25) * 1000));
     } else {
       gain.connect(this.output);
-      window.setTimeout(() => {
-        source.disconnect();
-        gain.disconnect();
-      }, Math.ceil((buffer.duration + 0.25) * 1000));
     }
 
-    source.start();
+    let cleanedUp = false;
+    const cleanup = (): void => {
+      if (cleanedUp) {
+        return;
+      }
+      cleanedUp = true;
+      source.onended = null;
+      source.disconnect();
+      gain.disconnect();
+      panner?.disconnect();
+    };
+
+    source.onended = cleanup;
+    try {
+      source.start();
+    } catch (error) {
+      cleanup();
+      throw error;
+    }
   }
 }
