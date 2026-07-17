@@ -251,17 +251,44 @@ and narrow transition methods for start, pause, win, loss, and restart.
 
 ## Performance
 
-### 19. [ ] Measure and reduce polygon-shard construction cost
+### 19. [x] Measure and reduce polygon-shard construction cost
 
-Polygonal monster deaths synchronously run a splitter with high failure and
-geometry-attempt limits. Current update/draw benchmarks do not measure this
-construction path.
+**Completed:** 2026-07-17
 
-Actions:
+`npm run benchmark:death-effects` now measures synchronous
+`addDeathEffect(...)` construction in Chrome. It uses resettable seeded
+randomness, a warmup of at least 2,000 deaths, 500 frame-spaced samples, and 15
+trials of 1,000 consecutive deaths so splitter revisions see identical topology
+work and the throughput comparison is not dominated by frame scheduling.
 
-- Add a mass-death scenario and record p50/p95/p99 frame time.
-- If it spikes, precompute a small seeded topology bank per monster/body state.
-- Keep visual randomness in velocity, rotation, and topology selection.
+The runtime splitter keeps the same configuration and random choices, but now:
+
+- carries each shard's area instead of recomputing it during selection,
+  validation, and scoring;
+- computes bounds, centroid, diagonal, and edge clearance once per split round;
+- uses squared distances for boundary clearance, point merging, and collinear
+  cleanup, avoiding repeated square roots;
+- avoids candidate/filter arrays, redundant final simplification, and internal
+  point clones while still returning independently owned vertices.
+
+| Balanced-roster construction | Before | After | Change |
+| --- | ---: | ---: | ---: |
+| Mean per death, sustained throughput | 74.107 us | 48.173 us | -35.0% |
+| 1,000 deaths, p50 | 73.9 ms | 48.0 ms | -35.0% |
+| 1,000 deaths, p95 | 77.6 ms | 52.1 ms | -32.9% |
+| 48 deaths, p50 | 3.7 ms | 3.0 ms | -18.9% |
+| 48 deaths, p95 | 4.4 ms | 3.7 ms | -15.9% |
+| 48 deaths, p99 | 4.7 ms | 4.1 ms | -12.8% |
+
+The splitter still accounts for about 97% of this isolated construction slice;
+the result excludes simulation, drawing, and GPU work. Mean shard and particle
+counts are unchanged. All nine seeded polygon-shard sheets remained
+byte-identical, and the full explosion sequences were visually checked across
+simple, animated, and multi-part monster bodies.
+
+If substantially more headroom is needed later, the next paths are a small
+seeded topology bank per static or quantized body state, or an effect-budget
+admission check before splitting when particles would be discarded anyway.
 
 ### 20. [ ] Reduce link-effect rendering cost
 

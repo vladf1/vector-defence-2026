@@ -35,6 +35,10 @@ export interface Shard {
   vertices: Point[];
 }
 
+interface WorkingShard extends Shard {
+  area: number;
+}
+
 interface BoundarySample {
   point: Point;
   edgeIndex: number;
@@ -45,6 +49,18 @@ interface BoundarySample {
 interface EdgeMetric {
   length: number;
   distanceAtStart: number;
+}
+
+interface InteriorSampleGeometry {
+  bounds: {
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+  };
+  center: Point;
+  diagonal: number;
+  minEdgeDistanceSquared: number;
 }
 
 export function createPolygonShardSplitterConfig(
@@ -94,7 +110,7 @@ export class PolygonShardSplitter {
       this.config.maxShardCount,
       this.config.random,
     );
-    let shards = [sourcePolygon];
+    let shards: WorkingShard[] = [{ vertices: sourcePolygon, area: sourceArea }];
     let bestShards = shards;
     let consecutiveFailures = 0;
 
@@ -134,52 +150,68 @@ export class PolygonShardSplitter {
     }
 
     return bestShards.map((shard) => ({
-      vertices: simplifyPolygon(shard, this.config),
+      vertices: shard.vertices.map(clonePoint),
     }));
   }
 
-  private chooseShardIndex(shards: Point[][], sourceArea: number): number {
-    const candidates = shards
-      .map((shard, index) => ({
-        index,
-        area: polygonArea(shard),
-      }))
-      .filter(
-        ({ area }) => area >= sourceArea * this.config.minShardAreaRatio * 2.15,
-      );
+  private chooseShardIndex(shards: WorkingShard[], sourceArea: number): number {
+    const minCandidateArea = sourceArea * this.config.minShardAreaRatio * 2.15;
+    const oversizedArea = sourceArea * this.config.maxShardAreaRatio;
+    let hasOversizedCandidate = false;
+    let totalWeight = 0;
+    let lastCandidateIndex = -1;
 
-    if (candidates.length === 0) {
+    for (let index = 0; index < shards.length; index += 1) {
+      const area = shards[index].area;
+      if (area < minCandidateArea) {
+        continue;
+      }
+
+      const isOversized = area > oversizedArea;
+      if (isOversized && !hasOversizedCandidate) {
+        hasOversizedCandidate = true;
+        totalWeight = 0;
+        lastCandidateIndex = -1;
+      }
+      if (hasOversizedCandidate && !isOversized) {
+        continue;
+      }
+
+      totalWeight += area * area;
+      lastCandidateIndex = index;
+    }
+
+    if (lastCandidateIndex === -1) {
       return -1;
     }
 
-    const oversizedCandidates = candidates.filter(
-      ({ area }) => area > sourceArea * this.config.maxShardAreaRatio,
-    );
-    const weightedCandidates = oversizedCandidates.length > 0
-      ? oversizedCandidates
-      : candidates;
-
-    const totalWeight = weightedCandidates.reduce(
-      (sum, candidate) => sum + (candidate.area * candidate.area),
-      0,
-    );
     let threshold = this.config.random() * totalWeight;
-    for (const candidate of weightedCandidates) {
-      threshold -= candidate.area * candidate.area;
+    for (let index = 0; index < shards.length; index += 1) {
+      const area = shards[index].area;
+      if (
+        area < minCandidateArea ||
+        (hasOversizedCandidate && area <= oversizedArea)
+      ) {
+        continue;
+      }
+
+      threshold -= area * area;
       if (threshold <= 0) {
-        return candidate.index;
+        return index;
       }
     }
 
-    return weightedCandidates[weightedCandidates.length - 1].index;
+    return lastCandidateIndex;
   }
 
-  private trySplitShard(polygon: Point[], sourceArea: number): [Point[], Point[]] | null {
-    const polygonAreaValue = polygonArea(polygon);
+  private trySplitShard(shard: WorkingShard, sourceArea: number): [WorkingShard, WorkingShard] | null {
+    const polygon = shard.vertices;
+    const polygonAreaValue = shard.area;
     const edgeMetrics = createEdgeMetrics(polygon);
     if (edgeMetrics.perimeter === 0) {
       return null;
     }
+    const interiorSampleGeometry = createInteriorSampleGeometry(polygon, this.config);
 
     for (let attempt = 0; attempt < this.config.crackAttemptsPerShard; attempt += 1) {
       const boundaryPair = this.sampleBoundaryPair(polygon, edgeMetrics);
@@ -187,7 +219,7 @@ export class PolygonShardSplitter {
         continue;
       }
 
-      const interiorDot = this.sampleInteriorDot(polygon);
+      const interiorDot = this.sampleInteriorDot(polygon, interiorSampleGeometry);
       if (interiorDot === null) {
         continue;
       }
@@ -217,27 +249,29 @@ export class PolygonShardSplitter {
         continue;
       }
 
-      const splitArea = polygonArea(split[0]) + polygonArea(split[1]);
+      const firstArea = polygonArea(split[0]);
+      const secondArea = polygonArea(split[1]);
+      const splitArea = firstArea + secondArea;
       const areaDeltaRatio = Math.abs(splitArea - polygonAreaValue) / polygonAreaValue;
       if (areaDeltaRatio > this.config.areaToleranceRatio) {
         continue;
       }
 
-      const largestChildAreaRatio = Math.max(
-        polygonArea(split[0]),
-        polygonArea(split[1]),
-      ) / polygonAreaValue;
+      const largestChildAreaRatio = Math.max(firstArea, secondArea) / polygonAreaValue;
       if (largestChildAreaRatio > this.config.maxSplitChildAreaRatio) {
         continue;
       }
 
       if (
-        split.every((shard) =>
-          isReadableShard(shard, sourceArea, this.config) &&
-          isSimplePolygon(shard, this.config.pointMergeDistance)
-        )
+        isReadableShard(split[0], firstArea, sourceArea, this.config) &&
+        isSimplePolygon(split[0], this.config.pointMergeDistance) &&
+        isReadableShard(split[1], secondArea, sourceArea, this.config) &&
+        isSimplePolygon(split[1], this.config.pointMergeDistance)
       ) {
-        return split;
+        return [
+          { vertices: split[0], area: firstArea },
+          { vertices: split[1], area: secondArea },
+        ];
       }
     }
 
@@ -287,23 +321,21 @@ export class PolygonShardSplitter {
     return null;
   }
 
-  private sampleInteriorDot(polygon: Point[]): Point | null {
-    const bounds = polygonBounds(polygon);
-    const center = polygonCentroid(polygon);
-    const diagonal = Math.hypot(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
-    const minEdgeDistance = diagonal * this.config.minInteriorDotEdgeDistanceRatio;
-
+  private sampleInteriorDot(
+    polygon: Point[],
+    geometry: InteriorSampleGeometry,
+  ): Point | null {
     for (let attempt = 0; attempt < this.config.interiorPointAttempts; attempt += 1) {
       const angle = this.config.random() * Math.PI * 2;
-      const distance = Math.sqrt(this.config.random()) * diagonal * 0.28;
+      const distance = Math.sqrt(this.config.random()) * geometry.diagonal * 0.28;
       const point = {
-        x: center.x + Math.cos(angle) * distance,
-        y: center.y + Math.sin(angle) * distance,
+        x: geometry.center.x + Math.cos(angle) * distance,
+        y: geometry.center.y + Math.sin(angle) * distance,
       };
 
       if (
         pointInsidePolygon(point, polygon, this.config.pointMergeDistance) &&
-        distanceToPolygonBoundary(point, polygon) >= minEdgeDistance
+        isPointFarEnoughFromPolygonBoundary(point, polygon, geometry.minEdgeDistanceSquared)
       ) {
         return point;
       }
@@ -311,13 +343,13 @@ export class PolygonShardSplitter {
 
     for (let attempt = 0; attempt < this.config.interiorPointAttempts; attempt += 1) {
       const point = {
-        x: bounds.minX + (this.config.random() * (bounds.maxX - bounds.minX)),
-        y: bounds.minY + (this.config.random() * (bounds.maxY - bounds.minY)),
+        x: geometry.bounds.minX + (this.config.random() * (geometry.bounds.maxX - geometry.bounds.minX)),
+        y: geometry.bounds.minY + (this.config.random() * (geometry.bounds.maxY - geometry.bounds.minY)),
       };
 
       if (
         pointInsidePolygon(point, polygon, this.config.pointMergeDistance) &&
-        distanceToPolygonBoundary(point, polygon) >= minEdgeDistance
+        isPointFarEnoughFromPolygonBoundary(point, polygon, geometry.minEdgeDistanceSquared)
       ) {
         return point;
       }
@@ -435,6 +467,48 @@ export class PolygonShardSplitter {
   }
 }
 
+function createInteriorSampleGeometry(
+  polygon: Point[],
+  config: PolygonShardSplitterConfig,
+): InteriorSampleGeometry {
+  let minX = polygon[0].x;
+  let maxX = polygon[0].x;
+  let minY = polygon[0].y;
+  let maxY = polygon[0].y;
+  let signedAreaTotal = 0;
+  let xTotal = 0;
+  let yTotal = 0;
+
+  for (let index = 0; index < polygon.length; index += 1) {
+    const current = polygon[index];
+    const next = polygon[(index + 1) % polygon.length];
+    minX = Math.min(minX, current.x);
+    maxX = Math.max(maxX, current.x);
+    minY = Math.min(minY, current.y);
+    maxY = Math.max(maxY, current.y);
+
+    const signedArea = (current.x * next.y) - (next.x * current.y);
+    signedAreaTotal += signedArea;
+    xTotal += (current.x + next.x) * signedArea;
+    yTotal += (current.y + next.y) * signedArea;
+  }
+
+  const bounds = { minX, maxX, minY, maxY };
+  const diagonal = Math.hypot(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
+  const minEdgeDistance = diagonal * config.minInteriorDotEdgeDistanceRatio;
+  return {
+    bounds,
+    center: Math.abs(signedAreaTotal) < 0.000001
+      ? polygon[0]
+      : {
+        x: xTotal / (signedAreaTotal * 3),
+        y: yTotal / (signedAreaTotal * 3),
+      },
+    diagonal,
+    minEdgeDistanceSquared: minEdgeDistance * minEdgeDistance,
+  };
+}
+
 function splitPolygonWithCrack(
   polygon: Point[],
   start: BoundarySample,
@@ -464,18 +538,18 @@ function splitPolygonWithCrack(
 }
 
 function boundaryChain(polygon: Point[], start: BoundarySample, end: BoundarySample): Point[] {
-  const chain = [clonePoint(start.point)];
+  const chain = [start.point];
   let index = (start.edgeIndex + 1) % polygon.length;
   const stopIndex = (end.edgeIndex + 1) % polygon.length;
   let guard = 0;
 
   while (index !== stopIndex && guard <= polygon.length) {
-    chain.push(clonePoint(polygon[index]));
+    chain.push(polygon[index]);
     index = (index + 1) % polygon.length;
     guard += 1;
   }
 
-  chain.push(clonePoint(end.point));
+  chain.push(end.point);
   return chain;
 }
 
@@ -526,10 +600,10 @@ function sampleBoundaryAtDistance(
 
 function isReadableShard(
   shard: Point[],
+  area: number,
   sourceArea: number,
   config: PolygonShardSplitterConfig,
 ): boolean {
-  const area = polygonArea(shard);
   return (
     shard.length >= 3 &&
     shard.length <= config.maxShardVertices &&
@@ -537,18 +611,25 @@ function isReadableShard(
   );
 }
 
-function maxShardAreaRatio(shards: Point[][], sourceArea: number): number {
-  return Math.max(...shards.map((shard) => polygonArea(shard) / sourceArea));
+function maxShardAreaRatio(shards: WorkingShard[], sourceArea: number): number {
+  let maxArea = 0;
+  for (const shard of shards) {
+    maxArea = Math.max(maxArea, shard.area);
+  }
+  return maxArea / sourceArea;
 }
 
 function shardSetScore(
-  shards: Point[][],
+  shards: WorkingShard[],
   sourceArea: number,
   config: PolygonShardSplitterConfig,
 ): number {
-  const preferredVertexCount = shards.filter(
-    (shard) => shard.length <= config.preferredMaxShardVertices,
-  ).length;
+  let preferredVertexCount = 0;
+  for (const shard of shards) {
+    if (shard.vertices.length <= config.preferredMaxShardVertices) {
+      preferredVertexCount += 1;
+    }
+  }
   const largestShardPenalty = maxShardAreaRatio(shards, sourceArea) * 80;
   return (shards.length * 100) + preferredVertexCount - largestShardPenalty;
 }
@@ -557,7 +638,9 @@ function simplifyPolygon(
   points: Point[],
   config: PolygonShardSplitterConfig,
 ): Point[] {
-  let simplified = removeDuplicatePoints(points, config.pointMergeDistance);
+  const pointMergeDistanceSquared = config.pointMergeDistance * config.pointMergeDistance;
+  let simplified = removeDuplicatePoints(points, pointMergeDistanceSquared);
+  const collinearDistanceSquared = config.collinearDistance * config.collinearDistance;
   let changed = true;
 
   while (changed && simplified.length >= 3) {
@@ -567,8 +650,8 @@ function simplifyPolygon(
       const current = simplified[index];
       const next = simplified[(index + 1) % simplified.length];
       if (
-        distanceToSegment(current, previous, next) <= config.collinearDistance ||
-        pointsEqual(previous, next, config.pointMergeDistance)
+        distanceSquaredToSegment(current, previous, next) <= collinearDistanceSquared ||
+        pointsEqual(previous, next, pointMergeDistanceSquared)
       ) {
         simplified = [
           ...simplified.slice(0, index),
@@ -583,20 +666,20 @@ function simplifyPolygon(
   return simplified;
 }
 
-function removeDuplicatePoints(points: Point[], epsilon: number): Point[] {
+function removeDuplicatePoints(points: Point[], epsilonSquared: number): Point[] {
   const result: Point[] = [];
   for (const point of points) {
     if (
       result.length === 0 ||
-      !pointsEqual(result[result.length - 1], point, epsilon)
+      !pointsEqual(result[result.length - 1], point, epsilonSquared)
     ) {
-      result.push(clonePoint(point));
+      result.push(point);
     }
   }
 
   if (
     result.length > 1 &&
-    pointsEqual(result[0], result[result.length - 1], epsilon)
+    pointsEqual(result[0], result[result.length - 1], epsilonSquared)
   ) {
     result.pop();
   }
@@ -637,49 +720,6 @@ function polygonArea(polygon: readonly Point[]): number {
   return Math.abs(total) / 2;
 }
 
-function polygonCentroid(polygon: readonly Point[]): Point {
-  let signedAreaTotal = 0;
-  let xTotal = 0;
-  let yTotal = 0;
-
-  for (let index = 0; index < polygon.length; index += 1) {
-    const current = polygon[index];
-    const next = polygon[(index + 1) % polygon.length];
-    const signedArea = (current.x * next.y) - (next.x * current.y);
-    signedAreaTotal += signedArea;
-    xTotal += (current.x + next.x) * signedArea;
-    yTotal += (current.y + next.y) * signedArea;
-  }
-
-  if (Math.abs(signedAreaTotal) < 0.000001) {
-    return polygon[0];
-  }
-
-  return {
-    x: xTotal / (signedAreaTotal * 3),
-    y: yTotal / (signedAreaTotal * 3),
-  };
-}
-
-function polygonBounds(polygon: readonly Point[]): {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
-} {
-  let minX = polygon[0].x;
-  let maxX = polygon[0].x;
-  let minY = polygon[0].y;
-  let maxY = polygon[0].y;
-  for (const point of polygon) {
-    minX = Math.min(minX, point.x);
-    maxX = Math.max(maxX, point.x);
-    minY = Math.min(minY, point.y);
-    maxY = Math.max(maxY, point.y);
-  }
-  return { minX, maxX, minY, maxY };
-}
-
 function pointInsidePolygon(point: Point, polygon: readonly Point[], epsilon: number): boolean {
   let inside = false;
   for (let index = 0, previousIndex = polygon.length - 1; index < polygon.length; previousIndex = index, index += 1) {
@@ -701,23 +741,30 @@ function pointInsidePolygon(point: Point, polygon: readonly Point[], epsilon: nu
   return inside;
 }
 
-function distanceToPolygonBoundary(point: Point, polygon: readonly Point[]): number {
-  let minDistance = Number.POSITIVE_INFINITY;
+function isPointFarEnoughFromPolygonBoundary(
+  point: Point,
+  polygon: readonly Point[],
+  minDistanceSquared: number,
+): boolean {
   for (let index = 0; index < polygon.length; index += 1) {
-    minDistance = Math.min(
-      minDistance,
-      distanceToSegment(point, polygon[index], polygon[(index + 1) % polygon.length]),
-    );
+    if (
+      distanceSquaredToSegment(point, polygon[index], polygon[(index + 1) % polygon.length])
+        < minDistanceSquared
+    ) {
+      return false;
+    }
   }
-  return minDistance;
+  return true;
 }
 
-function distanceToSegment(point: Point, start: Point, end: Point): number {
+function distanceSquaredToSegment(point: Point, start: Point, end: Point): number {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const lengthSquared = (dx * dx) + (dy * dy);
   if (lengthSquared === 0) {
-    return Math.hypot(point.x - start.x, point.y - start.y);
+    const pointDx = point.x - start.x;
+    const pointDy = point.y - start.y;
+    return (pointDx * pointDx) + (pointDy * pointDy);
   }
 
   const ratio = clamp(
@@ -725,10 +772,9 @@ function distanceToSegment(point: Point, start: Point, end: Point): number {
     0,
     1,
   );
-  return Math.hypot(
-    point.x - (start.x + (dx * ratio)),
-    point.y - (start.y + (dy * ratio)),
-  );
+  const pointDx = point.x - (start.x + (dx * ratio));
+  const pointDy = point.y - (start.y + (dy * ratio));
+  return (pointDx * pointDx) + (pointDy * pointDy);
 }
 
 function segmentsIntersect(
@@ -788,8 +834,10 @@ function pointOnSegment(point: Point, start: Point, end: Point, epsilon: number)
   );
 }
 
-function pointsEqual(left: Point, right: Point, epsilon: number): boolean {
-  return Math.hypot(left.x - right.x, left.y - right.y) <= epsilon;
+function pointsEqual(left: Point, right: Point, epsilonSquared: number): boolean {
+  const dx = left.x - right.x;
+  const dy = left.y - right.y;
+  return (dx * dx) + (dy * dy) <= epsilonSquared;
 }
 
 function randomInteger(
