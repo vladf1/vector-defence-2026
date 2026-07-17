@@ -214,27 +214,50 @@ export class LaserTower extends Tower {
       const source = this.getBeamSource();
       context.save();
       context.globalCompositeOperation = "lighter";
-      context.shadowColor = `rgba(${colors.beam}, ${0.7 * this.beamAlpha})`;
-      context.shadowBlur = 14 + (this.level * 2);
-      context.strokeStyle = `rgba(${colors.beam}, ${0.2 * this.beamAlpha})`;
-      context.lineWidth = 7 + (this.level * 0.55);
       context.lineCap = "round";
-      context.beginPath();
-      context.moveTo(source.x, source.y);
-      context.lineTo(this.beamTarget.x, this.beamTarget.y);
+
+      context.strokeStyle = `rgba(${colors.beam}, ${0.055 * this.beamAlpha})`;
+      context.lineWidth = 18 + (this.level * 1.15);
+      this.traceBeam(context, source);
       context.stroke();
-      context.strokeStyle = `rgba(${colors.beam}, ${0.85 * this.beamAlpha})`;
+
+      context.strokeStyle = `rgba(${colors.beam}, ${0.12 * this.beamAlpha})`;
+      context.lineWidth = 11 + (this.level * 0.8);
+      this.traceBeam(context, source);
+      context.stroke();
+
+      context.strokeStyle = `rgba(${colors.beam}, ${0.24 * this.beamAlpha})`;
+      context.lineWidth = 6.5 + (this.level * 0.55);
+      this.traceBeam(context, source);
+      context.stroke();
+
+      context.strokeStyle = `rgba(${colors.beam}, ${0.9 * this.beamAlpha})`;
       context.lineWidth = 1.5 + (this.level / 3);
-      context.beginPath();
-      context.moveTo(source.x, source.y);
-      context.lineTo(this.beamTarget.x, this.beamTarget.y);
+      this.traceBeam(context, source);
       context.stroke();
-      context.fillStyle = `rgba(${colors.beam}, ${0.35 * this.beamAlpha})`;
+
+      context.fillStyle = `rgba(${colors.beam}, ${0.08 * this.beamAlpha})`;
       context.beginPath();
-      context.arc(source.x, source.y, 4 + (this.level * 0.35), 0, Math.PI * 2);
+      context.arc(source.x, source.y, 8 + (this.level * 0.6), 0, Math.PI * 2);
+      context.fill();
+
+      context.fillStyle = `rgba(${colors.beam}, ${0.24 * this.beamAlpha})`;
+      context.beginPath();
+      context.arc(source.x, source.y, 5 + (this.level * 0.42), 0, Math.PI * 2);
+      context.fill();
+
+      context.fillStyle = `rgba(${colors.beam}, ${0.78 * this.beamAlpha})`;
+      context.beginPath();
+      context.arc(source.x, source.y, 2.3 + (this.level * 0.22), 0, Math.PI * 2);
       context.fill();
       context.restore();
     }
+  }
+
+  private traceBeam(context: CanvasRenderingContext2D, source: Point): void {
+    context.beginPath();
+    context.moveTo(source.x, source.y);
+    context.lineTo(this.beamTarget.x, this.beamTarget.y);
   }
 
   private traceLaserBody(

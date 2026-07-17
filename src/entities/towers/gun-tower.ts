@@ -100,15 +100,20 @@ export class GunTower extends Tower {
       const flashAlpha = this.muzzleFlashSeconds / 0.055;
       context.save();
       context.globalCompositeOperation = "lighter";
-      context.fillStyle = `rgba(255, 239, 156, ${0.78 * flashAlpha})`;
-      context.shadowColor = "#ffe27a";
-      context.shadowBlur = 8;
-      context.beginPath();
-      context.moveTo(barrelFrontX, 0);
-      context.lineTo(22 + (this.level * 1.2), -3.4);
-      context.lineTo(25 + (this.level * 1.35), 0);
-      context.lineTo(22 + (this.level * 1.2), 3.4);
-      context.closePath();
+
+      context.globalAlpha = 0.16 * flashAlpha;
+      context.fillStyle = "#ff9d5c";
+      this.traceMuzzleFlash(context, barrelFrontX, 12 + (this.level * 0.55), 5.6);
+      context.fill();
+
+      context.globalAlpha = 0.56 * flashAlpha;
+      context.fillStyle = "#ffe27a";
+      this.traceMuzzleFlash(context, barrelFrontX, 9 + (this.level * 0.45), 3.4);
+      context.fill();
+
+      context.globalAlpha = 0.88 * flashAlpha;
+      context.fillStyle = "#fff7d1";
+      this.traceMuzzleFlash(context, barrelFrontX, 6.2 + (this.level * 0.28), 1.35);
       context.fill();
       context.restore();
     }
@@ -118,5 +123,19 @@ export class GunTower extends Tower {
       this.drawSelection(context);
     }
     context.restore();
+  }
+
+  private traceMuzzleFlash(
+    context: CanvasRenderingContext2D,
+    barrelFrontX: number,
+    length: number,
+    halfHeight: number,
+  ): void {
+    context.beginPath();
+    context.moveTo(barrelFrontX, 0);
+    context.lineTo(barrelFrontX + (length * 0.65), -halfHeight);
+    context.lineTo(barrelFrontX + length, 0);
+    context.lineTo(barrelFrontX + (length * 0.65), halfHeight);
+    context.closePath();
   }
 }

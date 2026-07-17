@@ -92,6 +92,13 @@ const html = String.raw`
           if ("orbit" in tower) {
             tower.orbit = Math.PI / 5;
           }
+          if ("muzzleFlashSeconds" in tower) {
+            tower.muzzleFlashSeconds = tower instanceof MissileTower ? 0.08 : 0.04;
+          }
+          if ("beamAlpha" in tower) {
+            tower.beamAlpha = 0.72;
+            tower.beamTarget = { x: 34, y: -34 };
+          }
           context.save();
           context.translate(centerX, centerY);
           context.scale(gameArtScale, gameArtScale);

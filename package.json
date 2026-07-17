@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "benchmark:draw": "node scripts/benchmark-draw-methods.mjs",
+    "benchmark:draw:towers": "node scripts/benchmark-draw-methods.mjs --tower-profile",
     "benchmark:update": "node scripts/benchmark-update-methods.mjs",
     "render:levels": "node scripts/render-levels.mjs",
     "render:towers": "node scripts/render-towers.mjs",

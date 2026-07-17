@@ -126,11 +126,23 @@ export class MissileTower extends Tower {
       const flashAlpha = this.muzzleFlashSeconds / 0.12;
       context.save();
       context.globalCompositeOperation = "lighter";
-      context.fillStyle = `rgba(255, 164, 82, ${0.62 * flashAlpha})`;
-      context.shadowColor = "#ff9d5c";
-      context.shadowBlur = 10;
+
+      context.globalAlpha = 0.16 * flashAlpha;
+      context.fillStyle = "#ff7b42";
       context.beginPath();
-      context.arc(11.8, 0, 3.5 + (4 * flashAlpha), 0, Math.PI * 2);
+      context.arc(11.8, 0, 6.5 + (3.5 * flashAlpha), 0, Math.PI * 2);
+      context.fill();
+
+      context.globalAlpha = 0.4 * flashAlpha;
+      context.fillStyle = "#ff9d5c";
+      context.beginPath();
+      context.arc(11.8, 0, 4.5 + (2.5 * flashAlpha), 0, Math.PI * 2);
+      context.fill();
+
+      context.globalAlpha = 0.78 * flashAlpha;
+      context.fillStyle = "#ffe27a";
+      context.beginPath();
+      context.arc(11.8, 0, 2.4 + (1.6 * flashAlpha), 0, Math.PI * 2);
       context.fill();
       context.restore();
     }

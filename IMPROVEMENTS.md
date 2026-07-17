@@ -42,22 +42,35 @@ Verification:
 - A discrete 10-point hit still deals 6.5 damage through Bulwark armor.
 - `npm run build`, the update benchmark, and a fresh tower render sheet pass.
 
-### 2. [ ] Replace gameplay `shadowBlur` effects
+### 2. [~] Replace gameplay `shadowBlur` effects
 
-**Type:** Measured hotspot
+**Type:** Measured hotspot — implementation completed 2026-07-17; DevTools trace pending
 
 Forced-GPU-flush measurements found upgraded Lightning tower draws around
 1.62–1.72 ms, compared with roughly 8.75 us at the base level without its
 blurred glow. Active gun and missile muzzle flashes measured approximately
 0.82–0.87 ms per draw.
 
-Actions:
+Implemented:
 
-- Replace blur in Lightning tower, gun/missile muzzle flashes, and the laser
-  beam with layered translucent fills or strokes.
-- Preserve each tower's visual hierarchy and upgrade progression.
-- Generate a fresh `artifacts/tower-render-<variant>.png` for every variant.
-- Run the draw benchmark and finish with a live Chrome trace.
+- Replaced Lightning tower, gun/missile muzzle flash, and laser beam blur with
+  layered translucent fills and strokes.
+- Extended the tower benchmark and render sheet so active laser and muzzle
+  effects are actually exercised.
+- Preserved the bright core, colored glow hierarchy, and per-level color and
+  geometry progression in a fresh `artifacts/tower-render-layered-final.png`.
+
+Forced-GPU-flush medians across the affected levels changed from:
+
+- Active laser: 2,761–2,891 us to 101–119 us.
+- Upgraded Lightning: 1,471–1,543 us to 21–29 us.
+- Active gun muzzle flash: 779–801 us to 14–20 us.
+- Active missile muzzle flash: 738–773 us to 14–28 us.
+
+A live Chrome battle smoke through two waves exercised gun, laser, and missile
+effects with no console warnings or errors. The available Chrome control
+channel does not expose DevTools trace capture, so a live trace artifact remains
+the only unfinished verification step.
 
 ### 3. [ ] Apply particle and link budgets before construction
 
@@ -296,18 +309,31 @@ loops on `visibilitychange` and resume without a large accumulated delta.
 
 ## Benchmarks, build, and tooling
 
-### 26. [ ] Repair draw-benchmark reporting
+### 26. [x] Repair draw-benchmark reporting
+
+**Type:** Benchmark correctness — completed 2026-07-17
 
 The full draw suite uses one benchmark order, then reports min/max across
 orders. Those values are identical and hide the five samples collected inside
 each benchmark.
 
-Actions:
+Implemented:
 
-- Report sample min/median/mean/max directly.
-- Run normal, reversed, and randomized orders.
-- Increase batch size or precision when results round to zero.
-- Label forced-GPU-flush results separately from CPU submission cost.
+- Reports sample count plus min, median, mean, and max directly.
+- Runs normal, reversed, and deterministically randomized orders.
+- Keeps forced-GPU-flush results separate from bounded CPU submission timing.
+- Drains the canvas command queue outside CPU-submission timing so samples do
+  not accumulate GPU backpressure.
+- Uses larger full-suite batches so even `Particle.draw()` has non-zero medians.
+- Supports targeted `--filter=...` runs and exposes `benchmark:draw` and
+  `benchmark:draw:towers` package scripts.
+
+Verification:
+
+- Every summary contains 15 samples across three orders.
+- The cheapest measured draw reported 0.167 us CPU submission and 0.333 us
+  forced-GPU-flush medians instead of rounding to zero.
+- The full draw suite and the active-effect tower suite pass.
 
 ### 27. [ ] Add an end-to-end frame benchmark
 
@@ -429,8 +455,8 @@ As of 2026-07-17:
 
 ## Recommended implementation order
 
-1. Items 2 and 3: remove measured rendering waste and saturated-effect waste.
+1. Item 3: remove saturated-effect construction waste.
 2. Item 6, then items 7–18: build coverage and harden correctness boundaries.
 3. Items 19–22: measure and optimize remaining runtime hotspots.
-4. Items 26–32: make benchmarks and CI enforce the intended behavior.
+4. Items 27–32: make benchmarks and CI enforce the intended behavior.
 5. Items 33–40: accessibility, documentation, and structural cleanup.

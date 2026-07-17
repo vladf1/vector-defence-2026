@@ -128,13 +128,24 @@ export class LightningTower extends Tower {
     if (this.level > 0) {
       context.save();
       context.globalCompositeOperation = "lighter";
-      context.shadowColor = color;
-      context.shadowBlur = 3 + (this.level * 1.25);
-      context.globalAlpha = 0.22 + (intensity * 0.26);
+      context.strokeStyle = color;
+      context.lineCap = "round";
+      context.lineJoin = "round";
+
+      context.globalAlpha = 0.08 + (intensity * 0.06);
+      context.lineWidth = 7.5 + (this.level * 0.48);
+      this.drawBoltSpine(context, boltScale);
+      context.stroke();
+
+      context.globalAlpha = 0.16 + (intensity * 0.08);
+      context.lineWidth = 4 + (this.level * 0.3);
+      this.drawBoltSpine(context, boltScale);
+      context.stroke();
+
+      context.globalAlpha = 0.18 + (intensity * 0.2);
       context.fillStyle = color;
       this.drawCentralBolt(context, boltScale);
       context.fill();
-      context.strokeStyle = color;
       context.lineWidth = 1.7 + (this.level * 0.16);
       this.drawBoltSpine(context, boltScale);
       context.stroke();

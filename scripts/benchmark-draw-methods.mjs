@@ -3,6 +3,12 @@ import { runBenchmarkPage } from "./benchmark-browser-harness.mjs";
 
 const runLightningProfile = process.argv.includes("--lightning-profile");
 const runTowerProfile = process.argv.includes("--tower-profile");
+const measurement = process.argv.includes("--cpu-submission-only")
+  ? "cpu-submission-bounded"
+  : (process.argv.includes("--gpu-flushed-only") ? "gpu-flushed" : "both");
+const benchmarkFilter = process.argv
+  .find((argument) => argument.startsWith("--filter="))
+  ?.slice("--filter=".length);
 
 const html = String.raw`
 <!doctype html>
@@ -144,51 +150,94 @@ const html = String.raw`
       ];
 
       const searchParams = new URLSearchParams(location.search);
+      const measurementModes = createMeasurementModes(searchParams.get("measurement"));
+      const benchmarkFilter = searchParams.get("filter");
       if (searchParams.has("lightning-profile")) {
-        window.__benchmarkResults = {
-          orders: [],
-          summary: lightningProfileSpecs.map(([name, make]) => runBenchmark({
-            name,
-            kind: "single",
-            make,
-            warmupIterations: 20,
-            measuredIterations: 80,
-            flushCanvas: true,
-          })).sort((a, b) => b.usPerDraw - a.usPerDraw),
-        };
+        runOrderedBenchmarkSuite(
+          lightningProfileSpecs.map(([name, make]) => ({ name, kind: "single", make })),
+          "profile",
+        );
       } else if (searchParams.has("tower-profile")) {
-        window.__benchmarkResults = {
-          orders: [],
-          summary: towerProfileSpecs.map(([name, make]) => runBenchmark({
+        runOrderedBenchmarkSuite(
+          towerProfileSpecs.map(([name, make]) => ({
             name,
             kind: name.includes(":sheet:") ? "collection" : "single",
             make,
-            warmupIterations: name.includes(":sheet:") ? 10 : 20,
-            measuredIterations: name.includes(":sheet:") ? 30 : 80,
-            flushCanvas: true,
-          })).sort((a, b) => b.usPerDraw - a.usPerDraw),
-        };
+          })),
+          "profile",
+        );
       } else {
-        runFullBenchmarkSuite();
+        runOrderedBenchmarkSuite(benchmarks, "full");
       }
 
-      function runFullBenchmarkSuite() {
-        const orders = [{ name: "flushed", benchmarks }];
-        const orderResults = orders.map((order) => ({
+      function runOrderedBenchmarkSuite(benchmarkList, suiteKind) {
+        const selectedBenchmarks = benchmarkFilter
+          ? benchmarkList.filter((benchmark) => benchmark.name.includes(benchmarkFilter))
+          : benchmarkList;
+        if (selectedBenchmarks.length === 0) {
+          throw new Error("No draw benchmarks matched filter: " + benchmarkFilter);
+        }
+        const orders = createBenchmarkOrders(selectedBenchmarks);
+        const orderResults = measurementModes.flatMap((measurementMode) => orders.map((order) => ({
+          measurement: measurementMode.name,
           name: order.name,
           results: order.benchmarks.map((benchmark, index) => ({
             orderIndex: index,
             ...runBenchmark({
               ...benchmark,
-              flushCanvas: true,
-              warmupIterations: 30,
-              measuredIterations: 120,
+              ...getIterationCounts(benchmark, measurementMode, suiteKind),
+              flushCanvas: measurementMode.flushCanvas,
             }),
           })),
-        }));
+        })));
         window.__benchmarkResults = {
           orders: orderResults,
           summary: summarizeOrderResults(orderResults),
+        };
+      }
+
+      function createMeasurementModes(requestedMeasurement) {
+        const modes = [
+          { name: "gpu-flushed", flushCanvas: true },
+          { name: "cpu-submission-bounded", flushCanvas: false },
+        ];
+        return requestedMeasurement === "both"
+          ? modes
+          : modes.filter((mode) => mode.name === requestedMeasurement);
+      }
+
+      function createBenchmarkOrders(benchmarkList) {
+        return [
+          { name: "normal", benchmarks: [...benchmarkList] },
+          { name: "reversed", benchmarks: [...benchmarkList].reverse() },
+          { name: "randomized-seed-20260717", benchmarks: seededShuffle(benchmarkList, 20260717) },
+        ];
+      }
+
+      function seededShuffle(values, seed) {
+        const shuffled = [...values];
+        let state = seed >>> 0;
+        for (let index = shuffled.length - 1; index > 0; index -= 1) {
+          state = ((state * 1664525) + 1013904223) >>> 0;
+          const swapIndex = state % (index + 1);
+          [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+        }
+        return shuffled;
+      }
+
+      function getIterationCounts(benchmark, measurementMode, suiteKind) {
+        const isCollection = benchmark.kind === "collection";
+        if (measurementMode.flushCanvas) {
+          return {
+            warmupIterations: suiteKind === "profile" ? (isCollection ? 10 : 20) : 60,
+            measuredIterations: suiteKind === "profile" ? (isCollection ? 30 : 80) : (isCollection ? 180 : 600),
+          };
+        }
+        return {
+          warmupIterations: isCollection ? 10 : 20,
+          measuredIterations: suiteKind === "profile"
+            ? (isCollection ? 30 : 120)
+            : (isCollection ? 360 : 2_400),
         };
       }
 
@@ -230,6 +279,8 @@ const html = String.raw`
         tower.orbit = 0.74;
         tower.chargeSeconds = 0.08;
         tower.muzzleFlashSeconds = 0.06;
+        tower.beamAlpha = 0.72;
+        tower.beamTarget = { x: 760, y: 72 };
         return tower;
       }
 
@@ -428,9 +479,7 @@ const html = String.raw`
         const drawsPerIteration = drawables.length;
 
         drawMany(drawables, warmupIterations);
-        if (benchmark.flushCanvas) {
-          context.getImageData(0, 0, 1, 1);
-        }
+        context.getImageData(0, 0, 1, 1);
         for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
           const start = performance.now();
           drawMany(drawables, measuredIterations);
@@ -439,6 +488,11 @@ const html = String.raw`
           }
           const elapsedMs = performance.now() - start;
           samples.push((elapsedMs * 1000) / (measuredIterations * drawsPerIteration));
+          if (!benchmark.flushCanvas) {
+            // Drain outside the timed region so samples do not accumulate an
+            // unbounded command queue and accidentally measure GPU backpressure.
+            context.getImageData(0, 0, 1, 1);
+          }
         }
 
         samples.sort((a, b) => a - b);
@@ -447,7 +501,8 @@ const html = String.raw`
         return {
           name: benchmark.name,
           drawables: drawsPerIteration,
-          usPerDraw: round(medianUs),
+          samples,
+          medianUsPerDraw: round(medianUs),
           meanUsPerDraw: round(meanUs),
           drawsPerSecond: Math.round(1_000_000 / medianUs),
           sampleMinUs: round(samples[0]),
@@ -471,38 +526,55 @@ const html = String.raw`
         const byName = new Map();
         for (const order of orderResults) {
           for (const result of order.results) {
-            const entry = byName.get(result.name) ?? {
+            const key = order.measurement + ":" + result.name;
+            const entry = byName.get(key) ?? {
+              measurement: order.measurement,
               name: result.name,
               drawables: result.drawables,
+              samples: [],
               orderValues: [],
             };
+            entry.samples.push(...result.samples);
             entry.orderValues.push({
               order: order.name,
               orderIndex: result.orderIndex,
-              usPerDraw: result.usPerDraw,
+              medianUsPerDraw: result.medianUsPerDraw,
               meanUsPerDraw: result.meanUsPerDraw,
             });
-            byName.set(result.name, entry);
+            byName.set(key, entry);
           }
         }
 
         const summary = [...byName.values()].map((entry) => {
-          const values = entry.orderValues.map((value) => value.usPerDraw).sort((a, b) => a - b);
+          const values = [...entry.samples].sort((a, b) => a - b);
           const min = values[0];
           const max = values[values.length - 1];
-          const median = values[Math.floor(values.length / 2)];
+          const median = calculateMedian(values);
+          const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
           return {
+            measurement: entry.measurement,
             name: entry.name,
             drawables: entry.drawables,
-            medianAcrossOrdersUs: round(median),
-            minAcrossOrdersUs: round(min),
-            maxAcrossOrdersUs: round(max),
-            spreadUs: round(max - min),
+            sampleCount: values.length,
+            medianUs: round(median),
+            meanUs: round(mean),
+            minUs: round(min),
+            maxUs: round(max),
             orderValues: entry.orderValues,
           };
         });
-        summary.sort((a, b) => b.medianAcrossOrdersUs - a.medianAcrossOrdersUs);
+        summary.sort((a, b) => (
+          a.measurement.localeCompare(b.measurement)
+          || b.medianUs - a.medianUs
+        ));
         return summary;
+      }
+
+      function calculateMedian(sortedValues) {
+        const middleIndex = Math.floor(sortedValues.length / 2);
+        return sortedValues.length % 2 === 0
+          ? (sortedValues[middleIndex - 1] + sortedValues[middleIndex]) / 2
+          : sortedValues[middleIndex];
       }
 
     </script>
@@ -510,9 +582,16 @@ const html = String.raw`
 </html>
 `;
 
-const query = runLightningProfile
-  ? "?lightning-profile=1"
-  : (runTowerProfile ? "?tower-profile=1" : "");
+const queryParams = new URLSearchParams({ measurement });
+if (runLightningProfile) {
+  queryParams.set("lightning-profile", "1");
+} else if (runTowerProfile) {
+  queryParams.set("tower-profile", "1");
+}
+if (benchmarkFilter) {
+  queryParams.set("filter", benchmarkFilter);
+}
+const query = `?${queryParams.toString()}`;
 const value = await runBenchmarkPage({
   html,
   path: "/__draw-benchmark",
@@ -520,21 +599,15 @@ const value = await runBenchmarkPage({
   pluginName: "draw-benchmark-page",
 });
 
-if (runLightningProfile || runTowerProfile) {
-  console.table(value.summary.map((result) => ({
-    name: result.name,
-    medianUs: result.usPerDraw,
-    meanUs: result.meanUsPerDraw,
-    minUs: result.sampleMinUs,
-    maxUs: result.sampleMaxUs,
-  })));
-} else {
-  console.table(value.summary.map((result) => ({
-    name: result.name,
-    medianUs: result.medianAcrossOrdersUs,
-    minUs: result.minAcrossOrdersUs,
-    maxUs: result.maxAcrossOrdersUs,
-    spreadUs: result.spreadUs,
-    orderValues: result.orderValues.map((value) => `${value.order}:${value.usPerDraw}`).join(" "),
-  })));
-}
+console.table(value.summary.map((result) => ({
+  measurement: result.measurement,
+  name: result.name,
+  samples: result.sampleCount,
+  medianUs: result.medianUs,
+  meanUs: result.meanUs,
+  minUs: result.minUs,
+  maxUs: result.maxUs,
+  orderMedians: result.orderValues
+    .map((value) => `${value.order}:${value.medianUsPerDraw}`)
+    .join(" "),
+})));
