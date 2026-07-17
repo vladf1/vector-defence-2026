@@ -261,7 +261,8 @@ randomness, a warmup of at least 2,000 deaths, 500 frame-spaced samples, and 15
 trials of 1,000 consecutive deaths so splitter revisions see identical topology
 work and the throughput comparison is not dominated by frame scheduling.
 
-The runtime splitter keeps the same configuration and random choices, but now:
+The geometry hot-path optimizations preserve the splitter configuration and
+random choices, but now:
 
 - carries each shard's area instead of recomputing it during selection,
   validation, and scoring;
@@ -280,11 +281,27 @@ The runtime splitter keeps the same configuration and random choices, but now:
 | 48 deaths, p95 | 4.4 ms | 3.7 ms | -15.9% |
 | 48 deaths, p99 | 4.7 ms | 4.1 ms | -12.8% |
 
+A follow-up experiment capped each split round at 16 candidates instead of 42.
+Two alternating 50-trial A/B pairs measured:
+
+| 1,000-death throughput | 42 candidates | 16 candidates | Change |
+| --- | ---: | ---: | ---: |
+| Mean | 50.230 ms | 47.711 ms | -5.0% |
+| p50 | 49.9 ms | 47.75 ms | -4.3% |
+| p95 | 52.55 ms | 50.2 ms | -4.5% |
+
+The 16-candidate cap is now the default. Aggregate shard and particle counts
+were unchanged in the A/B runs. Eight of nine seeded polygon-shard sheets
+remained byte-identical; the square sheet selected alternate valid layouts with
+the same shard counts, and both versions passed visual inspection. The full
+explosion sheets were regenerated with the cap, with representative square and
+tank sequences inspected for breakup quality.
+
 The splitter still accounts for about 97% of this isolated construction slice;
 the result excludes simulation, drawing, and GPU work. Mean shard and particle
-counts are unchanged. All nine seeded polygon-shard sheets remained
-byte-identical, and the full explosion sequences were visually checked across
-simple, animated, and multi-part monster bodies.
+counts are unchanged. Before applying the candidate cap, all nine seeded sheets
+were byte-identical and the full explosion sequences were visually checked
+across simple, animated, and multi-part monster bodies.
 
 If substantially more headroom is needed later, the next paths are a small
 seeded topology bank per static or quantized body state, or an effect-budget

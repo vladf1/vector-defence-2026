@@ -70,7 +70,7 @@ export function createPolygonShardSplitterConfig(
     minShardCount: options.minShardCount,
     maxShardCount: options.maxShardCount,
     maxConsecutiveSplitFailures: options.maxConsecutiveSplitFailures ?? 360,
-    crackAttemptsPerShard: options.crackAttemptsPerShard ?? 42,
+    crackAttemptsPerShard: options.crackAttemptsPerShard ?? 16,
     minBoundarySeparationRatio: options.minBoundarySeparationRatio ?? 0.2,
     boundaryEndpointInsetRatio: options.boundaryEndpointInsetRatio ?? 0.055,
     interiorPointAttempts: options.interiorPointAttempts ?? 72,
