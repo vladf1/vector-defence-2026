@@ -16,8 +16,8 @@ import {
   performModalAction,
   type RuntimeHudStats,
 } from "./game-view";
-import { AudioCue, type HudSnapshot, type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
-import { readonly, writable, type Readable } from "svelte/store";
+import { AudioCue, type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
+import { readonly, writable } from "svelte/store";
 
 const NERD_STATS_SAMPLE_MS = 500;
 const TOWER_DRAG_THRESHOLD_PX = 6;
@@ -57,34 +57,7 @@ function shouldIgnoreGameShortcut(event: KeyboardEvent): boolean {
   return isNativeActivationKey && eventPathMatches(event, KEYBOARD_ACTIVATION_SELECTOR);
 }
 
-export interface GameSession {
-  profile: GameProfile;
-  hud: Readable<HudSnapshot>;
-  modal: Readable<ModalView | null>;
-  soundEnabled: Readable<boolean>;
-  toggleSound(): void;
-  setNerdStatsEnabled(enabled: boolean): void;
-  mount(backgroundCanvas: HTMLCanvasElement, gameCanvas: HTMLCanvasElement): void;
-  destroy(): void;
-  handleKeyDown(event: KeyboardEvent): void;
-  handleCanvasMove(event: PointerEvent): void;
-  handleCanvasDown(event: PointerEvent): void;
-  handleCanvasLeave(): void;
-  handleTowerButtonPointerDown(kind: TowerKind, event: PointerEvent): void;
-  togglePause(): void;
-  skipBreak(): void;
-  openMenu(): void;
-  restart(): void;
-  upgradeSelectedTower(): void;
-  toggleSelectedLaserLock(): void;
-  sellSelectedTower(): void;
-  cancelBuild(): void;
-  toggleTowerPlacement(kind: TowerKind): void;
-  handleModalAction(action: ModalAction): void;
-  selectLevel(levelIndex: number): void;
-}
-
-export function createGameSession(profile: GameProfile): GameSession {
+export function createGameSession(profile: GameProfile) {
   const hudStore = writable(INITIAL_HUD_SNAPSHOT);
   const modalStore = writable<ModalView | null>(null);
   const soundEnabledStore = writable(true);
@@ -716,3 +689,5 @@ export function createGameSession(profile: GameProfile): GameSession {
     selectLevel,
   };
 }
+
+export type GameSession = ReturnType<typeof createGameSession>;

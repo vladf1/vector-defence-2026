@@ -124,7 +124,6 @@ export class Game {
   menuReturnState?: BattleState;
   state: GameState = GameState.Menu;
   runtime = new LevelRuntime();
-  statusText = "Select a map";
   bannerText = "Awaiting orders";
   bannerTimer = 0;
   hudDirty = true;
@@ -264,21 +263,6 @@ export class Game {
 
   setState(next: GameState): void {
     this.state = next;
-    if (next === GameState.Playing) {
-      this.statusText = "Playing";
-    } else if (next === GameState.Paused) {
-      this.statusText = "Paused";
-    } else if (next === GameState.DefeatPending) {
-      this.statusText = "Base breached";
-    } else if (next === GameState.Won) {
-      this.statusText = "Level secured";
-    } else if (next === GameState.CampaignWon) {
-      this.statusText = "Campaign complete";
-    } else if (next === GameState.Lost) {
-      this.statusText = "Base overrun";
-    } else {
-      this.statusText = "Select a map";
-    }
     this.requestHudSync();
   }
 

@@ -12,7 +12,7 @@ Key paths:
 - Desktop/mobile runtime profiles: `src/game-profile.ts`
 - Frame backlog/substep policy: `src/simulation-timing.ts`
 - Browser HUD/modal view-models: `src/game-view.ts`
-- Browser banner text derivation: `src/banner-text.ts`
+- Browser banner text derivation: `src/game-view.ts`
 - Browser simulation engine: `src/game-engine.ts`
 - Browser level runtime state: `src/level-runtime.ts`
 - Browser campaign progress persistence: `src/campaign-progress.ts`
@@ -72,13 +72,13 @@ Current code structure:
 - `src/entities/monsters/monster.ts` owns shared monster movement, damage, slow recovery, lifecycle outcome reporting, and health-bar rendering.
 - Concrete monster classes live under `src/entities/monsters/` and own monster-specific base stats, body rendering, and special behavior (`berserker` ramps speed as it loses health; `bulwark` mitigates incoming damage).
 - Projectile classes live under `src/entities/projectiles/`; import the exact base or concrete file (`projectile.ts`, `gun-projectile.ts`, `drone-projectile.ts`, `missile.ts`, or `drone.ts`) rather than adding a barrel.
-- Effect classes live under `src/entities/effects/`; import the concrete effect file directly.
-- Shared entity drawing helpers currently live in `src/entities/drone-visuals.ts` and `src/entities/monsters/tank-turret-rendering.ts`; keep them narrow and colocated with the entities that use them.
+- General effect classes live under `src/entities/effects/`; import the concrete effect file directly.
+- Shared and entity-specific drawing helpers currently live in `src/entities/drone-visuals.ts` and `src/entities/monsters/tank-effects.ts`; the tank module also owns its track and detached-turret particles. Keep these helpers narrow and colocated with the entities that use them.
 - Tower classes live under `src/entities/towers/`; `Tower` in `tower.ts` owns shared targeting/upgrade/selection behavior.
 - `src/entities/towers/tower-registry.ts` is the source of truth for tower class lookup, keyboard shortcuts, and tower preview instances used by the Svelte toolbar.
 - Towers, projectiles, drones, monsters, and presentation effects update through `UpdateContext`; gameplay entities report additions and lifecycle outcomes through `UpdateResult`. Do not give them a `Game` dependency when the context/result boundary is sufficient.
 - `src/campaign.ts` turns the ten authored routes into the campaign.
-- `src/banner-text.ts` and `src/game-view.ts` derive presentation data; keep text/formatting policy out of Svelte components and the renderer where practical.
+- `src/game-view.ts` derives banner, HUD, and modal presentation data; keep text/formatting policy out of Svelte components and the renderer where practical.
 - `src/types.ts` is the source of truth for shared browser types such as `TowerKind`, `MonsterKind`, `GameState`, `Point`, `LevelData`, `WaveData`, and `HudSnapshot`.
 - `src/constants.ts` and `src/utils.ts` are shared by the active runtime, so prefer reusing those helpers instead of re-declaring gameplay constants or math utilities.
 - `src/entities.ts`, `src/entities/monsters.ts`, `src/entities/projectiles.ts`, and `src/entities/effects.ts` have been removed; do not recreate monolithic entity files or barrel files unless there is a clear payoff.

@@ -1,5 +1,3 @@
-import { TankTurretParticle } from "../effects/tank-turret-particle";
-import { TankTrackPrintParticle } from "../effects/tank-track-print-particle";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { AudioCue, type Point } from "../../types";
@@ -7,7 +5,7 @@ import { easeInOutCubic, randomRange } from "../../utils";
 import { createPolygonShardParticles, rotatePoint } from "./death-effect-helpers";
 import { Monster } from "./monster";
 import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
-import { drawTankTurret, getTankTurretCenterOffsetX } from "./tank-turret-rendering";
+import { drawTankTurret, getTankTurretCenterOffsetX, TankTrackPrintParticle, TankTurretParticle } from "./tank-effects";
 
 const COLOR = "#9fb6ff";
 const SPEED_PER_SECOND = 41;

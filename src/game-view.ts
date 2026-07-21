@@ -1,4 +1,3 @@
-import { createBannerText } from "./banner-text";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { TOWER_CLASSES, getTowerClass } from "./entities/towers/tower-registry";
 import { formatMoney } from "./utils";
@@ -85,6 +84,32 @@ function createAffordableTowers(money: number): Record<TowerKind, boolean> {
     affordableTowers[towerClass.kind] = money >= towerClass.baseCost;
   }
   return affordableTowers;
+}
+
+function createBannerText(game: Game): string {
+  const activeWave = game.runtime.activeWave;
+
+  if (game.state === GameState.Playing && activeWave && game.runtime.spawnDelay > 0) {
+    return `NEXT WAVE IN ${Math.ceil(game.runtime.spawnDelay)}`;
+  }
+
+  if (game.state === GameState.Won || game.state === GameState.CampaignWon || game.state === GameState.Lost) {
+    return "";
+  }
+
+  if (game.bannerTimer > 0) {
+    return game.bannerText;
+  }
+
+  if (game.state === GameState.Menu) {
+    return "Awaiting orders";
+  }
+
+  if (game.state === GameState.Paused) {
+    return "Paused";
+  }
+
+  return game.state === GameState.DefeatPending ? "Base breached" : "";
 }
 
 export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = INITIAL_RUNTIME_HUD_STATS): HudSnapshot {
