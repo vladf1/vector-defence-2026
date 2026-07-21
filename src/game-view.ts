@@ -1,6 +1,5 @@
 import { LaserTower } from "./entities/towers/laser-tower";
 import { TOWER_CLASSES, getTowerClass } from "./entities/towers/tower-registry";
-import { formatMoney } from "./utils";
 import type { Game } from "./game-engine";
 import {
   GameState,
@@ -28,16 +27,11 @@ export const INITIAL_RUNTIME_HUD_STATS: RuntimeHudStats = {
 };
 
 export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
-  levelName: "Campaign Map",
-  money: formatMoney(0),
-  wave: "Idle",
-  monsters: "",
+  money: 0,
+  waveTotal: 0,
   banner: "Awaiting orders",
-  selectionTitle: "",
-  selectionBody: "Select a tower to view upgrades, range, and sell value.",
-  mobileSelectionBody: "Select a tower to view upgrades, range, and sell value.",
-  upgradeActionLabel: "Upgrade",
-  sellActionLabel: "Sell",
+  selectionName: "",
+  selectionSummary: "",
   upgradeDisabled: true,
   upgradeUnaffordable: false,
   hasSelectedTower: false,
@@ -118,41 +112,27 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
   const selected = runtime.selectedTower;
   const activeWave = runtime.activeWave;
   const battleActionsDisabled = !game.canPerformBattleAction();
-  const levelName = currentLevel
-    ? `Level ${currentLevel.levelNumber ?? "?"}`
-    : "Campaign Map";
-  const wave = currentLevel
-    ? (activeWave
-        ? (game.profile.mode === "desktop"
-            ? `${runtime.currentWaveIndex + 1} of ${runtime.waveTotal}`
-            : game.state === GameState.Playing && runtime.spawnDelay > 0
-            ? `${runtime.currentWaveIndex + 1}/${runtime.waveTotal}`
-            : `${runtime.currentWaveIndex + 1}/${runtime.waveTotal} · ${Math.min(runtime.waveSpawnedMonsters, activeWave.count)}/${activeWave.count}`)
-        : "")
-    : "Idle";
-  const monsters = activeWave
-    ? `${Math.min(runtime.waveSpawnedMonsters, activeWave.count)} of ${activeWave.count}`
-    : "";
   const banner = createBannerText(game);
 
-  let selectionTitle = "";
-  let selectionBody = "Select a tower to view upgrades, range, and sell value.";
-  let mobileSelectionBody = selectionBody;
-  let upgradeActionLabel = "Upgrade";
-  let sellActionLabel = "Sell";
+  let selectionName = "";
+  let selectionLevel: number | undefined;
+  let selectionRange: number | undefined;
+  let selectionSummary = "";
+  let placementCost: number | undefined;
+  let upgradeCost: number | undefined;
+  let sellValue: number | undefined;
 
   if (selected) {
-    const rangeLabel = `Range ${Math.round(selected.range)}`;
-    selectionTitle = `${getTowerClass(selected.kind).label} Tower · Level ${selected.level + 1} · ${rangeLabel}`;
-    selectionBody = "";
-    mobileSelectionBody = `Level ${selected.level + 1} · ${rangeLabel}`;
-    upgradeActionLabel = selected.canUpgrade() ? `Upgrade - ${formatMoney(selected.upgradeCost)}` : "Max";
-    sellActionLabel = `Sell - ${formatMoney(selected.resaleValue)}`;
+    selectionName = `${getTowerClass(selected.kind).label} Tower`;
+    selectionLevel = selected.level + 1;
+    selectionRange = selected.range;
+    upgradeCost = selected.canUpgrade() ? selected.upgradeCost : undefined;
+    sellValue = selected.resaleValue;
   } else if (runtime.placingTower) {
     const towerClass = getTowerClass(runtime.placingTower);
-    selectionTitle = `Placing ${towerClass.label} Tower`;
-    selectionBody = towerClass.summary;
-    mobileSelectionBody = `Tap field to build · ${formatMoney(towerClass.baseCost)}`;
+    selectionName = `Placing ${towerClass.label} Tower`;
+    selectionSummary = towerClass.summary;
+    placementCost = towerClass.baseCost;
   }
 
   const shotsTracked = runtime.projectiles.length + runtime.missiles.length + runtime.drones.length;
@@ -163,16 +143,20 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     && runtime.money < selected.upgradeCost;
 
   return {
-    levelName,
-    money: formatMoney(runtime.money),
-    wave,
-    monsters,
+    levelNumber: currentLevel?.levelNumber,
+    money: runtime.money,
+    waveCurrent: activeWave ? runtime.currentWaveIndex + 1 : undefined,
+    waveTotal: runtime.waveTotal,
+    waveMonstersSpawned: activeWave ? Math.min(runtime.waveSpawnedMonsters, activeWave.count) : undefined,
+    waveMonsterTotal: activeWave?.count,
     banner,
-    selectionTitle,
-    selectionBody,
-    mobileSelectionBody,
-    upgradeActionLabel,
-    sellActionLabel,
+    selectionName,
+    selectionLevel,
+    selectionRange,
+    selectionSummary,
+    placementCost,
+    upgradeCost,
+    sellValue,
     upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || battleActionsDisabled,
     upgradeUnaffordable,
     hasSelectedTower: selected !== undefined,

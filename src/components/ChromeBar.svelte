@@ -5,15 +5,19 @@
   import controlSoundMutedIcon from "../assets/ui/control-sound-muted.png";
   import controlSoundOnIcon from "../assets/ui/control-sound-on.png";
   import { getGameSessionContext } from "../game-context";
+  import { formatMoney } from "../utils";
 
   const session = getGameSessionContext();
   const { hud, soundEnabled } = session;
   const profile = session.profile;
 
-  function formatMobileWave(wave: string): string {
-    const [wavePart] = wave.split(" ");
-    const [currentWave, waveTotal] = wavePart.split("/");
-    return currentWave && waveTotal ? `${currentWave} of ${waveTotal}` : wave;
+  function formatLevel(levelNumber: number | undefined): string {
+    const value = levelNumber ?? "?";
+    return profile.mode === "mobile" ? `Level ${value}` : String(value);
+  }
+
+  function formatProgress(current: number | undefined, total: number | undefined): string {
+    return current === undefined || total === undefined ? "" : `${current} of ${total}`;
   }
 </script>
 
@@ -26,11 +30,11 @@
   {#if $hud.showStatusHud}
     <section class="hud">
       {#each [
-        { label: profile.mode === "mobile" ? "" : "Level", value: profile.mode === "mobile" ? $hud.levelName : $hud.levelName.replace("Level ", ""), className: "level-stat" },
-        { label: profile.mode === "mobile" ? "" : "Money", value: $hud.money, className: "money-stat" },
-        { label: profile.mode === "mobile" ? "" : "Wave", value: profile.mode === "mobile" ? formatMobileWave($hud.wave) : $hud.wave, className: "wave-stat" },
-        ...(profile.mode === "mobile" || !$hud.monsters ? [] : [
-          { label: "Monsters", value: $hud.monsters, className: "monsters-stat" },
+        { label: profile.mode === "mobile" ? "" : "Level", value: formatLevel($hud.levelNumber), className: "level-stat" },
+        { label: profile.mode === "mobile" ? "" : "Money", value: formatMoney($hud.money), className: "money-stat" },
+        { label: profile.mode === "mobile" ? "" : "Wave", value: formatProgress($hud.waveCurrent, $hud.waveTotal), className: "wave-stat" },
+        ...(profile.mode === "mobile" || $hud.waveMonsterTotal === undefined ? [] : [
+          { label: "Monsters", value: formatProgress($hud.waveMonstersSpawned, $hud.waveMonsterTotal), className: "monsters-stat" },
         ]),
       ].filter((stat) => stat.value) as stat}
         <div class={`stat-card ${stat.className}`}>

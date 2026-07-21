@@ -94,16 +94,20 @@ export interface LevelJsonData {
 }
 
 export interface HudSnapshot {
-  levelName: string;
-  money: string;
-  wave: string;
-  monsters: string;
+  levelNumber?: number;
+  money: number;
+  waveCurrent?: number;
+  waveTotal: number;
+  waveMonstersSpawned?: number;
+  waveMonsterTotal?: number;
   banner: string;
-  selectionTitle: string;
-  selectionBody: string;
-  mobileSelectionBody: string;
-  upgradeActionLabel: string;
-  sellActionLabel: string;
+  selectionName: string;
+  selectionLevel?: number;
+  selectionRange?: number;
+  selectionSummary: string;
+  placementCost?: number;
+  upgradeCost?: number;
+  sellValue?: number;
   upgradeDisabled: boolean;
   upgradeUnaffordable: boolean;
   hasSelectedTower: boolean;
