@@ -430,11 +430,6 @@ textarea,
   font-size: 1.08rem;
 }
 
-.star-award > span {
-  color: var(--muted);
-  font-size: 0.88rem;
-}
-
 @keyframes star-pop {
   from {
     opacity: 0;
@@ -553,7 +548,8 @@ textarea,
 
 .level-card span,
 .tower-button span,
-.selection-copy span {
+.selection-copy span,
+.star-award > span {
   color: var(--muted);
   font-size: 0.88rem;
 }
@@ -684,17 +680,20 @@ textarea,
   background: linear-gradient(180deg, rgba(22, 18, 7, 0.98), rgba(58, 52, 19, 0.98) 48%, rgba(22, 18, 7, 0.98));
 }
 
-.tower-button.unaffordable {
+.tower-button.unaffordable,
+.action-button.unaffordable {
   border-color: rgba(255, 135, 124, 0.34);
   background: linear-gradient(180deg, rgba(5, 10, 8, 0.96), rgba(18, 27, 24, 0.92) 48%, rgba(5, 10, 8, 0.96));
 }
 
-.tower-button.unaffordable .tower-icon {
+.tower-button.unaffordable .tower-icon,
+.action-button.unaffordable > span[aria-hidden="true"] {
   opacity: 0.48;
   filter: grayscale(0.75);
 }
 
-.tower-button.unaffordable .tower-button-meta span {
+.tower-button.unaffordable .tower-button-meta span,
+.action-button.unaffordable .mobile-action-value {
   color: #ffb0a8;
 }
 
@@ -702,22 +701,8 @@ textarea,
   border-color: rgba(255, 227, 111, 0.58);
 }
 
-.action-button.unaffordable {
-  border-color: rgba(255, 135, 124, 0.34);
-  background: linear-gradient(180deg, rgba(5, 10, 8, 0.96), rgba(18, 27, 24, 0.92) 48%, rgba(5, 10, 8, 0.96));
-}
-
 .action-button.unaffordable:disabled {
   opacity: 1;
-}
-
-.action-button.unaffordable > span[aria-hidden="true"] {
-  opacity: 0.48;
-  filter: grayscale(0.75);
-}
-
-.action-button.unaffordable .mobile-action-value {
-  color: #ffb0a8;
 }
 
 .tower-button-meta {
@@ -820,10 +805,6 @@ textarea,
   min-width: 0;
 }
 
-.mobile-action-label {
-  display: none;
-}
-
 .mobile-shell .topbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -896,19 +877,25 @@ textarea,
 }
 
 @media (max-width: 680px) {
+  body {
+    padding: 10px;
+  }
+
   .topbar {
     display: grid;
+    flex-direction: column;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       "title actions"
       "hud hud";
-    align-items: center;
+    align-items: start;
     gap: 6px 10px;
   }
 
   .title-block {
     grid-area: title;
     min-width: 0;
+    align-items: start;
   }
 
   .actions {
@@ -923,6 +910,39 @@ textarea,
     justify-content: flex-start;
     flex-wrap: wrap;
     overflow: visible;
+    gap: 8px 12px;
+  }
+
+  .controls-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .tower-strip {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .tower-strip-card,
+  .tower-button,
+  .selection-card {
+    height: 72px;
+    min-height: 72px;
+  }
+
+  .wave-stat {
+    display: none;
+  }
+
+  .mobile-shell .wave-stat {
+    display: flex;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  #game {
+    width: 100%;
   }
 }
 
@@ -934,11 +954,6 @@ textarea,
   display: inline-block;
   font-size: 1.15rem;
   line-height: 1;
-}
-
-.action-placeholder {
-  visibility: hidden;
-  pointer-events: none;
 }
 
 .footnote {
@@ -1007,60 +1022,6 @@ textarea,
   .nerd-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 680px) {
-  body {
-    padding: 10px;
-  }
-
-  .controls-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-  }
-
-  .tower-strip {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .tower-strip-card,
-  .tower-button,
-  .selection-card {
-    height: 72px;
-    min-height: 72px;
-  }
-
-  .topbar {
-    align-items: start;
-    flex-direction: column;
-  }
-
-  .title-block {
-    align-items: start;
-  }
-
-  .hud {
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-  }
-
-  .wave-stat {
-    display: none;
-  }
-
-  .mobile-shell .wave-stat {
-    display: flex;
-  }
-
-  .actions {
-    flex-wrap: wrap;
-  }
-
-  #game {
-    width: 100%;
   }
 }
 
@@ -1168,19 +1129,12 @@ textarea,
   }
 
   .board-card {
-    min-height: 0;
     border-radius: 10px;
     box-shadow: none;
   }
 
   .board-frame {
-    height: 100%;
     border-radius: 9px;
-  }
-
-  .board-stage {
-    width: 100%;
-    max-width: 100%;
   }
 
   .modal {
@@ -1208,20 +1162,16 @@ textarea,
   }
 
   .modal-panel {
-    width: 100%;
     min-height: min-content;
-    max-height: none;
     padding: 16px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
-    overflow: visible;
     box-shadow: none;
     text-align: left;
   }
 
   .modal-panel.modal-sheet {
     width: 100%;
-    max-height: none;
     padding: 14px 14px max(14px, env(safe-area-inset-bottom));
     border-radius: 16px 16px 10px 10px;
     box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.42);
@@ -1304,10 +1254,7 @@ textarea,
   }
 
   .modal-panel.level-map-panel {
-    border: 0;
-    border-radius: 0;
     padding: 14px;
-    overflow: hidden;
   }
 
   .modal-panel h2 {
@@ -1402,19 +1349,10 @@ textarea,
     line-height: 1.22;
   }
 
-  .level-card > .level-stars {
-    min-height: 0;
-    line-height: 1;
-  }
-
   .level-stars span {
     color: rgba(255, 255, 255, 0.16);
     font-size: 0.82rem;
     line-height: 1;
-  }
-
-  .level-stars span.earned {
-    color: #ffe36f;
   }
 
   .level-card small {
@@ -1423,7 +1361,6 @@ textarea,
   }
 
   .level-pill {
-    position: static;
     padding: 0;
     border: 0;
     border-radius: 0;
@@ -1435,8 +1372,6 @@ textarea,
 
   .level-card.locked .level-pill {
     color: rgba(205, 220, 213, 0.58);
-    background: transparent;
-    border: 0;
   }
 
   .controls-grid {
@@ -1520,10 +1455,6 @@ textarea,
     font-size: 1.25rem;
   }
 
-  .mobile-selection-actions {
-    gap: 6px;
-  }
-
   .mobile-selection-actions .action-button {
     min-height: 38px;
     padding: 6px 8px;
@@ -1537,28 +1468,32 @@ textarea,
 }
 
 @media (hover: none) and (pointer: coarse), (max-width: 520px) {
-  .mobile-shell {
-    width: 100%;
-    height: calc(var(--app-viewport-height) - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
-    max-height: calc(var(--app-viewport-height) - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
-    grid-template-rows: auto minmax(0, 1fr) auto;
+  .shell.mobile-shell {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-template-areas: none;
     align-content: stretch;
     gap: 10px;
-    overflow: hidden;
+  }
+
+  .mobile-shell .topbar,
+  .mobile-shell .controls-grid {
+    flex: 0 0 auto;
   }
 
   .mobile-shell .board-card {
-    min-height: 0;
+    flex: 1 1 auto;
     align-self: stretch;
     border: 0;
     border-radius: 0;
     padding-top: 6px;
-    position: relative;
     background: transparent;
-    box-shadow: none;
   }
 
-  .mobile-shell .board-card::before {
+  .mobile-shell .board-card::before,
+  .mobile-shell .controls-grid::before {
     content: "";
     position: absolute;
     right: 0;
@@ -1571,13 +1506,11 @@ textarea,
   }
 
   .mobile-shell .board-frame {
-    height: 100%;
     background: #030806;
     border-radius: 0;
   }
 
   .mobile-shell .board-stage {
-    width: 100%;
     height: 100%;
     max-height: none;
     aspect-ratio: auto;
@@ -1611,24 +1544,10 @@ textarea,
     background: linear-gradient(180deg, rgba(11, 27, 20, 0.34), rgba(3, 8, 6, 0) 24px);
   }
 
-  .mobile-shell .controls-grid::before {
-    content: "";
-    position: absolute;
-    right: 0;
-    left: 0;
-    top: 0;
-    height: 1px;
-    pointer-events: none;
-    background: linear-gradient(90deg, rgba(158, 255, 210, 0.28), rgba(158, 255, 210, 0.34) 50%, rgba(158, 255, 210, 0.28));
-    box-shadow: 0 5px 18px rgba(58, 255, 171, 0.08);
-  }
-
   .mobile-shell .tower-strip {
     gap: var(--mobile-control-strip-gap);
-  }
-
-  .mobile-shell .controls-grid.selected-tower-controls {
-    grid-template-rows: var(--mobile-control-row-height) var(--mobile-control-button-height);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: none;
   }
 
   .mobile-shell .tower-strip-card {
@@ -1641,13 +1560,17 @@ textarea,
     min-height: var(--mobile-control-button-height);
   }
 
-  .mobile-shell .tower-button {
+  .mobile-shell .tower-button,
+  .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button {
     display: grid;
     grid-template-rows: var(--mobile-control-icon-row-height) var(--mobile-control-value-row-height);
     align-items: center;
     justify-content: center;
     justify-items: center;
     gap: var(--mobile-control-stack-gap);
+  }
+
+  .mobile-shell .tower-button {
     padding: var(--mobile-control-button-padding);
     border-radius: var(--mobile-control-button-radius);
   }
@@ -1682,7 +1605,6 @@ textarea,
   }
 
   .mobile-shell .selection-card {
-    display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(176px, 58%);
     grid-template-rows: 1fr;
     align-items: stretch;
@@ -1698,8 +1620,6 @@ textarea,
 
   .mobile-shell .selected-tower-controls .selection-card {
     grid-template-columns: minmax(0, 1fr) minmax(152px, 46vw);
-    grid-template-rows: 1fr;
-    column-gap: 8px;
   }
 
   .mobile-shell .selection-header {
@@ -1709,11 +1629,7 @@ textarea,
   }
 
   .mobile-shell .selected-tower-controls .selection-header {
-    display: flex;
-    grid-column: 1;
     grid-row: 1;
-    align-self: center;
-    align-items: center;
     min-width: 0;
   }
 
@@ -1737,7 +1653,6 @@ textarea,
   }
 
   .mobile-shell .selected-tower-controls .selection-copy {
-    align-content: center;
     gap: 2px;
   }
 
@@ -1755,11 +1670,6 @@ textarea,
     -webkit-line-clamp: unset;
   }
 
-  .mobile-shell .selected-tower-controls .selection-copy span {
-    font-size: 0.8rem;
-    line-height: 1.15;
-  }
-
   .mobile-shell .idle-selection-card .selection-copy strong {
     color: rgba(235, 255, 244, 0.9);
   }
@@ -1770,7 +1680,6 @@ textarea,
 
   .mobile-shell .mobile-selection-actions {
     grid-column: 2;
-    display: flex;
     gap: 6px;
     align-items: stretch;
     min-width: 0;
@@ -1782,15 +1691,10 @@ textarea,
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions {
-    grid-column: 2;
     grid-row: 1;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
-    height: var(--mobile-control-button-height);
-    width: 100%;
-    justify-self: end;
-    align-self: center;
     position: relative;
     z-index: 2;
     overflow: hidden;
@@ -1809,15 +1713,7 @@ textarea,
   }
 
   .mobile-shell .selected-tower-controls .mobile-selection-actions .action-button {
-    display: grid;
-    grid-template-rows: var(--mobile-control-icon-row-height) var(--mobile-control-value-row-height);
-    align-items: center;
-    justify-content: center;
-    justify-items: center;
-    gap: var(--mobile-control-stack-gap);
     height: var(--mobile-control-button-height);
-    min-height: var(--mobile-control-button-height);
-    padding: var(--mobile-control-button-padding);
     border-radius: 0;
     font-size: 0.82rem;
   }
@@ -1870,10 +1766,6 @@ textarea,
     line-height: var(--mobile-control-value-row-height);
     white-space: nowrap;
     transform: translateY(var(--mobile-control-value-shift));
-  }
-
-  .mobile-shell .selected-tower-controls .action-button.unaffordable .mobile-action-value {
-    color: #ffb0a8;
   }
 }
 
@@ -1999,41 +1891,5 @@ textarea,
     min-height: 34px;
     padding: 4px 10px;
     font-size: 0.78rem;
-  }
-}
-
-@media (hover: none) and (pointer: coarse), (max-width: 520px) {
-  .mobile-shell {
-    display: flex;
-    flex-direction: column;
-    grid-template-columns: 1fr;
-    grid-template-rows: none;
-    grid-template-areas: none;
-  }
-
-  .mobile-shell .topbar,
-  .mobile-shell .board-card,
-  .mobile-shell .controls-grid {
-    grid-area: auto;
-  }
-
-  .mobile-shell .topbar,
-  .mobile-shell .controls-grid {
-    flex: 0 0 auto;
-  }
-
-  .mobile-shell .board-card {
-    flex: 1 1 auto;
-    align-self: stretch;
-  }
-
-  .mobile-shell .board-stage {
-    width: 100%;
-    height: 100%;
-  }
-
-  .mobile-shell .tower-strip {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    grid-template-rows: none;
   }
 }
