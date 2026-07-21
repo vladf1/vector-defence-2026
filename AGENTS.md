@@ -203,4 +203,4 @@ Maintenance preferences:
 - Avoid default parameter values in new code; make call sites pass behavior-affecting values explicitly.
 - When changing tower drawing code, run `npm run render:towers -- artifacts/<fresh-name>.png` and inspect the generated sheet before calling the visuals done.
 - When adding monsters, add a `MonsterKind` value, a concrete monster class, a `createBaseMonster(...)` branch in `src/game-engine/monster-factory.ts`, and campaign usage as needed.
-- When adding towers, add a `TowerKind` value and concrete tower class, then register the class in `TOWER_CLASSES` and a real preview instance in `TOWER_TOOLBAR_PREVIEWS`. `Game.createTower(...)` already resolves classes through the registry; do not add a kind switch there.
+- When adding towers, add a `TowerKind` value and concrete tower class, then add one `registerTower(...)` entry with any preview pose configuration. `TOWER_CLASSES` and `TOWER_TOOLBAR_PREVIEWS` are derived from that registration list. `Game.createTower(...)` already resolves classes through the registry; do not add a kind switch there.
