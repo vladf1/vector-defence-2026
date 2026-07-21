@@ -36,11 +36,11 @@ import {
 
 type BattleState = typeof GameState.Playing | typeof GameState.Paused;
 
-export function isBattleState(state: GameState): state is BattleState {
+function isBattleState(state: GameState): state is BattleState {
   return state === GameState.Playing || state === GameState.Paused;
 }
 
-export function isModalState(state: GameState): boolean {
+function isModalState(state: GameState): boolean {
   return state === GameState.Menu || state === GameState.Won || state === GameState.Lost || state === GameState.CampaignWon;
 }
 
