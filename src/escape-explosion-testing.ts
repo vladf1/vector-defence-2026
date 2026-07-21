@@ -1,12 +1,8 @@
-import { EscapeFragmentParticle } from "./entities/effects/escape-fragment-particle";
-import { HitRingEffect } from "./entities/effects/hit-ring-effect";
-import { SmokeParticle } from "./entities/effects/missile-explosion-effect";
 import type { Particle } from "./entities/effects/particle";
-import { ShockwaveEffect } from "./entities/effects/shockwave-effect";
 import type { Monster } from "./entities/monsters/monster";
+import { createEscapeBurstParticles, ESCAPE_BURST_CONFIG, type EscapeBurstConfig } from "./game-engine/combat-effects";
 import { LinearActiveCircleSweepCollisionIndex } from "./game-engine/collision-detection";
 import type { UpdateContext } from "./game-engine/update-context";
-import { randomRange } from "./utils";
 
 const EMPTY_MONSTER_COLLISION_INDEX = new LinearActiveCircleSweepCollisionIndex<Monster>([]);
 
@@ -80,20 +76,13 @@ const autoRepeatButton = autoRepeatTarget;
 const resetDefaultsButton = resetDefaultsTarget;
 const clearBurstsButton = clearBurstsTarget;
 
-interface BurstSettings {
-  largeFragments: number;
-  smallFragments: number;
-  smokeCount: number;
-  speedScale: number;
+interface BurstSettings extends EscapeBurstConfig {
   timeScale: number;
   zoomScale: number;
 }
 
 const DEFAULT_SETTINGS: BurstSettings = {
-  largeFragments: 58,
-  smallFragments: 30,
-  smokeCount: 18,
-  speedScale: 1,
+  ...ESCAPE_BURST_CONFIG,
   timeScale: 1,
   zoomScale: 1,
 };
@@ -103,7 +92,6 @@ const FIELD_HEIGHT = 450;
 const GRID_SPACING = 40;
 const MAX_DEVICE_PIXEL_RATIO = 2;
 const AUTO_REPEAT_SECONDS = 1.45;
-const COLORS = ["#b0ffe1", "#6df0c2", "#ffe36f", "#f4fff8", "#7fd7ff"];
 const ESCAPE_POINT = {
   x: 724,
   y: 350,
@@ -135,6 +123,7 @@ for (const slider of [
   slider.addEventListener("input", updateControlLabels);
 }
 
+applyDefaultSettings();
 resizeCanvas();
 updateControlLabels();
 triggerBurst();
@@ -230,64 +219,24 @@ function toggleAutoRepeat(): void {
 }
 
 function resetDefaults(): void {
+  applyDefaultSettings();
+  updateControlLabels();
+  clearBursts();
+  triggerBurst();
+}
+
+function applyDefaultSettings(): void {
   largeFragmentsSlider.value = String(DEFAULT_SETTINGS.largeFragments);
   smallFragmentsSlider.value = String(DEFAULT_SETTINGS.smallFragments);
   smokeCountSlider.value = String(DEFAULT_SETTINGS.smokeCount);
   burstSpeedSlider.value = String(DEFAULT_SETTINGS.speedScale);
   timeScaleSlider.value = String(DEFAULT_SETTINGS.timeScale);
   zoomScaleSlider.value = String(DEFAULT_SETTINGS.zoomScale);
-  updateControlLabels();
-  clearBursts();
-  triggerBurst();
 }
 
 function clearBursts(): void {
   particles = [];
   updateReadout();
-}
-
-function createEscapeBurstParticles(x: number, y: number, settings: BurstSettings): Particle[] {
-  const burstParticles: Particle[] = [
-    new ShockwaveEffect(x, y, 1.45),
-    new HitRingEffect(x, y, "#b0ffe1", 24),
-    new HitRingEffect(x, y, "#ffe36f", 12),
-  ];
-
-  for (let index = 0; index < settings.largeFragments; index += 1) {
-    burstParticles.push(new EscapeFragmentParticle(
-      x,
-      y,
-      getRandomColor(),
-      randomRange(-Math.PI, Math.PI),
-      randomRange(185, 500) * settings.speedScale,
-      randomRange(5.5, 13),
-      randomRange(2.4, 5.2),
-      randomRange(3, 9),
-    ));
-  }
-
-  for (let index = 0; index < settings.smallFragments; index += 1) {
-    burstParticles.push(new EscapeFragmentParticle(
-      x,
-      y,
-      getRandomColor(),
-      randomRange(-Math.PI, Math.PI),
-      randomRange(260, 620) * settings.speedScale,
-      randomRange(2.8, 6.8),
-      randomRange(1.1, 2.6),
-      randomRange(2, 11),
-    ));
-  }
-
-  for (let index = 0; index < settings.smokeCount; index += 1) {
-    burstParticles.push(new SmokeParticle(x, y, randomRange(-Math.PI, Math.PI), 2));
-  }
-
-  return burstParticles;
-}
-
-function getRandomColor(): string {
-  return COLORS[Math.floor(randomRange(0, COLORS.length))] ?? "#b0ffe1";
 }
 
 function updateParticles(deltaSeconds: number): void {

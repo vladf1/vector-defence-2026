@@ -182,7 +182,7 @@ Monster explosion testing showcase:
 Escape explosion testing showcase:
 
 - `escape-explosion.html` is a separate desktop-only lab for tuning escape burst particle geometry and motion.
-- Its behavior lives in `src/escape-explosion-testing.ts`; keep it isolated from the main bundle unless deliberately promoting a change into `src/game-engine/combat-effects.ts`.
+- Its behavior lives in `src/escape-explosion-testing.ts`; it uses the production `createEscapeBurstParticles(...)` recipe and `ESCAPE_BURST_CONFIG` from `src/game-engine/combat-effects.ts`, passing slider-derived overrides for lab tuning while keeping lab UI and animation code out of the main bundle.
 - Both animation labs pause while the document is hidden and resume without accumulating a large background-tab delta.
 - The production build emits `escape-explosion.html` as its own Rollup entry alongside the main app, soundboard, and monster explosion lab.
 

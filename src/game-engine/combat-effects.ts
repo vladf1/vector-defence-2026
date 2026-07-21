@@ -5,6 +5,22 @@ import { Particle } from "../entities/effects/particle";
 import { ShockwaveEffect } from "../entities/effects/shockwave-effect";
 import { randomRange } from "../utils";
 
+export interface EscapeBurstConfig {
+  readonly largeFragments: number;
+  readonly smallFragments: number;
+  readonly smokeCount: number;
+  readonly speedScale: number;
+}
+
+export const ESCAPE_BURST_CONFIG: EscapeBurstConfig = {
+  largeFragments: 58,
+  smallFragments: 30,
+  smokeCount: 18,
+  speedScale: 1,
+};
+
+const ESCAPE_BURST_COLORS = ["#b0ffe1", "#6df0c2", "#ffe36f", "#f4fff8", "#7fd7ff"];
+
 export function createHitImpactParticles(x: number, y: number, color: string, sparkAngle?: number): Particle[] {
   const particles: Particle[] = [
     new HitRingEffect(x, y, color, randomRange(5.5, 9)),
@@ -50,44 +66,47 @@ export function createMissileExplosionParticles(x: number, y: number, blastAngle
   return particles;
 }
 
-export function createEscapeBurstParticles(x: number, y: number): Particle[] {
+export function createEscapeBurstParticles(x: number, y: number, config: EscapeBurstConfig): Particle[] {
   const particles: Particle[] = [
     new ShockwaveEffect(x, y, 1.45),
     new HitRingEffect(x, y, "#b0ffe1", 24),
     new HitRingEffect(x, y, "#ffe36f", 12),
   ];
 
-  const colors = ["#b0ffe1", "#6df0c2", "#ffe36f", "#f4fff8", "#7fd7ff"];
-  for (let index = 0; index < 58; index += 1) {
-    const color = colors[Math.floor(randomRange(0, colors.length))] ?? "#b0ffe1";
+  for (let index = 0; index < config.largeFragments; index += 1) {
+    const color = getRandomEscapeBurstColor();
     particles.push(new EscapeFragmentParticle(
       x,
       y,
       color,
       randomRange(-Math.PI, Math.PI),
-      randomRange(185, 500),
+      randomRange(185, 500) * config.speedScale,
       randomRange(5.5, 13),
       randomRange(2.4, 5.2),
       randomRange(3, 9),
     ));
   }
 
-  for (let index = 0; index < 30; index += 1) {
-    const color = colors[Math.floor(randomRange(0, colors.length))] ?? "#b0ffe1";
+  for (let index = 0; index < config.smallFragments; index += 1) {
+    const color = getRandomEscapeBurstColor();
     particles.push(new EscapeFragmentParticle(
       x,
       y,
       color,
       randomRange(-Math.PI, Math.PI),
-      randomRange(260, 620),
+      randomRange(260, 620) * config.speedScale,
       randomRange(2.8, 6.8),
       randomRange(1.1, 2.6),
       randomRange(2, 11),
     ));
   }
 
-  for (let index = 0; index < 18; index += 1) {
+  for (let index = 0; index < config.smokeCount; index += 1) {
     particles.push(new SmokeParticle(x, y, randomRange(-Math.PI, Math.PI), 2));
   }
   return particles;
+}
+
+function getRandomEscapeBurstColor(): string {
+  return ESCAPE_BURST_COLORS[Math.floor(randomRange(0, ESCAPE_BURST_COLORS.length))] ?? "#b0ffe1";
 }

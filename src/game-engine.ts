@@ -4,7 +4,7 @@ import { createCampaignLevels } from "./campaign";
 import type { CampaignProgressStore } from "./campaign-progress";
 import { GameMode, type GameMode as GameModeValue, type GameProfile } from "./game-profile";
 import type { GameAudio } from "./game-audio";
-import { createEscapeBurstParticles } from "./game-engine/combat-effects";
+import { createEscapeBurstParticles, ESCAPE_BURST_CONFIG } from "./game-engine/combat-effects";
 import { ActiveCircleSweepCollisionIndex } from "./game-engine/collision-detection";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
@@ -386,7 +386,7 @@ export class Game {
   }
 
   onMonsterEscaped(monster: Monster, result: UpdateResult): void {
-    for (const particle of createEscapeBurstParticles(monster.x, monster.y)) {
+    for (const particle of createEscapeBurstParticles(monster.x, monster.y, ESCAPE_BURST_CONFIG)) {
       result.addParticle(particle);
     }
     result.playSound(AudioCue.EscapeBurst, monster.x);
