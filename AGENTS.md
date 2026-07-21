@@ -62,7 +62,7 @@ Current code structure:
 - `src/campaign-progress.ts` owns campaign unlock/star persistence through `localStorage`, with an in-memory fallback when browser storage is unavailable.
 - `src/game-engine/update-context.ts` defines the per-update read model and the `UpdateResult` accumulator through which monsters, towers, projectiles, and drones report lifecycle outcomes, spawned entities, presentation effects, and sounds.
 - `src/game-engine/collision-detection.ts` owns the active-monster swept-collision index plus its linear comparison implementation.
-- `src/game-engine/monster-factory.ts` owns monster class lookup, level hit-point scaling, and splitter child creation.
+- `src/game-engine/monster-factory.ts` owns monster class lookup, level hit-point scaling, and splitter child creation through explicit speed-scale and level-index inputs; it does not depend on `Game`.
 - `src/game-engine/combat-effects.ts` owns shared hit, laser, missile, and escape particle construction. Monster polygon breakup lives in `src/entities/monsters/death-effect-helpers.ts` and `src/entities/monsters/polygon-shard-splitter.ts`.
 - `src/placement-rules.ts` owns tower placement geometry and board hit-testing through explicit route/tower inputs; it should not import `Game`.
 - `src/route-path.ts` owns route drawing commands plus the sampled motion path entries used by monster movement.

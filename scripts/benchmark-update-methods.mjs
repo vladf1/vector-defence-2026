@@ -251,7 +251,12 @@ const html = String.raw`
         ];
         for (let index = 0; index < config.monsterCount; index += 1) {
           const distance = 12 + ((routeLength - 36) * ((index % config.monsterCount) / config.monsterCount));
-          const monster = createMonster(game, monsterKinds[index % monsterKinds.length], createPathEntriesFromDistance(routePath.entries, distance));
+          const monster = createMonster(
+            monsterKinds[index % monsterKinds.length],
+            createPathEntriesFromDistance(routePath.entries, distance),
+            game.profile.monsterSpeedScale,
+            game.currentLevelIndex,
+          );
           makeBenchmarkMonsterDurable(monster);
           game.runtime.monsters.push(monster);
         }
@@ -302,7 +307,12 @@ const html = String.raw`
         while (game.runtime.monsters.length < count) {
           const index = game.runtime.monsters.length;
           const distance = 18 + ((routeLength - 48) * ((index % count) / count));
-          const monster = createMonster(game, kinds[index % kinds.length], createPathEntriesFromDistance(routePath.entries, distance));
+          const monster = createMonster(
+            kinds[index % kinds.length],
+            createPathEntriesFromDistance(routePath.entries, distance),
+            game.profile.monsterSpeedScale,
+            game.currentLevelIndex,
+          );
           makeBenchmarkMonsterDurable(monster);
           game.runtime.monsters.push(monster);
         }

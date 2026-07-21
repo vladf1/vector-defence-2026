@@ -360,7 +360,12 @@ export class Game {
     this.runtime.spawnIndex = (this.runtime.spawnIndex + 1) % sequence.length;
     this.runtime.spawnedMonsters += 1;
     this.runtime.waveSpawnedMonsters += 1;
-    this.runtime.monsters.push(createMonster(this, code, routePath.entries));
+    this.runtime.monsters.push(createMonster(
+      code,
+      routePath.entries,
+      this.profile.monsterSpeedScale,
+      this.currentLevelIndex,
+    ));
   }
 
   onMonsterKilled(monster: Monster, result: UpdateResult): void {
@@ -374,7 +379,7 @@ export class Game {
       return;
     }
 
-    for (const child of createSplitterChildren(this, monster)) {
+    for (const child of createSplitterChildren(monster, this.profile.monsterSpeedScale, this.currentLevelIndex)) {
       this.runtime.monsters.push(child);
     }
     this.playSound(AudioCue.SplitterBurst, monster.x);

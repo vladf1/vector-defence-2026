@@ -1,4 +1,3 @@
-import type { Game } from "../game-engine";
 import { PackManMonster } from "../entities/monsters/packman-monster";
 import { BerserkerMonster } from "../entities/monsters/berserker-monster";
 import { BulwarkMonster } from "../entities/monsters/bulwark-monster";
@@ -16,15 +15,15 @@ const MIN_SPLITTER_CHILD_OFFSET_DISTANCE = 10;
 const MAX_SPLITTER_CHILD_OFFSET_DISTANCE = 18;
 const HIT_POINT_BONUS_PER_LEVEL = 0.06;
 
-export function createMonster(game: Game, kind: MonsterKind, path: PathEntry[]): Monster {
-  const monster = createBaseMonster(kind, path, game.profile.monsterSpeedScale);
-  const levelHitPointMultiplier = getLevelHitPointMultiplier(game);
+export function createMonster(kind: MonsterKind, path: PathEntry[], speedScale: number, levelIndex: number): Monster {
+  const monster = createBaseMonster(kind, path, speedScale);
+  const levelHitPointMultiplier = getLevelHitPointMultiplier(levelIndex);
   monster.hitPoints *= levelHitPointMultiplier;
   monster.maxHitPoints *= levelHitPointMultiplier;
   return monster;
 }
 
-export function createSplitterChildren(game: Game, monster: Monster): Monster[] {
+export function createSplitterChildren(monster: Monster, speedScale: number, levelIndex: number): Monster[] {
   const children: Monster[] = [];
   const childCount = 2;
   const splitAngle = monster.angle;
@@ -35,7 +34,7 @@ export function createSplitterChildren(game: Game, monster: Monster): Monster[] 
   for (let index = 0; index < childCount; index += 1) {
     const spawnDistance = monster.distanceAlongPath + createSplitterChildPathOffset(monster.distanceAlongPath, pathLength, index);
     const childPath = createPathEntriesFromDistance(monster.path, spawnDistance);
-    const child = createMonster(game, MonsterKind.Runner, childPath);
+    const child = createMonster(MonsterKind.Runner, childPath, speedScale, levelIndex);
     const speedMultiplier = randomRange(minSpeedMultiplier, maxSpeedMultiplier);
     child.angle = splitAngle + randomRange(-0.12, 0.12);
     child.maxSpeedPerSecond *= speedMultiplier;
@@ -96,7 +95,7 @@ function createBaseMonster(kind: MonsterKind, path: PathEntry[], speedScale: num
   }
 }
 
-function getLevelHitPointMultiplier(game: Game): number {
-  const levelOffset = Math.max(0, game.currentLevelIndex);
+function getLevelHitPointMultiplier(levelIndex: number): number {
+  const levelOffset = Math.max(0, levelIndex);
   return 1 + (levelOffset * HIT_POINT_BONUS_PER_LEVEL);
 }
