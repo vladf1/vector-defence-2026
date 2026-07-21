@@ -1,6 +1,7 @@
+import { AudioCue } from "../../audio-manifest";
 import { createLaserImpactParticles } from "../../game-engine/combat-effects";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
-import { AudioCue, type Point, TowerKind } from "../../types";
+import { type Point, TowerKind } from "../../types";
 import { angleBetween, closestPointOnSegment, isWithinDistanceToSegment, randomRange, turnAngleTowards, withinDistance } from "../../utils";
 import { Tower } from "./tower";
 

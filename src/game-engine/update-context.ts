@@ -1,10 +1,10 @@
+import type { AudioCue as AudioCueValue } from "../audio-manifest";
 import type { Particle } from "../entities/effects/particle";
 import type { Monster } from "../entities/monsters/monster";
 import type { Drone } from "../entities/projectiles/drone";
 import type { Missile } from "../entities/projectiles/missile";
 import type { Projectile } from "../entities/projectiles/projectile";
 import type { RuntimeLinkEffect } from "../level-runtime";
-import type { AudioCue as AudioCueValue } from "../types";
 import type { ActiveCircleSweepCollisionQuery } from "./collision-detection";
 
 export interface UpdateContext {

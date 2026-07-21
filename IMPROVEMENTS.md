@@ -482,10 +482,14 @@ Useful future extractions are wave/spawn orchestration, lifecycle resolution,
 and input gesture state. Avoid splitting `game-engine.ts`, `game-session.ts`,
 or `style.css` solely to reduce line count.
 
-### 39. [ ] Generate duplicated audio metadata
+### 39. [x] Generate duplicated audio metadata
 
-The soundboard inventory can drift from the TypeScript audio registry. Generate
-both from one manifest or shared data source.
+Completed 2026-07-20. `src/audio-manifest.ts` now owns each cue's ID,
+soundboard label, imported asset URL, cooldown, gain, and rate variation. The
+game audio loader reads URLs directly from the cue definitions, and the
+soundboard generates its 31 audio elements and buttons from the same manifest.
+Local and Pages builds pass; a live browser smoke confirmed 31 unique cues,
+successful asset requests, and working click playback state.
 
 ### 40. [ ] Update stale documentation
 

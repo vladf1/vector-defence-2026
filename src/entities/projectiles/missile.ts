@@ -1,6 +1,6 @@
+import { AudioCue } from "../../audio-manifest";
 import { createMissileExplosionParticles } from "../../game-engine/combat-effects";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
-import { AudioCue } from "../../types";
 import type { Point } from "../../types";
 import { angleBetween, calculateDistance, clamp, isOutsideBounds, randomRange, turnAngleTowards } from "../../utils";
 import { Particle } from "../effects/particle";

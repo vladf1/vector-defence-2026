@@ -1,3 +1,4 @@
+import { AudioCue } from "./audio-manifest";
 import { findTowerShortcut } from "./entities/towers/tower-registry";
 import { createBrowserCampaignProgressStore } from "./campaign-progress";
 import { type GameProfile } from "./game-profile";
@@ -16,7 +17,7 @@ import {
   performModalAction,
   type RuntimeHudStats,
 } from "./game-view";
-import { AudioCue, type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
+import { type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
 import { readonly, writable } from "svelte/store";
 
 const NERD_STATS_SAMPLE_MS = 500;

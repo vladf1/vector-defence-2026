@@ -1,5 +1,6 @@
+import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
-import { AudioCue, TowerKind } from "../../types";
+import { TowerKind } from "../../types";
 import { angleBetween, randomRange, turnAngleTowards } from "../../utils";
 import { Missile } from "../projectiles/missile";
 import { Tower } from "./tower";

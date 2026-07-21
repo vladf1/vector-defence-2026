@@ -1,7 +1,7 @@
 import { GlassShardParticle } from "../effects/glass-shard-particle";
+import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
-import { AudioCue } from "../../types";
 import { drawPath, hexWithAlpha, randomRange } from "../../utils";
 import { createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster } from "./monster";

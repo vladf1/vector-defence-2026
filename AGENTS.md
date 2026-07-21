@@ -22,7 +22,7 @@ Key paths:
 - Browser gameplay entities: `src/entities/`
 - Browser gameplay engine helpers: `src/game-engine/`
 - Browser audio orchestration: `src/game-audio.ts`
-- Browser audio URL registry: `src/audio-assets.ts`
+- Browser audio cue manifest: `src/audio-manifest.ts`
 - Tower metadata/shortcuts/previews: `src/entities/towers/tower-registry.ts`
 - Browser campaign builder: `src/campaign.ts`
 - Shared browser types: `src/types.ts`
@@ -189,7 +189,7 @@ Escape explosion testing showcase:
 Audio assets:
 
 - The committed `.m4a` files in `src/assets/audio/` are the source of truth for game sound effects.
-- `AudioCue` metadata lives in `src/types.ts`, while `src/audio-assets.ts` maps cue IDs to imported asset URLs. `soundboard.html` maintains a separate inspection inventory, so update all three when adding or removing a cue.
+- `src/audio-manifest.ts` is the single source of truth for cue IDs, soundboard labels, imported asset URLs, cooldowns, gain, and rate variation. `src/game-audio.ts` and `soundboard.html` both consume that manifest.
 - `src/game-audio.ts` owns Web Audio loading, retryable buffer caching, cooldowns, panning, playback, and `AudioBufferSourceNode.onended` cleanup. Keep rejected loads recoverable and do not queue repeated transient playbacks behind one unresolved load.
 - Audio sources are documented in `src/assets/audio/README.md` at the source-pack level.
 - When replacing audio, overwrite the relevant `.m4a` files directly, keep the source-pack documentation current, and verify the soundboard/build before committing.

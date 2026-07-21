@@ -1,6 +1,7 @@
+import { AudioCue } from "../../audio-manifest";
 import { TOWER_RADIUS } from "../../constants";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
-import { AudioCue, TowerKind } from "../../types";
+import { TowerKind } from "../../types";
 import { DRONE_ACCENT_COLORS } from "../drone-visuals";
 import { Drone } from "../projectiles/drone";
 import { Tower } from "./tower";

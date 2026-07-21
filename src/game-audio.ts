@@ -1,9 +1,5 @@
-import { AUDIO_ASSET_URLS } from "./audio-assets";
+import { AudioCue, type AudioCue as AudioCueValue } from "./audio-manifest";
 import { FIELD_WIDTH } from "./constants";
-import {
-  AudioCue,
-  type AudioCue as AudioCueValue,
-} from "./types";
 import { clamp } from "./utils";
 
 interface AudioCueOptions {
@@ -164,7 +160,7 @@ export class GameAudio {
       return cachedPromise;
     }
 
-    const bufferPromise = fetch(AUDIO_ASSET_URLS[cue.id])
+    const bufferPromise = fetch(cue.url)
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Unable to load audio asset ${cue.id}: ${response.status}`);

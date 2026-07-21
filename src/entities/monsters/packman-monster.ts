@@ -1,6 +1,7 @@
+import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
-import { AudioCue, type Point } from "../../types";
+import type { Point } from "../../types";
 import { easeInOutCubic, easeInOutSine, randomRange } from "../../utils";
 import { createPolygonShardParticles, pointOnRadius } from "./death-effect-helpers";
 import { Monster } from "./monster";

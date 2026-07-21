@@ -1,5 +1,6 @@
+import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
-import { AudioCue, TowerKind } from "../../types";
+import { TowerKind } from "../../types";
 import { withinDistance } from "../../utils";
 import { LightningLinkEffect } from "../effects/lightning-link-effect";
 import type { Monster } from "../monsters/monster";
