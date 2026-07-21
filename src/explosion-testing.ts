@@ -1,4 +1,3 @@
-import { GlassShardParticle } from "./entities/effects/glass-shard-particle";
 import type { Particle } from "./entities/effects/particle";
 import { PackManMonster } from "./entities/monsters/packman-monster";
 import { BerserkerMonster } from "./entities/monsters/berserker-monster";

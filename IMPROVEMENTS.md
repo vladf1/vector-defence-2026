@@ -238,17 +238,19 @@ route paths, polygon splitting, render geometry, and fixed-size visual arrays.
 Introduce focused `NonEmptyArray<T>` types and validation at data boundaries
 instead of broad non-null assertions.
 
-### 17. [ ] Adopt stricter TypeScript checks incrementally
+### 17. [~] Adopt stricter TypeScript checks incrementally
 
 Audit results:
 
-- `noUnusedLocals` / `noUnusedParameters`: 1 error.
+- `noUnusedLocals` / `noUnusedParameters`: enabled 2026-07-20 with zero
+  remaining violations; removed the unused `GlassShardParticle` import from
+  `src/explosion-testing.ts`.
 - `noUncheckedIndexedAccess`: 193 errors.
 - `exactOptionalPropertyTypes`: 31 errors.
 - `noImplicitOverride`: 11 errors.
 
-Enable unused checks first, then override checks and optional-property
-cleanup. Stage unchecked indexing after non-empty geometry types exist.
+Next, enable override checks and clean up optional-property handling. Stage
+unchecked indexing after non-empty geometry types exist.
 
 ### 18. [ ] Make runtime states explicit
 
