@@ -1,12 +1,7 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
-import { chromium } from "playwright";
-import { createServer } from "vite";
+import { repoRoot, runBrowserPage, waitForPageResult, writeDataUrlPng } from "./benchmark-browser-harness.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "..");
 const outputPath = path.resolve(repoRoot, process.argv[2] ?? "artifacts/tower-render.png");
 
 const html = String.raw`
@@ -260,49 +255,14 @@ const html = String.raw`
 </html>
 `;
 
-const server = await createServer({
-  root: repoRoot,
-  logLevel: "error",
-  server: {
-    host: "127.0.0.1",
-  },
-  plugins: [
-    {
-      name: "tower-renderer-page",
-      configureServer(viteServer) {
-        viteServer.middlewares.use("/__tower-renderer", (_request, response) => {
-          response.setHeader("Content-Type", "text/html; charset=utf-8");
-          response.end(html);
-        });
-      },
-    },
-  ],
-});
+const dataUrl = await runBrowserPage({
+  pluginName: "tower-renderer-page",
+  path: "/__tower-renderer",
+  html,
+  waitUntil: "networkidle",
+  viewport: { width: 920, height: 540 },
+  deviceScaleFactor: 2,
+}, (page) => waitForPageResult(page, "__towerRenderDataUrl", 5_000));
 
-let browser;
-try {
-  await server.listen(0);
-  const url = server.resolvedUrls.local[0];
-  browser = await launchChromium();
-  const page = await browser.newPage({ viewport: { width: 920, height: 540 }, deviceScaleFactor: 2 });
-  await page.goto(`${url}__tower-renderer`, { waitUntil: "networkidle" });
-  const dataUrl = await page.waitForFunction(() => window.__towerRenderDataUrl, undefined, { timeout: 5000 });
-  const pngBase64 = (await dataUrl.jsonValue()).replace(/^data:image\/png;base64,/, "");
-  await mkdir(path.dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, Buffer.from(pngBase64, "base64"));
-  console.log(outputPath);
-} finally {
-  await browser?.close();
-  await server.close();
-}
-
-async function launchChromium() {
-  try {
-    return await chromium.launch();
-  } catch (error) {
-    if (!String(error).includes("Executable doesn't exist")) {
-      throw error;
-    }
-    return chromium.launch({ channel: "chrome" });
-  }
-}
+await writeDataUrlPng(outputPath, dataUrl);
+console.log(outputPath);

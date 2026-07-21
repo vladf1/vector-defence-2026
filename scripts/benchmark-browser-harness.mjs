@@ -1,3 +1,4 @@
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -6,7 +7,7 @@ import { createServer } from "vite";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.resolve(__dirname, "..");
 
-export async function runBenchmarkPage(options) {
+export async function runBrowserPage(options, runPage) {
   const server = await createServer({
     root: repoRoot,
     logLevel: "error",
@@ -35,9 +36,6 @@ export async function runBenchmarkPage(options) {
       viewport: options.viewport ?? { width: 960, height: 540 },
       deviceScaleFactor: options.deviceScaleFactor ?? 1,
     });
-    page.on("pageerror", (error) => {
-      console.error(error);
-    });
     page.on("console", (message) => {
       if (options.forwardConsole) {
         console.log(message.text());
@@ -45,17 +43,39 @@ export async function runBenchmarkPage(options) {
     });
     const targetUrl = new URL(options.path.replace(/^\//, ""), url);
     targetUrl.search = options.query?.replace(/^\?/, "") ?? "";
-    await page.goto(targetUrl.href, { waitUntil: "domcontentloaded" });
-    const results = await page.waitForFunction(
-      () => window.__benchmarkResults,
-      null,
-      { timeout: options.timeoutMs ?? 120_000 },
-    );
-    return await results.jsonValue();
+    const pageError = new Promise((_resolve, reject) => {
+      page.once("pageerror", reject);
+    });
+    const pageWork = (async () => {
+      await page.goto(targetUrl.href, { waitUntil: options.waitUntil ?? "domcontentloaded" });
+      return runPage(page);
+    })();
+    return await Promise.race([pageWork, pageError]);
   } finally {
     await browser?.close();
     await server.close();
   }
+}
+
+export function runBenchmarkPage(options) {
+  return runBrowserPage(options, (page) => waitForPageResult(page, "__benchmarkResults", options.timeoutMs ?? 120_000));
+}
+
+export async function waitForPageResult(page, resultName, timeoutMs) {
+  const result = await page.waitForFunction((name) => window[name], resultName, { timeout: timeoutMs });
+  return result.jsonValue();
+}
+
+export async function writeDataUrlPng(outputPath, dataUrl) {
+  const pngBase64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, Buffer.from(pngBase64, "base64"));
+}
+
+export async function writeDataUrlPngMap(outputDir, dataUrls) {
+  await Promise.all(Object.entries(dataUrls).map(([filename, dataUrl]) =>
+    writeDataUrlPng(path.join(outputDir, `${filename}.png`), dataUrl),
+  ));
 }
 
 async function launchChromium() {

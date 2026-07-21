@@ -410,11 +410,15 @@ The explosion render script imports monster modules before replacing
 function, and their topology is not actually seeded. Inject a random source
 or seed before module initialization; avoid global `Math.random` mutation.
 
-### 29. [ ] Consolidate browser render harnesses
+### 29. [x] Consolidate browser render harnesses
 
-Tower, level, explosion, and polygon scripts duplicate temporary Vite and
-Playwright setup. Share port selection, Chromium fallback, console forwarding,
-timeouts, cleanup, and artifact handling.
+Completed 2026-07-20. The tower, level, berserker, monster-explosion, and
+polygon-shard renderers now use `scripts/benchmark-browser-harness.mjs` for
+temporary Vite pages, ephemeral ports, Chromium/installed-Chrome fallback,
+console and page-error handling, cleanup, result waiting, and PNG data-URL
+writing. All five renderers generated non-empty artifacts, representative
+outputs passed visual inspection, the focused draw benchmark passed through
+the same harness, and local and Pages builds pass.
 
 ### 30. [ ] Expose diagnostics through package scripts
 

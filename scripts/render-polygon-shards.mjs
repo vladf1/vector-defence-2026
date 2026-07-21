@@ -1,12 +1,6 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import process from "node:process";
-import { fileURLToPath } from "node:url";
-import { chromium } from "playwright";
-import { createServer } from "vite";
+import { repoRoot, runBrowserPage, waitForPageResult, writeDataUrlPngMap } from "./benchmark-browser-harness.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "..");
 const outputDir = path.resolve(repoRoot, "artifacts/polygon-shards");
 
 const html = String.raw`
@@ -505,49 +499,14 @@ const html = String.raw`
 </html>
 `;
 
-const server = await createServer({
-  root: repoRoot,
-  logLevel: "error",
-  server: {
-    host: "127.0.0.1",
-  },
-  plugins: [
-    {
-      name: "polygon-shard-renderer-page",
-      configureServer(viteServer) {
-        viteServer.middlewares.use("/__polygon-shard-renderer", (_request, response) => {
-          response.setHeader("Content-Type", "text/html; charset=utf-8");
-          response.end(html);
-        });
-      },
-    },
-  ],
-});
+const result = await runBrowserPage({
+  pluginName: "polygon-shard-renderer-page",
+  path: "/__polygon-shard-renderer",
+  html,
+  waitUntil: "networkidle",
+  viewport: { width: 1400, height: 920 },
+  deviceScaleFactor: 1,
+}, (page) => waitForPageResult(page, "__polygonShardRender", 15_000));
 
-let browser;
-try {
-  await server.listen(0);
-  const url = server.resolvedUrls.local[0];
-  browser = await chromium.launch();
-  const page = await browser.newPage({
-    viewport: { width: 1400, height: 920 },
-    deviceScaleFactor: 1,
-  });
-  page.on("pageerror", (error) => {
-    throw error;
-  });
-  await page.goto(`${url}__polygon-shard-renderer`, { waitUntil: "networkidle" });
-  const resultHandle = await page.waitForFunction(() => window.__polygonShardRender, undefined, { timeout: 15000 });
-  const result = await resultHandle.jsonValue();
-  await mkdir(outputDir, { recursive: true });
-
-  for (const [filename, dataUrl] of Object.entries(result)) {
-    const pngBase64 = dataUrl.replace(/^data:image\/png;base64,/, "");
-    await writeFile(path.join(outputDir, `${filename}.png`), Buffer.from(pngBase64, "base64"));
-  }
-
-  console.log(outputDir);
-} finally {
-  await browser?.close();
-  await server.close();
-}
+await writeDataUrlPngMap(outputDir, result);
+console.log(outputDir);

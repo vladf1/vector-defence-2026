@@ -1,12 +1,8 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
-import { chromium } from "playwright";
-import { createServer } from "vite";
+import { repoRoot, runBrowserPage, writeDataUrlPng } from "./benchmark-browser-harness.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "..");
 const outputDir = path.resolve(repoRoot, process.argv[2] ?? "artifacts/level-renders");
 
 const html = String.raw`
@@ -289,61 +285,32 @@ const html = String.raw`
 </html>
 `;
 
-const server = await createServer({
-  root: repoRoot,
-  logLevel: "error",
-  server: {
-    host: "127.0.0.1",
-  },
-  plugins: [
-    {
-      name: "level-renderer-page",
-      configureServer(viteServer) {
-        viteServer.middlewares.use("/__level-renderer", (_request, response) => {
-          response.setHeader("Content-Type", "text/html; charset=utf-8");
-          response.end(html);
-        });
-      },
-    },
-  ],
-});
-
-let browser;
-try {
-  await server.listen(0);
-  const url = server.resolvedUrls.local[0];
-  browser = await launchChromium();
-  const page = await browser.newPage({ viewport: { width: 1200, height: 900 }, deviceScaleFactor: 1 });
-  await page.goto(`${url}__level-renderer`, { waitUntil: "networkidle" });
-  await mkdir(outputDir, { recursive: true });
-
-  const summaries = [];
+const renderedLevels = await runBrowserPage({
+  pluginName: "level-renderer-page",
+  path: "/__level-renderer",
+  html,
+  waitUntil: "networkidle",
+  viewport: { width: 1200, height: 900 },
+  deviceScaleFactor: 1,
+}, async (page) => {
+  const results = [];
   for (const mode of ["desktop", "mobile"]) {
     const result = await page.evaluate((renderMode) => window.__levelRender.render(renderMode), mode);
-    const pngBase64 = result.dataUrl.replace(/^data:image\/png;base64,/, "");
-    const outputPath = path.join(outputDir, `${mode}.png`);
-    await writeFile(outputPath, Buffer.from(pngBase64, "base64"));
-    summaries.push({ mode, outputPath, metrics: result.metrics });
+    results.push({ mode, result });
   }
+  return results;
+});
 
-  const summaryPath = path.join(outputDir, "summary.json");
-  await writeFile(summaryPath, `${JSON.stringify(summaries, null, 2)}\n`);
-  console.log(summaryPath);
-  for (const summary of summaries) {
-    console.log(summary.outputPath);
-  }
-} finally {
-  await browser?.close();
-  await server.close();
+const summaries = [];
+for (const { mode, result } of renderedLevels) {
+  const outputPath = path.join(outputDir, `${mode}.png`);
+  await writeDataUrlPng(outputPath, result.dataUrl);
+  summaries.push({ mode, outputPath, metrics: result.metrics });
 }
 
-async function launchChromium() {
-  try {
-    return await chromium.launch();
-  } catch (error) {
-    if (!String(error).includes("Executable doesn't exist")) {
-      throw error;
-    }
-    return chromium.launch({ channel: "chrome" });
-  }
+const summaryPath = path.join(outputDir, "summary.json");
+await writeFile(summaryPath, `${JSON.stringify(summaries, null, 2)}\n`);
+console.log(summaryPath);
+for (const summary of summaries) {
+  console.log(summary.outputPath);
 }

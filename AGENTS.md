@@ -35,7 +35,7 @@ Key paths:
 - Tower render sheet script: `scripts/render-towers.mjs`
 - Level render sheet script: `scripts/render-levels.mjs`
 - Monster explosion render sheet script: `scripts/render-monster-explosions.mjs`
-- Browser benchmark harness: `scripts/benchmark-browser-harness.mjs`
+- Browser render/benchmark harness: `scripts/benchmark-browser-harness.mjs`
 - Monster explosion testing page: `explosions.html`
 - Monster explosion testing script: `src/explosion-testing.ts`
 - Escape explosion testing page: `escape-explosion.html`
@@ -170,7 +170,7 @@ Other render and benchmark tooling:
 - `npm run benchmark:death-effects` measures synchronous monster death-effect construction with seeded, resettable randomness.
 - `npm run benchmark:update` measures the reconstructed busy-runtime update slice; it is not a full end-to-end `Game` frame benchmark.
 - `npm run benchmark:draw` and `npm run benchmark:draw:towers` report CPU-submission and forced-GPU-flush draw timings separately. Keep benchmark methodology and fixture coverage intact when interpreting changes.
-- `scripts/benchmark-browser-harness.mjs` centralizes the Vite/Playwright setup used by the current benchmark scripts; several render scripts still carry their own setup.
+- `scripts/benchmark-browser-harness.mjs` centralizes temporary Vite pages, Playwright/Chrome launch fallback, page-error handling, cleanup, result waiting, and PNG data-URL writing for browser benchmarks and render scripts.
 
 Monster explosion testing showcase:
 

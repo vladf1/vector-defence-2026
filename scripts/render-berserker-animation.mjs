@@ -1,12 +1,7 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
-import { chromium } from "playwright";
-import { createServer } from "vite";
+import { repoRoot, runBrowserPage, waitForPageResult, writeDataUrlPng } from "./benchmark-browser-harness.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "..");
 const outputPath = path.resolve(repoRoot, process.argv[2] ?? "artifacts/berserker-rage-animation.png");
 
 const html = String.raw`
@@ -170,53 +165,14 @@ const html = String.raw`
 </html>
 `;
 
-const server = await createServer({
-  root: repoRoot,
-  logLevel: "error",
-  server: {
-    host: "127.0.0.1",
-  },
-  plugins: [
-    {
-      name: "berserker-animation-renderer-page",
-      configureServer(viteServer) {
-        viteServer.middlewares.use("/__berserker-animation-renderer", (_request, response) => {
-          response.setHeader("Content-Type", "text/html; charset=utf-8");
-          response.end(html);
-        });
-      },
-    },
-  ],
-});
+const dataUrl = await runBrowserPage({
+  pluginName: "berserker-animation-renderer-page",
+  path: "/__berserker-animation-renderer",
+  html,
+  waitUntil: "networkidle",
+  viewport: { width: 1600, height: 720 },
+  deviceScaleFactor: 1,
+}, (page) => waitForPageResult(page, "__berserkerAnimationRender", 10_000));
 
-let browser;
-try {
-  await server.listen(0);
-  const url = server.resolvedUrls.local[0];
-  browser = await launchBrowser();
-  const page = await browser.newPage({
-    viewport: { width: 1600, height: 720 },
-    deviceScaleFactor: 1,
-  });
-  await page.goto(`${url}__berserker-animation-renderer`, { waitUntil: "networkidle" });
-  const resultHandle = await page.waitForFunction(() => window.__berserkerAnimationRender, undefined, { timeout: 10000 });
-  const dataUrl = await resultHandle.jsonValue();
-  const pngBase64 = dataUrl.replace(/^data:image\/png;base64,/, "");
-  await mkdir(path.dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, Buffer.from(pngBase64, "base64"));
-  console.log(outputPath);
-} finally {
-  await browser?.close();
-  await server.close();
-}
-
-async function launchBrowser() {
-  try {
-    return await chromium.launch();
-  } catch (error) {
-    if (String(error).includes("Executable doesn't exist")) {
-      return chromium.launch({ channel: "chrome" });
-    }
-    throw error;
-  }
-}
+await writeDataUrlPng(outputPath, dataUrl);
+console.log(outputPath);
