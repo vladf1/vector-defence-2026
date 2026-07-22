@@ -41,7 +41,6 @@ const html = String.raw`
           seeds: [3001, 3002, 3003],
           outline: createPacManOutline(18),
           configOverrides: {
-            preferredMaxShardVertices: 14,
             maxShardVertices: 26,
           },
         },

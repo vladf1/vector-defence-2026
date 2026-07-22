@@ -22,7 +22,6 @@ const FULL_ROTATION = Math.PI * 2;
 const SHARD_SPLITTER = createPolygonShardSplitter({
   minShardCount: 5,
   maxShardCount: 11,
-  preferredMaxShardVertices: 14,
   maxShardVertices: 26,
 });
 
