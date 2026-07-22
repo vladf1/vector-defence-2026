@@ -3,9 +3,9 @@ import type { UpdateContext, UpdateResult } from "../../game-engine/update-conte
 import type { PathEntry } from "../../route-path";
 import type { Point } from "../../types";
 import { drawPath, easeInOutSine, hexWithAlpha, randomRange } from "../../utils";
-import { createPolygonShardParticles } from "./death-effect-helpers";
+import { createDeathEffectOrigin, createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster } from "./monster";
-import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
+import { createPolygonShardSplitter } from "./polygon-shard-splitter";
 
 const COLOR = "#91ff63";
 const SPEED_PER_SECOND = 132;
@@ -31,10 +31,10 @@ const OUTLINE = [
   { x: -RADIUS * 1.35, y: RADIUS * 0.58 },
   { x: RADIUS * 0.28, y: RADIUS * 0.86 },
 ];
-const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig({
+const SHARD_SPLITTER = createPolygonShardSplitter({
   minShardCount: 3,
   maxShardCount: 6,
-}));
+});
 
 export class RunnerMonster extends Monster {
   private readonly baseSpeedPerSecond: number;
@@ -68,17 +68,11 @@ export class RunnerMonster extends Monster {
   }
 
   override addDeathEffect(result: UpdateResult): void {
-    const pivot = {
-      x: randomRange(-this.radius * 0.35, this.radius * 0.3),
-      y: randomRange(-this.radius * 0.16, this.radius * 0.16),
-    };
     createPolygonShardParticles(
       result,
-      this.x,
-      this.y,
-      this.color,
+      this,
       createRunnerOutline(this.getDashPulse()),
-      pivot,
+      createDeathEffectOrigin(this.radius, -0.35, 0.3, -0.16, 0.16),
       this.angle,
       155,
       255,

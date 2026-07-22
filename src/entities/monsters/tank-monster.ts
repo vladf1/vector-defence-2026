@@ -3,9 +3,9 @@ import type { UpdateContext, UpdateResult } from "../../game-engine/update-conte
 import type { PathEntry } from "../../route-path";
 import type { Point } from "../../types";
 import { easeInOutCubic, randomRange } from "../../utils";
-import { createPolygonShardParticles, rotatePoint } from "./death-effect-helpers";
+import { createDeathEffectOrigin, createPolygonShardParticles, rotatePoint } from "./death-effect-helpers";
 import { Monster } from "./monster";
-import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
+import { createPolygonShardSplitter } from "./polygon-shard-splitter";
 import { drawTankTurret, getTankTurretCenterOffsetX, TankTrackPrintParticle, TankTurretParticle } from "./tank-effects";
 
 const COLOR = "#9fb6ff";
@@ -25,10 +25,10 @@ const HULL_OUTLINE = [
   { x: HULL_RECT.x + HULL_RECT.width, y: HULL_RECT.y + HULL_RECT.height },
   { x: HULL_RECT.x, y: HULL_RECT.y + HULL_RECT.height },
 ];
-const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig({
+const SHARD_SPLITTER = createPolygonShardSplitter({
   minShardCount: 6,
   maxShardCount: 13,
-}));
+});
 const TURRET_SPIN_INTERVAL_MIN_SECONDS = 3;
 const TURRET_SPIN_INTERVAL_MAX_SECONDS = 10;
 const TURRET_SPIN_DURATION_SECONDS = 2.2;
@@ -79,21 +79,15 @@ export class TankMonster extends Monster {
   }
 
   override addDeathEffect(result: UpdateResult): void {
-    const hullPivot = {
-      x: randomRange(-this.radius * 0.15, this.radius * 0.35),
-      y: randomRange(-this.radius * 0.22, this.radius * 0.22),
-    };
     const turretCenterOffset = rotatePoint(
       { x: getTankTurretCenterOffsetX(this.radius), y: 0 },
       this.angle,
     );
     createPolygonShardParticles(
       result,
-      this.x,
-      this.y,
-      this.color,
+      this,
       HULL_OUTLINE,
-      hullPivot,
+      createDeathEffectOrigin(this.radius, -0.15, 0.35, -0.22, 0.22),
       this.angle,
       125,
       220,

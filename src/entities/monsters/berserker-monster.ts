@@ -3,9 +3,9 @@ import type { UpdateContext, UpdateResult } from "../../game-engine/update-conte
 import type { PathEntry } from "../../route-path";
 import type { Point } from "../../types";
 import { drawPath, hexWithAlpha, randomRange } from "../../utils";
-import { createPolygonShardParticles } from "./death-effect-helpers";
+import { createDeathEffectOrigin, createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster } from "./monster";
-import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
+import { createPolygonShardSplitter } from "./polygon-shard-splitter";
 
 const BASE_COLOR = "#ff7a4f";
 const ENRAGED_COLOR = "#ff5a36";
@@ -35,10 +35,10 @@ const OUTLINE = [
   { x: -RADIUS * 0.1, y: RADIUS * 1.08 },
   { x: RADIUS * 0.4, y: RADIUS * 0.8 },
 ];
-const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig({
+const SHARD_SPLITTER = createPolygonShardSplitter({
   minShardCount: 5,
   maxShardCount: 11,
-}));
+});
 
 export class BerserkerMonster extends Monster {
   private rageStage = 0;
@@ -110,18 +110,13 @@ export class BerserkerMonster extends Monster {
   }
 
   override addDeathEffect(result: UpdateResult): void {
-    const pivot = {
-      x: randomRange(-this.radius * 0.15, this.radius * 0.22),
-      y: randomRange(-this.radius * 0.15, this.radius * 0.15),
-    };
     const motion = this.getRageMotion();
+    const origin = createDeathEffectOrigin(this.radius, -0.15, 0.22, -0.15, 0.15);
     createPolygonShardParticles(
       result,
-      this.x,
-      this.y,
-      this.color,
+      this,
       this.createAnimatedOutline(motion),
-      transformPoint(pivot, motion),
+      transformPoint(origin, motion),
       this.angle,
       140,
       230,

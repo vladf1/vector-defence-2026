@@ -2,9 +2,9 @@ import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import { drawPath, easeInOutSine, randomRange } from "../../utils";
-import { createPolygonShardParticles } from "./death-effect-helpers";
+import { createDeathEffectOrigin, createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster } from "./monster";
-import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
+import { createPolygonShardSplitter } from "./polygon-shard-splitter";
 
 const COLOR = "#ffba4f";
 const SPEED_PER_SECOND = 95;
@@ -23,10 +23,10 @@ const OUTLINE = [
   { x: -OUTLINE_RADIUS, y: -OUTLINE_RADIUS },
   { x: -OUTLINE_RADIUS, y: OUTLINE_RADIUS },
 ];
-const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig({
+const SHARD_SPLITTER = createPolygonShardSplitter({
   minShardCount: 5,
   maxShardCount: 11,
-}));
+});
 
 export class TriangleMonster extends Monster {
   private noseWobbleAngle = 0;
@@ -57,17 +57,11 @@ export class TriangleMonster extends Monster {
   }
 
   override addDeathEffect(result: UpdateResult): void {
-    const pivot = {
-      x: randomRange(-OUTLINE_RADIUS * 0.1, OUTLINE_RADIUS * 0.14),
-      y: randomRange(-OUTLINE_RADIUS * 0.12, OUTLINE_RADIUS * 0.12),
-    };
     createPolygonShardParticles(
       result,
-      this.x,
-      this.y,
-      this.color,
+      this,
       OUTLINE,
-      pivot,
+      createDeathEffectOrigin(OUTLINE_RADIUS, -0.1, 0.14, -0.12, 0.12),
       this.angle + this.noseWobbleAngle,
       115,
       195,

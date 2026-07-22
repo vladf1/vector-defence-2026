@@ -91,6 +91,12 @@ export function createPolygonShardSplitterConfig(
   };
 }
 
+export function createPolygonShardSplitter(
+  options: PolygonShardSplitterConfigOptions,
+): PolygonShardSplitter {
+  return new PolygonShardSplitter(createPolygonShardSplitterConfig(options));
+}
+
 export class PolygonShardSplitter {
   constructor(private readonly config: PolygonShardSplitterConfig) {}
 

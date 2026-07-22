@@ -18,12 +18,23 @@ export function pointOnRadius(angle: number, radius: number): Point {
   };
 }
 
+export function createDeathEffectOrigin(
+  radius: number,
+  xMinRatio: number,
+  xMaxRatio: number,
+  yMinRatio: number,
+  yMaxRatio: number,
+): Point {
+  return {
+    x: randomRange(radius * xMinRatio, radius * xMaxRatio),
+    y: randomRange(radius * yMinRatio, radius * yMaxRatio),
+  };
+}
+
 export function createPolygonShardParticles(
   result: UpdateResult,
-  x: number,
-  y: number,
-  color: string,
-  outline: Point[],
+  source: { x: number; y: number; color: string },
+  outline: readonly Point[],
   origin: Point,
   rotation: number,
   speedMinPerSecond: number,
@@ -33,9 +44,9 @@ export function createPolygonShardParticles(
 ): void {
   for (const shard of splitter.splitIntoShards(outline)) {
     result.addParticle(new GlassShardParticle(
-      x,
-      y,
-      color,
+      source.x,
+      source.y,
+      source.color,
       shard.vertices,
       origin,
       rotation,

@@ -3,9 +3,9 @@ import type { UpdateContext, UpdateResult } from "../../game-engine/update-conte
 import type { PathEntry } from "../../route-path";
 import type { Point } from "../../types";
 import { easeInOutCubic, easeInOutSine, randomRange } from "../../utils";
-import { createPolygonShardParticles, pointOnRadius } from "./death-effect-helpers";
+import { createDeathEffectOrigin, createPolygonShardParticles, pointOnRadius } from "./death-effect-helpers";
 import { Monster } from "./monster";
-import { createPolygonShardSplitterConfig, PolygonShardSplitter } from "./polygon-shard-splitter";
+import { createPolygonShardSplitter } from "./polygon-shard-splitter";
 
 const COLOR = "#5df2ef";
 const SPEED_PER_SECOND = 81;
@@ -19,12 +19,12 @@ const IDLE_ANIMATION_INTERVAL_MAX_SECONDS = 5;
 const MOUTH_ANIMATION_DURATION_SECONDS = 0.5;
 const ROTATION_ANIMATION_DURATION_SECONDS = 0.9;
 const FULL_ROTATION = Math.PI * 2;
-const SHARD_SPLITTER = new PolygonShardSplitter(createPolygonShardSplitterConfig({
+const SHARD_SPLITTER = createPolygonShardSplitter({
   minShardCount: 5,
   maxShardCount: 11,
   preferredMaxShardVertices: 14,
   maxShardVertices: 26,
-}));
+});
 
 export class PackManMonster extends Monster {
   private mouthAngle = MOUTH_OPEN_ANGLE;
@@ -65,17 +65,11 @@ export class PackManMonster extends Monster {
   }
 
   override addDeathEffect(result: UpdateResult): void {
-    const pivot = {
-      x: randomRange(-this.radius * 0.12, this.radius * 0.12),
-      y: randomRange(-this.radius * 0.12, this.radius * 0.12),
-    };
     createPolygonShardParticles(
       result,
-      this.x,
-      this.y,
-      this.color,
+      this,
       this.createOutline(18),
-      pivot,
+      createDeathEffectOrigin(this.radius, -0.12, 0.12, -0.12, 0.12),
       this.angle + this.bodyRotation,
       125,
       205,
