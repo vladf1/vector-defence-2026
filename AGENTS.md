@@ -40,6 +40,7 @@ Key paths:
 - Monster explosion testing script: `src/explosion-testing.ts`
 - Escape explosion testing page: `escape-explosion.html`
 - Escape explosion testing script: `src/escape-explosion-testing.ts`
+- Shared auxiliary-page animation loop: `src/visibility-animation-loop.ts`
 - Audio soundboard: `soundboard.html`
 
 Repository notes:
@@ -68,6 +69,7 @@ Current code structure:
 - `src/route-path.ts` owns route drawing commands plus the sampled motion path entries used by monster movement.
 - `src/game-renderer.ts` owns canvas sizing, background caching, board rendering, placement previews, and orchestration of entity drawing.
 - `src/game-view.ts` owns HUD/modal view-model generation for Svelte.
+- `src/visibility-animation-loop.ts` owns the visibility-aware request-animation-frame lifecycle shared by the two standalone effect labs; lab-specific update and drawing policy stays in each lab module.
 - `src/entities/` owns active gameplay entities split by concern: towers, monsters, projectiles, and effects.
 - `src/entities/monsters/monster.ts` owns shared monster movement, damage, slow recovery, lifecycle outcome reporting, and health-bar rendering.
 - Concrete monster classes live under `src/entities/monsters/` and own monster-specific base stats, body rendering, and special behavior (`berserker` ramps speed as it loses health; `bulwark` mitigates incoming damage).

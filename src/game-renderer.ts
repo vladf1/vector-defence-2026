@@ -27,6 +27,14 @@ export interface CanvasButtonRect {
   height: number;
 }
 
+function isPointInCanvasButton(point: { x: number; y: number }, rect: CanvasButtonRect | undefined): boolean {
+  return rect !== undefined
+    && point.x >= rect.x
+    && point.x <= rect.x + rect.width
+    && point.y >= rect.y
+    && point.y <= rect.y + rect.height;
+}
+
 export interface FieldBounds {
   minX: number;
   minY: number;
@@ -246,21 +254,11 @@ export class GameRenderer {
   }
 
   isPointInUpgradeButton(point: { x: number; y: number }): boolean {
-    const rect = this.getUpgradeButtonRect();
-    return rect !== undefined
-      && point.x >= rect.x
-      && point.x <= rect.x + rect.width
-      && point.y >= rect.y
-      && point.y <= rect.y + rect.height;
+    return isPointInCanvasButton(point, this.getUpgradeButtonRect());
   }
 
   isPointInLaserLockButton(point: { x: number; y: number }): boolean {
-    const rect = this.getLaserLockButtonRect();
-    return rect !== undefined
-      && point.x >= rect.x
-      && point.x <= rect.x + rect.width
-      && point.y >= rect.y
-      && point.y <= rect.y + rect.height;
+    return isPointInCanvasButton(point, this.getLaserLockButtonRect());
   }
 
   private drawBackground(context: CanvasRenderingContext2D): void {

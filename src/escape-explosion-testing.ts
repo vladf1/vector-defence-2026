@@ -3,6 +3,7 @@ import type { Monster } from "./entities/monsters/monster";
 import { createEscapeBurstParticles, ESCAPE_BURST_CONFIG, type EscapeBurstConfig } from "./game-engine/combat-effects";
 import { LinearActiveCircleSweepCollisionIndex } from "./game-engine/collision-detection";
 import type { UpdateContext } from "./game-engine/update-context";
+import { startVisibilityAwareAnimationLoop } from "./visibility-animation-loop";
 
 const EMPTY_MONSTER_COLLISION_INDEX = new LinearActiveCircleSweepCollisionIndex<Monster>([]);
 
@@ -101,8 +102,6 @@ let viewportWidth = 0;
 let viewportHeight = 0;
 let devicePixelRatio = 1;
 let particles: Particle[] = [];
-let lastTimestamp = performance.now();
-let animationFrameId: number | null = null;
 let autoRepeat = false;
 let autoRepeatTimer = AUTO_REPEAT_SECONDS;
 
@@ -128,39 +127,7 @@ resizeCanvas();
 updateControlLabels();
 triggerBurst();
 window.addEventListener("resize", resizeCanvas);
-document.addEventListener("visibilitychange", handleVisibilityChange);
-scheduleAnimationFrame();
-
-function scheduleAnimationFrame(): void {
-  if (document.hidden || animationFrameId !== null) {
-    return;
-  }
-
-  animationFrameId = requestAnimationFrame(animate);
-}
-
-function handleVisibilityChange(): void {
-  if (document.hidden) {
-    if (animationFrameId !== null) {
-      cancelAnimationFrame(animationFrameId);
-      animationFrameId = null;
-    }
-    return;
-  }
-
-  lastTimestamp = performance.now();
-  scheduleAnimationFrame();
-}
-
-function animate(timestamp: number): void {
-  animationFrameId = null;
-  if (document.hidden) {
-    return;
-  }
-
-  const deltaSeconds = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
-  lastTimestamp = timestamp;
-
+startVisibilityAwareAnimationLoop((deltaSeconds) => {
   if (autoRepeat) {
     autoRepeatTimer -= deltaSeconds;
     if (autoRepeatTimer <= 0) {
@@ -171,8 +138,7 @@ function animate(timestamp: number): void {
 
   updateParticles(deltaSeconds * readSettings().timeScale);
   drawScene();
-  scheduleAnimationFrame();
-}
+});
 
 function readSettings(): BurstSettings {
   return {

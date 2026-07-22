@@ -12,6 +12,7 @@ import { Missile } from "./entities/projectiles/missile";
 import { LinearActiveCircleSweepCollisionIndex } from "./game-engine/collision-detection";
 import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
 import type { PathEntry } from "./route-path";
+import { startVisibilityAwareAnimationLoop } from "./visibility-animation-loop";
 
 const EMPTY_MONSTER_COLLISION_INDEX = new LinearActiveCircleSweepCollisionIndex<Monster>([]);
 
@@ -141,8 +142,6 @@ let devicePixelRatio = 1;
 let labMode: LabMode = "monster";
 let sceneIndex = 0;
 let activeScene = createScene(sceneIndex);
-let lastTimestamp = performance.now();
-let animationFrameId: number | null = null;
 let isPaused = false;
 let approachSpeed = DEFAULT_SPEED;
 let explosionSpeed = DEFAULT_SPEED;
@@ -166,44 +165,12 @@ updateSpeedValues();
 updateZoomValue();
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
-document.addEventListener("visibilitychange", handleVisibilityChange);
-scheduleAnimationFrame();
-
-function scheduleAnimationFrame(): void {
-  if (document.hidden || animationFrameId !== null) {
-    return;
-  }
-
-  animationFrameId = requestAnimationFrame(animate);
-}
-
-function handleVisibilityChange(): void {
-  if (document.hidden) {
-    if (animationFrameId !== null) {
-      cancelAnimationFrame(animationFrameId);
-      animationFrameId = null;
-    }
-    return;
-  }
-
-  lastTimestamp = performance.now();
-  scheduleAnimationFrame();
-}
-
-function animate(timestamp: number): void {
-  animationFrameId = null;
-  if (document.hidden) {
-    return;
-  }
-
-  const deltaSeconds = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
-  lastTimestamp = timestamp;
+startVisibilityAwareAnimationLoop((deltaSeconds) => {
   if (!isPaused) {
     updateScene(deltaSeconds * getActivePhaseSpeed());
   }
   drawScene();
-  scheduleAnimationFrame();
-}
+});
 
 function updateScene(deltaSeconds: number): void {
   activeScene.phaseSeconds += deltaSeconds;
@@ -236,7 +203,7 @@ function updateScene(deltaSeconds: number): void {
 function updateMonsterApproach(scene: ActiveScene, deltaSeconds: number): void {
   const result = new UpdateResult();
   if (!(scene.monster instanceof TankMonster)) {
-    scene.monster.update(createPreviewUpdateContext(scene, deltaSeconds * MONSTER_TIME_SCALE), result);
+    scene.monster.update(createPreviewUpdateContext(scene.monster, deltaSeconds * MONSTER_TIME_SCALE), result);
     applyPreviewUpdateResult(scene, result);
   }
 
@@ -252,7 +219,7 @@ function updateMonsterApproach(scene: ActiveScene, deltaSeconds: number): void {
   scene.monster.velocityYPerSecond = Math.sin(scene.monster.angle) * scene.monster.speedPerSecond;
 
   if (scene.monster instanceof TankMonster) {
-    scene.monster.update(createPreviewUpdateContext(scene, 0), result);
+    scene.monster.update(createPreviewUpdateContext(scene.monster, 0), result);
     applyPreviewUpdateResult(scene, result);
   }
 }
@@ -265,7 +232,7 @@ function updateMissileApproach(scene: ActiveScene, deltaSeconds: number): void {
 
   const particleCountBeforeUpdate = scene.particles.length;
   const result = new UpdateResult();
-  missile.update(createPreviewUpdateContext(scene, deltaSeconds * MISSILE_TIME_SCALE), result);
+  missile.update(createPreviewUpdateContext(scene.monster, deltaSeconds * MISSILE_TIME_SCALE), result);
   applyPreviewUpdateResult(scene, result);
   scene.monster.x = CENTER.x;
   scene.monster.y = CENTER.y;
@@ -277,7 +244,7 @@ function updateMissileApproach(scene: ActiveScene, deltaSeconds: number): void {
     scene.particles = scene.particles.slice(particleCountBeforeUpdate);
     if (scene.mode === "combined") {
       const result = new UpdateResult();
-      scene.monster.update(createPreviewUpdateContext(scene, 0), result);
+      scene.monster.update(createPreviewUpdateContext(scene.monster, 0), result);
       addMonsterDeathEffect(scene.monster, scene);
     }
     scene.phase = "explode";
@@ -492,7 +459,7 @@ function createMonster(spec: MonsterSpec): Monster {
   if (spec.lowHealthRatio !== undefined) {
     monster.hitPoints = monster.maxHitPoints * spec.lowHealthRatio;
     const result = new UpdateResult();
-    monster.update(createPreviewMonsterUpdateContext(monster, 0), result);
+    monster.update(createPreviewUpdateContext(monster, 0), result);
     monster.speedPerSecond = displaySpeedPerSecond;
     monster.maxSpeedPerSecond = displaySpeedPerSecond;
   }
@@ -530,20 +497,7 @@ function prepareCombinedTarget(monster: Monster): void {
   monster.hitPoints = COMBINED_TARGET_HIT_POINTS;
 }
 
-function createPreviewUpdateContext(scene: ActiveScene, deltaSeconds: number): UpdateContext {
-  const activeMonsters = scene.monster.removed ? [] : [scene.monster];
-  return {
-    deltaSeconds,
-    fieldWidth: EFFECT_FIELD_WIDTH,
-    fieldHeight: EFFECT_FIELD_HEIGHT,
-    activeMonsters,
-    monsterCollisionIndex: new LinearActiveCircleSweepCollisionIndex(activeMonsters),
-    activeDrones: [],
-    droneAssignments: new Map(),
-  };
-}
-
-function createPreviewMonsterUpdateContext(monster: Monster, deltaSeconds: number): UpdateContext {
+function createPreviewUpdateContext(monster: Monster, deltaSeconds: number): UpdateContext {
   const activeMonsters = monster.removed ? [] : [monster];
   return {
     deltaSeconds,

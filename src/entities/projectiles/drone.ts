@@ -2,7 +2,7 @@ import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { Point } from "../../types";
 import { calculateDistance, clamp, isOutsideBounds, randomRange, turnAngleTowards, withinDistance } from "../../utils";
-import { DRONE_ACCENT_COLORS } from "../drone-visuals";
+import { drawDroneBody, DRONE_ACCENT_COLORS } from "../drone-visuals";
 import type { Monster } from "../monsters/monster";
 import { DRONE_PROJECTILE_SPEED_PER_SECOND, DroneProjectile } from "./drone-projectile";
 
@@ -26,13 +26,6 @@ const DRONE_TARGET_PROGRESS_BONUS = 70;
 const DRONE_TARGET_STICKINESS_BONUS = 42;
 const DRONE_RETARGET_INTERVAL_SECONDS = 0.55;
 const DRONE_RETARGET_JITTER_SECONDS = 0.18;
-const DRONE_PROPELLERS = [
-  { x: -6.9, y: -6.9 },
-  { x: 6.9, y: -6.9 },
-  { x: -6.9, y: 6.9 },
-  { x: 6.9, y: 6.9 },
-] as const;
-
 let nextDroneId = 1;
 
 interface DroneTargetOrbit {
@@ -134,49 +127,16 @@ export class Drone {
     context.scale(this.visualScale, this.visualScale);
     context.globalCompositeOperation = "lighter";
 
-    context.strokeStyle = "rgba(224, 255, 246, 0.92)";
-    context.lineWidth = 1.05 + (this.level * 0.035);
-    context.lineCap = "round";
-    context.beginPath();
-    context.moveTo(-6.9, -6.9);
-    context.lineTo(6.9, 6.9);
-    context.moveTo(6.9, -6.9);
-    context.lineTo(-6.9, 6.9);
-    context.stroke();
-
-    for (const propeller of DRONE_PROPELLERS) {
-      context.fillStyle = propellerFillStyle;
-      context.beginPath();
-      context.arc(propeller.x, propeller.y, this.propellerRadius, 0, Math.PI * 2);
-      context.fill();
-
-      context.fillStyle = this.accentColor;
-      context.beginPath();
-      context.arc(propeller.x, propeller.y, this.motorAccentRadius, 0, Math.PI * 2);
-      context.fill();
-    }
-
-    context.fillStyle = "#06100f";
-    context.strokeStyle = "#effff7";
-    context.lineWidth = 1;
-    context.beginPath();
-    context.roundRect(-3.9, -3.9, 7.8, 7.8, 1.5);
-    context.fill();
-    context.stroke();
-
-    context.fillStyle = this.accentColor;
-    context.fillRect(-1.8, -0.9, 3.6 + (this.level * 0.16), 1.8);
-
-    if (this.level >= 3) {
-      context.strokeStyle = this.accentColor;
-      context.lineWidth = 0.75;
-      context.beginPath();
-      context.moveTo(-2.8, -5.2);
-      context.lineTo(2.8, -5.2);
-      context.moveTo(-2.8, 5.2);
-      context.lineTo(2.8, 5.2);
-      context.stroke();
-    }
+    drawDroneBody(context, {
+      accentFillStyle: this.accentColor,
+      frameLineWidth: 1.05 + (this.level * 0.035),
+      frameStrokeStyle: "rgba(224, 255, 246, 0.92)",
+      level: this.level,
+      motorFillStyle: this.accentColor,
+      motorRadius: this.motorAccentRadius,
+      propellerFillStyle,
+      propellerRadius: this.propellerRadius,
+    });
 
     context.restore();
   }
