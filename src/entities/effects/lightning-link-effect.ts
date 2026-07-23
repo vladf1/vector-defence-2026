@@ -48,7 +48,7 @@ export class LightningLinkEffect {
     context.lineJoin = "round";
 
     context.strokeStyle = hexWithAlpha(this.color, this.alpha * 0.42);
-    context.lineWidth = 5 + (sourceLevel * 0.32);
+    context.lineWidth = 6.5 + (sourceLevel * 0.38);
     this.strokeBolt(context, points);
 
     context.strokeStyle = hexWithAlpha("#ffffff", this.alpha * 0.9);
