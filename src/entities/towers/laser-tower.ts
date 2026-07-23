@@ -217,18 +217,13 @@ export class LaserTower extends Tower {
       context.globalCompositeOperation = "lighter";
       context.lineCap = "round";
 
-      context.strokeStyle = `rgba(${colors.beam}, ${0.055 * this.beamAlpha})`;
-      context.lineWidth = 18 + (this.level * 1.15);
+      context.strokeStyle = `rgba(${colors.beam}, ${0.07 * this.beamAlpha})`;
+      context.lineWidth = 6.8 + (this.level * 0.28);
       this.traceBeam(context, source);
       context.stroke();
 
-      context.strokeStyle = `rgba(${colors.beam}, ${0.12 * this.beamAlpha})`;
-      context.lineWidth = 11 + (this.level * 0.8);
-      this.traceBeam(context, source);
-      context.stroke();
-
-      context.strokeStyle = `rgba(${colors.beam}, ${0.24 * this.beamAlpha})`;
-      context.lineWidth = 6.5 + (this.level * 0.55);
+      context.strokeStyle = `rgba(${colors.beam}, ${0.25 * this.beamAlpha})`;
+      context.lineWidth = 4.2 + (this.level * 0.18);
       this.traceBeam(context, source);
       context.stroke();
 
@@ -237,19 +232,19 @@ export class LaserTower extends Tower {
       this.traceBeam(context, source);
       context.stroke();
 
-      context.fillStyle = `rgba(${colors.beam}, ${0.08 * this.beamAlpha})`;
+      context.fillStyle = `rgba(${colors.beam}, ${0.07 * this.beamAlpha})`;
       context.beginPath();
-      context.arc(source.x, source.y, 8 + (this.level * 0.6), 0, Math.PI * 2);
+      context.arc(source.x, source.y, 5 + (this.level * 0.25), 0, Math.PI * 2);
       context.fill();
 
-      context.fillStyle = `rgba(${colors.beam}, ${0.24 * this.beamAlpha})`;
+      context.fillStyle = `rgba(${colors.beam}, ${0.22 * this.beamAlpha})`;
       context.beginPath();
-      context.arc(source.x, source.y, 5 + (this.level * 0.42), 0, Math.PI * 2);
+      context.arc(source.x, source.y, 3.8 + (this.level * 0.18), 0, Math.PI * 2);
       context.fill();
 
-      context.fillStyle = `rgba(${colors.beam}, ${0.78 * this.beamAlpha})`;
+      context.fillStyle = `rgba(${colors.beam}, ${0.82 * this.beamAlpha})`;
       context.beginPath();
-      context.arc(source.x, source.y, 2.3 + (this.level * 0.22), 0, Math.PI * 2);
+      context.arc(source.x, source.y, 2.3 + (this.level * 0.13), 0, Math.PI * 2);
       context.fill();
       context.restore();
     }
