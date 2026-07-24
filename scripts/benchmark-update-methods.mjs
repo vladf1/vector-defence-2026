@@ -36,6 +36,7 @@ const html = String.raw`
       const { LinkEffect } = await import("/src/entities/effects/link-effect.ts");
       const { GunProjectile } = await import("/src/entities/projectiles/gun-projectile.ts");
       const { Missile } = await import("/src/entities/projectiles/missile.ts");
+      const { createMissileVisual } = await import("/src/entities/projectiles/missile-visuals.ts");
       const { UpdateResult } = await import("/src/game-engine/update-context.ts");
 
       const maxStressConfig = ${JSON.stringify(benchmarkConfig)};
@@ -354,6 +355,7 @@ const html = String.raw`
             { x: 60 + ((index * 71) % 460), y: 60 + ((index * 41) % 280) },
             targetMonster,
             0,
+            createMissileVisual(1, 0, 0),
             0.3 + (index * 0.17),
           );
           missile.x = 260 + (index % 17);

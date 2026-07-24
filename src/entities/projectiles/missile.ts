@@ -5,10 +5,14 @@ import type { Point } from "../../types";
 import { angleBetween, calculateDistance, clamp, isOutsideBounds, randomRange, turnAngleTowards } from "../../utils";
 import { Particle } from "../effects/particle";
 import type { Monster } from "../monsters/monster";
+import {
+  drawMissileBody,
+  drawMissileExhaust,
+  getMissileHalfLength,
+  getMissileScale,
+  type MissileVisual,
+} from "./missile-visuals";
 
-const MISSILE_TAIL_X = -7;
-const MISSILE_NOSE_X = 9;
-const MISSILE_HALF_LENGTH = (MISSILE_NOSE_X - MISSILE_TAIL_X) / 2;
 const MISSILE_DAMAGE_BASE = 50;
 const MISSILE_DAMAGE_PER_LEVEL = 4;
 const MISSILE_EFFECT_RADIUS_BASE = 60;
@@ -20,13 +24,7 @@ const MISSILE_HIT_SHAKE_DURATION_RANGE_SECONDS = 0.035;
 const MISSILE_HIT_SHAKE_MIN_DISTANCE = 0.45;
 const MISSILE_HIT_SHAKE_DISTANCE_RANGE = 0.8;
 const MISSILE_TURN_SPEED_PER_SECOND = 7.2;
-const MISSILE_EXHAUST_SMOKE_PUFFS = [
-  { x: -8.8, y: -0.18, radius: 2.2, alpha: 0.25 },
-  { x: -11.4, y: 0.22, radius: 3.1, alpha: 0.28 },
-  { x: -14.6, y: -0.35, radius: 4, alpha: 0.24 },
-  { x: -18.4, y: 0.18, radius: 4.8, alpha: 0.18 },
-  { x: -22.5, y: -0.08, radius: 5.7, alpha: 0.12 },
-];
+const MISSILE_LAUNCH_BLOOM_SECONDS = 0.28;
 
 function getShakeStrengthFromSplashRatio(ratio: number): number {
   return clamp(ratio, 0.15, 1);
@@ -44,26 +42,30 @@ export class Missile {
   effectRadius: number;
   scale: number;
   level: number;
+  visual: MissileVisual;
   trackedMonster?: Monster;
   removed = false;
   trailTimer = 0;
+  launchBloomSeconds = MISSILE_LAUNCH_BLOOM_SECONDS;
 
-  constructor(source: Point, trackedMonster: Monster, level: number, initialAngle?: number) {
+  constructor(source: Point, trackedMonster: Monster, level: number, visual: MissileVisual, initialAngle?: number) {
     this.x = source.x;
     this.y = source.y;
     this.previousX = source.x;
     this.previousY = source.y;
     this.trackedMonster = trackedMonster;
     this.level = level;
+    this.visual = visual;
     this.damage = MISSILE_DAMAGE_BASE + (MISSILE_DAMAGE_PER_LEVEL * level);
     this.effectRadius = MISSILE_EFFECT_RADIUS_BASE + (MISSILE_EFFECT_RADIUS_PER_LEVEL * level);
     this.speedPerSecond = MISSILE_SPEED_BASE_PER_SECOND + (MISSILE_SPEED_PER_LEVEL_PER_SECOND * level);
-    this.scale = 1 + (0.05 * level);
-    this.radius = MISSILE_HALF_LENGTH * this.scale;
+    this.scale = getMissileScale(level);
+    this.radius = getMissileHalfLength(visual) * this.scale;
     this.angle = initialAngle ?? angleBetween(source, trackedMonster);
   }
 
   update(context: UpdateContext, result: UpdateResult): void {
+    this.launchBloomSeconds = Math.max(0, this.launchBloomSeconds - context.deltaSeconds);
     this.speedPerSecond += 180 * context.deltaSeconds;
     if (this.trackedMonster && this.trackedMonster.removed) {
       this.trackedMonster = undefined;
@@ -150,38 +152,8 @@ export class Missile {
     context.translate(this.x, this.y);
     context.rotate(this.angle);
     context.scale(this.scale, this.scale);
-
-    for (const puff of MISSILE_EXHAUST_SMOKE_PUFFS) {
-      const smoke = context.createRadialGradient(puff.x, puff.y, 0, puff.x, puff.y, puff.radius);
-      smoke.addColorStop(0, `rgba(126, 133, 140, ${puff.alpha})`);
-      smoke.addColorStop(1, "rgba(126, 133, 140, 0)");
-      context.fillStyle = smoke;
-      context.beginPath();
-      context.arc(puff.x, puff.y, puff.radius, 0, Math.PI * 2);
-      context.fill();
-    }
-
-    context.save();
-    context.globalCompositeOperation = "lighter";
-    const flameGlow = context.createRadialGradient(-7.4, 0, 0, -7.4, 0, 8.2);
-    flameGlow.addColorStop(0, "rgba(255, 240, 168, 0.5)");
-    flameGlow.addColorStop(0.32, "rgba(255, 143, 69, 0.38)");
-    flameGlow.addColorStop(1, "rgba(255, 143, 69, 0)");
-    context.fillStyle = flameGlow;
-    context.beginPath();
-    context.ellipse(-10.8, 0, 6.9, 1.7, 0, 0, Math.PI * 2);
-    context.fill();
-    context.restore();
-
-    context.fillStyle = "#ffe77c";
-    context.beginPath();
-    context.moveTo(MISSILE_TAIL_X, -1.45);
-    context.lineTo(3.8, -1.45);
-    context.lineTo(MISSILE_NOSE_X, 0);
-    context.lineTo(3.8, 1.45);
-    context.lineTo(MISSILE_TAIL_X, 1.45);
-    context.closePath();
-    context.fill();
+    drawMissileExhaust(context, this.visual, this.launchBloomSeconds / MISSILE_LAUNCH_BLOOM_SECONDS);
+    drawMissileBody(context, this.visual);
     context.restore();
   }
 }

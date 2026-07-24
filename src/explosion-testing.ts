@@ -9,6 +9,7 @@ import { SquareMonster } from "./entities/monsters/square-monster";
 import { TankMonster } from "./entities/monsters/tank-monster";
 import { TriangleMonster } from "./entities/monsters/triangle-monster";
 import { Missile } from "./entities/projectiles/missile";
+import { createMissileVisual } from "./entities/projectiles/missile-visuals";
 import { LinearActiveCircleSweepCollisionIndex } from "./game-engine/collision-detection";
 import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
 import type { PathEntry } from "./route-path";
@@ -116,11 +117,12 @@ const GRID_SPACING = 40;
 const WORLD_STROKE_WIDTH = 1.5;
 const MAX_DEVICE_PIXEL_RATIO = 2;
 const DEFAULT_SPEED = 1;
-const BASE_WORLD_ZOOM = 10;
+const MONSTER_WORLD_ZOOM = 10;
+const MISSILE_WORLD_ZOOM = 4;
 const DEFAULT_ZOOM_SCALE = 1;
 const MISSILE_LABEL = "Missile";
 const COMBINED_LABEL = "Missile + Monster";
-const MISSILE_APPROACH_DISTANCE = 126;
+const MISSILE_APPROACH_DISTANCE = 88;
 const MISSILE_SOURCE_OFFSET = 10;
 const MISSILE_PREVIEW_LEVEL = 0;
 const COMBINED_TARGET_HIT_POINTS = 1;
@@ -308,7 +310,7 @@ function allParticlesOffScreen(particles: Particle[]): boolean {
 }
 
 function getVisibleWorldBounds(): { minX: number; minY: number; maxX: number; maxY: number } {
-  const sceneZoom = BASE_WORLD_ZOOM * zoomScale;
+  const sceneZoom = getSceneZoom();
   const halfWidth = viewportWidth / (sceneZoom * 2);
   const halfHeight = viewportHeight / (sceneZoom * 2);
   return {
@@ -336,7 +338,7 @@ function drawScene(): void {
 
   context.save();
   context.translate(viewportWidth / 2, viewportHeight / 2);
-  const sceneZoom = BASE_WORLD_ZOOM * zoomScale;
+  const sceneZoom = getSceneZoom();
   context.scale(sceneZoom, sceneZoom);
   context.translate(-CENTER.x, -CENTER.y);
 
@@ -489,8 +491,16 @@ function createMissile(monster: Monster): Missile {
   };
   monster.x = CENTER.x;
   monster.y = CENTER.y;
+  monster.previousX = CENTER.x;
+  monster.previousY = CENTER.y;
   monster.removed = false;
-  return new Missile(source, monster, MISSILE_PREVIEW_LEVEL, 0);
+  return new Missile(
+    source,
+    monster,
+    MISSILE_PREVIEW_LEVEL,
+    createMissileVisual(1, 0, MISSILE_PREVIEW_LEVEL),
+    0,
+  );
 }
 
 function prepareCombinedTarget(monster: Monster): void {
@@ -602,6 +612,11 @@ function updateZoomValue(): void {
 
 function getActivePhaseSpeed(): number {
   return activeScene.phase === "approach" ? approachSpeed : explosionSpeed;
+}
+
+function getSceneZoom(): number {
+  const baseZoom = activeScene.mode === "monster" ? MONSTER_WORLD_ZOOM : MISSILE_WORLD_ZOOM;
+  return baseZoom * zoomScale;
 }
 
 function easeOutCubic(value: number): number {

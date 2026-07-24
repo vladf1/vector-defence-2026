@@ -31,6 +31,7 @@ const html = String.raw`
       import { MissileTower } from "/src/entities/towers/missile-tower.ts";
       import { SlowTower } from "/src/entities/towers/slow-tower.ts";
       import { Missile } from "/src/entities/projectiles/missile.ts";
+      import { createMissileVisual } from "/src/entities/projectiles/missile-visuals.ts";
       import { DroneProjectile } from "/src/entities/projectiles/drone-projectile.ts";
       import { GunProjectile } from "/src/entities/projectiles/gun-projectile.ts";
       import { UpdateResult } from "/src/game-engine/update-context.ts";
@@ -88,7 +89,7 @@ const html = String.raw`
             tower.orbit = Math.PI / 5;
           }
           if ("muzzleFlashSeconds" in tower) {
-            tower.muzzleFlashSeconds = tower instanceof MissileTower ? 0.08 : 0.04;
+            tower.muzzleFlashSeconds = 0.04;
           }
           if ("beamAlpha" in tower) {
             tower.beamAlpha = 0.72;
@@ -189,7 +190,13 @@ const html = String.raw`
 
       function drawMissileSample(context, centerX, centerY, level) {
         const target = { x: 120, y: 0, radius: 12, removed: false };
-        const missile = new Missile({ x: 0, y: 0 }, target, level, -Math.PI / 8);
+        const missile = new Missile(
+          { x: 0, y: 0 },
+          target,
+          level,
+          createMissileVisual(1, 0, level),
+          -Math.PI / 8,
+        );
         missile.x = 0;
         missile.y = 0;
         context.save();
@@ -212,7 +219,13 @@ const html = String.raw`
           takeDamage() {},
           takeContinuousDamage() {},
         };
-        const missile = new Missile({ x: explosionX, y: explosionY }, target, level, 0);
+        const missile = new Missile(
+          { x: explosionX, y: explosionY },
+          target,
+          level,
+          createMissileVisual(1, 0, level),
+          0,
+        );
         missile.x = explosionX;
         missile.y = explosionY;
         missile.speedPerSecond = 0;

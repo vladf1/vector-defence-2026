@@ -1,11 +1,19 @@
 import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { TowerKind } from "../../types";
-import { angleBetween, randomRange, turnAngleTowards } from "../../utils";
+import { angleBetween, clamp, randomRange, turnAngleTowards } from "../../utils";
 import { Missile } from "../projectiles/missile";
+import { createMissileVisual, drawMissileBody, getMissileScale } from "../projectiles/missile-visuals";
 import { Tower } from "./tower";
 
 const MISSILE_FIRING_ANGLE_TOLERANCE = Math.PI / 12;
+const MISSILE_RACK_CENTER_X = 0;
+const EMPTY_LAUNCHER_CENTER_X = -1;
+const MISSILE_RACK_Y_OFFSETS = [
+  [0],
+  [-3.1, 3.1],
+  [-4.5, 0, 4.5],
+] as const;
 
 export class MissileTower extends Tower {
   static readonly kind = TowerKind.Missile;
@@ -17,14 +25,19 @@ export class MissileTower extends Tower {
 
   angle = randomRange(-Math.PI, Math.PI);
   turnSpeedPerSecond = 3.6;
-  muzzleFlashSeconds = 0;
+  emptyMissileIndex?: number;
+  private lastReloadedMissileIndex?: number;
 
   constructor(x: number, y: number) {
     super(x, y);
   }
 
   protected updateTower(context: UpdateContext, result: UpdateResult): void {
-    this.muzzleFlashSeconds = Math.max(0, this.muzzleFlashSeconds - context.deltaSeconds);
+    if (this.ready() && this.emptyMissileIndex !== undefined) {
+      this.lastReloadedMissileIndex = this.emptyMissileIndex;
+      this.emptyMissileIndex = undefined;
+    }
+
     const tracked = this.findTrackedMonsterInContext(context);
     let alignedToTarget = false;
 
@@ -35,13 +48,19 @@ export class MissileTower extends Tower {
     }
 
     if (tracked && alignedToTarget && this.ready()) {
+      const missileYs = this.getMissileRackYOffsets();
+      const missileIndex = this.chooseMissileIndex(missileYs.length);
+      const missileVisual = createMissileVisual(missileYs.length, missileIndex, this.level);
+      const missileY = missileYs[missileIndex];
+      const cos = Math.cos(this.angle);
+      const sin = Math.sin(this.angle);
       const source = {
-        x: this.x + (Math.cos(this.angle) * 14),
-        y: this.y + (Math.sin(this.angle) * 14),
+        x: this.x + (cos * MISSILE_RACK_CENTER_X) - (sin * missileY),
+        y: this.y + (sin * MISSILE_RACK_CENTER_X) + (cos * missileY),
       };
-      this.muzzleFlashSeconds = 0.12;
-      this.resetCooldown(2 - (0.2 * this.level));
-      result.addMissile(new Missile(source, tracked, this.level, this.angle));
+      this.emptyMissileIndex = missileIndex;
+      this.resetCooldown(this.getCooldownDurationSeconds());
+      result.addMissile(new Missile(source, tracked, this.level, missileVisual, this.angle));
       result.playSound(AudioCue.MissileLaunch, source.x, 1 + (this.level * 0.09));
     }
   }
@@ -54,57 +73,21 @@ export class MissileTower extends Tower {
     context.save();
     context.rotate(this.angle);
     const upgradePipCount = Math.max(0, this.level - 2);
+    const missileScale = getMissileScale(this.level);
+    const missileYs = this.getMissileRackYOffsets();
+    if (this.emptyMissileIndex !== undefined) {
+      this.drawEmptyLauncherSlot(context, missileYs[this.emptyMissileIndex]);
+    }
 
-    const rocketYs = [
-      [0],
-      [-3.1, 3.1],
-      [-4.5, 0, 4.5],
-    ][Math.min(2, this.level)];
-
-    for (const [index, rocketY] of rocketYs.entries()) {
-      const accentRocket = index === 1 && rocketYs.length === 3;
-      const extendedRocket = rocketYs.length === 1 || accentRocket;
-      const shortenedSideRocket = rocketYs.length === 3 && !accentRocket;
-      const rocketLengthBonus = extendedRocket ? 3.2 : shortenedSideRocket ? -1.7 : 0;
-      const enlargedRocket = rocketYs.length < 3 || accentRocket;
-      const rocketScale = enlargedRocket ? 1.15 : 1;
-      const rocketOffsetX = 1.8;
-      const baseTailX = -7.8;
-      const baseBodyFrontX = 3.4 + rocketLengthBonus;
-      const baseNoseTipX = 8.9 + rocketLengthBonus;
-      const rocketCenterX = (baseTailX + baseNoseTipX) / 2;
-      const scaleRocketX = (x: number) => rocketOffsetX + rocketCenterX + ((x - rocketCenterX) * rocketScale);
-      const rocketBodyFrontX = scaleRocketX(baseBodyFrontX);
-      const rocketNoseTipX = scaleRocketX(baseNoseTipX);
-      const rocketColor = this.ready() ? accentRocket ? "#ff9d5c" : "#ffe27a" : "#78838b";
-      const noseColor = this.ready() ? accentRocket ? "#ffe27a" : "#fff1ac" : "#a1abb2";
-      const rocketTailX = scaleRocketX(baseTailX);
-      const bodyHalfHeight = 1.65 * rocketScale;
-      const noseHalfHeight = 1.9 * rocketScale;
-      context.fillStyle = rocketColor;
-      context.strokeStyle = "#06100f";
-      context.lineWidth = 0.8;
-      context.beginPath();
-      context.moveTo(rocketTailX, rocketY - bodyHalfHeight);
-      context.lineTo(rocketBodyFrontX, rocketY - bodyHalfHeight);
-      context.lineTo(rocketNoseTipX, rocketY);
-      context.lineTo(rocketBodyFrontX, rocketY + bodyHalfHeight);
-      context.lineTo(rocketTailX, rocketY + bodyHalfHeight);
-      context.closePath();
-      context.fill();
-      context.stroke();
-
-      context.fillStyle = noseColor;
-      context.beginPath();
-      context.moveTo(rocketBodyFrontX, rocketY - noseHalfHeight);
-      context.lineTo(rocketNoseTipX, rocketY);
-      context.lineTo(rocketBodyFrontX, rocketY + noseHalfHeight);
-      context.closePath();
-      context.fill();
-
-      context.fillStyle = "#ff9d5c";
-      context.fillRect(rocketTailX - (1.8 * rocketScale), rocketY - (0.85 * rocketScale), 1.8 * rocketScale, 1.7 * rocketScale);
-      context.stroke();
+    for (const [index, missileY] of missileYs.entries()) {
+      if (index === this.emptyMissileIndex) {
+        continue;
+      }
+      context.save();
+      context.translate(MISSILE_RACK_CENTER_X, missileY);
+      context.scale(missileScale, missileScale);
+      drawMissileBody(context, createMissileVisual(missileYs.length, index, this.level));
+      context.restore();
     }
 
     if (upgradePipCount > 0) {
@@ -123,36 +106,87 @@ export class MissileTower extends Tower {
       context.fill();
     }
 
-    if (this.muzzleFlashSeconds > 0) {
-      const flashAlpha = this.muzzleFlashSeconds / 0.12;
-      context.save();
-      context.globalCompositeOperation = "lighter";
-
-      context.globalAlpha = 0.16 * flashAlpha;
-      context.fillStyle = "#ff7b42";
-      context.beginPath();
-      context.arc(11.8, 0, 6.5 + (3.5 * flashAlpha), 0, Math.PI * 2);
-      context.fill();
-
-      context.globalAlpha = 0.4 * flashAlpha;
-      context.fillStyle = "#ff9d5c";
-      context.beginPath();
-      context.arc(11.8, 0, 4.5 + (2.5 * flashAlpha), 0, Math.PI * 2);
-      context.fill();
-
-      context.globalAlpha = 0.78 * flashAlpha;
-      context.fillStyle = "#ffe27a";
-      context.beginPath();
-      context.arc(11.8, 0, 2.4 + (1.6 * flashAlpha), 0, Math.PI * 2);
-      context.fill();
-      context.restore();
-    }
-
     context.restore();
 
     if (active) {
       this.drawSelection(context);
     }
+    context.restore();
+  }
+
+  private getMissileRackYOffsets(): readonly number[] {
+    return MISSILE_RACK_Y_OFFSETS[Math.min(2, this.level)];
+  }
+
+  private chooseMissileIndex(missileCount: number): number {
+    if (missileCount !== 2) {
+      return Math.floor(missileCount / 2);
+    }
+    if (this.lastReloadedMissileIndex !== undefined) {
+      return 1 - this.lastReloadedMissileIndex;
+    }
+    return Math.floor(randomRange(0, missileCount));
+  }
+
+  private getCooldownDurationSeconds(): number {
+    return 2 - (0.2 * this.level);
+  }
+
+  private drawEmptyLauncherSlot(context: CanvasRenderingContext2D, missileY: number): void {
+    const halfHeight = 2.5;
+    context.save();
+    context.translate(EMPTY_LAUNCHER_CENTER_X, missileY);
+    context.fillStyle = "#142320";
+    context.strokeStyle = "#4c6560";
+    context.lineWidth = 0.9;
+    context.beginPath();
+    context.moveTo(-9, -halfHeight);
+    context.lineTo(4.8, -halfHeight);
+    context.lineTo(8.2, -halfHeight + 1.6);
+    context.lineTo(8.2, halfHeight - 1.6);
+    context.lineTo(4.8, halfHeight);
+    context.lineTo(-9, halfHeight);
+    context.closePath();
+    context.fill();
+    context.stroke();
+
+    context.strokeStyle = "rgba(215, 226, 234, 0.62)";
+    context.lineWidth = 0.8;
+    context.beginPath();
+    context.moveTo(-7.5, -halfHeight);
+    context.lineTo(-7.5, halfHeight);
+    context.moveTo(4.5, -halfHeight);
+    context.lineTo(7.6, -halfHeight + 1.8);
+    context.moveTo(4.5, halfHeight);
+    context.lineTo(7.6, halfHeight - 1.8);
+    context.stroke();
+
+    context.strokeStyle = "rgba(255, 226, 122, 0.44)";
+    context.lineWidth = 0.75;
+    context.beginPath();
+    context.moveTo(-7.2, 0);
+    context.lineTo(6.8, 0);
+    context.stroke();
+
+    context.fillStyle = "#263b37";
+    context.strokeStyle = "#8ca29d";
+    context.lineWidth = 0.8;
+    context.beginPath();
+    context.arc(-7.4, 0, 2.25, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+
+    context.fillStyle = "#ffe27a";
+    context.beginPath();
+    context.arc(-7.4, 0, 0.8, 0, Math.PI * 2);
+    context.fill();
+
+    const reloadProgress = 1 - clamp(this.cooldownSeconds / this.getCooldownDurationSeconds(), 0, 1);
+    const loaderX = -6.3 + (reloadProgress * 10.8);
+    context.fillStyle = "rgba(255, 226, 122, 0.82)";
+    context.beginPath();
+    context.arc(loaderX, 0, 1.1, 0, Math.PI * 2);
+    context.fill();
     context.restore();
   }
 }

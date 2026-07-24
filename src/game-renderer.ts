@@ -172,16 +172,16 @@ export class GameRenderer {
       projectile.draw(this.ctx);
     }
 
-    for (const missile of runtime.missiles) {
-      missile.draw(this.ctx);
-    }
-
     for (const monster of runtime.getActiveMonsters()) {
       monster.draw(this.ctx);
     }
 
     for (const tower of runtime.towers) {
       tower.draw(this.ctx, tower === runtime.selectedTower);
+    }
+
+    for (const missile of runtime.missiles) {
+      missile.draw(this.ctx);
     }
 
     for (const drone of runtime.drones) {
