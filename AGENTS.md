@@ -32,16 +32,18 @@ Key paths:
 - Browser package/scripts: `package.json`
 - Browser level data: `game-levels.json`
 - Browser audio assets: `src/assets/audio/`
-- Tower render sheet script: `scripts/render-towers.mjs`
+- Tower render sheet export script: `scripts/render-towers.mjs`
 - Level render sheet script: `scripts/render-levels.mjs`
 - Monster explosion render sheet script: `scripts/render-monster-explosions.mjs`
 - Browser render/benchmark harness: `scripts/benchmark-browser-harness.mjs`
-- Monster explosion testing page: `explosions.html`
+- Debug tools hub: `debug/index.html`
+- Tower render sheet page: `debug/towers.html`
+- Monster explosion testing page: `debug/explosions.html`
 - Monster explosion testing script: `src/explosion-testing.ts`
-- Escape explosion testing page: `escape-explosion.html`
+- Escape explosion testing page: `debug/escape-explosion.html`
 - Escape explosion testing script: `src/escape-explosion-testing.ts`
 - Shared auxiliary-page animation loop: `src/visibility-animation-loop.ts`
-- Audio soundboard: `soundboard.html`
+- Audio soundboard: `debug/soundboard.html`
 
 Repository notes:
 
@@ -154,7 +156,8 @@ GitHub Pages branch publishing:
 Tower render sheet:
 
 - `npm run render:towers` generates `artifacts/tower-render.png`.
-- The script starts a temporary Vite server, opens it with Playwright, imports the real tower classes, upgrades each tower from level 1 through 7, and calls the actual canvas `draw()` methods.
+- The script starts a temporary Vite server and exports the canvas rendered by `debug/towers.html`; `src/tower-testing.ts` is the single source of truth for the web page and PNG sheet.
+- The tower debug page imports the real tower classes, upgrades each tower from level 1 through 7, and calls the actual canvas `draw()` methods.
 - Use a fresh artifact filename when comparing visual variants so the app does not show a cached old image, for example `npm run render:towers -- artifacts/tower-render-laser-test.png`.
 - Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
 
@@ -176,22 +179,24 @@ Other render and benchmark tooling:
 
 Monster explosion testing showcase:
 
-- `explosions.html` is a separate desktop-only Vite page for inspecting monsters zoomed way in as they move into center and explode in slow motion.
+- `debug/index.html` is the index for standalone development and inspection tools.
+- `debug/towers.html` renders the actual tower and projectile classes across levels 1 through 7.
+- `debug/explosions.html` is a separate desktop-only Vite page for inspecting monsters zoomed way in as they move into center and explode in slow motion.
 - Its behavior lives in `src/explosion-testing.ts`; keep changes isolated there unless deliberately promoting the page into the main game runtime.
 - The page reuses the real monster classes and each monster's actual `addDeathEffect(...)` particles, and intentionally uses normal runtime randomness rather than seeded output.
-- The production build emits `explosions.html` as a separate Rollup entry like `soundboard.html`; keep `src/explosion-testing.ts` out of the main game imports so the game does not load its testing-only JavaScript.
+- The production build emits the pages under `debug/` as separate Rollup entries; keep `src/explosion-testing.ts` and `src/tower-testing.ts` out of the main game imports so the game does not load testing-only JavaScript.
 
 Escape explosion testing showcase:
 
-- `escape-explosion.html` is a separate desktop-only lab for tuning escape burst particle geometry and motion.
+- `debug/escape-explosion.html` is a separate desktop-only lab for tuning escape burst particle geometry and motion.
 - Its behavior lives in `src/escape-explosion-testing.ts`; it uses the production `createEscapeBurstParticles(...)` recipe and `ESCAPE_BURST_CONFIG` from `src/game-engine/combat-effects.ts`, passing slider-derived overrides for lab tuning while keeping lab UI and animation code out of the main bundle.
 - Both animation labs pause while the document is hidden and resume without accumulating a large background-tab delta.
-- The production build emits `escape-explosion.html` as its own Rollup entry alongside the main app, soundboard, and monster explosion lab.
+- The production build emits `debug/escape-explosion.html` alongside the other pages under `debug/`.
 
 Audio assets:
 
 - The committed `.m4a` files in `src/assets/audio/` are the source of truth for game sound effects.
-- `src/audio-manifest.ts` is the single source of truth for cue IDs, soundboard labels, imported asset URLs, cooldowns, gain, and rate variation. `src/game-audio.ts` and `soundboard.html` both consume that manifest.
+- `src/audio-manifest.ts` is the single source of truth for cue IDs, soundboard labels, imported asset URLs, cooldowns, gain, and rate variation. `src/game-audio.ts` and `debug/soundboard.html` both consume that manifest.
 - `src/game-audio.ts` owns Web Audio loading, retryable buffer caching, cooldowns, panning, playback, and `AudioBufferSourceNode.onended` cleanup. Keep rejected loads recoverable and do not queue repeated transient playbacks behind one unresolved load.
 - Audio sources are documented in `src/assets/audio/README.md` at the source-pack level.
 - When replacing audio, overwrite the relevant `.m4a` files directly, keep the source-pack documentation current, and verify the soundboard/build before committing.

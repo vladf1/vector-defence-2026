@@ -8,23 +8,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.resolve(__dirname, "..");
 
 export async function runBrowserPage(options, runPage) {
+  const plugins = [];
+  if (options.html !== undefined) {
+    plugins.push({
+      name: options.pluginName,
+      configureServer(viteServer) {
+        viteServer.middlewares.use(options.path, (_request, response) => {
+          response.setHeader("Content-Type", "text/html; charset=utf-8");
+          response.end(options.html);
+        });
+      },
+    });
+  }
+
   const server = await createServer({
     root: repoRoot,
     logLevel: "error",
     server: {
       host: "127.0.0.1",
     },
-    plugins: [
-      {
-        name: options.pluginName,
-        configureServer(viteServer) {
-          viteServer.middlewares.use(options.path, (_request, response) => {
-            response.setHeader("Content-Type", "text/html; charset=utf-8");
-            response.end(options.html);
-          });
-        },
-      },
-    ],
+    plugins,
   });
 
   let browser;

@@ -89,6 +89,12 @@ export function easeInOutSine(progress: number): number {
   return -(Math.cos(Math.PI * clamped) - 1) / 2;
 }
 
+export function easeOutCubic(progress: number): number {
+  // Progress is normalized from 0 to 1.
+  const clamped = clamp(progress, 0, 1);
+  return 1 - Math.pow(1 - clamped, 3);
+}
+
 export function calculateDistance(source: Point, target: Point): number {
   return Math.hypot(source.x - target.x, source.y - target.y);
 }

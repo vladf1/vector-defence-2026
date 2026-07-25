@@ -167,6 +167,22 @@
         text-align: right;
       }
 
+      .debug-home {
+        position: fixed;
+        z-index: 2;
+        bottom: 24px;
+        left: 32px;
+        padding: 9px 12px;
+        border: 1px solid rgba(232, 255, 248, 0.24);
+        border-radius: 6px;
+        background: rgba(2, 8, 7, 0.76);
+        color: #9dffd7;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+        text-transform: uppercase;
+      }
+
       @media (max-width: 1120px) {
         .slider-controls {
           grid-template-columns: max-content;
@@ -209,6 +225,7 @@
         <button id="playback-toggle" class="playback-button" type="button" aria-label="Pause">⏸️</button>
       </div>
     </div>
+    <a class="debug-home" href="./index.html">Debug tools</a>
     <canvas id="explosion-testing" aria-label="Explosion lab showcase"></canvas>
     <script type="module" src="/src/explosion-testing.ts"></script>
   </body>

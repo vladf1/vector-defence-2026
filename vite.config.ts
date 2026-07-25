@@ -14,9 +14,11 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(rootDir, "index.html"),
-        soundboard: resolve(rootDir, "soundboard.html"),
-        explosions: resolve(rootDir, "explosions.html"),
-        escapeExplosion: resolve(rootDir, "escape-explosion.html"),
+        debug: resolve(rootDir, "debug/index.html"),
+        debugTowers: resolve(rootDir, "debug/towers.html"),
+        debugSoundboard: resolve(rootDir, "debug/soundboard.html"),
+        debugExplosions: resolve(rootDir, "debug/explosions.html"),
+        debugEscapeExplosion: resolve(rootDir, "debug/escape-explosion.html"),
       },
       output: {
         manualChunks(id) {

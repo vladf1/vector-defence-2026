@@ -123,6 +123,22 @@
         background: rgba(255, 228, 148, 0.16);
         color: #fff4bc;
       }
+
+      .debug-home {
+        position: fixed;
+        z-index: 2;
+        bottom: 24px;
+        left: 28px;
+        padding: 9px 12px;
+        border: 1px solid rgba(232, 255, 248, 0.24);
+        border-radius: 6px;
+        background: rgba(2, 8, 7, 0.76);
+        color: #9dffd7;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+        text-transform: uppercase;
+      }
     </style>
   </head>
   <body>
@@ -168,6 +184,7 @@
         <button id="clear-bursts" type="button">Clear</button>
       </div>
     </div>
+    <a class="debug-home" href="./index.html">Debug tools</a>
     <canvas id="escape-explosion-testing" aria-label="Escape explosion lab"></canvas>
     <script type="module" src="/src/escape-explosion-testing.ts"></script>
   </body>
