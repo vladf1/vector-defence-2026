@@ -498,7 +498,7 @@ function createMissile(monster: Monster): Missile {
     source,
     monster,
     MISSILE_PREVIEW_LEVEL,
-    createMissileVisual(1, 0, MISSILE_PREVIEW_LEVEL),
+    createMissileVisual(MISSILE_PREVIEW_LEVEL),
     0,
   );
 }

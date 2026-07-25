@@ -194,7 +194,7 @@ const html = String.raw`
           { x: 0, y: 0 },
           target,
           level,
-          createMissileVisual(1, 0, level),
+          createMissileVisual(level),
           -Math.PI / 8,
         );
         missile.x = 0;
@@ -223,7 +223,7 @@ const html = String.raw`
           { x: explosionX, y: explosionY },
           target,
           level,
-          createMissileVisual(1, 0, level),
+          createMissileVisual(level),
           0,
         );
         missile.x = explosionX;

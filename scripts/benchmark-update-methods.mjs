@@ -355,7 +355,7 @@ const html = String.raw`
             { x: 60 + ((index * 71) % 460), y: 60 + ((index * 41) % 280) },
             targetMonster,
             0,
-            createMissileVisual(1, 0, 0),
+            createMissileVisual(0),
             0.3 + (index * 0.17),
           );
           missile.x = 260 + (index % 17);

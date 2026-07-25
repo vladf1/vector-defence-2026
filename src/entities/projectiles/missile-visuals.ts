@@ -21,7 +21,8 @@ export interface MissileVisual {
   bodyColor: string;
   noseColor: string;
   lengthBonus: number;
-  coordinateScale: number;
+  coordinateScaleX: number;
+  coordinateScaleY: number;
 }
 
 interface MissileGeometry {
@@ -38,17 +39,14 @@ export function getMissileScale(level: number): number {
   return 1 + (0.05 * level);
 }
 
-export function createMissileVisual(missileCount: number, missileIndex: number, level: number): MissileVisual {
-  const accentMissile = missileIndex === 1 && missileCount === 3;
-  const extendedMissile = missileCount === 1 || accentMissile;
-  const shortenedSideMissile = missileCount === 3 && !accentMissile;
-  const lengthBonus = extendedMissile ? 3.2 : shortenedSideMissile ? -1.7 : 0;
+export function createMissileVisual(level: number): MissileVisual {
   const levelScale = getMissileScale(level);
   return {
-    bodyColor: accentMissile ? "#ff9d5c" : "#ffe27a",
-    noseColor: accentMissile ? "#ffe27a" : "#fff1ac",
-    lengthBonus,
-    coordinateScale: 1 / levelScale,
+    bodyColor: "#ff9d5c",
+    noseColor: "#ffe27a",
+    lengthBonus: 3.2,
+    coordinateScaleX: (1 + (0.03 * level)) / levelScale,
+    coordinateScaleY: (1 + (0.04 * level)) / levelScale,
   };
 }
 
@@ -145,15 +143,14 @@ export function drawMissileExhaust(
 }
 
 function getMissileGeometry(visual: MissileVisual): MissileGeometry {
-  const scale = visual.coordinateScale;
-  const scaleX = (x: number) => (x + ROCKET_OFFSET_X) * scale;
+  const scaleX = (x: number) => (x + ROCKET_OFFSET_X) * visual.coordinateScaleX;
   return {
     tailX: scaleX(BASE_TAIL_X),
     bodyFrontX: scaleX(BASE_BODY_FRONT_X + visual.lengthBonus),
     noseTipX: scaleX(BASE_NOSE_TIP_X + visual.lengthBonus),
-    bodyHalfHeight: BODY_HALF_HEIGHT * scale,
-    noseHalfHeight: NOSE_HALF_HEIGHT * scale,
+    bodyHalfHeight: BODY_HALF_HEIGHT * visual.coordinateScaleY,
+    noseHalfHeight: NOSE_HALF_HEIGHT * visual.coordinateScaleY,
     tailCapLeftX: scaleX(BASE_TAIL_X - TAIL_CAP_LENGTH),
-    tailCapHalfHeight: TAIL_CAP_HALF_HEIGHT * scale,
+    tailCapHalfHeight: TAIL_CAP_HALF_HEIGHT * visual.coordinateScaleY,
   };
 }

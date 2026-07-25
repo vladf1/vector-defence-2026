@@ -1,18 +1,26 @@
 import { AudioCue } from "../../audio-manifest";
+import { TOWER_RADIUS } from "../../constants";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { TowerKind } from "../../types";
-import { angleBetween, clamp, randomRange, turnAngleTowards } from "../../utils";
+import { angleBetween, clamp, easeInOutSine, randomRange, turnAngleTowards } from "../../utils";
 import { Missile } from "../projectiles/missile";
 import { createMissileVisual, drawMissileBody, getMissileScale } from "../projectiles/missile-visuals";
 import { Tower } from "./tower";
 
 const MISSILE_FIRING_ANGLE_TOLERANCE = Math.PI / 12;
 const MISSILE_RACK_CENTER_X = 0;
-const EMPTY_LAUNCHER_CENTER_X = -1;
-const MISSILE_RACK_Y_OFFSETS = [
-  [0],
-  [-3.1, 3.1],
-  [-4.5, 0, 4.5],
+const LOADING_PORT_X = -9.5;
+const RELOAD_START_OFFSET_X = -22;
+const LAUNCHER_BASE_HALF_HEIGHT = 3;
+const LAUNCHER_FRONT_INSET = 0.8;
+const MISSILE_POWERBANK_COLORS = [
+  "#9dffd7",
+  "#d8ff4f",
+  "#ff9d5c",
+  "#ff6d8c",
+  "#b58cff",
+  "#78a7ff",
+  "#f6f0ff",
 ] as const;
 
 export class MissileTower extends Tower {
@@ -25,19 +33,12 @@ export class MissileTower extends Tower {
 
   angle = randomRange(-Math.PI, Math.PI);
   turnSpeedPerSecond = 3.6;
-  emptyMissileIndex?: number;
-  private lastReloadedMissileIndex?: number;
 
   constructor(x: number, y: number) {
     super(x, y);
   }
 
   protected updateTower(context: UpdateContext, result: UpdateResult): void {
-    if (this.ready() && this.emptyMissileIndex !== undefined) {
-      this.lastReloadedMissileIndex = this.emptyMissileIndex;
-      this.emptyMissileIndex = undefined;
-    }
-
     const tracked = this.findTrackedMonsterInContext(context);
     let alignedToTarget = false;
 
@@ -48,19 +49,14 @@ export class MissileTower extends Tower {
     }
 
     if (tracked && alignedToTarget && this.ready()) {
-      const missileYs = this.getMissileRackYOffsets();
-      const missileIndex = this.chooseMissileIndex(missileYs.length);
-      const missileVisual = createMissileVisual(missileYs.length, missileIndex, this.level);
-      const missileY = missileYs[missileIndex];
       const cos = Math.cos(this.angle);
       const sin = Math.sin(this.angle);
       const source = {
-        x: this.x + (cos * MISSILE_RACK_CENTER_X) - (sin * missileY),
-        y: this.y + (sin * MISSILE_RACK_CENTER_X) + (cos * missileY),
+        x: this.x + (cos * MISSILE_RACK_CENTER_X),
+        y: this.y + (sin * MISSILE_RACK_CENTER_X),
       };
-      this.emptyMissileIndex = missileIndex;
       this.resetCooldown(this.getCooldownDurationSeconds());
-      result.addMissile(new Missile(source, tracked, this.level, missileVisual, this.angle));
+      result.addMissile(new Missile(source, tracked, this.level, createMissileVisual(this.level), this.angle));
       result.playSound(AudioCue.MissileLaunch, source.x, 1 + (this.level * 0.09));
     }
   }
@@ -72,40 +68,9 @@ export class MissileTower extends Tower {
 
     context.save();
     context.rotate(this.angle);
-    const upgradePipCount = Math.max(0, this.level - 2);
-    const missileScale = getMissileScale(this.level);
-    const missileYs = this.getMissileRackYOffsets();
-    if (this.emptyMissileIndex !== undefined) {
-      this.drawEmptyLauncherSlot(context, missileYs[this.emptyMissileIndex]);
-    }
-
-    for (const [index, missileY] of missileYs.entries()) {
-      if (index === this.emptyMissileIndex) {
-        continue;
-      }
-      context.save();
-      context.translate(MISSILE_RACK_CENTER_X, missileY);
-      context.scale(missileScale, missileScale);
-      drawMissileBody(context, createMissileVisual(missileYs.length, index, this.level));
-      context.restore();
-    }
-
-    if (upgradePipCount > 0) {
-      const pipPositions = [
-        [{ x: -1.6, y: 8.2 }],
-        [{ x: -1.6, y: 8.2 }, { x: 1.6, y: 8.2 }],
-        [{ x: -1.6, y: 8.2 }, { x: 1.6, y: 8.2 }, { x: 0, y: -8.2 }],
-        [{ x: -1.6, y: 8.2 }, { x: 1.6, y: 8.2 }, { x: -1.6, y: -8.2 }, { x: 1.6, y: -8.2 }],
-      ][upgradePipCount - 1];
-      context.fillStyle = "#ffe27a";
-      context.beginPath();
-      for (const pip of pipPositions) {
-        context.moveTo(pip.x + 1.25, pip.y);
-        context.arc(pip.x, pip.y, 1.25, 0, Math.PI * 2);
-      }
-      context.fill();
-    }
-
+    this.drawLauncher(context);
+    this.drawLoadedMissile(context);
+    this.drawLoadingPort(context);
     context.restore();
 
     if (active) {
@@ -114,79 +79,118 @@ export class MissileTower extends Tower {
     context.restore();
   }
 
-  private getMissileRackYOffsets(): readonly number[] {
-    return MISSILE_RACK_Y_OFFSETS[Math.min(2, this.level)];
-  }
-
-  private chooseMissileIndex(missileCount: number): number {
-    if (missileCount !== 2) {
-      return Math.floor(missileCount / 2);
-    }
-    if (this.lastReloadedMissileIndex !== undefined) {
-      return 1 - this.lastReloadedMissileIndex;
-    }
-    return Math.floor(randomRange(0, missileCount));
-  }
-
   private getCooldownDurationSeconds(): number {
     return 2 - (0.2 * this.level);
   }
 
-  private drawEmptyLauncherSlot(context: CanvasRenderingContext2D, missileY: number): void {
-    const halfHeight = 2.5;
-    context.save();
-    context.translate(EMPTY_LAUNCHER_CENTER_X, missileY);
+  private drawLauncher(context: CanvasRenderingContext2D): void {
+    const launcherHalfHeight = this.getLauncherHalfHeight();
+    const launcherFrontX = Math.sqrt(
+      (TOWER_RADIUS * TOWER_RADIUS) - (launcherHalfHeight * launcherHalfHeight),
+    ) - LAUNCHER_FRONT_INSET;
     context.fillStyle = "#142320";
-    context.strokeStyle = "#4c6560";
-    context.lineWidth = 0.9;
     context.beginPath();
-    context.moveTo(-9, -halfHeight);
-    context.lineTo(4.8, -halfHeight);
-    context.lineTo(8.2, -halfHeight + 1.6);
-    context.lineTo(8.2, halfHeight - 1.6);
-    context.lineTo(4.8, halfHeight);
-    context.lineTo(-9, halfHeight);
+    context.moveTo(LOADING_PORT_X, -launcherHalfHeight);
+    context.lineTo(launcherFrontX, -launcherHalfHeight);
+    context.lineTo(launcherFrontX, launcherHalfHeight);
+    context.lineTo(LOADING_PORT_X, launcherHalfHeight);
     context.closePath();
     context.fill();
-    context.stroke();
 
     context.strokeStyle = "rgba(215, 226, 234, 0.62)";
     context.lineWidth = 0.8;
     context.beginPath();
-    context.moveTo(-7.5, -halfHeight);
-    context.lineTo(-7.5, halfHeight);
-    context.moveTo(4.5, -halfHeight);
-    context.lineTo(7.6, -halfHeight + 1.8);
-    context.moveTo(4.5, halfHeight);
-    context.lineTo(7.6, halfHeight - 1.8);
+    context.moveTo(-7.3, -launcherHalfHeight);
+    context.lineTo(launcherFrontX, -launcherHalfHeight);
+    context.moveTo(-7.3, launcherHalfHeight);
+    context.lineTo(launcherFrontX, launcherHalfHeight);
     context.stroke();
 
-    context.strokeStyle = "rgba(255, 226, 122, 0.44)";
-    context.lineWidth = 0.75;
+    if (this.level > 0) {
+      const powerbankStartX = -6.9;
+      const powerbankEndX = powerbankStartX + 6.22 + ((this.level - 1) * 1.14);
+      const powerbankY = 4.7 + (this.level * 0.2);
+      const powerbankColor = MISSILE_POWERBANK_COLORS[
+        Math.min(this.level, MISSILE_POWERBANK_COLORS.length - 1)
+      ];
+
+      context.strokeStyle = "rgba(76, 101, 96, 0.72)";
+      context.lineWidth = 2.8;
+      context.lineCap = "round";
+      context.beginPath();
+      context.moveTo(powerbankStartX, -powerbankY);
+      context.lineTo(powerbankEndX, -powerbankY);
+      context.moveTo(powerbankStartX, powerbankY);
+      context.lineTo(powerbankEndX, powerbankY);
+      context.stroke();
+
+      context.strokeStyle = powerbankColor;
+      context.lineWidth = 1.2;
+      context.beginPath();
+      context.moveTo(powerbankStartX, -powerbankY);
+      context.lineTo(powerbankEndX, -powerbankY);
+      context.moveTo(powerbankStartX, powerbankY);
+      context.lineTo(powerbankEndX, powerbankY);
+      context.stroke();
+    }
+  }
+
+  private drawLoadedMissile(context: CanvasRenderingContext2D): void {
+    const launcherHalfHeight = this.getLauncherHalfHeight();
+    const reloadProgress = this.ready()
+      ? 1
+      : 1 - clamp(this.cooldownSeconds / this.getCooldownDurationSeconds(), 0, 1);
+    const missileOffsetX = RELOAD_START_OFFSET_X * (1 - easeInOutSine(reloadProgress));
+
+    context.save();
     context.beginPath();
-    context.moveTo(-7.2, 0);
-    context.lineTo(6.8, 0);
-    context.stroke();
+    context.rect(
+      LOADING_PORT_X,
+      -launcherHalfHeight,
+      24,
+      launcherHalfHeight * 2,
+    );
+    context.clip();
+    context.translate(MISSILE_RACK_CENTER_X + missileOffsetX, 0);
+    const missileScale = getMissileScale(this.level);
+    context.scale(missileScale, missileScale);
+    drawMissileBody(context, createMissileVisual(this.level));
+    context.restore();
+  }
+
+  private drawLoadingPort(context: CanvasRenderingContext2D): void {
+    const gateFrontX = LOADING_PORT_X + 1.45;
+    const gateBackX = LOADING_PORT_X - 1.55;
+    const gateHalfHeight = this.getLauncherHalfHeight() + 0.55;
+    const gateColor = MISSILE_POWERBANK_COLORS[
+      Math.min(this.level, MISSILE_POWERBANK_COLORS.length - 1)
+    ];
 
     context.fillStyle = "#263b37";
     context.strokeStyle = "#8ca29d";
-    context.lineWidth = 0.8;
+    context.lineWidth = 0.85;
     context.beginPath();
-    context.arc(-7.4, 0, 2.25, 0, Math.PI * 2);
+    context.rect(
+      gateBackX,
+      -gateHalfHeight,
+      gateFrontX - gateBackX,
+      gateHalfHeight * 2,
+    );
     context.fill();
     context.stroke();
 
-    context.fillStyle = "#ffe27a";
-    context.beginPath();
-    context.arc(-7.4, 0, 0.8, 0, Math.PI * 2);
-    context.fill();
+    context.fillStyle = "#07110f";
+    context.fillRect(gateBackX + 0.65, -1.85, 1.7, 3.7);
 
-    const reloadProgress = 1 - clamp(this.cooldownSeconds / this.getCooldownDurationSeconds(), 0, 1);
-    const loaderX = -6.3 + (reloadProgress * 10.8);
-    context.fillStyle = "rgba(255, 226, 122, 0.82)";
+    context.strokeStyle = gateColor;
+    context.lineWidth = 0.75;
     context.beginPath();
-    context.arc(loaderX, 0, 1.1, 0, Math.PI * 2);
-    context.fill();
-    context.restore();
+    context.moveTo(gateFrontX, -2.65);
+    context.lineTo(gateFrontX, 2.65);
+    context.stroke();
+  }
+
+  private getLauncherHalfHeight(): number {
+    return LAUNCHER_BASE_HALF_HEIGHT + (0.12 * this.level);
   }
 }
