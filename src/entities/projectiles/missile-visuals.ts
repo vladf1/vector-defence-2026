@@ -6,8 +6,10 @@ const BASE_NOSE_TIP_X = 8.9;
 const ROCKET_OFFSET_X = 1.8;
 const BODY_HALF_HEIGHT = 1.65;
 const NOSE_HALF_HEIGHT = 1.9;
-const TAIL_CAP_LENGTH = 1.8;
-const TAIL_CAP_HALF_HEIGHT = 0.85;
+const TAIL_CAP_LENGTH = 2.4;
+const TAIL_CAP_BODY_WIDTH_RATIO = 0.85;
+const BASE_MISSILE_REAR_X = BASE_TAIL_X - TAIL_CAP_LENGTH + ROCKET_OFFSET_X;
+const MISSILE_LENGTH_SCALE_PER_LEVEL = 0.03;
 
 const MISSILE_EXHAUST_SMOKE_PUFFS = [
   { distanceBehindTail: 0.8, y: -0.18, radius: 2.2, alpha: 0.25 },
@@ -39,13 +41,17 @@ export function getMissileScale(level: number): number {
   return 1 + (0.05 * level);
 }
 
+export function getMissileRearX(level: number): number {
+  return BASE_MISSILE_REAR_X * (1 + (MISSILE_LENGTH_SCALE_PER_LEVEL * level));
+}
+
 export function createMissileVisual(level: number): MissileVisual {
   const levelScale = getMissileScale(level);
   return {
     bodyColor: "#ff9d5c",
     noseColor: "#ffe27a",
     lengthBonus: 3.2,
-    coordinateScaleX: (1 + (0.03 * level)) / levelScale,
+    coordinateScaleX: (1 + (MISSILE_LENGTH_SCALE_PER_LEVEL * level)) / levelScale,
     coordinateScaleY: (1 + (0.04 * level)) / levelScale,
   };
 }
@@ -151,6 +157,6 @@ function getMissileGeometry(visual: MissileVisual): MissileGeometry {
     bodyHalfHeight: BODY_HALF_HEIGHT * visual.coordinateScaleY,
     noseHalfHeight: NOSE_HALF_HEIGHT * visual.coordinateScaleY,
     tailCapLeftX: scaleX(BASE_TAIL_X - TAIL_CAP_LENGTH),
-    tailCapHalfHeight: TAIL_CAP_HALF_HEIGHT * visual.coordinateScaleY,
+    tailCapHalfHeight: BODY_HALF_HEIGHT * TAIL_CAP_BODY_WIDTH_RATIO * visual.coordinateScaleY,
   };
 }

@@ -4,12 +4,18 @@ import type { UpdateContext, UpdateResult } from "../../game-engine/update-conte
 import { TowerKind } from "../../types";
 import { angleBetween, clamp, easeOutCubic, randomRange, turnAngleTowards } from "../../utils";
 import { Missile } from "../projectiles/missile";
-import { createMissileVisual, drawMissileBody, getMissileScale } from "../projectiles/missile-visuals";
+import {
+  createMissileVisual,
+  drawMissileBody,
+  getMissileRearX,
+  getMissileScale,
+} from "../projectiles/missile-visuals";
 import { Tower } from "./tower";
 
 const MISSILE_FIRING_ANGLE_TOLERANCE = Math.PI / 12;
 const MISSILE_RACK_CENTER_X = 0;
 const LOADING_PORT_X = -9.5;
+const MISSILE_CLIP_FRONT_X = LOADING_PORT_X + 24;
 const RELOAD_START_OFFSET_X = -22;
 const LAUNCHER_BASE_HALF_HEIGHT = 3;
 const LAUNCHER_FRONT_INSET = 0.8;
@@ -68,9 +74,10 @@ export class MissileTower extends Tower {
 
     context.save();
     context.rotate(this.angle);
-    this.drawLauncher(context);
-    this.drawLoadedMissile(context);
-    this.drawLoadingPort(context);
+    const loadingPortX = this.getLoadingPortX();
+    this.drawLauncher(context, loadingPortX);
+    this.drawLoadedMissile(context, loadingPortX);
+    this.drawLoadingPort(context, loadingPortX);
     context.restore();
 
     if (active) {
@@ -83,17 +90,17 @@ export class MissileTower extends Tower {
     return 2 - (0.2 * this.level);
   }
 
-  private drawLauncher(context: CanvasRenderingContext2D): void {
+  private drawLauncher(context: CanvasRenderingContext2D, loadingPortX: number): void {
     const launcherHalfHeight = this.getLauncherHalfHeight();
     const launcherFrontX = Math.sqrt(
       (TOWER_RADIUS * TOWER_RADIUS) - (launcherHalfHeight * launcherHalfHeight),
     ) - LAUNCHER_FRONT_INSET;
     context.fillStyle = "#142320";
     context.beginPath();
-    context.moveTo(LOADING_PORT_X, -launcherHalfHeight);
+    context.moveTo(loadingPortX, -launcherHalfHeight);
     context.lineTo(launcherFrontX, -launcherHalfHeight);
     context.lineTo(launcherFrontX, launcherHalfHeight);
-    context.lineTo(LOADING_PORT_X, launcherHalfHeight);
+    context.lineTo(loadingPortX, launcherHalfHeight);
     context.closePath();
     context.fill();
 
@@ -135,7 +142,7 @@ export class MissileTower extends Tower {
     }
   }
 
-  private drawLoadedMissile(context: CanvasRenderingContext2D): void {
+  private drawLoadedMissile(context: CanvasRenderingContext2D, loadingPortX: number): void {
     const launcherHalfHeight = this.getLauncherHalfHeight();
     const reloadProgress = this.ready()
       ? 1
@@ -146,9 +153,9 @@ export class MissileTower extends Tower {
     context.save();
     context.beginPath();
     context.rect(
-      LOADING_PORT_X,
+      loadingPortX,
       -launcherHalfHeight,
-      24,
+      MISSILE_CLIP_FRONT_X - loadingPortX,
       launcherHalfHeight * 2,
     );
     context.clip();
@@ -159,9 +166,9 @@ export class MissileTower extends Tower {
     context.restore();
   }
 
-  private drawLoadingPort(context: CanvasRenderingContext2D): void {
-    const gateFrontX = LOADING_PORT_X + 1.45;
-    const gateBackX = LOADING_PORT_X - 1.55;
+  private drawLoadingPort(context: CanvasRenderingContext2D, loadingPortX: number): void {
+    const gateFrontX = loadingPortX + 1.45;
+    const gateBackX = loadingPortX - 1.55;
     const gateHalfHeight = this.getLauncherHalfHeight() + 0.55;
     const gateColor = MISSILE_POWERBANK_COLORS[
       Math.min(this.level, MISSILE_POWERBANK_COLORS.length - 1)
@@ -193,5 +200,9 @@ export class MissileTower extends Tower {
 
   private getLauncherHalfHeight(): number {
     return LAUNCHER_BASE_HALF_HEIGHT + (0.12 * this.level);
+  }
+
+  private getLoadingPortX(): number {
+    return LOADING_PORT_X + getMissileRearX(this.level) - getMissileRearX(0);
   }
 }

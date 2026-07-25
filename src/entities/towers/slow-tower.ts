@@ -69,7 +69,7 @@ export class SlowTower extends Tower {
     this.drawBase(context, gradient, "#ffffff", `rgba(216, 255, 79, ${0.22 + (this.level * 0.02)})`);
 
     if (this.level > 0) {
-      const nodeCount = Math.min(6, this.level + 1);
+      const nodeCount = Math.min(7, this.level + 1);
       const orbitRadius = 7 + (this.level * 0.75);
       context.fillStyle = "#ffe27a";
       context.beginPath();
