@@ -2,7 +2,7 @@ import { AudioCue } from "../../audio-manifest";
 import { TOWER_RADIUS } from "../../constants";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { TowerKind } from "../../types";
-import { angleBetween, clamp, easeInOutSine, randomRange, turnAngleTowards } from "../../utils";
+import { angleBetween, clamp, randomRange, turnAngleTowards } from "../../utils";
 import { Missile } from "../projectiles/missile";
 import { createMissileVisual, drawMissileBody, getMissileScale } from "../projectiles/missile-visuals";
 import { Tower } from "./tower";
@@ -140,7 +140,8 @@ export class MissileTower extends Tower {
     const reloadProgress = this.ready()
       ? 1
       : 1 - clamp(this.cooldownSeconds / this.getCooldownDurationSeconds(), 0, 1);
-    const missileOffsetX = RELOAD_START_OFFSET_X * (1 - easeInOutSine(reloadProgress));
+    const easedReloadProgress = 1 - Math.pow(1 - reloadProgress, 3);
+    const missileOffsetX = RELOAD_START_OFFSET_X * (1 - easedReloadProgress);
 
     context.save();
     context.beginPath();
