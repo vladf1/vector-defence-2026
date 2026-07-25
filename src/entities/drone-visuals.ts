@@ -50,7 +50,8 @@ export function drawDroneBody(context: CanvasRenderingContext2D, style: DroneBod
   context.stroke();
 
   context.fillStyle = style.accentFillStyle;
-  context.fillRect(-1.8, -0.9, 3.6 + (style.level * 0.16), 1.8);
+  const accentWidth = 3.6 + (style.level * 0.16);
+  context.fillRect(-accentWidth / 2, -0.9, accentWidth, 1.8);
 
   if (style.level >= 3) {
     context.strokeStyle = style.accentFillStyle;

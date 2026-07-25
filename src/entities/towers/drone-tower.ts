@@ -60,7 +60,7 @@ export class DroneTower extends Tower {
   }
 
   private drawDockedDrone(context: CanvasRenderingContext2D, accent: string, ready: boolean): void {
-    const scale = 0.7 + (this.level * 0.028);
+    const scale = 0.7 + (this.level * 0.014);
     const propellerRadius = 2.85 + (this.level * 0.15);
     const motorRadius = 1.15 + (this.level * 0.09);
     const propellerAlpha = ready ? 0.28 : 0.16;
