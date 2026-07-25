@@ -32,12 +32,11 @@ Key paths:
 - Browser package/scripts: `package.json`
 - Browser level data: `game-levels.json`
 - Browser audio assets: `src/assets/audio/`
-- Tower render sheet export script: `scripts/render-towers.mjs`
 - Level render sheet script: `scripts/render-levels.mjs`
 - Monster explosion render sheet script: `scripts/render-monster-explosions.mjs`
 - Browser render/benchmark harness: `scripts/benchmark-browser-harness.mjs`
 - Debug tools hub: `debug/index.html`
-- Tower render sheet page: `debug/towers.html`
+- Tower render table page: `debug/towers.html`
 - Monster explosion testing page: `debug/explosions.html`
 - Monster explosion testing script: `src/explosion-testing.ts`
 - Escape explosion testing page: `debug/escape-explosion.html`
@@ -144,7 +143,6 @@ Useful validation commands:
 - `npm run benchmark:draw`
 - `npm run benchmark:draw:towers`
 - `npm run render:levels`
-- `npm run render:towers`
 
 The supported runtime ranges are declared in `package.json`; `.nvmrc` pins the local/CI Node release. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
 
@@ -153,13 +151,10 @@ GitHub Pages branch publishing:
 - To publish a non-main branch for testing, use the existing `Deploy GitHub Pages` workflow with `workflow_dispatch` on that branch. If the `github-pages` environment blocks the branch, temporarily add a deployment branch policy for that exact branch, run the workflow, then remove the temporary policy after the deploy succeeds.
 - Do not create or push a `gh-pages` branch for branch testing. The Pages publish path for this repo is the Actions artifact workflow, not a deploy branch workaround.
 
-Tower render sheet:
+Tower render table:
 
-- `npm run render:towers` generates `artifacts/tower-render.png`.
-- The script starts a temporary Vite server and exports the canvas rendered by `debug/towers.html`; `src/tower-testing.ts` is the single source of truth for the web page and PNG sheet.
-- The tower debug page imports the real tower classes, upgrades each tower from level 1 through 7, and calls the actual canvas `draw()` methods.
-- Use a fresh artifact filename when comparing visual variants so the app does not show a cached old image, for example `npm run render:towers -- artifacts/tower-render-laser-test.png`.
-- Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
+- `debug/towers.html` displays a table of individual canvas previews for each tower, projectile, and level.
+- `src/tower-testing.ts` imports the real tower classes, upgrades each tower from level 1 through 7, and calls the actual canvas `draw()` methods.
 
 Monster explosion render sheets:
 
@@ -208,6 +203,6 @@ Maintenance preferences:
 - Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in Svelte components.
 - Keep gameplay rates time-based and compatible with variable substep sizes. Reuse `CalibratedExponentialDecay` for calibrated particle damping instead of introducing `1 - k * deltaSeconds` velocity damping.
 - Avoid default parameter values in new code; make call sites pass behavior-affecting values explicitly.
-- When changing tower drawing code, run `npm run render:towers -- artifacts/<fresh-name>.png` and inspect the generated sheet before calling the visuals done.
+- When changing tower drawing code, inspect every level in `debug/towers.html` and run `npm run build` before calling the visuals done.
 - When adding monsters, add a `MonsterKind` value, a concrete monster class, a `createBaseMonster(...)` branch in `src/game-engine/monster-factory.ts`, and campaign usage as needed.
 - When adding towers, add a `TowerKind` value and concrete tower class, then add one `registerTower(...)` entry with any preview pose configuration. `TOWER_CLASSES` and `TOWER_TOOLBAR_PREVIEWS` are derived from that registration list. `Game.createTower(...)` already resolves classes through the registry; do not add a kind switch there.

@@ -51,14 +51,116 @@
       }
 
       main {
-        padding: 16px;
+        padding: 24px;
       }
 
-      canvas {
-        display: block;
-        width: min(100%, 1270px);
-        height: auto;
+      .table-scroll {
+        width: fit-content;
+        max-width: 100%;
         margin: 0 auto;
+        overflow-x: auto;
+      }
+
+      table {
+        border-collapse: collapse;
+        min-width: max-content;
+        border: 1px solid rgba(232, 255, 248, 0.16);
+      }
+
+      th,
+      td {
+        border: 1px solid rgba(232, 255, 248, 0.16);
+      }
+
+      th {
+        background: #07110f;
+        color: rgba(239, 255, 247, 0.92);
+        font-weight: 900;
+      }
+
+      thead th {
+        height: 52px;
+        padding: 0 16px;
+        text-align: center;
+      }
+
+      tbody th {
+        min-width: 160px;
+        padding: 0 18px;
+        text-align: right;
+      }
+
+      td {
+        padding: 6px;
+        background: #020807;
+      }
+
+      .preview-button {
+        display: block;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: zoom-in;
+      }
+
+      .preview-button:focus-visible {
+        outline: 2px solid #9dffd7;
+        outline-offset: -2px;
+      }
+
+      td canvas {
+        display: block;
+        width: 112px;
+        height: 112px;
+      }
+
+      .preview-dialog {
+        width: min(100dvw, 100dvh);
+        height: min(100dvw, 100dvh);
+        max-width: none;
+        max-height: none;
+        margin: auto;
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid rgba(232, 255, 248, 0.16);
+        background: #020807;
+      }
+
+      .preview-dialog::backdrop {
+        background: rgba(0, 0, 0, 0.82);
+      }
+
+      .preview-dialog canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .preview-dialog-label,
+      .preview-dialog-close {
+        position: absolute;
+        z-index: 1;
+        top: 14px;
+        border: 1px solid rgba(232, 255, 248, 0.2);
+        background: rgba(2, 8, 7, 0.88);
+        color: #effff7;
+        font: inherit;
+        font-weight: 900;
+      }
+
+      .preview-dialog-label {
+        left: 14px;
+        padding: 8px 12px;
+        pointer-events: none;
+      }
+
+      .preview-dialog-close {
+        right: 14px;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        cursor: pointer;
       }
     </style>
   </head>
@@ -68,8 +170,15 @@
       <a href="./index.html">Debug tools</a>
     </header>
     <main>
-      <canvas id="tower-testing" aria-label="Tower and projectile render sheet"></canvas>
+      <div class="table-scroll">
+        <table id="tower-testing" aria-label="Tower and projectile render table"></table>
+      </div>
     </main>
+    <dialog id="tower-preview-dialog" class="preview-dialog" aria-labelledby="tower-preview-label">
+      <span id="tower-preview-label" class="preview-dialog-label"></span>
+      <button id="tower-preview-close" class="preview-dialog-close" type="button" aria-label="Close preview">×</button>
+      <canvas id="tower-preview-canvas"></canvas>
+    </dialog>
     <script type="module" src="/src/tower-testing.ts"></script>
   </body>
 </html>

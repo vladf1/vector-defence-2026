@@ -16,25 +16,24 @@ import type { Tower } from "./entities/towers/tower";
 
 interface RenderRow {
   label: string;
-  draw(context: CanvasRenderingContext2D, centerX: number, centerY: number, level: number): void;
+  draw(
+    context: CanvasRenderingContext2D,
+    centerX: number,
+    centerY: number,
+    level: number,
+    artScale: number,
+  ): void;
 }
 
-const CELL_SIZE = 150;
-const ROW_HEADER_WIDTH = 190;
-const TOP_HEADER_HEIGHT = 100;
-const GAME_ART_SCALE = 3.35;
-const GRID_SIZE = 40;
+const PREVIEW_CELL_SIZE = 112;
+const PREVIEW_ART_SCALE = 2.5;
+const PREVIEW_ART_SCALE_PER_PIXEL = PREVIEW_ART_SCALE / PREVIEW_CELL_SIZE;
 
-const canvasTarget = document.querySelector<HTMLCanvasElement>("#tower-testing");
-if (!canvasTarget) {
-  throw new Error("Tower testing canvas is missing.");
-}
-const contextTarget = canvasTarget.getContext("2d");
-if (!contextTarget) {
-  throw new Error("Tower testing canvas could not be initialized.");
-}
-const canvas = canvasTarget;
-const context = contextTarget;
+const tableTarget = queryRequiredElement<HTMLTableElement>("#tower-testing", "Tower testing table is missing.");
+const previewDialogTarget = queryRequiredElement<HTMLDialogElement>("#tower-preview-dialog", "Tower zoom dialog is missing.");
+const previewCanvasTarget = queryRequiredElement<HTMLCanvasElement>("#tower-preview-canvas", "Tower zoom canvas is missing.");
+const previewLabelTarget = queryRequiredElement<HTMLElement>("#tower-preview-label", "Tower zoom label is missing.");
+const previewCloseTarget = queryRequiredElement<HTMLButtonElement>("#tower-preview-close", "Tower zoom close button is missing.");
 
 const towerRows: RenderRow[] = [
   createTowerRow("Gun", () => {
@@ -73,96 +72,138 @@ const projectileRows: RenderRow[] = [
   { label: "Missile Explosion", draw: drawMissileExplosionSample },
 ];
 const renderRows = [...towerRows, ...projectileRows];
-const logicalWidth = ROW_HEADER_WIDTH + ((MAX_TOWER_LEVEL + 1) * CELL_SIZE) + 30;
-const logicalHeight = TOP_HEADER_HEIGHT + (renderRows.length * CELL_SIZE) + 24;
-const backingScale = Math.min(window.devicePixelRatio || 1, 2);
+let zoomedPreview: { row: RenderRow; level: number } | undefined;
 
-canvas.width = Math.round(logicalWidth * backingScale);
-canvas.height = Math.round(logicalHeight * backingScale);
-context.scale(backingScale, backingScale);
-context.fillStyle = "#020807";
-context.fillRect(0, 0, logicalWidth, logicalHeight);
-drawGrid();
-drawLabels();
-
-for (const [rowIndex, row] of renderRows.entries()) {
-  for (let level = 0; level <= MAX_TOWER_LEVEL; level += 1) {
-    const centerX = ROW_HEADER_WIDTH + (level * CELL_SIZE) + (CELL_SIZE / 2);
-    const centerY = TOP_HEADER_HEIGHT + (rowIndex * CELL_SIZE) + (CELL_SIZE / 2);
-    row.draw(context, centerX, centerY, level);
+drawPreviewTable(tableTarget);
+previewCloseTarget.addEventListener("click", () => previewDialogTarget.close());
+previewDialogTarget.addEventListener("click", (event) => {
+  if (event.target === previewDialogTarget) {
+    previewDialogTarget.close();
   }
-}
+});
+previewDialogTarget.addEventListener("close", () => {
+  zoomedPreview = undefined;
+});
+window.addEventListener("resize", () => {
+  if (previewDialogTarget.open && zoomedPreview) {
+    drawZoomedPreview(zoomedPreview.row, zoomedPreview.level);
+  }
+});
 
-const windowWithTowerRender = window as Window & { __towerRenderDataUrl?: string };
-windowWithTowerRender.__towerRenderDataUrl = canvas.toDataURL("image/png");
+function queryRequiredElement<T extends Element>(selector: string, errorMessage: string): T {
+  const target = document.querySelector<T>(selector);
+  if (!target) {
+    throw new Error(errorMessage);
+  }
+  return target;
+}
 
 function createTowerRow(label: string, createTower: () => Tower): RenderRow {
   return {
     label,
-    draw(drawContext, centerX, centerY, level) {
+    draw(drawContext, centerX, centerY, level, artScale) {
       const tower = createTower();
       for (let upgrade = 0; upgrade < level; upgrade += 1) {
         tower.upgrade();
       }
       drawContext.save();
       drawContext.translate(centerX, centerY);
-      drawContext.scale(GAME_ART_SCALE, GAME_ART_SCALE);
+      drawContext.scale(artScale, artScale);
       tower.draw(drawContext, false);
       drawContext.restore();
     },
   };
 }
 
-function drawGrid(): void {
-  context.save();
-  context.strokeStyle = "rgba(255, 255, 255, 0.055)";
-  context.lineWidth = 1;
-  for (let x = 0; x <= logicalWidth; x += GRID_SIZE) {
-    context.beginPath();
-    context.moveTo(x, 0);
-    context.lineTo(x, logicalHeight);
-    context.stroke();
+function drawPreviewTable(table: HTMLTableElement): void {
+  table.replaceChildren();
+  const header = table.createTHead();
+  const headerRow = header.insertRow();
+  const rowHeading = document.createElement("th");
+  rowHeading.scope = "col";
+  rowHeading.textContent = "Render";
+  headerRow.append(rowHeading);
+  for (let level = 0; level <= MAX_TOWER_LEVEL; level += 1) {
+    const levelHeading = document.createElement("th");
+    levelHeading.scope = "col";
+    levelHeading.textContent = `Level ${level + 1}`;
+    headerRow.append(levelHeading);
   }
-  for (let y = 0; y <= logicalHeight; y += GRID_SIZE) {
-    context.beginPath();
-    context.moveTo(0, y);
-    context.lineTo(logicalWidth, y);
-    context.stroke();
+
+  const body = table.createTBody();
+  for (const row of renderRows) {
+    const tableRow = body.insertRow();
+    const rowLabel = document.createElement("th");
+    rowLabel.scope = "row";
+    rowLabel.textContent = row.label;
+    tableRow.append(rowLabel);
+    for (let level = 0; level <= MAX_TOWER_LEVEL; level += 1) {
+      const cell = tableRow.insertCell();
+      cell.append(createPreviewButton(row, level));
+    }
   }
-  context.strokeStyle = "rgba(255, 255, 255, 0.08)";
-  for (let level = 0; level <= MAX_TOWER_LEVEL + 1; level += 1) {
-    const x = ROW_HEADER_WIDTH + (level * CELL_SIZE);
-    context.beginPath();
-    context.moveTo(x, TOP_HEADER_HEIGHT);
-    context.lineTo(x, logicalHeight);
-    context.stroke();
-  }
-  context.restore();
 }
 
-function drawLabels(): void {
-  context.save();
-  context.fillStyle = "rgba(239, 255, 247, 0.9)";
-  context.font = "900 18px Avenir Next, Arial Black, Trebuchet MS, system-ui, sans-serif";
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  for (let level = 0; level <= MAX_TOWER_LEVEL; level += 1) {
-    context.fillText(
-      String(level + 1),
-      ROW_HEADER_WIDTH + (level * CELL_SIZE) + (CELL_SIZE / 2),
-      58,
-    );
+function createPreviewButton(row: RenderRow, level: number): HTMLButtonElement {
+  const previewButton = document.createElement("button");
+  previewButton.type = "button";
+  previewButton.className = "preview-button";
+  previewButton.setAttribute("aria-label", `Zoom ${row.label}, level ${level + 1}`);
+  previewButton.append(createPreviewCanvas(row, level));
+  previewButton.addEventListener("click", () => openZoomedPreview(row, level));
+  return previewButton;
+}
+
+function createPreviewCanvas(row: RenderRow, level: number): HTMLCanvasElement {
+  const previewCanvas = document.createElement("canvas");
+  previewCanvas.setAttribute("aria-hidden", "true");
+  const backingScale = Math.min(window.devicePixelRatio || 1, 2);
+  previewCanvas.width = Math.round(PREVIEW_CELL_SIZE * backingScale);
+  previewCanvas.height = Math.round(PREVIEW_CELL_SIZE * backingScale);
+  const previewContext = previewCanvas.getContext("2d");
+  if (!previewContext) {
+    throw new Error(`Could not initialize the ${row.label} level ${level + 1} preview.`);
   }
-  context.textAlign = "right";
-  context.font = "900 17px Avenir Next, Arial Black, Trebuchet MS, system-ui, sans-serif";
-  for (const [rowIndex, row] of renderRows.entries()) {
-    context.fillText(
-      row.label,
-      ROW_HEADER_WIDTH - 16,
-      TOP_HEADER_HEIGHT + (rowIndex * CELL_SIZE) + (CELL_SIZE / 2),
-    );
+  previewContext.scale(backingScale, backingScale);
+  previewContext.fillStyle = "#020807";
+  previewContext.fillRect(0, 0, PREVIEW_CELL_SIZE, PREVIEW_CELL_SIZE);
+  row.draw(
+    previewContext,
+    PREVIEW_CELL_SIZE / 2,
+    PREVIEW_CELL_SIZE / 2,
+    level,
+    PREVIEW_ART_SCALE,
+  );
+  return previewCanvas;
+}
+
+function openZoomedPreview(row: RenderRow, level: number): void {
+  zoomedPreview = { row, level };
+  previewLabelTarget.textContent = `${row.label} · Level ${level + 1}`;
+  previewCanvasTarget.setAttribute("aria-label", `${row.label}, level ${level + 1}`);
+  previewDialogTarget.showModal();
+  drawZoomedPreview(row, level);
+}
+
+function drawZoomedPreview(row: RenderRow, level: number): void {
+  const zoomSize = Math.min(previewDialogTarget.clientWidth, previewDialogTarget.clientHeight);
+  const backingScale = Math.min(window.devicePixelRatio || 1, 2);
+  previewCanvasTarget.width = Math.round(zoomSize * backingScale);
+  previewCanvasTarget.height = Math.round(zoomSize * backingScale);
+  const zoomContext = previewCanvasTarget.getContext("2d");
+  if (!zoomContext) {
+    throw new Error("Could not initialize the tower zoom preview.");
   }
-  context.restore();
+  zoomContext.scale(backingScale, backingScale);
+  zoomContext.fillStyle = "#020807";
+  zoomContext.fillRect(0, 0, zoomSize, zoomSize);
+  row.draw(
+    zoomContext,
+    zoomSize / 2,
+    zoomSize / 2,
+    level,
+    zoomSize * PREVIEW_ART_SCALE_PER_PIXEL,
+  );
 }
 
 function drawProjectileSample(
@@ -170,13 +211,14 @@ function drawProjectileSample(
   centerX: number,
   centerY: number,
   level: number,
+  artScale: number,
 ): void {
   const projectile = new GunProjectile(
     { x: 0, y: 0 },
     { x: 36, y: -36 * Math.tan(Math.PI / 8) },
     level,
   );
-  drawScaled(drawContext, centerX, centerY, () => projectile.draw(drawContext));
+  drawScaled(drawContext, centerX, centerY, artScale, () => projectile.draw(drawContext));
 }
 
 function drawDroneProjectileSample(
@@ -184,13 +226,14 @@ function drawDroneProjectileSample(
   centerX: number,
   centerY: number,
   level: number,
+  artScale: number,
 ): void {
   const projectile = new DroneProjectile(
     { x: 0, y: 0 },
     { x: 36, y: -36 * Math.tan(Math.PI / 8) },
     level,
   );
-  drawScaled(drawContext, centerX, centerY, () => projectile.draw(drawContext));
+  drawScaled(drawContext, centerX, centerY, artScale, () => projectile.draw(drawContext));
 }
 
 function drawMissileSample(
@@ -198,6 +241,7 @@ function drawMissileSample(
   centerX: number,
   centerY: number,
   level: number,
+  artScale: number,
 ): void {
   const target = createPreviewTarget(120, 0);
   const missile = new Missile(
@@ -207,7 +251,7 @@ function drawMissileSample(
     createMissileVisual(level),
     -Math.PI / 8,
   );
-  drawScaled(drawContext, centerX, centerY, () => missile.draw(drawContext));
+  drawScaled(drawContext, centerX, centerY, artScale, () => missile.draw(drawContext));
 }
 
 function drawMissileExplosionSample(
@@ -215,6 +259,7 @@ function drawMissileExplosionSample(
   centerX: number,
   centerY: number,
   level: number,
+  artScale: number,
 ): void {
   const explosionX = 100;
   const explosionY = 100;
@@ -251,7 +296,7 @@ function drawMissileExplosionSample(
 
   drawContext.save();
   drawContext.translate(centerX, centerY);
-  drawContext.scale(GAME_ART_SCALE, GAME_ART_SCALE);
+  drawContext.scale(artScale, artScale);
   drawContext.translate(-explosionX, -explosionY);
   for (const particle of updateResult.particles) {
     particle.draw(drawContext);
@@ -263,11 +308,12 @@ function drawScaled(
   drawContext: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
+  artScale: number,
   draw: () => void,
 ): void {
   drawContext.save();
   drawContext.translate(centerX, centerY);
-  drawContext.scale(GAME_ART_SCALE, GAME_ART_SCALE);
+  drawContext.scale(artScale, artScale);
   draw();
   drawContext.restore();
 }

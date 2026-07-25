@@ -114,31 +114,27 @@ export class MissileTower extends Tower {
     context.stroke();
 
     if (this.level > 0) {
-      const powerbankStartX = -6.9;
-      const powerbankEndX = powerbankStartX + 6.22 + ((this.level - 1) * 1.14);
-      const powerbankY = 4.7 + (this.level * 0.2);
+      const powerbankX = -6.9;
+      const powerbankLength = 6.22 + ((this.level - 1) * 1.14);
+      const powerbankHeight = 1.5 + (this.level * 0.06);
+      const powerbankGap = 1.1;
       const powerbankColor = MISSILE_POWERBANK_COLORS[
         Math.min(this.level, MISSILE_POWERBANK_COLORS.length - 1)
       ];
 
-      context.strokeStyle = "rgba(76, 101, 96, 0.72)";
-      context.lineWidth = 2.8;
-      context.lineCap = "round";
-      context.beginPath();
-      context.moveTo(powerbankStartX, -powerbankY);
-      context.lineTo(powerbankEndX, -powerbankY);
-      context.moveTo(powerbankStartX, powerbankY);
-      context.lineTo(powerbankEndX, powerbankY);
-      context.stroke();
-
-      context.strokeStyle = powerbankColor;
-      context.lineWidth = 1.2;
-      context.beginPath();
-      context.moveTo(powerbankStartX, -powerbankY);
-      context.lineTo(powerbankEndX, -powerbankY);
-      context.moveTo(powerbankStartX, powerbankY);
-      context.lineTo(powerbankEndX, powerbankY);
-      context.stroke();
+      context.fillStyle = powerbankColor;
+      context.fillRect(
+        powerbankX,
+        -launcherHalfHeight - powerbankGap - powerbankHeight,
+        powerbankLength,
+        powerbankHeight,
+      );
+      context.fillRect(
+        powerbankX,
+        launcherHalfHeight + powerbankGap,
+        powerbankLength,
+        powerbankHeight,
+      );
     }
   }
 

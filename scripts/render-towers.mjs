@@ -1,20 +1,21 @@
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import {
-  repoRoot,
-  runBrowserPage,
-  waitForPageResult,
-  writeDataUrlPng,
-} from "./benchmark-browser-harness.mjs";
+import { repoRoot, runBrowserPage } from "./benchmark-browser-harness.mjs";
 
 const outputPath = path.resolve(repoRoot, process.argv[2] ?? "artifacts/tower-render.png");
 
-const dataUrl = await runBrowserPage({
+const png = await runBrowserPage({
   path: "/debug/towers.html",
   waitUntil: "networkidle",
-  viewport: { width: 1440, height: 900 },
+  viewport: { width: 1200, height: 1500 },
   deviceScaleFactor: 2,
-}, (page) => waitForPageResult(page, "__towerRenderDataUrl", 5_000));
+}, async (page) => {
+  const table = page.locator("#tower-testing");
+  await table.waitFor({ state: "visible" });
+  return table.screenshot({ type: "png" });
+});
 
-await writeDataUrlPng(outputPath, dataUrl);
+await mkdir(path.dirname(outputPath), { recursive: true });
+await writeFile(outputPath, png);
 console.log(outputPath);
