@@ -6,6 +6,7 @@
   const session = getGameSessionContext();
   const profile = session.profile;
   const hud = session.hud;
+  const modal = session.modal;
   let backgroundCanvas: HTMLCanvasElement;
   let gameCanvas: HTMLCanvasElement;
 
@@ -29,6 +30,7 @@
   <div class="board-frame">
     <div
       class="board-stage"
+      inert={$modal !== null}
       style={`--field-aspect-ratio: ${profile.fieldAspectRatio}; --field-aspect-scale: ${profile.fieldAspectScale};`}
     >
       <canvas

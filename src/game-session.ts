@@ -222,7 +222,7 @@ export function createGameSession(profile: GameProfile) {
       }
     }
 
-    const updateStart = performance.now();
+    const updateStart = nerdStatsEnabled ? performance.now() : 0;
     if (!hasPreviousFrame) {
       activeGame.updateSimulation(0);
     } else {
@@ -235,14 +235,12 @@ export function createGameSession(profile: GameProfile) {
       );
       pendingSimulationSeconds = activeGame.needsAnimationFrame() ? substeps.remainingSeconds : 0;
     }
-    const updateDurationMs = performance.now() - updateStart;
-    const drawStart = performance.now();
+    const drawStart = nerdStatsEnabled ? performance.now() : 0;
     activeGame.draw();
-    const drawDurationMs = performance.now() - drawStart;
 
     if (nerdStatsEnabled && hasPreviousFrame) {
-      sampledUpdateDurationMs += updateDurationMs;
-      sampledDrawDurationMs += drawDurationMs;
+      sampledUpdateDurationMs += drawStart - updateStart;
+      sampledDrawDurationMs += performance.now() - drawStart;
 
       if (timestamp - lastNerdStatsSampleTime >= NERD_STATS_SAMPLE_MS && sampledFrameDurationMs > 0) {
         runtimeStats = {

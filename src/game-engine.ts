@@ -8,7 +8,7 @@ import { createEscapeBurstParticles, ESCAPE_BURST_CONFIG } from "./game-engine/c
 import { ActiveCircleSweepCollisionIndex } from "./game-engine/collision-detection";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
-import { GameRenderer, type FieldBounds } from "./game-renderer";
+import { GameRenderer } from "./game-renderer";
 import { MAX_LINKS, MAX_PARTICLES, TIMER_EPSILON_SECONDS } from "./constants";
 import type { Monster } from "./entities/monsters/monster";
 import type { Drone } from "./entities/projectiles/drone";
@@ -32,6 +32,7 @@ import {
   type LevelJsonData,
   type Point,
   type WaveData,
+  type FieldBounds,
 } from "./types";
 
 type BattleState = typeof GameState.Playing | typeof GameState.Paused;
@@ -159,6 +160,7 @@ export class Game {
       deltaSeconds: 0,
       fieldWidth: profile.fieldWidth,
       fieldHeight: profile.fieldHeight,
+      fieldBounds: profile.placement.bounds,
       activeMonsters: this.activeMonsters,
       monsterCollisionIndex: this.monsterCollisionIndex,
       activeDrones: this.runtime.drones,
@@ -278,7 +280,7 @@ export class Game {
     this.runtime = new LevelRuntime(level, this.profile.roadTurnRadius, this.profile.routeCurveSampleStep);
     this.breachResolutionDelaySeconds = 0;
     this.menuReturnState = undefined;
-    this.setBanner(`Level ${level.levelNumber ?? "?"}: ${level.name}`, 2.4);
+    this.setBanner(`Level ${level.levelNumber}: ${level.name}`, 2.4);
     this.setState(GameState.Playing);
     this.playSound(AudioCue.LevelStart);
     this.renderBackgroundLayer();
@@ -328,6 +330,9 @@ export class Game {
   }
 
   openMenu(): void {
+    if (this.state === GameState.Menu) {
+      return;
+    }
     this.menuReturnState = isBattleState(this.state) ? this.state : undefined;
     this.playSound(AudioCue.MenuOpen);
     this.setState(GameState.Menu);
@@ -357,12 +362,12 @@ export class Game {
   }
 
   spawnMonster(): void {
-    const { level, routePath } = this.runtime;
-    if (!level || !routePath) {
+    const { routePath, activeWave } = this.runtime;
+    if (!activeWave || !routePath) {
       return;
     }
 
-    const sequence = this.activeWave?.monsterSequence ?? level.monsterSequence;
+    const sequence = activeWave.monsterSequence;
     const code = sequence[this.runtime.spawnIndex] ?? MonsterKind.PackMan;
     this.runtime.spawnIndex = (this.runtime.spawnIndex + 1) % sequence.length;
     this.runtime.spawnedMonsters += 1;
@@ -393,7 +398,7 @@ export class Game {
   }
 
   onMonsterEscaped(monster: Monster, result: UpdateResult): void {
-    for (const particle of createEscapeBurstParticles(monster.x, monster.y, ESCAPE_BURST_CONFIG)) {
+    for (const particle of createEscapeBurstParticles(monster.x, monster.y, ESCAPE_BURST_CONFIG, result.remainingParticleCapacity)) {
       result.addParticle(particle);
     }
     result.playSound(AudioCue.EscapeBurst, monster.x);
@@ -542,7 +547,7 @@ export class Game {
       point,
       this.runtime.routePath,
       this.runtime.towers,
-      { ...this.profile.placement, ...fieldBounds },
+      { ...this.profile.placement, bounds: fieldBounds },
     );
   }
 
@@ -763,6 +768,7 @@ export class Game {
 
   resize(): void {
     this.renderer.resize();
+    this.updateContext.fieldBounds = this.renderer.getVisibleFieldBounds();
   }
 
   renderBackgroundLayer(): void {
@@ -813,6 +819,7 @@ export class Game {
 
       const { updateContext, updateResult } = this;
       updateResult.clear();
+      updateResult.particleLimit = Math.max(0, MAX_PARTICLES - this.runtime.particles.length);
       updateContext.deltaSeconds = deltaSeconds;
       updateContext.activeDrones = this.runtime.drones;
 
@@ -842,7 +849,17 @@ export class Game {
         refreshDroneAssignments(this.runtime.drones, this.droneAssignments);
 
         for (const drone of this.runtime.drones) {
+          const previousTarget = drone.getAssignedTarget();
           drone.update(updateContext, updateResult);
+          const nextTarget = drone.getAssignedTarget();
+          if (previousTarget !== nextTarget) {
+            if (previousTarget) {
+              this.droneAssignments.set(previousTarget, (this.droneAssignments.get(previousTarget) ?? 1) - 1);
+            }
+            if (nextTarget) {
+              this.droneAssignments.set(nextTarget, (this.droneAssignments.get(nextTarget) ?? 0) + 1);
+            }
+          }
         }
 
         this.updatePresentationEffects(updateContext);

@@ -15,10 +15,6 @@ export class DroneTower extends Tower {
   static readonly baseRange = 115;
   static readonly shortcuts = ["5", "d"] as const;
 
-  constructor(x: number, y: number) {
-    super(x, y);
-  }
-
   protected updateTower(context: UpdateContext, result: UpdateResult): void {
     if (!this.ready()) {
       return;

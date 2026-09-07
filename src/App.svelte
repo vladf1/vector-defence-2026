@@ -10,6 +10,7 @@
 
   const { profile }: { profile: GameProfile } = $props();
   const session = untrack(() => createGameSession(profile));
+  const modal = session.modal;
   let showNerdStats = $state(false);
 
   function toggleNerdStats(): void {
@@ -35,7 +36,7 @@
   <TowerPanel />
 
   {#if profile.ui.showFootnote}
-    <p class="footnote">
+    <p class="footnote" inert={$modal !== null}>
       Tip: press the tower keys shown on available buttons, <strong>U</strong> to upgrade, <strong>Esc</strong> to cancel build mode, and <strong>Space</strong> to pause or resume.
       <button class="footnote-link" type="button" onclick={toggleNerdStats}>
         {showNerdStats ? "Hide" : "Show"} stats for nerds

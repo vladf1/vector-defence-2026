@@ -20,21 +20,15 @@ const MISSILE_EXHAUST_SMOKE_PUFFS = [
 ] as const;
 
 export interface MissileVisual {
-  bodyColor: string;
-  noseColor: string;
-  lengthBonus: number;
-  coordinateScaleX: number;
-  coordinateScaleY: number;
-}
-
-interface MissileGeometry {
-  tailX: number;
-  bodyFrontX: number;
-  noseTipX: number;
-  bodyHalfHeight: number;
-  noseHalfHeight: number;
-  tailCapLeftX: number;
-  tailCapHalfHeight: number;
+  readonly bodyColor: string;
+  readonly noseColor: string;
+  readonly tailX: number;
+  readonly bodyFrontX: number;
+  readonly noseTipX: number;
+  readonly bodyHalfHeight: number;
+  readonly noseHalfHeight: number;
+  readonly tailCapLeftX: number;
+  readonly tailCapHalfHeight: number;
 }
 
 export function getMissileScale(level: number): number {
@@ -47,59 +41,64 @@ export function getMissileRearX(level: number): number {
 
 export function createMissileVisual(level: number): MissileVisual {
   const levelScale = getMissileScale(level);
+  const coordinateScaleX = (1 + (MISSILE_LENGTH_SCALE_PER_LEVEL * level)) / levelScale;
+  const coordinateScaleY = (1 + (0.04 * level)) / levelScale;
+  const scaleX = (x: number) => (x + ROCKET_OFFSET_X) * coordinateScaleX;
   return {
     bodyColor: "#ff9d5c",
     noseColor: "#ffe27a",
-    lengthBonus: 3.2,
-    coordinateScaleX: (1 + (MISSILE_LENGTH_SCALE_PER_LEVEL * level)) / levelScale,
-    coordinateScaleY: (1 + (0.04 * level)) / levelScale,
+    tailX: scaleX(BASE_TAIL_X),
+    bodyFrontX: scaleX(BASE_BODY_FRONT_X + 3.2),
+    noseTipX: scaleX(BASE_NOSE_TIP_X + 3.2),
+    bodyHalfHeight: BODY_HALF_HEIGHT * coordinateScaleY,
+    noseHalfHeight: NOSE_HALF_HEIGHT * coordinateScaleY,
+    tailCapLeftX: scaleX(BASE_TAIL_X - TAIL_CAP_LENGTH),
+    tailCapHalfHeight: BODY_HALF_HEIGHT * TAIL_CAP_BODY_WIDTH_RATIO * coordinateScaleY,
   };
 }
 
 export function getMissileHalfLength(visual: MissileVisual): number {
-  const geometry = getMissileGeometry(visual);
   return Math.max(
-    Math.abs(geometry.tailCapLeftX),
-    Math.abs(geometry.noseTipX),
+    Math.abs(visual.tailCapLeftX),
+    Math.abs(visual.noseTipX),
   );
 }
 
 export function drawMissileBody(context: CanvasRenderingContext2D, visual: MissileVisual): void {
-  const geometry = getMissileGeometry(visual);
   context.fillStyle = visual.bodyColor;
   context.strokeStyle = "#06100f";
   context.lineWidth = 0.8;
   context.beginPath();
   context.rect(
-    geometry.tailX,
-    -geometry.bodyHalfHeight,
-    geometry.bodyFrontX - geometry.tailX,
-    geometry.bodyHalfHeight * 2,
+    visual.tailX,
+    -visual.bodyHalfHeight,
+    visual.bodyFrontX - visual.tailX,
+    visual.bodyHalfHeight * 2,
   );
   context.fill();
   context.stroke();
 
   context.fillStyle = visual.noseColor;
   context.beginPath();
-  context.moveTo(geometry.bodyFrontX, -geometry.noseHalfHeight);
-  context.lineTo(geometry.noseTipX, 0);
-  context.lineTo(geometry.bodyFrontX, geometry.noseHalfHeight);
+  context.moveTo(visual.bodyFrontX, -visual.noseHalfHeight);
+  context.lineTo(visual.noseTipX, 0);
+  context.lineTo(visual.bodyFrontX, visual.noseHalfHeight);
   context.closePath();
   context.fill();
   context.stroke();
 
   context.fillStyle = "#ff9d5c";
   context.fillRect(
-    geometry.tailCapLeftX,
-    -geometry.tailCapHalfHeight,
-    geometry.tailX - geometry.tailCapLeftX,
-    geometry.tailCapHalfHeight * 2,
+    visual.tailCapLeftX,
+    -visual.tailCapHalfHeight,
+    visual.tailX - visual.tailCapLeftX,
+    visual.tailCapHalfHeight * 2,
   );
   context.strokeRect(
-    geometry.tailCapLeftX,
-    -geometry.tailCapHalfHeight,
-    geometry.tailX - geometry.tailCapLeftX,
-    geometry.tailCapHalfHeight * 2,
+    visual.tailCapLeftX,
+    -visual.tailCapHalfHeight,
+    visual.tailX - visual.tailCapLeftX,
+    visual.tailCapHalfHeight * 2,
   );
 }
 
@@ -109,8 +108,7 @@ export function drawMissileExhaust(
   launchBloom: number,
 ): void {
   const bloom = clamp(launchBloom, 0, 1);
-  const geometry = getMissileGeometry(visual);
-  const exhaustOriginX = geometry.tailCapLeftX;
+  const exhaustOriginX = visual.tailCapLeftX;
   const trailStretch = 1 + (bloom * 0.65);
   const smokeScale = 1 + (bloom * 0.18);
   for (const puff of MISSILE_EXHAUST_SMOKE_PUFFS) {
@@ -146,17 +144,4 @@ export function drawMissileExhaust(
   );
   context.fill();
   context.restore();
-}
-
-function getMissileGeometry(visual: MissileVisual): MissileGeometry {
-  const scaleX = (x: number) => (x + ROCKET_OFFSET_X) * visual.coordinateScaleX;
-  return {
-    tailX: scaleX(BASE_TAIL_X),
-    bodyFrontX: scaleX(BASE_BODY_FRONT_X + visual.lengthBonus),
-    noseTipX: scaleX(BASE_NOSE_TIP_X + visual.lengthBonus),
-    bodyHalfHeight: BODY_HALF_HEIGHT * visual.coordinateScaleY,
-    noseHalfHeight: NOSE_HALF_HEIGHT * visual.coordinateScaleY,
-    tailCapLeftX: scaleX(BASE_TAIL_X - TAIL_CAP_LENGTH),
-    tailCapHalfHeight: BODY_HALF_HEIGHT * TAIL_CAP_BODY_WIDTH_RATIO * visual.coordinateScaleY,
-  };
 }

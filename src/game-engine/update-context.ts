@@ -6,11 +6,13 @@ import type { Missile } from "../entities/projectiles/missile";
 import type { Projectile } from "../entities/projectiles/projectile";
 import type { RuntimeLinkEffect } from "../level-runtime";
 import type { ActiveCircleSweepCollisionQuery } from "./collision-detection";
+import type { FieldBounds } from "../types";
 
 export interface UpdateContext {
   deltaSeconds: number;
   readonly fieldWidth: number;
   readonly fieldHeight: number;
+  fieldBounds: FieldBounds;
   readonly activeMonsters: readonly Monster[];
   readonly monsterCollisionIndex: ActiveCircleSweepCollisionQuery<Monster>;
   activeDrones: readonly Drone[];
@@ -24,6 +26,7 @@ export interface UpdateSound {
 }
 
 export class UpdateResult {
+  particleLimit = Number.POSITIVE_INFINITY;
   readonly killedMonsters: Monster[] = [];
   readonly escapedMonsters: Monster[] = [];
   readonly particles: Particle[] = [];
@@ -32,6 +35,10 @@ export class UpdateResult {
   readonly projectiles: Projectile[] = [];
   readonly missiles: Missile[] = [];
   readonly sounds: UpdateSound[] = [];
+
+  get remainingParticleCapacity(): number {
+    return Math.max(0, this.particleLimit - this.particles.length);
+  }
 
   addKilledMonster(monster: Monster): void {
     this.killedMonsters.push(monster);
@@ -42,7 +49,9 @@ export class UpdateResult {
   }
 
   addParticle(particle: Particle): void {
-    this.particles.push(particle);
+    if (this.particles.length < this.particleLimit) {
+      this.particles.push(particle);
+    }
   }
 
   addLink(link: RuntimeLinkEffect): void {
@@ -66,6 +75,7 @@ export class UpdateResult {
   }
 
   clear(): void {
+    this.particleLimit = Number.POSITIVE_INFINITY;
     this.killedMonsters.length = 0;
     this.escapedMonsters.length = 0;
     this.particles.length = 0;

@@ -92,6 +92,7 @@ const html = String.raw`
           deltaSeconds,
           fieldWidth: 1200,
           fieldHeight: 720,
+          fieldBounds: { minX: 0, minY: 0, maxX: 1200, maxY: 720 },
           activeMonsters,
           monsterCollisionIndex: new LinearActiveCircleSweepCollisionIndex(activeMonsters),
           activeDrones: [],

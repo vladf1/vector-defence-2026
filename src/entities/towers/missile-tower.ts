@@ -39,9 +39,10 @@ export class MissileTower extends Tower {
 
   angle = randomRange(-Math.PI, Math.PI);
   turnSpeedPerSecond = 3.6;
+  private visual = createMissileVisual(this.level);
 
-  constructor(x: number, y: number) {
-    super(x, y);
+  protected onUpgrade(): void {
+    this.visual = createMissileVisual(this.level);
   }
 
   protected updateTower(context: UpdateContext, result: UpdateResult): void {
@@ -62,7 +63,7 @@ export class MissileTower extends Tower {
         y: this.y + (sin * MISSILE_RACK_CENTER_X),
       };
       this.resetCooldown(this.getCooldownDurationSeconds());
-      result.addMissile(new Missile(source, tracked, this.level, createMissileVisual(this.level), this.angle));
+      result.addMissile(new Missile(source, tracked, this.level, this.visual, this.angle));
       result.playSound(AudioCue.MissileLaunch, source.x, 1 + (this.level * 0.09));
     }
   }
@@ -158,7 +159,7 @@ export class MissileTower extends Tower {
     context.translate(MISSILE_RACK_CENTER_X + missileOffsetX, 0);
     const missileScale = getMissileScale(this.level);
     context.scale(missileScale, missileScale);
-    drawMissileBody(context, createMissileVisual(this.level));
+    drawMissileBody(context, this.visual);
     context.restore();
   }
 

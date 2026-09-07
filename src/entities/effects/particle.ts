@@ -44,7 +44,7 @@ export class Particle {
   update(context: UpdateContext): void {
     VELOCITY_DECAY.apply(this, context.deltaSeconds);
     this.alpha -= this.alphaFadePerSecond * context.deltaSeconds;
-    if (this.alpha <= 0 || isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 20)) {
+    if (this.alpha <= 0 || isOutsideBounds(this, context.fieldBounds, 20)) {
       this.removed = true;
     }
   }

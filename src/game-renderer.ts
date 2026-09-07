@@ -1,6 +1,7 @@
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import type { Game } from "./game-engine";
+import type { FieldBounds } from "./types";
 
 const ROAD_COLOR = "rgba(8, 40, 36, 0.96)";
 const ROAD_BORDER_COLOR = "rgb(18, 61, 54)";
@@ -33,13 +34,6 @@ function isPointInCanvasButton(point: { x: number; y: number }, rect: CanvasButt
     && point.x <= rect.x + rect.width
     && point.y >= rect.y
     && point.y <= rect.y + rect.height;
-}
-
-export interface FieldBounds {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
 }
 
 export interface CenteredFieldViewport {
@@ -144,7 +138,7 @@ export class GameRenderer {
 
   renderBackgroundLayer(): void {
     this.backgroundCtx.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
-    this.drawCanvasBackdrop(this.backgroundCtx);
+    this.drawCanvasBackdrop(this.backgroundCtx, this.viewportWidth, this.viewportHeight);
     this.backgroundCtx.save();
     this.backgroundCtx.translate(this.fieldOffsetX, this.fieldOffsetY);
     this.drawBackground(this.backgroundCtx);
@@ -262,31 +256,7 @@ export class GameRenderer {
   }
 
   private drawBackground(context: CanvasRenderingContext2D): void {
-    const fieldGradient = context.createLinearGradient(0, 0, 0, this.fieldHeight);
-    fieldGradient.addColorStop(0, "#010302");
-    fieldGradient.addColorStop(0.5, "#050d0a");
-    fieldGradient.addColorStop(1, "#010302");
-    context.fillStyle = fieldGradient;
-    context.fillRect(0, 0, this.fieldWidth, this.fieldHeight);
-
-    context.save();
-    context.strokeStyle = GRID_LINE_COLOR;
-    context.lineWidth = 1;
-    for (let x = 0; x <= this.fieldWidth; x += 35) {
-      const crispX = x + 0.5;
-      context.beginPath();
-      context.moveTo(crispX, 0);
-      context.lineTo(crispX, this.fieldHeight);
-      context.stroke();
-    }
-    for (let y = 0; y <= this.fieldHeight; y += 35) {
-      const crispY = y + 0.5;
-      context.beginPath();
-      context.moveTo(0, crispY);
-      context.lineTo(this.fieldWidth, crispY);
-      context.stroke();
-    }
-    context.restore();
+    this.drawCanvasBackdrop(context, this.fieldWidth, this.fieldHeight);
 
     if (!this.game.currentLevel) {
       return;
@@ -343,29 +313,29 @@ export class GameRenderer {
     }
   }
 
-  private drawCanvasBackdrop(context: CanvasRenderingContext2D): void {
-    const fieldGradient = context.createLinearGradient(0, 0, 0, this.viewportHeight);
+  private drawCanvasBackdrop(context: CanvasRenderingContext2D, width: number, height: number): void {
+    const fieldGradient = context.createLinearGradient(0, 0, 0, height);
     fieldGradient.addColorStop(0, "#010302");
     fieldGradient.addColorStop(0.5, "#050d0a");
     fieldGradient.addColorStop(1, "#010302");
     context.fillStyle = fieldGradient;
-    context.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
+    context.fillRect(0, 0, width, height);
 
     context.save();
     context.strokeStyle = GRID_LINE_COLOR;
     context.lineWidth = 1;
-    for (let x = 0; x <= this.viewportWidth; x += 35) {
+    for (let x = 0; x <= width; x += 35) {
       const crispX = x + 0.5;
       context.beginPath();
       context.moveTo(crispX, 0);
-      context.lineTo(crispX, this.viewportHeight);
+      context.lineTo(crispX, height);
       context.stroke();
     }
-    for (let y = 0; y <= this.viewportHeight; y += 35) {
+    for (let y = 0; y <= height; y += 35) {
       const crispY = y + 0.5;
       context.beginPath();
       context.moveTo(0, crispY);
-      context.lineTo(this.viewportWidth, crispY);
+      context.lineTo(width, crispY);
       context.stroke();
     }
     context.restore();

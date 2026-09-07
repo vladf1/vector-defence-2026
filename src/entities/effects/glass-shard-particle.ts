@@ -45,7 +45,7 @@ export class GlassShardParticle extends Particle {
     DRIFT_VELOCITY_DECAY.apply(this, context.deltaSeconds);
     this.rotation += this.angularVelocityPerSecond * context.deltaSeconds;
     this.alpha = Math.max(0, this.alpha - (this.alphaFadePerSecond * context.deltaSeconds));
-    if (this.alpha <= 0 || isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 28)) {
+    if (this.alpha <= 0 || isOutsideBounds(this, context.fieldBounds, 28)) {
       this.removed = true;
     }
   }

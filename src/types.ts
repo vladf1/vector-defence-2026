@@ -50,6 +50,13 @@ export interface Point {
   y: number;
 }
 
+export interface FieldBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 export type LevelJsonPoint = [number, number];
 
 export interface WaveData {
@@ -73,11 +80,11 @@ export interface CampaignRouteData {
   waveCount?: number;
 }
 
-export interface LevelData extends CampaignRouteData {
+export interface LevelData extends Omit<CampaignRouteData, "monsterSequence"> {
   monsterCount: number;
-  id?: string;
-  levelNumber?: number;
-  waves?: WaveData[];
+  id: string;
+  levelNumber: number;
+  waves: WaveData[];
 }
 
 export interface LevelJsonData {

@@ -216,6 +216,7 @@ const html = String.raw`
           deltaSeconds,
           fieldWidth: game.profile.fieldWidth,
           fieldHeight: game.profile.fieldHeight,
+          fieldBounds: { minX: 0, minY: 0, maxX: game.profile.fieldWidth, maxY: game.profile.fieldHeight },
           activeMonsters,
           monsterCollisionIndex: useCollisionIndex
             ? game.benchmarkMonsterCollisionIndex

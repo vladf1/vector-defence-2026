@@ -49,16 +49,16 @@ export class LevelRuntime {
     }
     this.money = level?.startingMoney ?? 0;
     this.escapesLeft = level?.allowEscape ?? 0;
-    this.spawnDelay = level ? (level.waves?.[0]?.buildTime ?? 8) : 0;
+    this.spawnDelay = level?.waves[0]?.buildTime ?? 0;
     this.spawnCooldown = level ? 0.2 : 0;
   }
 
   get activeWave(): WaveData | undefined {
-    return this.level?.waves?.[this.currentWaveIndex];
+    return this.level?.waves[this.currentWaveIndex];
   }
 
   get waveTotal(): number {
-    return this.level?.waves?.length ?? 1;
+    return this.level?.waves.length ?? 0;
   }
 
   *getActiveMonsters(): IterableIterator<Monster> {

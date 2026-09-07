@@ -1,5 +1,5 @@
 import type { Point } from "./types";
-import { calculateDistance } from "./utils";
+import { angleBetween, calculateDistance } from "./utils";
 
 export type RoutePathCommand =
   | { kind: "line"; point: Point }
@@ -329,10 +329,6 @@ function appendPoint(entries: PathEntry[], point: Point, heading: PathEntryHeadi
     totalDistance: previous.totalDistance + segmentLength,
     heading,
   });
-}
-
-function angleBetween(start: Point, end: Point): number {
-  return Math.atan2(end.y - start.y, end.x - start.x);
 }
 
 function getQuadraticAngle(start: Point, control: Point, end: Point, t: number): number {

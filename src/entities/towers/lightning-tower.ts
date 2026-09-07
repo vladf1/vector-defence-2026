@@ -27,14 +27,7 @@ export class LightningTower extends Tower {
   static readonly baseRange = 74;
   static readonly shortcuts = ["5", "e"] as const;
 
-  chargeSeconds = 0;
-
-  constructor(x: number, y: number) {
-    super(x, y);
-  }
-
   protected updateTower(context: UpdateContext, result: UpdateResult): void {
-    this.chargeSeconds = Math.max(0, this.chargeSeconds - context.deltaSeconds);
     if (!this.ready()) {
       return;
     }
@@ -57,7 +50,6 @@ export class LightningTower extends Tower {
       source = target;
     }
 
-    this.chargeSeconds = 0.18;
     this.resetCooldown(this.getCooldownSeconds());
     result.playSound(AudioCue.LightningShock, this.x, 0.95 + (this.level * 0.09));
   }

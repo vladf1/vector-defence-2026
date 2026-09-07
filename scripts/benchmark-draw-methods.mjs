@@ -262,6 +262,7 @@ const html = String.raw`
           deltaSeconds: 0,
           fieldWidth: 960,
           fieldHeight: 540,
+          fieldBounds: { minX: 0, minY: 0, maxX: 960, maxY: 540 },
           activeMonsters,
           monsterCollisionIndex: new LinearActiveCircleSweepCollisionIndex(activeMonsters),
           activeDrones: [],
@@ -277,7 +278,6 @@ const html = String.raw`
         tower.angle = -Math.PI / 4;
         tower.pulse = Math.PI / 2;
         tower.orbit = 0.74;
-        tower.chargeSeconds = 0.08;
         tower.muzzleFlashSeconds = 0.06;
         tower.beamAlpha = 0.72;
         tower.beamTarget = { x: 760, y: 72 };
@@ -309,6 +309,7 @@ const html = String.raw`
           deltaSeconds: seconds,
           fieldWidth: 960,
           fieldHeight: 540,
+          fieldBounds: { minX: 0, minY: 0, maxX: 960, maxY: 540 },
           activeMonsters: [],
           monsterCollisionIndex: new LinearActiveCircleSweepCollisionIndex([]),
           activeDrones: [],

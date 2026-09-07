@@ -4,20 +4,8 @@ import { clamp } from "./utils";
 const MOBILE_WAVE_COUNT_RATIO = 0.65;
 const MOBILE_SPAWN_INTERVAL_RATIO = 1.19;
 
-function uniqueSequence(sequence: MonsterKind[]): MonsterKind[] {
-  const seen = new Set<MonsterKind>();
-  const result: MonsterKind[] = [];
-  for (const code of sequence) {
-    if (!seen.has(code)) {
-      seen.add(code);
-      result.push(code);
-    }
-  }
-  return result;
-}
-
 function buildWaveSequence(baseSequence: MonsterKind[], levelIndex: number, waveIndex: number): MonsterKind[] {
-  const source = uniqueSequence(baseSequence.length > 0 ? baseSequence : [MonsterKind.PackMan]);
+  const source = [...new Set(baseSequence)];
   const length = clamp(4 + waveIndex + Math.floor(levelIndex / 2), 4, 12);
   const sequence: MonsterKind[] = [];
   const opening = source.includes(MonsterKind.Runner) && waveIndex % 3 === 1
@@ -79,11 +67,11 @@ function buildWave(
 }
 
 export function createCampaignLevels(routes: CampaignRouteData[], mobile: boolean): LevelData[] {
-  return routes.map((route, levelIndex) => {
+  return routes.map(({ monsterSequence, ...route }, levelIndex) => {
     const waveTotal = route.waveCount ?? 6;
     const buildTime = route.initialBuildTime ?? 12;
     const waves = Array.from({ length: waveTotal }, (_, waveIndex) =>
-      buildWave(levelIndex, waveIndex, waveTotal, route.monsterSequence, buildTime, mobile),
+      buildWave(levelIndex, waveIndex, waveTotal, monsterSequence, buildTime, mobile),
     );
 
     return {
@@ -91,10 +79,8 @@ export function createCampaignLevels(routes: CampaignRouteData[], mobile: boolea
       id: `campaign-${levelIndex + 1}`,
       levelNumber: levelIndex + 1,
       subtitle: route.subtitle ?? "Hold the route and keep scaling your defense.",
-      startingMoney: route.startingMoney,
       waves,
       monsterCount: waves.reduce((total, wave) => total + wave.count, 0),
-      monsterSequence: waves.flatMap((wave) => wave.monsterSequence),
     };
   });
 }

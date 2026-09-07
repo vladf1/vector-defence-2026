@@ -1,15 +1,10 @@
 import type { Tower } from "./entities/towers/tower";
 import type { RouteMotionPath } from "./route-path";
-import type { Point } from "./types";
+import type { FieldBounds, Point } from "./types";
 import { isWithinDistanceToSegment, withinDistance } from "./utils";
 
 export interface PlacementGeometry {
-  fieldWidth: number;
-  fieldHeight: number;
-  minX?: number;
-  minY?: number;
-  maxX?: number;
-  maxY?: number;
+  bounds: FieldBounds;
   towerRadius: number;
   towerSelectionPadding: number;
   minDistanceToOtherTowers: number;
@@ -26,10 +21,7 @@ export function canPlaceTower(
     return false;
   }
 
-  const minX = geometry.minX ?? 0;
-  const minY = geometry.minY ?? 0;
-  const maxX = geometry.maxX ?? geometry.fieldWidth;
-  const maxY = geometry.maxY ?? geometry.fieldHeight;
+  const { minX, minY, maxX, maxY } = geometry.bounds;
   const outsideBounds =
     point.x < minX + geometry.towerRadius ||
     point.y < minY + geometry.towerRadius ||

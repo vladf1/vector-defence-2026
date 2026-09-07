@@ -61,8 +61,7 @@ function createProfile(options: {
     + (MAX_TOWER_LEVEL * TOWER_UPGRADE_RING_GROWTH);
 
   const placement = {
-    fieldWidth: options.fieldWidth,
-    fieldHeight: options.fieldHeight,
+    bounds: { minX: 0, minY: 0, maxX: options.fieldWidth, maxY: options.fieldHeight },
     towerRadius: options.towerRadius,
     towerSelectionPadding: options.towerSelectionPadding,
     minDistanceToOtherTowers: options.minDistanceToOtherTowers,

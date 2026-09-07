@@ -167,13 +167,13 @@ function updateReadout(): void {
 }
 
 function triggerBurst(): void {
-  particles.push(...createEscapeBurstParticles(ESCAPE_POINT.x, ESCAPE_POINT.y, readSettings()));
+  particles.push(...createEscapeBurstParticles(ESCAPE_POINT.x, ESCAPE_POINT.y, readSettings(), Number.POSITIVE_INFINITY));
   updateReadout();
 }
 
 function triggerBurstAtPointer(event: PointerEvent): void {
   const point = screenToWorldPoint(event.clientX, event.clientY);
-  particles.push(...createEscapeBurstParticles(point.x, point.y, readSettings()));
+  particles.push(...createEscapeBurstParticles(point.x, point.y, readSettings(), Number.POSITIVE_INFINITY));
   autoRepeatTimer = AUTO_REPEAT_SECONDS;
   updateReadout();
 }
@@ -210,6 +210,7 @@ function updateParticles(deltaSeconds: number): void {
     deltaSeconds,
     fieldWidth: FIELD_WIDTH,
     fieldHeight: FIELD_HEIGHT,
+    fieldBounds: { minX: 0, minY: 0, maxX: FIELD_WIDTH, maxY: FIELD_HEIGHT },
     activeMonsters: [],
     monsterCollisionIndex: EMPTY_MONSTER_COLLISION_INDEX,
     activeDrones: [],

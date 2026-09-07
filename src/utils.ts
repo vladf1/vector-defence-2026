@@ -1,4 +1,4 @@
-import type { Point } from "./types";
+import type { FieldBounds, Point } from "./types";
 
 interface MovingPoint extends Point {
   velocityXPerSecond: number;
@@ -130,8 +130,9 @@ export function withinDistance(source: Point, target: Point, maxDistance: number
   return (dx * dx) + (dy * dy) <= (maxDistance * maxDistance);
 }
 
-export function isOutsideBounds(point: Point, width: number, height: number, margin: number): boolean {
-  return point.x < -margin || point.y < -margin || point.x > width + margin || point.y > height + margin;
+export function isOutsideBounds(point: Point, bounds: FieldBounds, margin: number): boolean {
+  return point.x < bounds.minX - margin || point.y < bounds.minY - margin
+    || point.x > bounds.maxX + margin || point.y > bounds.maxY + margin;
 }
 
 export function angleBetween(source: Point, target: Point): number {

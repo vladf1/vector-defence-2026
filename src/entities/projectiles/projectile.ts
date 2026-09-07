@@ -48,14 +48,14 @@ export abstract class Projectile {
       this.y = collision.y;
       collision.target.takeDamage(this.damage);
       this.removed = true;
-      for (const particle of createHitImpactParticles(this.x, this.y, this.impactColor, this.angle)) {
+      for (const particle of createHitImpactParticles(this.x, this.y, this.impactColor, this.angle, result.remainingParticleCapacity)) {
         result.addParticle(particle);
       }
       result.playSound(AudioCue.ProjectileImpact, this.x, this.impactSoundIntensity);
       return;
     }
 
-    if (isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 20)) {
+    if (isOutsideBounds(this, context.fieldBounds, 20)) {
       this.removed = true;
     }
   }

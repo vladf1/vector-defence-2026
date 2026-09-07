@@ -10,6 +10,7 @@
   const session = getGameSessionContext();
   const profile = session.profile;
   const hud = session.hud;
+  const modal = session.modal;
 
   function formatShortcuts(shortcuts: readonly string[]): string {
     return shortcuts.map((shortcut) => shortcut.toUpperCase()).join("/");
@@ -49,7 +50,7 @@
   }
 </script>
 
-<section class:selected-tower-controls={profile.mode === "mobile" && $hud.hasSelectedTower} class="controls-grid">
+<section class:selected-tower-controls={profile.mode === "mobile" && $hud.hasSelectedTower} class="controls-grid" inert={$modal !== null}>
   <div class="tower-strip-card">
     <div class="tower-strip">
       {#each TOWER_TOOLBAR_PREVIEWS as tower (tower.kind)}

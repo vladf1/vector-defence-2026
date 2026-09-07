@@ -117,16 +117,18 @@ export class BulwarkMonster extends Monster {
       0,
       SHARD_SPLITTER,
     );
-    result.addParticle(new GlassShardParticle(
-      this.visualX,
-      this.visualY,
-      this.color,
-      FRONT_PLATE_OUTLINE,
-      { x: 0, y: 0 },
-      this.angle,
-      randomRange(105, 175),
-      0,
-    ));
+    if (result.remainingParticleCapacity > 0) {
+      result.addParticle(new GlassShardParticle(
+        this.visualX,
+        this.visualY,
+        this.color,
+        FRONT_PLATE_OUTLINE,
+        { x: 0, y: 0 },
+        this.angle,
+        randomRange(105, 175),
+        0,
+      ));
+    }
     result.playSound(AudioCue.MonsterHeavyDeath, this.x, 1.05);
   }
 

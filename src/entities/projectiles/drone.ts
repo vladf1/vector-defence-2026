@@ -283,7 +283,7 @@ export class Drone {
   private updateExit(context: UpdateContext): void {
     this.x += this.exitVelocityXPerSecond * context.deltaSeconds;
     this.y += this.exitVelocityYPerSecond * context.deltaSeconds;
-    if (isOutsideBounds(this, context.fieldWidth, context.fieldHeight, DRONE_EXIT_MARGIN)) {
+    if (isOutsideBounds(this, context.fieldBounds, DRONE_EXIT_MARGIN)) {
       this.removed = true;
     }
   }

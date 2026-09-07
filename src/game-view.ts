@@ -303,9 +303,9 @@ function createModalLevelCards(game: Game): ModalLevelCardView[] {
       current,
       stars: game.levelStars[index] ?? 0,
       status,
-      title: `${level.levelNumber ?? "?"} - ${level.name}`,
+      title: `${level.levelNumber} - ${level.name}`,
       description: (level.subtitle ?? "Hold the route.").replace(/\.$/, ""),
-      summary: `${level.waves?.length ?? 1} waves · ${level.monsterCount} enemies`,
+      summary: `${level.waves.length} waves · ${level.monsterCount} enemies`,
       starsLabel: `${formatStarCount(game.levelStars[index] ?? 0)} best clear`,
     };
   });

@@ -42,7 +42,13 @@ export function createPolygonShardParticles(
   initialSeparation: number,
   splitter: PolygonShardSplitter,
 ): void {
+  if (result.remainingParticleCapacity === 0) {
+    return;
+  }
   for (const shard of splitter.splitIntoShards(outline)) {
+    if (result.remainingParticleCapacity === 0) {
+      break;
+    }
     result.addParticle(new GlassShardParticle(
       source.visualX,
       source.visualY,

@@ -94,14 +94,16 @@ export class TankMonster extends Monster {
       0,
       SHARD_SPLITTER,
     );
-    result.addParticle(new TankTurretParticle(
-      this.visualX + turretCenterOffset.x,
-      this.visualY + turretCenterOffset.y,
-      this.radius,
-      this.color,
-      this.angle,
-      this.turretRotation,
-    ));
+    if (result.remainingParticleCapacity > 0) {
+      result.addParticle(new TankTurretParticle(
+        this.visualX + turretCenterOffset.x,
+        this.visualY + turretCenterOffset.y,
+        this.radius,
+        this.color,
+        this.angle,
+        this.turretRotation,
+      ));
+    }
     result.playSound(AudioCue.MonsterHeavyDeath, this.x, 1.25);
   }
 
@@ -140,6 +142,8 @@ export class TankMonster extends Monster {
   }
 
   private addTrackPrint(result: UpdateResult, x: number, y: number): void {
-    result.addParticle(new TankTrackPrintParticle(x, y, this.angle, TRACK_PRINT_LENGTH, TRACK_PRINT_WIDTH));
+    if (result.remainingParticleCapacity > 0) {
+      result.addParticle(new TankTrackPrintParticle(x, y, this.angle, TRACK_PRINT_LENGTH, TRACK_PRINT_WIDTH));
+    }
   }
 }

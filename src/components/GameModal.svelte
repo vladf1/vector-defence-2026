@@ -1,14 +1,63 @@
 <script lang="ts">
   import { getGameSessionContext } from "../game-context";
+  import type { ModalView } from "../types";
 
   const session = getGameSessionContext();
   const { modal } = session;
   const STAR_VALUES = [1, 2, 3];
 
+  function focusModal(element: HTMLDivElement, _view: ModalView) {
+    const opener = document.activeElement;
+    const focusFirst = () => {
+      if (element.isConnected && !element.contains(document.activeElement)) {
+        (element.querySelector<HTMLButtonElement>("button:not(:disabled)") ?? element).focus();
+      }
+    };
+    queueMicrotask(focusFirst);
+    return {
+      update: () => queueMicrotask(focusFirst),
+      destroy: () => queueMicrotask(() => {
+        if (!$modal && opener instanceof HTMLElement && opener.isConnected) opener.focus();
+      }),
+    };
+  }
+
+  function containTab(event: KeyboardEvent & { currentTarget: HTMLDivElement }): void {
+    if (event.key !== "Tab") return;
+    const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
+    const first = buttons[0], last = buttons[buttons.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last?.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first?.focus();
+    }
+  }
 </script>
 
+{#snippet modalActions(view: ModalView)}
+  {#if view.actions.length > 0}
+    <div class="selection-actions">
+      {#each view.actions as item}
+        <button class={`modal-button modal-action-${item.action}`} type="button" onclick={() => session.handleModalAction(item.action)}>
+          {item.label}
+        </button>
+      {/each}
+    </div>
+  {/if}
+{/snippet}
+
 {#if $modal}
-  <div class={`modal${$modal.sheet ? " sheet" : ""}`}>
+  <div
+    class={`modal${$modal.sheet ? " sheet" : ""}`}
+    role="dialog"
+    aria-modal="true"
+    aria-label={$modal.title}
+    tabindex="-1"
+    use:focusModal={$modal}
+    onkeydown={containTab}
+  >
     <div class={`modal-panel${$modal.sheet ? " modal-sheet" : ""}${$modal.levelCards ? " level-map-panel" : ""}`}>
       {#if !$modal.levelCards}
         <h2>{$modal.title}</h2>
@@ -30,15 +79,7 @@
           </div>
         {/if}
 
-        {#if $modal.actions.length > 0}
-          <div class="selection-actions">
-            {#each $modal.actions as item}
-              <button class={`modal-button modal-action-${item.action}`} type="button" onclick={() => session.handleModalAction(item.action)}>
-                {item.label}
-              </button>
-            {/each}
-          </div>
-        {/if}
+        {@render modalActions($modal)}
       {:else}
         <div class="level-map-header">
           <div>
@@ -46,15 +87,7 @@
             <p>{$modal.description}</p>
           </div>
 
-          {#if $modal.actions.length > 0}
-            <div class="selection-actions">
-              {#each $modal.actions as item}
-                <button class={`modal-button modal-action-${item.action}`} type="button" onclick={() => session.handleModalAction(item.action)}>
-                  {item.label}
-                </button>
-              {/each}
-            </div>
-          {/if}
+          {@render modalActions($modal)}
         </div>
 
         <div class="level-grid">

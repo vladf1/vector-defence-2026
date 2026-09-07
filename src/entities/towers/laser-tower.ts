@@ -2,7 +2,7 @@ import { AudioCue } from "../../audio-manifest";
 import { createLaserImpactParticles } from "../../game-engine/combat-effects";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { type Point, TowerKind } from "../../types";
-import { angleBetween, closestPointOnSegment, isWithinDistanceToSegment, randomRange, turnAngleTowards, withinDistance } from "../../utils";
+import { angleBetween, clamp, isWithinDistanceToSegment, randomRange, turnAngleTowards, withinDistance } from "../../utils";
 import { Tower } from "./tower";
 
 const LASER_COLORS = [
@@ -31,10 +31,7 @@ export class LaserTower extends Tower {
   directionLocked = false;
   laserSparkCooldownSeconds = 0;
   turnSpeedPerSecond = 6.72;
-
-  constructor(x: number, y: number) {
-    super(x, y);
-  }
+  private readonly beamSource = { x: 0, y: 0 };
 
   protected updateTower(context: UpdateContext, result: UpdateResult): void {
     this.laserSparkCooldownSeconds = Math.max(0, this.laserSparkCooldownSeconds - context.deltaSeconds);
@@ -49,9 +46,11 @@ export class LaserTower extends Tower {
       }
     }
 
-    this.beamTarget.x = this.x + (Math.cos(this.angle) * 1000);
-    this.beamTarget.y = this.y + (Math.sin(this.angle) * 1000);
-    if (this.ready() && (this.directionLocked ? this.hasMonsterInBeam(context) : alignedToTarget)) {
+    const directionX = Math.cos(this.angle), directionY = Math.sin(this.angle);
+    const source = this.getBeamSource(directionX, directionY);
+    this.beamTarget.x = this.x + (directionX * 1000);
+    this.beamTarget.y = this.y + (directionY * 1000);
+    if (this.ready() && (this.directionLocked ? this.hasMonsterInBeam(context, source) : alignedToTarget)) {
       this.fire(result);
     }
 
@@ -60,20 +59,29 @@ export class LaserTower extends Tower {
       return;
     }
 
-    const source = this.getBeamSource();
-    const shouldCreateSparks = this.laserSparkCooldownSeconds <= 0;
+    const shouldCreateSparks = this.laserSparkCooldownSeconds <= 0 && result.remainingParticleCapacity > 0;
     let sparkBurstsCreated = 0;
     const colors = this.getLaserColors();
+    // The beam is fixed during this update; reuse its geometry and each hit's spark position.
+    const minX = Math.min(source.x, this.beamTarget.x), maxX = Math.max(source.x, this.beamTarget.x);
+    const minY = Math.min(source.y, this.beamTarget.y), maxY = Math.max(source.y, this.beamTarget.y);
+    const beamX = this.beamTarget.x - source.x, beamY = this.beamTarget.y - source.y;
+    const inverseLengthSquared = 1 / ((beamX * beamX) + (beamY * beamY));
 
     for (const monster of context.activeMonsters) {
       if (!this.isMonsterActive(monster)) {
         continue;
       }
-      if (isWithinDistanceToSegment(monster, source, this.beamTarget, monster.radius)) {
+      if (monster.x < minX - monster.radius || monster.x > maxX + monster.radius
+        || monster.y < minY - monster.radius || monster.y > maxY + monster.radius) continue;
+      const dot = ((monster.x - source.x) * beamX) + ((monster.y - source.y) * beamY);
+      const projection = clamp(dot * inverseLengthSquared, 0, 1);
+      const impactX = source.x + (projection * beamX), impactY = source.y + (projection * beamY);
+      const dx = monster.x - impactX, dy = monster.y - impactY;
+      if ((dx * dx) + (dy * dy) <= monster.radius * monster.radius) {
         monster.takeContinuousDamage(this.damagePerSecond * integratedBeamStrengthSeconds);
         if (shouldCreateSparks && sparkBurstsCreated < 2) {
-          const impact = closestPointOnSegment(monster, source, this.beamTarget);
-          for (const particle of createLaserImpactParticles(impact.x, impact.y, this.angle, colors.accent)) {
+          for (const particle of createLaserImpactParticles(impactX, impactY, this.angle, colors.accent, result.remainingParticleCapacity)) {
             result.addParticle(particle);
           }
           sparkBurstsCreated += 1;
@@ -120,9 +128,7 @@ export class LaserTower extends Tower {
     result.playSound(AudioCue.LaserFire, this.x, 0.9 + (this.level * 0.1));
   }
 
-  private hasMonsterInBeam(context: UpdateContext): boolean {
-    const source = this.getBeamSource();
-
+  private hasMonsterInBeam(context: UpdateContext, source: Point): boolean {
     for (const monster of context.activeMonsters) {
       if (!this.isMonsterActive(monster)) {
         continue;
@@ -138,12 +144,11 @@ export class LaserTower extends Tower {
     return false;
   }
 
-  private getBeamSource(): Point {
+  private getBeamSource(directionX: number, directionY: number): Point {
     const muzzleOffset = this.getMuzzleOffset();
-    return {
-      x: this.x + (Math.cos(this.angle) * muzzleOffset),
-      y: this.y + (Math.sin(this.angle) * muzzleOffset),
-    };
+    this.beamSource.x = this.x + (directionX * muzzleOffset);
+    this.beamSource.y = this.y + (directionY * muzzleOffset);
+    return this.beamSource;
   }
 
   draw(context: CanvasRenderingContext2D, active: boolean): void {
@@ -198,7 +203,7 @@ export class LaserTower extends Tower {
     context.restore();
 
     if (this.beamAlpha > 0) {
-      const source = this.getBeamSource();
+      const source = this.getBeamSource(Math.cos(this.angle), Math.sin(this.angle));
       context.save();
       context.globalCompositeOperation = "lighter";
       context.lineCap = "round";

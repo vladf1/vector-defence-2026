@@ -8,7 +8,7 @@
   import { formatMoney } from "../utils";
 
   const session = getGameSessionContext();
-  const { hud, soundEnabled } = session;
+  const { hud, modal, soundEnabled } = session;
   const profile = session.profile;
 
   function formatLevel(levelNumber: number | undefined): string {
@@ -21,7 +21,7 @@
   }
 </script>
 
-<header class="topbar">
+<header class="topbar" inert={$modal !== null}>
   {#if profile.ui.showTitle}
     <div class="title-block">
       <h1>Vector Defence</h1>

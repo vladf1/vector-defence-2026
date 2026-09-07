@@ -20,10 +20,6 @@ export class SlowTower extends Tower {
   pulse = 0;
   orbit = 0;
 
-  constructor(x: number, y: number) {
-    super(x, y);
-  }
-
   protected updateTower(context: UpdateContext, result: UpdateResult): void {
     this.pulse += 4.8 * context.deltaSeconds;
     this.orbit += this.getOrbitSpeedPerSecond() * context.deltaSeconds;

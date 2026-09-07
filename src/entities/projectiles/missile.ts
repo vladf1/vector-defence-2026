@@ -89,7 +89,7 @@ export class Missile {
     }
 
     this.addTrail(context.deltaSeconds, result);
-    if (isOutsideBounds(this, context.fieldWidth, context.fieldHeight, 20)) {
+    if (isOutsideBounds(this, context.fieldBounds, 20)) {
       this.removed = true;
     }
   }
@@ -101,6 +101,9 @@ export class Missile {
     }
 
     this.trailTimer -= 0.02;
+    if (result.remainingParticleCapacity === 0) {
+      return;
+    }
     const trailX = this.x + randomRange(-3, 3) - (Math.cos(this.angle) * 9);
     const trailY = this.y + randomRange(-3, 3) - (Math.sin(this.angle) * 9);
     const exhaustAngle = this.angle + Math.PI + randomRange(-0.35, 0.35);
@@ -123,7 +126,7 @@ export class Missile {
 
   private explode(context: UpdateContext, result: UpdateResult): void {
     this.removed = true;
-    for (const particle of createMissileExplosionParticles(this.x, this.y, this.angle, this.level)) {
+    for (const particle of createMissileExplosionParticles(this.x, this.y, this.angle, this.level, result.remainingParticleCapacity)) {
       result.addParticle(particle);
     }
     for (const nearby of context.activeMonsters) {
