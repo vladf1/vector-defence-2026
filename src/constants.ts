@@ -17,3 +17,4 @@ export const MIN_DISTANCE_TO_ROAD = (ROAD_WIDTH / 2) + MAX_UPGRADED_TOWER_BODY_R
 export const ROUTE_CURVE_SAMPLE_STEP = 7;
 export const MAX_PARTICLES = 2000;
 export const MAX_LINKS = 120;
+export const TIMER_EPSILON_SECONDS = 1e-9;

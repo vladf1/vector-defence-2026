@@ -136,6 +136,7 @@ To run the browser version:
 Useful validation commands:
 
 - `npm run build`
+- `npm run check:runtime` (browser regression checks for timing, collisions, effects, and UI state)
 - `npm run build:pages`
 - `npm run dev`
 - `npm run benchmark:update`
@@ -168,7 +169,7 @@ Other render and benchmark tooling:
 - `node scripts/render-polygon-shards.mjs` renders seeded polygon-breakup variants under `artifacts/polygon-shards/`.
 - `node scripts/render-berserker-animation.mjs [output.png]` renders the berserker rage sequence.
 - `npm run benchmark:death-effects` measures synchronous monster death-effect construction with seeded, resettable randomness.
-- `npm run benchmark:update` measures the reconstructed busy-runtime update slice; it is not a full end-to-end `Game` frame benchmark.
+- `npm run benchmark:update` reports both the reconstructed busy-runtime method timings and separate seeded `Game.updateSimulation(...)` timings with drones and lifecycle effects. Whole-engine samples exclude drawing and fixture maintenance; they are not full browser-frame timings.
 - `npm run benchmark:draw` and `npm run benchmark:draw:towers` report CPU-submission and forced-GPU-flush draw timings separately. Keep benchmark methodology and fixture coverage intact when interpreting changes.
 - `scripts/benchmark-browser-harness.mjs` centralizes temporary Vite pages, Playwright/Chrome launch fallback, page-error handling, cleanup, result waiting, and PNG data-URL writing for browser benchmarks and render scripts.
 

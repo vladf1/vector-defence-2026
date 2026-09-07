@@ -118,6 +118,7 @@ export function createGameSession(profile: GameProfile) {
       frameId = 0;
     }
     resetFrameClock();
+    game?.draw();
   }
 
   const publish = (forceHud = false, forceModal = false): void => {
@@ -421,10 +422,6 @@ export function createGameSession(profile: GameProfile) {
   };
 
   const toggleTowerPlacement = (kind: TowerKind): void => {
-    if (profile.ui.dragOnlyTowerPlacement) {
-      return;
-    }
-
     withGame((currentGame) => {
       currentGame.toggleTowerPlacement(kind);
     });
@@ -580,10 +577,6 @@ export function createGameSession(profile: GameProfile) {
       return;
     }
 
-    if (profile.ui.dragOnlyTowerPlacement) {
-      event.preventDefault();
-    }
-
     refreshCanvasGeometry();
     towerDrag = {
       kind,
@@ -625,10 +618,6 @@ export function createGameSession(profile: GameProfile) {
       withGame((currentGame) => {
         currentGame.unlockAllLevelsForDebug();
       }, true);
-      return;
-    }
-
-    if (profile.ui.dragOnlyTowerPlacement) {
       return;
     }
 

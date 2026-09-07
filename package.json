@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "check:runtime": "node scripts/check-runtime.mjs",
     "benchmark:draw": "node scripts/benchmark-draw-methods.mjs",
     "benchmark:draw:towers": "node scripts/benchmark-draw-methods.mjs --tower-profile",
     "benchmark:death-effects": "node scripts/benchmark-death-effects.mjs",

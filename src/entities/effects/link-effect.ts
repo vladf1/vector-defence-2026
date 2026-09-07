@@ -8,6 +8,8 @@ const SLOW_ARC_COUNT = 3;
 interface LinkSource {
   x: number;
   y: number;
+  readonly visualX?: number;
+  readonly visualY?: number;
   level?: number;
   removed?: boolean;
 }
@@ -42,10 +44,10 @@ export class LinkEffect {
   }
 
   draw(context: CanvasRenderingContext2D): void {
-    const fromX = this.source.x;
-    const fromY = this.source.y;
-    const toX = this.target.x;
-    const toY = this.target.y;
+    const fromX = this.source.visualX ?? this.source.x;
+    const fromY = this.source.visualY ?? this.source.y;
+    const toX = this.target.visualX;
+    const toY = this.target.visualY;
     const sourceLevel = this.source.level ?? 0;
 
     context.save();

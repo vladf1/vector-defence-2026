@@ -1,8 +1,25 @@
 import type { Point } from "./types";
 
-interface VelocityDecayTarget extends Point {
+interface MovingPoint extends Point {
   velocityXPerSecond: number;
   velocityYPerSecond: number;
+}
+
+/** Predicts the earliest reachable intercept; aim at the current position if none exists. */
+export function calculateIntercept(target: MovingPoint, projectileSpeedPerSecond: number, from: Point): Point {
+  const dx = target.x - from.x;
+  const dy = target.y - from.y;
+  const a = projectileSpeedPerSecond ** 2 - target.velocityXPerSecond ** 2 - target.velocityYPerSecond ** 2;
+  const b = dx * target.velocityXPerSecond + dy * target.velocityYPerSecond;
+  const c = dx * dx + dy * dy;
+  const discriminant = b * b + a * c;
+  // Rationalizing the smaller positive root also handles equal projectile/target speeds.
+  const denominator = discriminant >= 0 ? Math.sqrt(discriminant) - b : 0;
+  const timeSeconds = denominator > 0 ? c / denominator : 0;
+  return {
+    x: target.x + target.velocityXPerSecond * timeSeconds,
+    y: target.y + target.velocityYPerSecond * timeSeconds,
+  };
 }
 
 /**
@@ -43,7 +60,7 @@ export class CalibratedExponentialDecay {
     ) / (1 - referenceVelocityFactor);
   }
 
-  apply(target: VelocityDecayTarget, deltaSeconds: number): void {
+  apply(target: MovingPoint, deltaSeconds: number): void {
     if (deltaSeconds <= 0) {
       return;
     }

@@ -100,7 +100,7 @@ export class Missile {
       return;
     }
 
-    this.trailTimer = 0;
+    this.trailTimer -= 0.02;
     const trailX = this.x + randomRange(-3, 3) - (Math.cos(this.angle) * 9);
     const trailY = this.y + randomRange(-3, 3) - (Math.sin(this.angle) * 9);
     const exhaustAngle = this.angle + Math.PI + randomRange(-0.35, 0.35);

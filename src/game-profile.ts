@@ -34,7 +34,6 @@ export interface GameProfile {
   routeCurveSampleStep: number;
   placement: PlacementGeometry;
   ui: {
-    dragOnlyTowerPlacement: boolean;
     drawCanvasTowerActions: boolean;
     showShortcutLabels: boolean;
     showTitle: boolean;
@@ -101,7 +100,6 @@ export const DESKTOP_GAME_PROFILE = createProfile({
   roadWidth: ROAD_WIDTH,
   routeCurveSampleStep: ROUTE_CURVE_SAMPLE_STEP,
   ui: {
-    dragOnlyTowerPlacement: false,
     drawCanvasTowerActions: true,
     showShortcutLabels: true,
     showTitle: true,
@@ -123,7 +121,6 @@ export const MOBILE_GAME_PROFILE = createProfile({
   roadWidth: 25,
   routeCurveSampleStep: 4,
   ui: {
-    dragOnlyTowerPlacement: false,
     drawCanvasTowerActions: false,
     showShortcutLabels: false,
     showTitle: false,

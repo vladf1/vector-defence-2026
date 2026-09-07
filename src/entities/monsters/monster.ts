@@ -82,12 +82,11 @@ export abstract class Monster {
   }
 
   shake(durationSeconds: number, distance: number): void {
-    this.clearHitShakeOffset();
     this.hitShakeDurationSeconds = Math.max(0.001, durationSeconds);
     this.hitShakeSeconds = this.hitShakeDurationSeconds;
     this.hitShakeDistance = Math.max(0, distance);
     this.hitShakePhase = randomRange(0, Math.PI * 2);
-    this.applyHitShakeOffset();
+    this.updateHitShakeOffset();
   }
 
   slowDown(factor: number, recoverySpeedPerSecond: number): void {
@@ -111,7 +110,6 @@ export abstract class Monster {
 
     this.previousX = this.x;
     this.previousY = this.y;
-    this.clearHitShakeOffset();
 
     if (this.speedPerSecond < this.maxSpeedPerSecond) {
       this.speedPerSecond = Math.min(this.maxSpeedPerSecond, this.speedPerSecond + (this.slowRecoverySpeedPerSecond * context.deltaSeconds));
@@ -124,12 +122,12 @@ export abstract class Monster {
 
     this.updateSpecial(context);
     this.hitShakeSeconds = Math.max(0, this.hitShakeSeconds - context.deltaSeconds);
-    this.applyHitShakeOffset();
+    this.updateHitShakeOffset();
   }
 
   draw(context: CanvasRenderingContext2D): void {
     context.save();
-    context.translate(this.x, this.y);
+    context.translate(this.visualX, this.visualY);
     this.drawCoreBody(context);
     context.restore();
 
@@ -190,33 +188,27 @@ export abstract class Monster {
     this.angle = getPathHeadingAngle(this.path, distance, this.targetIndex);
   }
 
-  private getHitShakeOffset(): { x: number; y: number } {
+  // Presentation coordinates are also the origin of death particles; x/y stay on the route.
+  get visualX(): number {
+    return this.x + this.hitShakeOffsetX;
+  }
+
+  get visualY(): number {
+    return this.y + this.hitShakeOffsetY;
+  }
+
+  private updateHitShakeOffset(): void {
     if (this.hitShakeSeconds <= 0) {
-      return { x: 0, y: 0 };
+      this.hitShakeOffsetX = 0;
+      this.hitShakeOffsetY = 0;
+      return;
     }
 
     const elapsedSeconds = this.hitShakeDurationSeconds - this.hitShakeSeconds;
     const fade = this.hitShakeSeconds / this.hitShakeDurationSeconds;
     const distance = this.hitShakeDistance * fade;
-    return {
-      x: Math.sin(this.hitShakePhase + (elapsedSeconds * HIT_SHAKE_HORIZONTAL_FREQUENCY_PER_SECOND)) * distance,
-      y: Math.cos((this.hitShakePhase * HIT_SHAKE_VERTICAL_PHASE_SCALE) + (elapsedSeconds * HIT_SHAKE_VERTICAL_FREQUENCY_PER_SECOND)) * distance,
-    };
-  }
-
-  private applyHitShakeOffset(): void {
-    const offset = this.getHitShakeOffset();
-    this.x += offset.x;
-    this.y += offset.y;
-    this.hitShakeOffsetX = offset.x;
-    this.hitShakeOffsetY = offset.y;
-  }
-
-  private clearHitShakeOffset(): void {
-    this.x -= this.hitShakeOffsetX;
-    this.y -= this.hitShakeOffsetY;
-    this.hitShakeOffsetX = 0;
-    this.hitShakeOffsetY = 0;
+    this.hitShakeOffsetX = Math.sin(this.hitShakePhase + (elapsedSeconds * HIT_SHAKE_HORIZONTAL_FREQUENCY_PER_SECOND)) * distance;
+    this.hitShakeOffsetY = Math.cos((this.hitShakePhase * HIT_SHAKE_VERTICAL_PHASE_SCALE) + (elapsedSeconds * HIT_SHAKE_VERTICAL_FREQUENCY_PER_SECOND)) * distance;
   }
 
   private drawHealthBar(context: CanvasRenderingContext2D): void {
@@ -224,9 +216,9 @@ export abstract class Monster {
     const healthRatio = this.hitPoints / this.maxHitPoints;
     const fillWidth = barWidth * healthRatio;
     context.fillStyle = "rgba(5, 10, 8, 0.85)";
-    context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, barWidth, 3);
+    context.fillRect(this.visualX - (barWidth / 2), this.visualY - this.radius - 7, barWidth, 3);
     context.fillStyle = this.getHealthBarColor(healthRatio);
-    context.fillRect(this.x - (barWidth / 2), this.y - this.radius - 7, fillWidth, 3);
+    context.fillRect(this.visualX - (barWidth / 2), this.visualY - this.radius - 7, fillWidth, 3);
   }
 
   private getHealthBarColor(healthRatio: number): string {

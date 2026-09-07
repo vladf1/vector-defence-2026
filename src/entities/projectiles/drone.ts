@@ -1,7 +1,8 @@
+import { TIMER_EPSILON_SECONDS } from "../../constants";
 import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { Point } from "../../types";
-import { calculateDistance, clamp, isOutsideBounds, randomRange, turnAngleTowards, withinDistance } from "../../utils";
+import { calculateDistance, calculateIntercept, clamp, isOutsideBounds, randomRange, turnAngleTowards, withinDistance } from "../../utils";
 import { drawDroneBody, DRONE_ACCENT_COLORS } from "../drone-visuals";
 import type { Monster } from "../monsters/monster";
 import { DRONE_PROJECTILE_SPEED_PER_SECOND, DroneProjectile } from "./drone-projectile";
@@ -88,7 +89,9 @@ export class Drone {
       return;
     }
 
-    this.fireCooldownSeconds = Math.max(0, this.fireCooldownSeconds - context.deltaSeconds);
+    if (this.fireCooldownSeconds > 0) {
+      this.fireCooldownSeconds -= context.deltaSeconds;
+    }
     this.retargetCooldownSeconds = Math.max(0, this.retargetCooldownSeconds - context.deltaSeconds);
     this.updateTarget(context);
 
@@ -115,6 +118,7 @@ export class Drone {
       this.enforceTargetStandOff(this.target);
     }
     this.tryFire(result);
+    this.fireCooldownSeconds = Math.max(0, this.fireCooldownSeconds);
   }
 
   draw(context: CanvasRenderingContext2D): void {
@@ -285,7 +289,7 @@ export class Drone {
   }
 
   private tryFire(result: UpdateResult): void {
-    if (!this.target || this.fireCooldownSeconds > 0) {
+    if (!this.target || this.fireCooldownSeconds > TIMER_EPSILON_SECONDS) {
       return;
     }
 
@@ -293,32 +297,11 @@ export class Drone {
       return;
     }
 
-    this.fireCooldownSeconds = this.fireIntervalSeconds;
-    result.addProjectile(new DroneProjectile(this, this.calculateIntercept(this.target), this.level));
+    this.fireCooldownSeconds += this.fireIntervalSeconds;
+    result.addProjectile(new DroneProjectile(this, calculateIntercept(this.target, DRONE_PROJECTILE_SPEED_PER_SECOND, this), this.level));
     result.playSound(AudioCue.GunFire, this.x, 0.14 + (this.level * 0.018));
   }
 
-  private calculateIntercept(target: Monster): Point {
-    const relativeTargetX = target.x - this.x;
-    const relativeTargetY = target.y - this.y;
-    const projectileSpeedSquared = DRONE_PROJECTILE_SPEED_PER_SECOND * DRONE_PROJECTILE_SPEED_PER_SECOND;
-    const targetSpeedSquared = (target.velocityXPerSecond * target.velocityXPerSecond) + (target.velocityYPerSecond * target.velocityYPerSecond);
-    const a = projectileSpeedSquared - targetSpeedSquared;
-    const b = (relativeTargetX * target.velocityXPerSecond) + (relativeTargetY * target.velocityYPerSecond);
-    const c = (relativeTargetX * relativeTargetX) + (relativeTargetY * relativeTargetY);
-    const discriminant = (b * b) + (a * c);
-    let timeSeconds = 0;
-    if (discriminant >= 0 && a !== 0) {
-      timeSeconds = (b + Math.sqrt(discriminant)) / a;
-      if (timeSeconds < 0) {
-        timeSeconds = 0;
-      }
-    }
-    return {
-      x: target.x + (target.velocityXPerSecond * timeSeconds),
-      y: target.y + (target.velocityYPerSecond * timeSeconds),
-    };
-  }
 
 }
 

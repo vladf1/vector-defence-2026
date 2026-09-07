@@ -2,7 +2,7 @@
   import type { Action } from "svelte/action";
   import { TOWER_TOOLBAR_PREVIEWS } from "../entities/towers/tower-registry";
   import { getGameSessionContext } from "../game-context";
-  import type { HudSnapshot, TowerKind } from "../types";
+  import type { TowerKind } from "../types";
   import type { Tower } from "../entities/towers/tower";
   import { formatMoney } from "../utils";
 
@@ -13,43 +13,6 @@
 
   function formatShortcuts(shortcuts: readonly string[]): string {
     return shortcuts.map((shortcut) => shortcut.toUpperCase()).join("/");
-  }
-
-  function formatSelectionTitle(snapshot: HudSnapshot): string {
-    if (profile.mode === "mobile" || snapshot.selectionLevel === undefined || snapshot.selectionRange === undefined) {
-      return snapshot.selectionName;
-    }
-    return `${snapshot.selectionName} · Level ${snapshot.selectionLevel} · Range ${Math.round(snapshot.selectionRange)}`;
-  }
-
-  function formatSelectionBody(snapshot: HudSnapshot): string {
-    if (snapshot.hasSelectedTower) {
-      return profile.mode === "mobile" && snapshot.selectionLevel !== undefined && snapshot.selectionRange !== undefined
-        ? `Level ${snapshot.selectionLevel} · Range ${Math.round(snapshot.selectionRange)}`
-        : "";
-    }
-    if (snapshot.placingTower) {
-      return profile.mode === "mobile" && snapshot.placementCost !== undefined
-        ? `Tap field to build · ${formatMoney(snapshot.placementCost)}`
-        : snapshot.selectionSummary;
-    }
-    return "Select a tower to view upgrades, range, and sell value.";
-  }
-
-  function formatUpgradeActionLabel(upgradeCost: number | undefined): string {
-    return upgradeCost === undefined ? "Max" : `Upgrade - ${formatMoney(upgradeCost)}`;
-  }
-
-  function formatUpgradeActionValue(upgradeCost: number | undefined): string {
-    return upgradeCost === undefined ? "Max" : formatMoney(upgradeCost);
-  }
-
-  function formatSellActionLabel(sellValue: number | undefined): string {
-    return sellValue === undefined ? "Sell" : `Sell - ${formatMoney(sellValue)}`;
-  }
-
-  function formatSellActionValue(sellValue: number | undefined): string {
-    return sellValue === undefined ? "Sell" : formatMoney(sellValue);
   }
 
   function drawTowerPreview(canvas: HTMLCanvasElement, tower: Tower): void {
@@ -76,10 +39,6 @@
   };
 
   function handleTowerButtonClick(event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }): void {
-    if (profile.ui.dragOnlyTowerPlacement) {
-      return;
-    }
-
     session.toggleTowerPlacement(event.currentTarget.value as TowerKind);
   }
 
@@ -145,10 +104,10 @@
       <div class="selection-header">
         <div class="selection-copy">
           {#if $hud.selectionName}
-            <strong>{formatSelectionTitle($hud)}</strong>
+            <strong>{$hud.selectionName}</strong>
           {/if}
-          {#if formatSelectionBody($hud)}
-            <span>{formatSelectionBody($hud)}</span>
+          {#if $hud.selectionSummary}
+            <span>{$hud.selectionSummary}</span>
           {/if}
         </div>
         {#if $hud.placingTower && !$hud.hasSelectedTower}
@@ -186,13 +145,13 @@
           <button
             class={`action-button${$hud.upgradeUnaffordable ? " unaffordable" : ""}`}
             type="button"
-            aria-label={formatUpgradeActionLabel($hud.upgradeCost)}
-            title={formatUpgradeActionLabel($hud.upgradeCost)}
+            aria-label={$hud.upgradeLabel}
+            title={$hud.upgradeLabel}
             onclick={session.upgradeSelectedTower}
             disabled={$hud.upgradeDisabled}
           >
             <span aria-hidden="true">▲</span>
-            <span class="mobile-action-value">{formatUpgradeActionValue($hud.upgradeCost)}</span>
+            <span class="mobile-action-value">{$hud.upgradeValue}</span>
           </button>
           {#if $hud.hasLaserLockAction}
             <button
@@ -210,13 +169,13 @@
           <button
             class="action-button sell"
             type="button"
-            aria-label={formatSellActionLabel($hud.sellValue)}
-            title={formatSellActionLabel($hud.sellValue)}
+            aria-label={$hud.sellLabel}
+            title={$hud.sellLabel}
             onclick={session.sellSelectedTower}
             disabled={$hud.sellDisabled}
           >
             <span aria-hidden="true">💰</span>
-            <span class="mobile-action-value">{formatSellActionValue($hud.sellValue)}</span>
+            <span class="mobile-action-value">{$hud.sellValue}</span>
           </button>
         </div>
       {/if}

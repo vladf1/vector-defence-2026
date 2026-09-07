@@ -102,12 +102,11 @@ export interface HudSnapshot {
   waveMonsterTotal?: number;
   banner: string;
   selectionName: string;
-  selectionLevel?: number;
-  selectionRange?: number;
   selectionSummary: string;
-  placementCost?: number;
-  upgradeCost?: number;
-  sellValue?: number;
+  upgradeLabel: string;
+  upgradeValue: string;
+  sellLabel: string;
+  sellValue: string;
   upgradeDisabled: boolean;
   upgradeUnaffordable: boolean;
   hasSelectedTower: boolean;
@@ -120,7 +119,6 @@ export interface HudSnapshot {
   showStatusHud: boolean;
   canSkipBreak: boolean;
   paused: boolean;
-  dragOnlyTowerPlacement: boolean;
   placingTower?: TowerKind;
   towerButtonsDisabled: boolean;
   availableTowers: TowerKind[];
@@ -147,7 +145,9 @@ export interface ModalActionView {
 
 export interface ModalStarAwardView {
   stars: number;
-  bestStars: number;
+  title: string;
+  description: string;
+  label: string;
   perfect: boolean;
 }
 
@@ -158,7 +158,10 @@ export interface ModalLevelCardView {
   current: boolean;
   stars: number;
   status: string;
-  level: LevelData;
+  title: string;
+  description: string;
+  summary: string;
+  starsLabel: string;
 }
 
 export interface ModalView {

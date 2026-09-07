@@ -118,8 +118,8 @@ export class BulwarkMonster extends Monster {
       SHARD_SPLITTER,
     );
     result.addParticle(new GlassShardParticle(
-      this.x,
-      this.y,
+      this.visualX,
+      this.visualY,
       this.color,
       FRONT_PLATE_OUTLINE,
       { x: 0, y: 0 },

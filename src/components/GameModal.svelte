@@ -5,36 +5,6 @@
   const { modal } = session;
   const STAR_VALUES = [1, 2, 3];
 
-  function trimFinalPeriod(text: string): string {
-    return text.endsWith(".") ? text.slice(0, -1) : text;
-  }
-
-  function formatStarCount(stars: number): string {
-    return `${stars} star${stars === 1 ? "" : "s"}`;
-  }
-
-  function awardTitle(stars: number): string {
-    if (stars === 3) {
-      return "Perfect route";
-    }
-    if (stars === 2) {
-      return "Strong clear";
-    }
-    return "Route secured";
-  }
-
-  function awardCopy(stars: number, bestStars: number): string {
-    if (bestStars > stars) {
-      return `Best clear remains ${formatStarCount(bestStars)}.`;
-    }
-    if (stars === 3) {
-      return "No leaks. Full control.";
-    }
-    if (stars === 2) {
-      return "Cleared with escape room to spare.";
-    }
-    return "Replay for a cleaner defense.";
-  }
 </script>
 
 {#if $modal}
@@ -42,21 +12,21 @@
     <div class={`modal-panel${$modal.sheet ? " modal-sheet" : ""}${$modal.levelCards ? " level-map-panel" : ""}`}>
       {#if !$modal.levelCards}
         <h2>{$modal.title}</h2>
-        <p>{trimFinalPeriod($modal.description)}</p>
+        <p>{$modal.description}</p>
 
         {#if $modal.starAward}
           <div
             class:perfect-award={$modal.starAward.perfect}
             class="star-award"
-            aria-label={`${formatStarCount($modal.starAward.stars)} awarded`}
+            aria-label={$modal.starAward.label}
           >
             <div class="star-award-row" aria-hidden="true">
               {#each STAR_VALUES as star}
                 <span class:earned={star <= $modal.starAward.stars}>★</span>
               {/each}
             </div>
-            <strong>{awardTitle($modal.starAward.stars)}</strong>
-            <span>{awardCopy($modal.starAward.stars, $modal.starAward.bestStars)}</span>
+            <strong>{$modal.starAward.title}</strong>
+            <span>{$modal.starAward.description}</span>
           </div>
         {/if}
 
@@ -73,7 +43,7 @@
         <div class="level-map-header">
           <div>
             <h2>{$modal.title}</h2>
-            <p>{trimFinalPeriod($modal.description)}</p>
+            <p>{$modal.description}</p>
           </div>
 
           {#if $modal.actions.length > 0}
@@ -96,18 +66,18 @@
               onclick={() => session.selectLevel(item.index)}
             >
               <div class="level-card-heading">
-                <strong>{item.level.levelNumber ?? "?"} - {item.level.name}</strong>
+                <strong>{item.title}</strong>
                 <span class="level-pill">{item.status}</span>
               </div>
               {#if item.stars > 0}
-                <span class="level-stars" aria-label={`${formatStarCount(item.stars)} best clear`}>
+                <span class="level-stars" aria-label={item.starsLabel}>
                   {#each STAR_VALUES as star}
                     <span class:earned={star <= item.stars} aria-hidden="true">★</span>
                   {/each}
                 </span>
               {/if}
-              <span>{trimFinalPeriod(item.level.subtitle ?? "Hold the route.")}</span>
-              <small>{item.level.waves?.length ?? 1} waves · {item.level.monsterCount} enemies</small>
+              <span>{item.description}</span>
+              <small>{item.summary}</small>
             </button>
           {/each}
         </div>

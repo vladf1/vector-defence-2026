@@ -5,8 +5,8 @@ import {
   TOWER_UPGRADE_RING_GROWTH,
   TOWER_UPGRADE_RING_OFFSET,
   UPGRADE_COST,
+  TIMER_EPSILON_SECONDS,
 } from "../../constants";
-import type { Point } from "../../types";
 import type { TowerKind } from "../../types";
 import { normalizeAngle } from "../../utils";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
@@ -62,8 +62,12 @@ export abstract class Tower {
   }
 
   update(context: UpdateContext, result: UpdateResult): void {
-    this.cooldownSeconds = Math.max(0, this.cooldownSeconds - context.deltaSeconds);
+    if (this.cooldownSeconds > 0) {
+      this.cooldownSeconds -= context.deltaSeconds;
+    }
     this.updateTower(context, result);
+    // Keep overshoot for a shot fired this step, but never bank idle shots.
+    this.cooldownSeconds = Math.max(0, this.cooldownSeconds);
   }
 
   upgrade(): void {
@@ -133,31 +137,12 @@ export abstract class Tower {
     return distanceSquared;
   }
 
-  protected calculateIntercept(monster: Monster, projectileSpeedPerSecond: number, from: Point): Point {
-    const target = { x: monster.x - from.x, y: monster.y - from.y };
-    const a = (projectileSpeedPerSecond * projectileSpeedPerSecond) - ((monster.velocityXPerSecond * monster.velocityXPerSecond) + (monster.velocityYPerSecond * monster.velocityYPerSecond));
-    const b = (target.x * monster.velocityXPerSecond) + (target.y * monster.velocityYPerSecond);
-    const c = (target.x * target.x) + (target.y * target.y);
-    const d = (b * b) + (a * c);
-    let t = 0;
-    if (d >= 0 && a !== 0) {
-      t = (b + Math.sqrt(d)) / a;
-      if (t < 0) {
-        t = 0;
-      }
-    }
-    return {
-      x: monster.x + (monster.velocityXPerSecond * t),
-      y: monster.y + (monster.velocityYPerSecond * t),
-    };
-  }
-
   protected resetCooldown(seconds: number): void {
-    this.cooldownSeconds = seconds;
+    this.cooldownSeconds += seconds;
   }
 
   protected ready(): boolean {
-    return this.cooldownSeconds <= 0;
+    return this.cooldownSeconds <= TIMER_EPSILON_SECONDS;
   }
 
   protected isAimedAtTarget(currentAngle: number, targetAngle: number, tolerance = DEFAULT_FIRING_ANGLE_TOLERANCE): boolean {

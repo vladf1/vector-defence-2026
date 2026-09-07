@@ -9,7 +9,7 @@ import { ActiveCircleSweepCollisionIndex } from "./game-engine/collision-detecti
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
 import { GameRenderer, type FieldBounds } from "./game-renderer";
-import { MAX_LINKS, MAX_PARTICLES } from "./constants";
+import { MAX_LINKS, MAX_PARTICLES, TIMER_EPSILON_SECONDS } from "./constants";
 import type { Monster } from "./entities/monsters/monster";
 import type { Drone } from "./entities/projectiles/drone";
 import { SplitterMonster } from "./entities/monsters/splitter-monster";
@@ -60,12 +60,19 @@ function normalizeLevels(data: LevelJsonData[], gameMode: GameModeValue): Campai
     };
     delete normalized.mobile;
 
+    if (!Array.isArray(normalized.monsterSequence) || normalized.monsterSequence.length === 0) {
+      throw new Error(`Level "${normalized.name}" must define a non-empty monsterSequence.`);
+    }
+    const monsterKinds = Object.values(MonsterKind);
     return {
       ...normalized,
       points: normalized.points.map(normalizeLevelPoint),
-      monsterSequence: normalized.monsterSequence.filter(
-        (value): value is MonsterKind => Object.values(MonsterKind).includes(value as MonsterKind),
-      ),
+      monsterSequence: normalized.monsterSequence.map((value) => {
+        if (!monsterKinds.includes(value as MonsterKind)) {
+          throw new Error(`Level "${normalized.name}" has invalid monster "${value}" in monsterSequence.`);
+        }
+        return value as MonsterKind;
+      }),
       availableTowers: normalizeAvailableTowers(normalized.name, normalized.availableTowers),
     };
   });
@@ -797,9 +804,9 @@ export class Game {
         }
       } else if (wave && this.runtime.waveSpawnedMonsters < wave.count) {
         this.runtime.spawnCooldown -= deltaSeconds;
-        if (this.runtime.spawnCooldown <= 0) {
+        if (this.runtime.spawnCooldown <= TIMER_EPSILON_SECONDS) {
           this.spawnMonster();
-          this.runtime.spawnCooldown = randomRange(wave.spawnIntervalMin, wave.spawnIntervalMax);
+          this.runtime.spawnCooldown += randomRange(wave.spawnIntervalMin, wave.spawnIntervalMax);
           this.requestHudSync();
         }
       }
@@ -808,7 +815,6 @@ export class Game {
       updateResult.clear();
       updateContext.deltaSeconds = deltaSeconds;
       updateContext.activeDrones = this.runtime.drones;
-      this.refreshActiveMonsters();
 
       for (const monster of this.runtime.monsters) {
         monster.update(updateContext, updateResult);
@@ -821,7 +827,9 @@ export class Game {
         this.applyUpdateResult(updateResult);
       } else {
         this.refreshActiveMonsters();
-        this.monsterCollisionIndex.rebuild(this.activeMonsters);
+        if (this.runtime.projectiles.length > 0 || this.runtime.missiles.length > 0) {
+          this.monsterCollisionIndex.rebuild(this.activeMonsters);
+        }
 
         for (const projectile of this.runtime.projectiles) {
           projectile.update(updateContext, updateResult);

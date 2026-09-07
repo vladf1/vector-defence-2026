@@ -33,7 +33,7 @@ export function createDeathEffectOrigin(
 
 export function createPolygonShardParticles(
   result: UpdateResult,
-  source: { x: number; y: number; color: string },
+  source: { visualX: number; visualY: number; color: string },
   outline: readonly Point[],
   origin: Point,
   rotation: number,
@@ -44,8 +44,8 @@ export function createPolygonShardParticles(
 ): void {
   for (const shard of splitter.splitIntoShards(outline)) {
     result.addParticle(new GlassShardParticle(
-      source.x,
-      source.y,
+      source.visualX,
+      source.visualY,
       source.color,
       shard.vertices,
       origin,

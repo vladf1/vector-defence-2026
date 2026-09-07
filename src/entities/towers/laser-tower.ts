@@ -39,30 +39,20 @@ export class LaserTower extends Tower {
   protected updateTower(context: UpdateContext, result: UpdateResult): void {
     this.laserSparkCooldownSeconds = Math.max(0, this.laserSparkCooldownSeconds - context.deltaSeconds);
 
-    this.beamTarget = {
-      x: this.x + (Math.cos(this.angle) * 1000),
-      y: this.y + (Math.sin(this.angle) * 1000),
-    };
-
-    if (this.directionLocked) {
-      if (this.ready() && this.hasMonsterInBeam(context)) {
-        this.fire(result);
-      }
-    } else {
+    let alignedToTarget = false;
+    if (!this.directionLocked) {
       const tracked = this.findTrackedMonsterInContext(context);
       if (tracked) {
         const targetAngle = angleBetween(this, tracked);
         this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * context.deltaSeconds);
-        this.beamTarget = {
-          x: this.x + (Math.cos(this.angle) * 1000),
-          y: this.y + (Math.sin(this.angle) * 1000),
-        };
-
-        const alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle);
-        if (alignedToTarget && this.ready()) {
-          this.fire(result);
-        }
+        alignedToTarget = this.isAimedAtTarget(this.angle, targetAngle);
       }
+    }
+
+    this.beamTarget.x = this.x + (Math.cos(this.angle) * 1000);
+    this.beamTarget.y = this.y + (Math.sin(this.angle) * 1000);
+    if (this.ready() && (this.directionLocked ? this.hasMonsterInBeam(context) : alignedToTarget)) {
+      this.fire(result);
     }
 
     const integratedBeamStrengthSeconds = this.advanceBeam(context.deltaSeconds);
@@ -70,11 +60,7 @@ export class LaserTower extends Tower {
       return;
     }
 
-    const muzzleOffset = this.getMuzzleOffset();
-    const source = {
-      x: this.x + (Math.cos(this.angle) * muzzleOffset),
-      y: this.y + (Math.sin(this.angle) * muzzleOffset),
-    };
+    const source = this.getBeamSource();
     const shouldCreateSparks = this.laserSparkCooldownSeconds <= 0;
     let sparkBurstsCreated = 0;
     const colors = this.getLaserColors();

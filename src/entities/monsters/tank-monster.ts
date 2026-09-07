@@ -95,8 +95,8 @@ export class TankMonster extends Monster {
       SHARD_SPLITTER,
     );
     result.addParticle(new TankTurretParticle(
-      this.x + turretCenterOffset.x,
-      this.y + turretCenterOffset.y,
+      this.visualX + turretCenterOffset.x,
+      this.visualY + turretCenterOffset.y,
       this.radius,
       this.color,
       this.angle,

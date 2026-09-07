@@ -371,13 +371,6 @@ export class GameRenderer {
     context.restore();
   }
 
-  toFieldPoint(point: { x: number; y: number }): { x: number; y: number } {
-    return {
-      x: point.x - this.fieldOffsetX,
-      y: point.y - this.fieldOffsetY,
-    };
-  }
-
   getVisibleFieldBounds(): FieldBounds {
     return {
       minX: -this.fieldOffsetX,
@@ -427,18 +420,7 @@ export class GameRenderer {
     const hovered = this.game.runtime.pointer ? this.isPointInUpgradeButton(this.game.runtime.pointer) : false;
 
     context.save();
-    context.globalAlpha = disabled ? 0.4 : 1;
-    context.fillStyle = hovered && !disabled ? "rgba(33, 57, 50, 0.52)" : "rgba(18, 35, 30, 0.82)";
-    context.strokeStyle = hovered && !disabled ? "rgba(255, 255, 255, 0.34)" : "rgba(255, 255, 255, 0.2)";
-    context.lineWidth = 1;
-    context.shadowColor = disabled ? "transparent" : "rgba(0, 0, 0, 0.22)";
-    context.shadowBlur = hovered && !disabled ? 9 : 6;
-    context.beginPath();
-    context.roundRect(rect.x, rect.y, rect.width, rect.height, 7);
-    context.fill();
-    context.stroke();
-    context.shadowBlur = 0;
-    context.fillStyle = "#effff7";
+    this.drawActionButtonBackground(context, rect, disabled, hovered);
     this.drawUpgradeArrow(context, rect.x + (rect.width / 2), rect.y + (rect.height / 2), this.isCompactLayout ? 1.45 : 1);
     context.restore();
   }
@@ -454,6 +436,22 @@ export class GameRenderer {
     const hovered = this.game.runtime.pointer ? this.isPointInLaserLockButton(this.game.runtime.pointer) : false;
 
     context.save();
+    this.drawActionButtonBackground(context, rect, disabled, hovered);
+    context.font = `${this.isCompactLayout ? 22 : 15}px "Apple Color Emoji", "Segoe UI Emoji", system-ui, sans-serif`;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    const icon = selectedTower.directionLocked ? "🔓" : "🔒";
+    const yOffset = selectedTower.directionLocked ? -1 : 0;
+    context.fillText(icon, rect.x + (rect.width / 2), rect.y + (rect.height / 2) + yOffset);
+    context.restore();
+  }
+
+  private drawActionButtonBackground(
+    context: CanvasRenderingContext2D,
+    rect: CanvasButtonRect,
+    disabled: boolean,
+    hovered: boolean,
+  ): void {
     context.globalAlpha = disabled ? 0.4 : 1;
     context.fillStyle = hovered && !disabled ? "rgba(33, 57, 50, 0.52)" : "rgba(18, 35, 30, 0.82)";
     context.strokeStyle = hovered && !disabled ? "rgba(255, 255, 255, 0.34)" : "rgba(255, 255, 255, 0.2)";
@@ -466,13 +464,6 @@ export class GameRenderer {
     context.stroke();
     context.shadowBlur = 0;
     context.fillStyle = "#effff7";
-    context.font = `${this.isCompactLayout ? 22 : 15}px "Apple Color Emoji", "Segoe UI Emoji", system-ui, sans-serif`;
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    const icon = selectedTower.directionLocked ? "🔓" : "🔒";
-    const yOffset = selectedTower.directionLocked ? -1 : 0;
-    context.fillText(icon, rect.x + (rect.width / 2), rect.y + (rect.height / 2) + yOffset);
-    context.restore();
   }
 
   private drawUpgradeArrow(context: CanvasRenderingContext2D, centerX: number, centerY: number, scale = 1): void {

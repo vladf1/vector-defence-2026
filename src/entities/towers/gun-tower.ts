@@ -2,7 +2,7 @@ import { AudioCue } from "../../audio-manifest";
 import { MAX_TOWER_LEVEL } from "../../constants";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import { TowerKind, type Point } from "../../types";
-import { angleBetween, randomRange, turnAngleTowards } from "../../utils";
+import { angleBetween, calculateIntercept, randomRange, turnAngleTowards } from "../../utils";
 import { GUN_PROJECTILE_SPEED_PER_SECOND, GunProjectile } from "../projectiles/gun-projectile";
 import { Tower } from "./tower";
 
@@ -33,7 +33,7 @@ export class GunTower extends Tower {
     }
 
     const source = this.getProjectileSource();
-    const target = this.calculateIntercept(tracked, GUN_PROJECTILE_SPEED_PER_SECOND, source);
+    const target = calculateIntercept(tracked, GUN_PROJECTILE_SPEED_PER_SECOND, source);
     const targetAngle = angleBetween(this, target);
     this.angle = turnAngleTowards(this.angle, targetAngle, this.turnSpeedPerSecond * context.deltaSeconds);
 

@@ -21,6 +21,9 @@ const html = String.raw`
   </head>
   <body>
     <script type="module">
+      const nativeRandom = Math.random;
+      let seededRandom;
+      Math.random = () => seededRandom ? seededRandom() : nativeRandom();
       const { Game, createLevels } = await import("/src/game-engine.ts");
       const {
         ActiveCircleSweepCollisionIndex,
@@ -37,6 +40,7 @@ const html = String.raw`
       const { GunProjectile } = await import("/src/entities/projectiles/gun-projectile.ts");
       const { Missile } = await import("/src/entities/projectiles/missile.ts");
       const { createMissileVisual } = await import("/src/entities/projectiles/missile-visuals.ts");
+      const { Drone } = await import("/src/entities/projectiles/drone.ts");
       const { UpdateResult } = await import("/src/game-engine/update-context.ts");
 
       const maxStressConfig = ${JSON.stringify(benchmarkConfig)};
@@ -46,7 +50,60 @@ const html = String.raw`
       window.__benchmarkResults = {
         totalImpact: profile.totalImpact,
         perInvocation: profile.perInvocation,
+        wholeEngine: [
+          runEngineUpdateProfile("typical", { ...maxStressConfig, monsterCount: 72, towerRows: 3, projectileCount: 120, missileCount: 18, particleCount: 200, linkCount: 12 }, 12),
+          runEngineUpdateProfile("stress", maxStressConfig, 60),
+        ],
       };
+
+      // Time the production engine separately; fixture maintenance is outside each sample.
+      function runEngineUpdateProfile(name, config, droneCount) {
+        let seed = 20260907;
+        seededRandom = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
+        try {
+          const game = createBenchmarkGame();
+          populateBusyBoard(game, config);
+          game.runtime.spawnDelay = 0;
+          game.runtime.waveSpawnedMonsters = 0;
+          game.runtime.spawnedMonsters = 0;
+          game.runtime.towers.push(game.createTower(TowerKind.Drone, { x: 260, y: 200 }));
+          const samples = [];
+          const measuredFrames = Math.max(180, config.measuredFrames);
+          for (let frame = 0; frame < config.warmupFrames + measuredFrames; frame += 1) {
+            maintainBusyBoard(game, config, frame);
+            for (const monster of game.runtime.monsters) {
+              if (monster.maxSpeedPerSecond === 0) monster.speedPerSecond = monster.maxSpeedPerSecond = 20;
+            }
+            game.runtime.drones.length = Math.min(game.runtime.drones.length, droneCount);
+            while (game.runtime.drones.length < droneCount) {
+              game.runtime.drones.push(new Drone({ x: 240, y: 180 }, game.runtime.drones.length % 7));
+            }
+            // Exercise deaths, splitter children, escape effects, and bounty resolution.
+            if (frame % 30 === 0) {
+              const monster = createMonster(MonsterKind.Splitter, game.runtime.routePath.entries, 1, 9);
+              monster.hitPoints = 0;
+              game.runtime.monsters.push(monster);
+              const escaping = createMonster(MonsterKind.Runner, game.runtime.routePath.entries.slice(-1), 1, 9);
+              game.runtime.monsters.push(escaping);
+            }
+            const start = performance.now();
+            game.updateSimulation(1 / 60);
+            const duration = performance.now() - start;
+            if (frame >= config.warmupFrames) samples.push(duration);
+          }
+          samples.sort((a, b) => a - b);
+          return {
+            fixture: name,
+            samples: samples.length,
+            medianMs: round(samples[Math.floor(samples.length / 2)]),
+            p95Ms: round(samples[Math.floor(samples.length * 0.95)]),
+            meanMs: round(samples.reduce((total, value) => total + value, 0) / samples.length),
+            drones: game.runtime.drones.length,
+          };
+        } finally {
+          seededRandom = undefined;
+        }
+      }
 
       function runMaxStressUpdateProfile(config) {
         const game = createBenchmarkGame();
@@ -413,7 +470,9 @@ const value = await runBenchmarkPage({
   timeoutMs: 120_000,
 });
 
-console.log("Total frame impact");
+console.log("Whole engine update (no drawing; fixture maintenance excluded)");
+console.table(value.wholeEngine);
+console.log("Reconstructed update slice: total method impact");
 console.table(value.totalImpact);
 console.log("Per update invocation");
 console.table(value.perInvocation);

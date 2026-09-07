@@ -1,3 +1,4 @@
+import { formatMoney } from "./utils";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { TOWER_CLASSES, getTowerClass } from "./entities/towers/tower-registry";
 import type { Game } from "./game-engine";
@@ -31,7 +32,11 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   waveTotal: 0,
   banner: "Awaiting orders",
   selectionName: "",
-  selectionSummary: "",
+  selectionSummary: "Select a tower to view upgrades, range, and sell value.",
+  upgradeLabel: "Max",
+  upgradeValue: "Max",
+  sellLabel: "Sell",
+  sellValue: "Sell",
   upgradeDisabled: true,
   upgradeUnaffordable: false,
   hasSelectedTower: false,
@@ -44,7 +49,6 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   showStatusHud: false,
   canSkipBreak: false,
   paused: false,
-  dragOnlyTowerPlacement: false,
   towerButtonsDisabled: true,
   availableTowers: [],
   affordableTowers: {
@@ -114,25 +118,20 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
   const battleActionsDisabled = !game.canPerformBattleAction();
   const banner = createBannerText(game);
 
+  const mobile = game.profile.mode === "mobile";
   let selectionName = "";
-  let selectionLevel: number | undefined;
-  let selectionRange: number | undefined;
-  let selectionSummary = "";
-  let placementCost: number | undefined;
-  let upgradeCost: number | undefined;
-  let sellValue: number | undefined;
+  let selectionSummary = "Select a tower to view upgrades, range, and sell value.";
+  const upgradeValue = selected?.canUpgrade() ? formatMoney(selected.upgradeCost) : "Max";
+  const sellValue = selected ? formatMoney(selected.resaleValue) : "Sell";
 
   if (selected) {
-    selectionName = `${getTowerClass(selected.kind).label} Tower`;
-    selectionLevel = selected.level + 1;
-    selectionRange = selected.range;
-    upgradeCost = selected.canUpgrade() ? selected.upgradeCost : undefined;
-    sellValue = selected.resaleValue;
+    const details = `Level ${selected.level + 1} · Range ${Math.round(selected.range)}`;
+    selectionName = `${getTowerClass(selected.kind).label} Tower${mobile ? "" : ` · ${details}`}`;
+    selectionSummary = mobile ? details : "";
   } else if (runtime.placingTower) {
     const towerClass = getTowerClass(runtime.placingTower);
     selectionName = `Placing ${towerClass.label} Tower`;
-    selectionSummary = towerClass.summary;
-    placementCost = towerClass.baseCost;
+    selectionSummary = mobile ? `Tap field to build · ${formatMoney(towerClass.baseCost)}` : towerClass.summary;
   }
 
   const shotsTracked = runtime.projectiles.length + runtime.missiles.length + runtime.drones.length;
@@ -151,11 +150,10 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
     waveMonsterTotal: activeWave?.count,
     banner,
     selectionName,
-    selectionLevel,
-    selectionRange,
     selectionSummary,
-    placementCost,
-    upgradeCost,
+    upgradeLabel: selected?.canUpgrade() ? `Upgrade - ${upgradeValue}` : "Max",
+    upgradeValue,
+    sellLabel: selected ? `Sell - ${sellValue}` : "Sell",
     sellValue,
     upgradeDisabled: !selected || !selected.canUpgrade() || runtime.money < selected.upgradeCost || battleActionsDisabled,
     upgradeUnaffordable,
@@ -172,7 +170,6 @@ export function createHudSnapshot(game: Game, runtimeStats: RuntimeHudStats = IN
       && runtime.spawnDelay > 0
       && !battleActionsDisabled,
     paused: game.state === GameState.Paused,
-    dragOnlyTowerPlacement: game.profile.ui.dragOnlyTowerPlacement,
     placingTower: runtime.placingTower,
     towerButtonsDisabled: battleActionsDisabled,
     availableTowers: currentLevel?.availableTowers ?? [],
@@ -211,7 +208,7 @@ export function createModalView(game: Game): ModalView | null {
 
     return {
       title: "Campaign Map",
-      description: `${game.campaignLevelCount} campaign battles. Clear one route to unlock the next.`,
+      description: `${game.campaignLevelCount} campaign battles. Clear one route to unlock the next`,
       actions,
       levelCards: createModalLevelCards(game),
     };
@@ -234,7 +231,7 @@ export function createModalView(game: Game): ModalView | null {
   if (game.state === GameState.CampaignWon) {
     return {
       title: "You Won the Campaign",
-      description: `All ${game.campaignLevelCount} campaign levels are secure.`,
+      description: `All ${game.campaignLevelCount} campaign levels are secure`,
       sheet: true,
       starAward: createModalStarAward(game),
       actions: [
@@ -306,7 +303,10 @@ function createModalLevelCards(game: Game): ModalLevelCardView[] {
       current,
       stars: game.levelStars[index] ?? 0,
       status,
-      level,
+      title: `${level.levelNumber ?? "?"} - ${level.name}`,
+      description: (level.subtitle ?? "Hold the route.").replace(/\.$/, ""),
+      summary: `${level.waves?.length ?? 1} waves · ${level.monsterCount} enemies`,
+      starsLabel: `${formatStarCount(game.levelStars[index] ?? 0)} best clear`,
     };
   });
 }
@@ -315,7 +315,36 @@ function createModalStarAward(game: Game): ModalStarAwardView {
   const bestStars = game.currentLevelIndex >= 0 ? (game.levelStars[game.currentLevelIndex] ?? 0) : 0;
   return {
     stars: game.lastAwardedStars,
-    bestStars,
+    title: awardTitle(game.lastAwardedStars),
+    description: awardCopy(game.lastAwardedStars, bestStars),
+    label: `${formatStarCount(game.lastAwardedStars)} awarded`,
     perfect: game.lastAwardedStars === 3,
   };
+}
+
+function formatStarCount(stars: number): string {
+  return `${stars} star${stars === 1 ? "" : "s"}`;
+}
+
+function awardTitle(stars: number): string {
+  if (stars === 3) {
+    return "Perfect route";
+  }
+  if (stars === 2) {
+    return "Strong clear";
+  }
+  return "Route secured";
+}
+
+function awardCopy(stars: number, bestStars: number): string {
+  if (bestStars > stars) {
+    return `Best clear remains ${formatStarCount(bestStars)}.`;
+  }
+  if (stars === 3) {
+    return "No leaks. Full control.";
+  }
+  if (stars === 2) {
+    return "Cleared with escape room to spare.";
+  }
+  return "Replay for a cleaner defense.";
 }

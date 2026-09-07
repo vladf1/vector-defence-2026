@@ -5,6 +5,8 @@ import type { Monster } from "../monsters/monster";
 interface LightningSource {
   x: number;
   y: number;
+  readonly visualX?: number;
+  readonly visualY?: number;
   level?: number;
   removed?: boolean;
 }
@@ -40,66 +42,52 @@ export class LightningLinkEffect {
 
   draw(context: CanvasRenderingContext2D): void {
     const sourceLevel = this.source.level ?? 0;
-    const points = this.createBoltPoints();
 
     context.save();
     context.globalCompositeOperation = "lighter";
     context.lineCap = "round";
     context.lineJoin = "round";
 
+    this.traceBolt(context);
     context.strokeStyle = hexWithAlpha(this.color, this.alpha * 0.42);
     context.lineWidth = 6.5 + (sourceLevel * 0.38);
-    this.strokeBolt(context, points);
+    context.stroke();
 
     context.strokeStyle = hexWithAlpha("#ffffff", this.alpha * 0.9);
     context.lineWidth = 1.15 + (sourceLevel * 0.08);
-    this.strokeBolt(context, points);
+    context.stroke();
 
     context.strokeStyle = hexWithAlpha(this.color, this.alpha * 0.72);
     context.lineWidth = 1;
-    this.drawStaticArcs(context, this.target.x, this.target.y, sourceLevel);
+    this.drawStaticArcs(context, this.target.visualX, this.target.visualY, sourceLevel);
     context.restore();
   }
 
-  private createBoltPoints(): { x: number; y: number }[] {
-    const fromX = this.source.x;
-    const fromY = this.source.y;
-    const toX = this.target.x;
-    const toY = this.target.y;
+  private traceBolt(context: CanvasRenderingContext2D): void {
+    const fromX = this.source.visualX ?? this.source.x;
+    const fromY = this.source.visualY ?? this.source.y;
+    const toX = this.target.visualX;
+    const toY = this.target.visualY;
     const deltaX = toX - fromX;
     const deltaY = toY - fromY;
     const distance = Math.hypot(deltaX, deltaY);
     const segmentCount = Math.max(2, Math.ceil(distance / SEGMENT_LENGTH));
     const normalX = distance > 0 ? -deltaY / distance : 0;
     const normalY = distance > 0 ? deltaX / distance : 0;
-    const points = [{ x: fromX, y: fromY }];
+    context.beginPath();
+    context.moveTo(fromX, fromY);
 
     for (let index = 1; index < segmentCount; index += 1) {
       const t = index / segmentCount;
       const envelope = Math.sin(Math.PI * t);
       const jitter = Math.sin((this.ageSeconds * 55) + (index * 4.31)) * 5.6 * envelope;
-      points.push({
-        x: fromX + (deltaX * t) + (normalX * jitter),
-        y: fromY + (deltaY * t) + (normalY * jitter),
-      });
+      context.lineTo(
+        fromX + (deltaX * t) + (normalX * jitter),
+        fromY + (deltaY * t) + (normalY * jitter),
+      );
     }
 
-    points.push({ x: toX, y: toY });
-    return points;
-  }
-
-  private strokeBolt(context: CanvasRenderingContext2D, points: { x: number; y: number }[]): void {
-    const start = points[0];
-    if (!start) {
-      return;
-    }
-
-    context.beginPath();
-    context.moveTo(start.x, start.y);
-    for (let index = 1; index < points.length; index += 1) {
-      context.lineTo(points[index].x, points[index].y);
-    }
-    context.stroke();
+    context.lineTo(toX, toY);
   }
 
   private drawStaticArcs(context: CanvasRenderingContext2D, x: number, y: number, sourceLevel: number): void {
