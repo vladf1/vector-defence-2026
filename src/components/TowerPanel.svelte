@@ -81,105 +81,93 @@
     </div>
   </div>
 
-  {#if profile.mode === "mobile" && !$hud.hasSelectedTower && !$hud.placingTower}
-    <div
-      class:disabled-selection-panel={$hud.towerButtonsDisabled}
-      class:tower-border-panel={$hud.towerButtonsDisabled}
-      class="control-card selection-card idle-selection-card"
-      aria-disabled={$hud.towerButtonsDisabled}
-    >
-      <div class="selection-header">
-        <div class="selection-copy">
+  <div
+    class:disabled-selection-panel={$hud.towerButtonsDisabled}
+    class:tower-border-panel={$hud.towerButtonsDisabled || (profile.mode !== "mobile" && !$hud.hasSelectedTower && !$hud.placingTower)}
+    class:idle-selection-card={profile.mode === "mobile" && !$hud.hasSelectedTower && !$hud.placingTower}
+    class="control-card selection-card"
+    aria-disabled={$hud.towerButtonsDisabled}
+  >
+    <div class="selection-header">
+      <div class="selection-copy">
+        {#if profile.mode === "mobile" && !$hud.hasSelectedTower && !$hud.placingTower}
           <strong>Build towers</strong>
           <span>Tap a tower to inspect</span>
-        </div>
-      </div>
-    </div>
-  {:else if profile.mode !== "mobile" || $hud.hasSelectedTower || $hud.placingTower}
-    <div
-      class:disabled-selection-panel={$hud.towerButtonsDisabled}
-      class:tower-border-panel={$hud.towerButtonsDisabled || (!$hud.hasSelectedTower && !$hud.placingTower)}
-      class="control-card selection-card"
-      aria-disabled={$hud.towerButtonsDisabled}
-    >
-      <div class="selection-header">
-        <div class="selection-copy">
-          {#if $hud.selectionName}
-            <strong>{$hud.selectionName}</strong>
-          {/if}
-          {#if $hud.selectionSummary}
-            <span>{$hud.selectionSummary}</span>
-          {/if}
-        </div>
-        {#if $hud.placingTower && !$hud.hasSelectedTower}
-          <button
-            class="action-button cancel-build-button"
-            type="button"
-            aria-label="Cancel build"
-            title="Cancel build"
-            onclick={session.cancelBuild}
-            disabled={$hud.cancelBuildDisabled}
-          >
-            <span aria-hidden="true">×</span>
-          </button>
+        {:else if $hud.selectionName}
+          <strong>{$hud.selectionName}</strong>
         {/if}
-        {#if $hud.hasSelectedTower && profile.mode !== "mobile"}
-          <button
-            class="action-button sell selection-sell-button"
-            type="button"
-            aria-label="Sell"
-            title="Sell"
-            onclick={session.sellSelectedTower}
-            disabled={$hud.sellDisabled}
-          >
-            <span aria-hidden="true">💰</span>
-          </button>
+        {#if !(profile.mode === "mobile" && !$hud.hasSelectedTower && !$hud.placingTower) && $hud.selectionSummary}
+          <span>{$hud.selectionSummary}</span>
         {/if}
       </div>
-      {#if profile.mode === "mobile" && $hud.hasSelectedTower}
-        <div
-          class:laser-actions={$hud.hasLaserLockAction}
-          class="mobile-selection-actions"
-          role="group"
-          aria-label="Selected tower actions"
+      {#if $hud.placingTower && !$hud.hasSelectedTower}
+        <button
+          class="action-button cancel-build-button"
+          type="button"
+          aria-label="Cancel build"
+          title="Cancel build"
+          onclick={session.cancelBuild}
+          disabled={$hud.cancelBuildDisabled}
         >
-          <button
-            class={`action-button${$hud.upgradeUnaffordable ? " unaffordable" : ""}`}
-            type="button"
-            aria-label={$hud.upgradeLabel}
-            title={$hud.upgradeLabel}
-            onclick={session.upgradeSelectedTower}
-            disabled={$hud.upgradeDisabled}
-          >
-            <span aria-hidden="true">▲</span>
-            <span class="mobile-action-value">{$hud.upgradeValue}</span>
-          </button>
-          {#if $hud.hasLaserLockAction}
-            <button
-              class="action-button"
-              type="button"
-              aria-label={$hud.laserLocked ? "Unlock" : "Lock"}
-              title={$hud.laserLocked ? "Unlock" : "Lock"}
-              onclick={session.toggleSelectedLaserLock}
-              disabled={$hud.laserLockDisabled}
-            >
-              <span aria-hidden="true">{$hud.laserLocked ? "🔓" : "🔒"}</span>
-              <span class="mobile-action-value">{$hud.laserLocked ? "Unlock" : "Lock"}</span>
-            </button>
-          {/if}
-          <button
-            class="action-button sell"
-            type="button"
-            aria-label={$hud.sellLabel}
-            title={$hud.sellLabel}
-            onclick={session.sellSelectedTower}
-            disabled={$hud.sellDisabled}
-          >
-            <span aria-hidden="true">💰</span>
-            <span class="mobile-action-value">{$hud.sellValue}</span>
-          </button>
-        </div>
+          <span aria-hidden="true">×</span>
+        </button>
+      {/if}
+      {#if $hud.hasSelectedTower && profile.mode !== "mobile"}
+        <button
+          class="action-button sell selection-sell-button"
+          type="button"
+          aria-label="Sell"
+          title="Sell"
+          onclick={session.sellSelectedTower}
+          disabled={$hud.sellDisabled}
+        >
+          <span aria-hidden="true">💰</span>
+        </button>
       {/if}
     </div>
-  {/if}
+    {#if profile.mode === "mobile" && $hud.hasSelectedTower}
+      <div
+        class:laser-actions={$hud.hasLaserLockAction}
+        class="mobile-selection-actions"
+        role="group"
+        aria-label="Selected tower actions"
+      >
+        <button
+          class={`action-button${$hud.upgradeUnaffordable ? " unaffordable" : ""}`}
+          type="button"
+          aria-label={$hud.upgradeLabel}
+          title={$hud.upgradeLabel}
+          onclick={session.upgradeSelectedTower}
+          disabled={$hud.upgradeDisabled}
+        >
+          <span aria-hidden="true">▲</span>
+          <span class="mobile-action-value">{$hud.upgradeValue}</span>
+        </button>
+        {#if $hud.hasLaserLockAction}
+          <button
+            class="action-button"
+            type="button"
+            aria-label={$hud.laserLocked ? "Unlock" : "Lock"}
+            title={$hud.laserLocked ? "Unlock" : "Lock"}
+            onclick={session.toggleSelectedLaserLock}
+            disabled={$hud.laserLockDisabled}
+          >
+            <span aria-hidden="true">{$hud.laserLocked ? "🔓" : "🔒"}</span>
+            <span class="mobile-action-value">{$hud.laserLocked ? "Unlock" : "Lock"}</span>
+          </button>
+        {/if}
+        <button
+          class="action-button sell"
+          type="button"
+          aria-label={$hud.sellLabel}
+          title={$hud.sellLabel}
+          onclick={session.sellSelectedTower}
+          disabled={$hud.sellDisabled}
+        >
+          <span aria-hidden="true">💰</span>
+          <span class="mobile-action-value">{$hud.sellValue}</span>
+        </button>
+      </div>
+    {/if}
+  </div>
 </section>

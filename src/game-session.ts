@@ -534,9 +534,7 @@ export function createGameSession(profile: GameProfile) {
       if (releasePoint) {
         game?.setPointer(releasePoint);
         withGame((currentGame) => {
-          if (currentGame.isTowerAvailable(drag.kind) && currentGame.canPlaceTower(releasePoint) && currentGame.canAffordTower(drag.kind)) {
-            currentGame.placeTower(drag.kind, releasePoint);
-          } else {
+          if (!currentGame.placeTower(drag.kind, releasePoint)) {
             currentGame.cancelTowerPlacement();
           }
         });

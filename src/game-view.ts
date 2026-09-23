@@ -51,14 +51,7 @@ export const INITIAL_HUD_SNAPSHOT: HudSnapshot = {
   paused: false,
   towerButtonsDisabled: true,
   availableTowers: [],
-  affordableTowers: {
-    [TowerKind.Gun]: false,
-    [TowerKind.Laser]: false,
-    [TowerKind.Missile]: false,
-    [TowerKind.Slow]: false,
-    [TowerKind.Drone]: false,
-    [TowerKind.Lightning]: false,
-  },
+  affordableTowers: createAffordableTowers(0),
   nerdStats: {
     fps: "0",
     frameTime: "0.0 ms",

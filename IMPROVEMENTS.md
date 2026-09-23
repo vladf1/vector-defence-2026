@@ -1,6 +1,6 @@
 # Vector Defence Improvement Backlog
 
-Last reviewed: 2026-07-17
+Last reviewed: 2026-09-22
 
 This document captures the repository-wide correctness, performance, tooling,
 accessibility, and maintainability audit. Keep item numbers stable so work can
@@ -72,22 +72,17 @@ effects with no console warnings or errors. The available Chrome control channel
 did not expose DevTools trace capture; the repaired forced-GPU-flush benchmark,
 fresh render sheet, and live smoke were accepted as sufficient verification.
 
-### 3. [ ] Apply particle and link budgets before construction
+### 3. [~] Apply particle and link budgets before construction
 
 **Type:** Confirmed inefficiency
 
-`UpdateResult` accepts every effect object, while `Game.applyUpdateResult()`
-checks `MAX_PARTICLES` and `MAX_LINKS` only after construction. Saturated
-frames still pay for allocations, random generation, and geometry that will
-be discarded.
+Particle recipes and monster death effects now check the remaining particle
+capacity before construction. Link effects also check remaining capacity
+before construction, so saturated frames avoid discarded link objects.
+Prioritizing effects and reporting dropped counts remain open.
 
 Actions:
 
-- Give `UpdateResult` the remaining particle/link capacity for the frame.
-- Check admission before constructing an effect, using an explicit capacity
-  guard or lazy factory. Returning `false` from `addParticle(new Particle(...))`
-  is too late because the allocation and random/geometry work already happened.
-- Return whether admission succeeded so grouped effects can stop early.
 - Prioritize gameplay-readable effects when capacity is scarce.
 - Expose dropped-effect counts in nerd stats.
 - Consider pooling only after the admission fix is benchmarked.
@@ -131,12 +126,13 @@ Implemented:
   `Math.exp` calculation per distinct substep rather than one per particle.
 - A one-off 15–144 Hz damping validator passed before being removed.
 
-### 6. [ ] Establish an automated test suite
+### 6. [~] Establish an automated test suite
 
 **Type:** Correctness infrastructure
 
-The repository still lacks a general unit/integration test command. Start
-with deterministic simulation boundaries:
+`npm run check:runtime` now covers timing, combat, effects, level validation,
+UI state, and browser modal behavior. A general unit/integration command and
+CI gate are still open. Extend deterministic coverage around:
 
 - Swept projectile collision and spatial-index cell boundaries.
 - Route sampling, distances, curves, and headings.
@@ -152,11 +148,11 @@ CI should run the tests before the Pages build.
 
 ## Correctness and reliability
 
-### 7. [ ] Reject invalid monster identifiers
+### 7. [~] Reject invalid monster identifiers
 
-Level normalization silently filters unknown monster strings while invalid
-tower identifiers throw an error. Validate all level data and report the
-level, field, array index, and bad value. Reject an empty monster sequence.
+Level normalization rejects unknown monster strings and empty sequences with
+the level name and bad value. Add the field and array index to its error,
+then validate the remaining authored level fields.
 
 ### 8. [ ] Define laser range semantics
 
@@ -198,11 +194,11 @@ from its generated waves. A one-off validator confirmed every desktop and
 mobile level reports exactly the sum of its generated wave counts, then was
 removed.
 
-### 13. [ ] Validate tower shortcut uniqueness
+### 13. [x] Validate tower shortcut uniqueness
 
-Drone and Lightning both accept `5`. Current campaign availability happens to
-avoid the collision, while lookup simply returns the first match. Assign
-distinct global shortcuts or validate uniqueness within every level.
+Drone and Lightning both accept `5`, but never appear together on an authored
+route. Level normalization now rejects per-level shortcut collisions and the
+runtime check covers that rule.
 
 ### 14. [x] Make audio loading recoverable
 
@@ -459,11 +455,11 @@ instructions, or keyboard placement mechanism. Add an accessible name and
 instructions, then define keyboard placement if full non-pointer play is in
 scope.
 
-### 34. [ ] Add dialog semantics and focus management
+### 34. [~] Add dialog semantics and focus management
 
-The campaign/game modal needs `role="dialog"`, `aria-modal`, sensible initial
-focus, focus containment, and focus restoration. Confirm Escape behavior for
-menu, pause, victory, and defeat states.
+The campaign/game modal has dialog semantics, initial focus, Tab containment,
+and focus restoration; browser checks cover desktop and mobile viewports.
+Escape behavior for menu, pause, victory, and defeat still needs a decision.
 
 ### 35. [ ] Restore browser zoom
 
@@ -497,13 +493,13 @@ soundboard generates its 31 audio elements and buttons from the same manifest.
 Local and Pages builds pass; a live browser smoke confirmed 31 unique cues,
 successful asset requests, and working click playback state.
 
-### 40. [ ] Update stale documentation
+### 40. [x] Update stale documentation
 
-`README.md` describes four tower types and only shortcuts 1–4. The game has six
-towers. `GAMEPLAY_NOTES.md` also refers to five independent towers. Update the
-roster, controls, campaign generation description, and validation commands.
+`README.md` now lists all six towers, route-specific `5` shortcuts, generated
+waves, and the runtime check. `GAMEPLAY_NOTES.md` no longer states an outdated
+tower count.
 
-## Current validation baseline
+## Historical validation baseline
 
 As of 2026-07-17:
 

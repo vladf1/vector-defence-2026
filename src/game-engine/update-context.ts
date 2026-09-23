@@ -27,6 +27,7 @@ export interface UpdateSound {
 
 export class UpdateResult {
   particleLimit = Number.POSITIVE_INFINITY;
+  linkLimit = Number.POSITIVE_INFINITY;
   readonly killedMonsters: Monster[] = [];
   readonly escapedMonsters: Monster[] = [];
   readonly particles: Particle[] = [];
@@ -38,6 +39,10 @@ export class UpdateResult {
 
   get remainingParticleCapacity(): number {
     return Math.max(0, this.particleLimit - this.particles.length);
+  }
+
+  get remainingLinkCapacity(): number {
+    return Math.max(0, this.linkLimit - this.links.length);
   }
 
   addKilledMonster(monster: Monster): void {
@@ -55,7 +60,9 @@ export class UpdateResult {
   }
 
   addLink(link: RuntimeLinkEffect): void {
-    this.links.push(link);
+    if (this.remainingLinkCapacity > 0) {
+      this.links.push(link);
+    }
   }
 
   addDrone(drone: Drone): void {
@@ -76,6 +83,7 @@ export class UpdateResult {
 
   clear(): void {
     this.particleLimit = Number.POSITIVE_INFINITY;
+    this.linkLimit = Number.POSITIVE_INFINITY;
     this.killedMonsters.length = 0;
     this.escapedMonsters.length = 0;
     this.particles.length = 0;

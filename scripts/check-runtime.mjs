@@ -13,6 +13,8 @@ const checks = await runBrowserPage({
   const { ActiveCircleSweepCollisionIndex, LinearActiveCircleSweepCollisionIndex } = await import("/src/game-engine/collision-detection.ts");
   const { GunTower } = await import("/src/entities/towers/gun-tower.ts");
   const { LaserTower } = await import("/src/entities/towers/laser-tower.ts");
+  const { SlowTower } = await import("/src/entities/towers/slow-tower.ts");
+  const { LightningTower } = await import("/src/entities/towers/lightning-tower.ts");
   const { Drone } = await import("/src/entities/projectiles/drone.ts");
   const { GunProjectile } = await import("/src/entities/projectiles/gun-projectile.ts");
   const { DESKTOP_GAME_PROFILE, MOBILE_GAME_PROFILE } = await import("/src/game-profile.ts");
@@ -123,6 +125,13 @@ const checks = await runBrowserPage({
       check(message.includes(authoredLevels[0].name) && message.includes(sequence[0] ?? "non-empty"), `Malformed monster sequence ${JSON.stringify(sequence)} reports its level and cause: ${message}`);
     }
   } finally { authoredLevels[0].monsterSequence = authoredSequence; }
+  const authoredTowers = authoredLevels[0].availableTowers;
+  try {
+    authoredLevels[0].availableTowers = [...authoredTowers, "lightning"];
+    let message = "";
+    try { createLevels("desktop"); } catch (error) { message = error.message; }
+    check(message.includes(authoredLevels[0].name) && message.includes('shortcut "5"'), "Level data rejects conflicting tower shortcuts");
+  } finally { authoredLevels[0].availableTowers = authoredTowers; }
   for (const profile of [DESKTOP_GAME_PROFILE, MOBILE_GAME_PROFILE]) {
     const game = makeGame(profile);
     game.startLevelByIndex(0);
@@ -217,6 +226,16 @@ const checks = await runBrowserPage({
   const capped = new UpdateResult(); capped.particleLimit = 0;
   createPolygonShardParticles(capped, target, [], { x: 0, y: 0 }, 0, 1, 2, 0, { splitIntoShards() { throw new Error("Full particle budget must skip polygon splitting"); } });
   check(capped.particles.length === 0, "Exhausted particle capacity skips polygon construction");
+  const cappedLinks = new UpdateResult(); cappedLinks.linkLimit = 0;
+  const slowTarget = createMonster("square", path, 1, 0);
+  const slow = new SlowTower(60, 100);
+  slow.update({ ...context, activeMonsters: [slowTarget] }, cappedLinks);
+  check(cappedLinks.links.length === 0 && slowTarget.speedPerSecond < slowTarget.maxSpeedPerSecond && cappedLinks.sounds.length === 1, "Full link capacity preserves slowing and sound");
+  cappedLinks.clear(); cappedLinks.linkLimit = 0;
+  const lightning = new LightningTower(60, 100);
+  const hitPointsBefore = slowTarget.hitPoints;
+  lightning.update({ ...context, activeMonsters: [slowTarget] }, cappedLinks);
+  check(cappedLinks.links.length === 0 && slowTarget.hitPoints < hitPointsBefore && cappedLinks.sounds.length === 1, "Full link capacity preserves lightning damage and sound");
   for (const limit of [0, 1, 2, 5]) {
     const recipes = [createHitImpactParticles(0, 0, "#ffffff", 0, limit), createLaserImpactParticles(0, 0, 0, "#ffffff", limit), createMissileExplosionParticles(0, 0, 0, 0, limit), createEscapeBurstParticles(0, 0, ESCAPE_BURST_CONFIG, limit)];
     check(recipes.every(particles => particles.length <= limit), `Effect recipes respect a ${limit}-particle budget`);

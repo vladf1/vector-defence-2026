@@ -37,7 +37,9 @@ export class SlowTower extends Tower {
         continue;
       }
       monster.slowDown(SLOW_FACTOR, RECOVERY_SPEED_PER_SECOND);
-      result.addLink(new LinkEffect(monster, "#d8ff4f", 1, this));
+      if (result.remainingLinkCapacity > 0) {
+        result.addLink(new LinkEffect(monster, "#d8ff4f", 1, this));
+      }
       affected += 1;
       if (affected === maxTargets) {
         break;

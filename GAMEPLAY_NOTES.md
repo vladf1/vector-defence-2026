@@ -15,7 +15,7 @@
    - Slow tower marks enemies so laser does +10% damage.
    - Lightning chains farther through slowed enemies.
    - Missile splash briefly exposes bulwarks.
-   - These make the tower set feel like a system instead of five independent buttons.
+   - These make the tower set feel like a system instead of independent buttons.
 
 4. Add optional challenge modifiers after campaign clear.
    - Fast lanes, low budget, one-tower-type ban, double runners, no leaks.

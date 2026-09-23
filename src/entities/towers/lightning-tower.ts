@@ -46,7 +46,9 @@ export class LightningTower extends Tower {
       target.takeDamage(damage);
       target.shakeFromHit();
       target.slowDown(SLOW_FACTOR, RECOVERY_SPEED_PER_SECOND);
-      result.addLink(new LightningLinkEffect(source, target, color));
+      if (result.remainingLinkCapacity > 0) {
+        result.addLink(new LightningLinkEffect(source, target, color));
+      }
       source = target;
     }
 

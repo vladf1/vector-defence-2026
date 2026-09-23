@@ -99,6 +99,17 @@ function normalizeAvailableTowers(levelName: string, values: string[]): TowerKin
   if (availableTowers.length === 0) {
     throw new Error(`Level "${levelName}" must have at least one available tower.`);
   }
+
+  const shortcuts = new Map<string, TowerKind>();
+  for (const kind of availableTowers) {
+    for (const shortcut of getTowerClass(kind).shortcuts) {
+      const previous = shortcuts.get(shortcut);
+      if (previous) {
+        throw new Error(`Level "${levelName}" assigns shortcut "${shortcut}" to both "${previous}" and "${kind}".`);
+      }
+      shortcuts.set(shortcut, kind);
+    }
+  }
   return availableTowers;
 }
 
@@ -193,11 +204,7 @@ export class Game {
         this.runtime.particles.push(particle);
       }
     }
-    for (const link of result.links) {
-      if (this.runtime.links.length < MAX_LINKS) {
-        this.runtime.links.push(link);
-      }
-    }
+    this.runtime.links.push(...result.links);
     this.runtime.projectiles.push(...result.projectiles);
     this.runtime.missiles.push(...result.missiles);
     this.runtime.drones.push(...result.drones);
@@ -531,7 +538,9 @@ export class Game {
         return;
       }
 
-      this.placeTower(this.runtime.placingTower, point);
+      if (!this.placeTower(this.runtime.placingTower, point)) {
+        this.playSound(AudioCue.InvalidAction, point.x);
+      }
       return;
     }
 
@@ -551,26 +560,22 @@ export class Game {
     );
   }
 
-  placeTower(kind: TowerKind, point: Point): void {
-    if (!this.canPerformBattleAction()) {
-      return;
-    }
-    if (!this.isTowerAvailable(kind)) {
-      this.playSound(AudioCue.InvalidAction, point.x);
-      return;
+  placeTower(kind: TowerKind, point: Point): boolean {
+    if (!this.canPerformBattleAction()
+      || !this.isTowerAvailable(kind)
+      || !this.canAffordTower(kind)
+      || !this.canPlaceTower(point)) {
+      return false;
     }
 
     const tower = this.createTower(kind, point);
-    if (this.runtime.money < tower.cost || !this.canPlaceTower(point)) {
-      this.playSound(AudioCue.InvalidAction, point.x);
-      return;
-    }
     this.runtime.money -= tower.cost;
     this.runtime.towers.push(tower);
     this.runtime.selectedTower = tower;
     this.runtime.placingTower = undefined;
     this.playSound(AudioCue.TowerPlace, point.x);
     this.requestHudSync();
+    return true;
   }
 
   createTower(kind: TowerKind, point: Point): Tower {
@@ -820,6 +825,7 @@ export class Game {
       const { updateContext, updateResult } = this;
       updateResult.clear();
       updateResult.particleLimit = Math.max(0, MAX_PARTICLES - this.runtime.particles.length);
+      updateResult.linkLimit = Math.max(0, MAX_LINKS - this.runtime.links.length);
       updateContext.deltaSeconds = deltaSeconds;
       updateContext.activeDrones = this.runtime.drones;
 
