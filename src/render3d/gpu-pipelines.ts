@@ -1,28 +1,13 @@
-import {
-  BLUR_SHADER,
-  COMPOSITE_SHADER,
-  DECAL_SHADER,
-  DOWNSAMPLE_SHADER,
-  GLOW_SPRITE_SHADER,
-  GROUND_GLOW_SHADER,
-  GROUND_SHADER,
-  HEALTH_BAR_SHADER,
-  NEON_SHADER,
-  RANGE_SHADER,
-  RIBBON_SHADER,
-  ROAD_SHADER,
-  SMOKE_SPRITE_SHADER,
-} from "./shaders";
+import type { ShaderSources } from "./shaders";
 import { NEON_VERTEX_FLOATS } from "./geometry-kit";
 import { ShaderStage } from "./gpu-flags";
 
 export const HDR_FORMAT: GPUTextureFormat = "rgba16float";
 export const DEPTH_FORMAT: GPUTextureFormat = "depth24plus";
-export const PUFF_FORMAT: GPUTextureFormat = "r8unorm";
 
-/** Floats per instance: column-major transform (16), tint (4), extras (4). */
+/** Floats per instance: column-major transform (16), tint + mode (4), extras (4). */
 export const INSTANCE_FLOATS = 24;
-/** Floats per sprite: position + rotation (4), size + shape (4), color (4). */
+/** Floats per sprite: position + rotation (4), size + shape + mode (4), color (4). */
 export const SPRITE_FLOATS = 12;
 export const FLAT_VERTEX_FLOATS = 5;
 
@@ -30,25 +15,24 @@ export interface ScenePipelines {
   readonly neon: GPURenderPipeline;
   readonly ground: GPURenderPipeline;
   readonly road: GPURenderPipeline;
-  readonly ribbon: GPURenderPipeline;
-  readonly decal: GPURenderPipeline;
+  /** Ribbons, decals, tower ranges, and ground glows (premultiplied alpha). */
+  readonly effect: GPURenderPipeline;
+  /** Health bars: the effect module drawn opaque over everything. */
   readonly healthBar: GPURenderPipeline;
-  readonly range: GPURenderPipeline;
-  readonly groundGlow: GPURenderPipeline;
-  readonly glowSprite: GPURenderPipeline;
-  readonly smokeSprite: GPURenderPipeline;
+  /** Glow and smoke sprites (premultiplied alpha). */
+  readonly sprite: GPURenderPipeline;
 }
 
 export interface PostPipelines {
-  readonly downsample: GPURenderPipeline;
-  readonly blur: GPURenderPipeline;
+  /** Downsample and blur passes (HDR targets); the pass parameters pick the pass. */
+  readonly bloom: GPURenderPipeline;
+  /** Composite onto the canvas. */
   readonly composite: GPURenderPipeline;
 }
 
 export interface GpuPipelines {
   readonly frameLayout: GPUBindGroupLayout;
-  readonly passLayout: GPUBindGroupLayout;
-  readonly compositeLayout: GPUBindGroupLayout;
+  readonly postLayout: GPUBindGroupLayout;
   readonly scene: ScenePipelines;
   readonly post: PostPipelines;
 }
@@ -84,13 +68,10 @@ const SPRITE_BUFFER: GPUVertexBufferLayout = {
   attributes: [0, 1, 2].map((shaderLocation) => ({ shaderLocation, offset: shaderLocation * 16, format: "float32x4" as const })),
 };
 
-const ADDITIVE: GPUBlendState = {
-  color: { srcFactor: "src-alpha", dstFactor: "one", operation: "add" },
-  alpha: { srcFactor: "one", dstFactor: "one", operation: "add" },
-};
-
-const NORMAL: GPUBlendState = {
-  color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+// Shaders output premultiplied color, so alpha 0 is additive and alpha a is normal blending:
+// one blend state (one pipeline) serves both kinds of layers.
+const PREMULTIPLIED: GPUBlendState = {
+  color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
   alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
 };
 
@@ -117,110 +98,84 @@ function saltShader(code: string, salt: number): string {
 `;
 }
 
-export function createFrameLayout(device: GPUDevice): GPUBindGroupLayout {
-  return device.createBindGroupLayout({
-    label: "frame",
-    entries: [
-      { binding: 0, visibility: ShaderStage.VERTEX | ShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-      { binding: 1, visibility: ShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-      { binding: 2, visibility: ShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-    ],
-  });
-}
-
 /**
- * Starts every pipeline the board will ever use at once. Async creation lets the driver
- * compile them in parallel, and nothing compiles after startup: materials never vary per
- * entity (instance data carries identity), so this fixed set covers the whole game.
+ * Starts every pipeline the board will ever use at once, and nothing compiles after
+ * startup: materials never vary per entity (instance data carries identity), so this fixed
+ * set covers the whole game. WebKit compiles serially and pays for every distinct module and
+ * pipeline state, so modules are shared and pipeline states kept to eight.
  */
-export async function createPipelines(device: GPUDevice, canvasFormat: GPUTextureFormat, sampleCount: number, shaderSalt: number): Promise<GpuPipelines> {
-  const frameLayout = createFrameLayout(device);
-  const passLayout = device.createBindGroupLayout({
-    label: "post-pass",
-    entries: [
-      { binding: 0, visibility: ShaderStage.FRAGMENT, sampler: { type: "filtering" } },
-      { binding: 1, visibility: ShaderStage.FRAGMENT, texture: { sampleType: "float" } },
-      { binding: 2, visibility: ShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-    ],
+export async function createPipelines(
+  device: GPUDevice,
+  canvasFormat: GPUTextureFormat,
+  sampleCount: number,
+  shaderSalt: number,
+  sources: ShaderSources,
+): Promise<GpuPipelines> {
+  const frameLayout = device.createBindGroupLayout({
+    label: "frame",
+    entries: [{ binding: 0, visibility: ShaderStage.VERTEX | ShaderStage.FRAGMENT, buffer: { type: "uniform" } }],
   });
-  const compositeLayout = device.createBindGroupLayout({
-    label: "post-composite",
+  const postLayout = device.createBindGroupLayout({
+    label: "post",
     entries: [
       { binding: 0, visibility: ShaderStage.FRAGMENT, sampler: { type: "filtering" } },
       { binding: 1, visibility: ShaderStage.FRAGMENT, texture: { sampleType: "float" } },
       { binding: 2, visibility: ShaderStage.FRAGMENT, texture: { sampleType: "float" } },
       { binding: 3, visibility: ShaderStage.FRAGMENT, texture: { sampleType: "float" } },
+      { binding: 4, visibility: ShaderStage.FRAGMENT, buffer: { type: "uniform" } },
     ],
   });
   const sceneLayout = device.createPipelineLayout({ bindGroupLayouts: [frameLayout] });
+  const postPipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [postLayout] });
   const multisample: GPUMultisampleState = { count: Math.max(1, sampleCount) };
+  const module = (label: string, code: string): GPUShaderModule => device.createShaderModule({ label, code: saltShader(code, shaderSalt) });
+  const neonModule = module("neon", sources.neon);
+  const groundModule = module("ground", sources.ground);
+  const roadModule = module("road", sources.road);
+  const effectModule = module("effect", sources.effect);
+  const spriteModule = module("sprite", sources.sprite);
+  const postModule = module("post", sources.post);
 
   const scene = (
     label: string,
-    code: string,
+    shader: GPUShaderModule,
     buffers: GPUVertexBufferLayout[],
     depth: DepthMode,
     blend: GPUBlendState | undefined,
-  ): Promise<GPURenderPipeline> => {
-    const module = device.createShaderModule({ label, code: saltShader(code, shaderSalt) });
-    return device.createRenderPipelineAsync({
-      label,
-      layout: sceneLayout,
-      vertex: { module, entryPoint: "vertexMain", buffers },
-      fragment: { module, entryPoint: "fragmentMain", targets: [{ format: HDR_FORMAT, blend }] },
-      primitive: { topology: "triangle-list", cullMode: "back", frontFace: "ccw" },
-      depthStencil: DEPTH_MODES[depth],
-      multisample,
-    });
-  };
+  ): Promise<GPURenderPipeline> => device.createRenderPipelineAsync({
+    label,
+    layout: sceneLayout,
+    vertex: { module: shader, entryPoint: "vertexMain", buffers },
+    fragment: { module: shader, entryPoint: "fragmentMain", targets: [{ format: HDR_FORMAT, blend }] },
+    primitive: { topology: "triangle-list", cullMode: "back", frontFace: "ccw" },
+    depthStencil: DEPTH_MODES[depth],
+    multisample,
+  });
 
-  const post = (label: string, code: string, layout: GPUBindGroupLayout, format: GPUTextureFormat): Promise<GPURenderPipeline> => {
-    const module = device.createShaderModule({ label, code: saltShader(code, shaderSalt) });
-    return device.createRenderPipelineAsync({
-      label,
-      layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }),
-      vertex: { module, entryPoint: "vertexMain" },
-      fragment: { module, entryPoint: "fragmentMain", targets: [{ format }] },
-      primitive: { topology: "triangle-list" },
-    });
-  };
+  const post = (label: string, format: GPUTextureFormat): Promise<GPURenderPipeline> => device.createRenderPipelineAsync({
+    label,
+    layout: postPipelineLayout,
+    vertex: { module: postModule, entryPoint: "vertexMain" },
+    fragment: { module: postModule, entryPoint: "fragmentMain", targets: [{ format }] },
+    primitive: { topology: "triangle-list" },
+  });
 
   const instancedFlat = [FLAT_VERTEX_BUFFER, INSTANCE_BUFFER];
-  const [
-    neon,
-    ground,
-    road,
-    ribbon,
-    decal,
-    healthBar,
-    range,
-    groundGlow,
-    glowSprite,
-    smokeSprite,
-    downsample,
-    blur,
-    composite,
-  ] = await Promise.all([
-    scene("neon", NEON_SHADER, [NEON_VERTEX_BUFFER, INSTANCE_BUFFER], "opaque", undefined),
-    scene("ground", GROUND_SHADER, [], "opaque", undefined),
-    scene("road", ROAD_SHADER, [FLAT_VERTEX_BUFFER], "opaque", undefined),
-    scene("ribbon", RIBBON_SHADER, instancedFlat, "transparent", ADDITIVE),
-    scene("decal", DECAL_SHADER, instancedFlat, "transparent", NORMAL),
-    scene("health-bar", HEALTH_BAR_SHADER, instancedFlat, "overlay", undefined),
-    scene("range", RANGE_SHADER, instancedFlat, "transparent", ADDITIVE),
-    scene("ground-glow", GROUND_GLOW_SHADER, instancedFlat, "transparent", ADDITIVE),
-    scene("glow-sprite", GLOW_SPRITE_SHADER, [SPRITE_BUFFER], "transparent", ADDITIVE),
-    scene("smoke-sprite", SMOKE_SPRITE_SHADER, [SPRITE_BUFFER], "transparent", NORMAL),
-    post("bloom-downsample", DOWNSAMPLE_SHADER, passLayout, HDR_FORMAT),
-    post("bloom-blur", BLUR_SHADER, passLayout, HDR_FORMAT),
-    post("post-composite", COMPOSITE_SHADER, compositeLayout, canvasFormat),
+  const [neon, ground, road, effect, healthBar, sprite, bloom, composite] = await Promise.all([
+    scene("neon", neonModule, [NEON_VERTEX_BUFFER, INSTANCE_BUFFER], "opaque", undefined),
+    scene("ground", groundModule, [], "opaque", undefined),
+    scene("road", roadModule, [FLAT_VERTEX_BUFFER], "opaque", undefined),
+    scene("effect", effectModule, instancedFlat, "transparent", PREMULTIPLIED),
+    scene("health-bar", effectModule, instancedFlat, "overlay", undefined),
+    scene("sprite", spriteModule, [SPRITE_BUFFER], "transparent", PREMULTIPLIED),
+    post("bloom", HDR_FORMAT),
+    post("composite", canvasFormat),
   ]);
 
   return {
     frameLayout,
-    passLayout,
-    compositeLayout,
-    scene: { neon, ground, road, ribbon, decal, healthBar, range, groundGlow, glowSprite, smokeSprite },
-    post: { downsample, blur, composite },
+    postLayout,
+    scene: { neon, ground, road, effect, healthBar, sprite },
+    post: { bloom, composite },
   };
 }

@@ -1,9 +1,13 @@
 import { DEPTH_FORMAT, HDR_FORMAT, type GpuPipelines } from "./gpu-pipelines";
 import { BufferUsage, TextureUsage } from "./gpu-flags";
+import { POST_PARAMS_FLOATS, PostMode } from "./shaders";
 
 const BLOOM_THRESHOLD = 0.85;
 const FULLSCREEN_TRIANGLE_VERTICES = 3;
-const PARAMS_BYTES = 16;
+// Params: texel (2), direction (2), threshold, mode, pad (2).
+const DIRECTION_OFFSET = 2;
+const THRESHOLD_OFFSET = 4;
+const MODE_OFFSET = 5;
 
 interface SampledPass {
   readonly params: GPUBuffer;
@@ -32,21 +36,24 @@ interface Targets {
 
 /**
  * Lean HDR bloom: scene -> 1/4 prefilter -> blur -> 1/8 -> blur, composited with ACES tone
- * mapping, sRGB encoding, and a vignette straight onto the canvas. Three shaders cover all
- * seven passes (prefilter/downsample share one, the blurs share one, plus the composite).
+ * mapping, sRGB encoding, and a vignette straight onto the canvas. One shader module covers
+ * all seven passes (per-pass parameters pick the pass); unused texture slots hold a 1x1
+ * placeholder.
  */
 export class PostProcessing {
   /** Bloom and composite passes, one full-screen draw each. */
   readonly drawCalls = 7;
 
   private readonly sampler: GPUSampler;
+  private readonly placeholder: GPUTexture;
+  private readonly placeholderView: GPUTextureView;
   private readonly prefilter: SampledPass;
   private readonly downsample: SampledPass;
   private readonly fineHorizontal: SampledPass;
   private readonly fineVertical: SampledPass;
   private readonly wideHorizontal: SampledPass;
   private readonly wideVertical: SampledPass;
-  private compositeBindGroup?: GPUBindGroup;
+  private readonly compositePass: SampledPass;
   private targets?: Targets;
 
   constructor(
@@ -57,12 +64,15 @@ export class PostProcessing {
     private readonly bloomResolution: number,
   ) {
     this.sampler = device.createSampler({ label: "post", magFilter: "linear", minFilter: "linear" });
-    this.prefilter = this.createPass("prefilter", [0, 0, BLOOM_THRESHOLD, 0]);
-    this.downsample = this.createPass("downsample", [0, 0, 0, 0]);
-    this.fineHorizontal = this.createPass("fine-horizontal", [0, 0, 1, 0]);
-    this.fineVertical = this.createPass("fine-vertical", [0, 0, 0, 1]);
-    this.wideHorizontal = this.createPass("wide-horizontal", [0, 0, 1, 0]);
-    this.wideVertical = this.createPass("wide-vertical", [0, 0, 0, 1]);
+    this.placeholder = device.createTexture({ label: "post-placeholder", size: [1, 1], format: HDR_FORMAT, usage: TextureUsage.TEXTURE_BINDING });
+    this.placeholderView = this.placeholder.createView();
+    this.prefilter = this.createPass("prefilter", PostMode.Downsample, 0, 0, BLOOM_THRESHOLD);
+    this.downsample = this.createPass("downsample", PostMode.Downsample, 0, 0, 0);
+    this.fineHorizontal = this.createPass("fine-horizontal", PostMode.Blur, 1, 0, 0);
+    this.fineVertical = this.createPass("fine-vertical", PostMode.Blur, 0, 1, 0);
+    this.wideHorizontal = this.createPass("wide-horizontal", PostMode.Blur, 1, 0, 0);
+    this.wideVertical = this.createPass("wide-vertical", PostMode.Blur, 0, 1, 0);
+    this.compositePass = this.createPass("composite", PostMode.Composite, 0, 0, 0);
   }
 
   /** Matches every target to the canvas drawing-buffer size (in device pixels). */
@@ -111,22 +121,13 @@ export class PostProcessing {
     };
     this.targets = targets;
 
-    this.bindPass(this.prefilter, targets.sceneView, 1 / width, 1 / height);
-    this.bindPass(this.fineHorizontal, targets.fineView, 1 / fineWidth, 1 / fineHeight);
-    this.bindPass(this.fineVertical, targets.fineScratchView, 1 / fineWidth, 1 / fineHeight);
-    this.bindPass(this.downsample, targets.fineView, 1 / fineWidth, 1 / fineHeight);
-    this.bindPass(this.wideHorizontal, targets.wideView, 1 / wideWidth, 1 / wideHeight);
-    this.bindPass(this.wideVertical, targets.wideScratchView, 1 / wideWidth, 1 / wideHeight);
-    this.compositeBindGroup = device.createBindGroup({
-      label: "post-composite",
-      layout: this.pipelines.compositeLayout,
-      entries: [
-        { binding: 0, resource: this.sampler },
-        { binding: 1, resource: targets.sceneView },
-        { binding: 2, resource: targets.fineView },
-        { binding: 3, resource: targets.wideView },
-      ],
-    });
+    this.bindPass(this.prefilter, targets.sceneView, 1 / width, 1 / height, this.placeholderView, this.placeholderView);
+    this.bindPass(this.fineHorizontal, targets.fineView, 1 / fineWidth, 1 / fineHeight, this.placeholderView, this.placeholderView);
+    this.bindPass(this.fineVertical, targets.fineScratchView, 1 / fineWidth, 1 / fineHeight, this.placeholderView, this.placeholderView);
+    this.bindPass(this.downsample, targets.fineView, 1 / fineWidth, 1 / fineHeight, this.placeholderView, this.placeholderView);
+    this.bindPass(this.wideHorizontal, targets.wideView, 1 / wideWidth, 1 / wideHeight, this.placeholderView, this.placeholderView);
+    this.bindPass(this.wideVertical, targets.wideScratchView, 1 / wideWidth, 1 / wideHeight, this.placeholderView, this.placeholderView);
+    this.bindPass(this.compositePass, targets.sceneView, 1 / width, 1 / height, targets.fineView, targets.wideView);
   }
 
   /** Records the scene pass (via `drawScene`) and the whole post chain into `encoder`. */
@@ -155,46 +156,55 @@ export class PostProcessing {
     drawScene(scenePass);
     scenePass.end();
 
-    const { downsample, blur, composite } = this.pipelines.post;
-    this.runPass(encoder, downsample, this.prefilter, targets.fineView);
-    this.runPass(encoder, blur, this.fineHorizontal, targets.fineScratchView);
-    this.runPass(encoder, blur, this.fineVertical, targets.fineView);
-    this.runPass(encoder, downsample, this.downsample, targets.wideView);
-    this.runPass(encoder, blur, this.wideHorizontal, targets.wideScratchView);
-    this.runPass(encoder, blur, this.wideVertical, targets.wideView);
+    const { bloom, composite } = this.pipelines.post;
+    this.runPass(encoder, bloom, this.prefilter, targets.fineView);
+    this.runPass(encoder, bloom, this.fineHorizontal, targets.fineScratchView);
+    this.runPass(encoder, bloom, this.fineVertical, targets.fineView);
+    this.runPass(encoder, bloom, this.downsample, targets.wideView);
+    this.runPass(encoder, bloom, this.wideHorizontal, targets.wideScratchView);
+    this.runPass(encoder, bloom, this.wideVertical, targets.wideView);
 
     const output = encoder.beginRenderPass({
       label: "composite",
       colorAttachments: [{ view: this.context.getCurrentTexture().createView(), loadOp: "clear", clearValue: [0, 0, 0, 1], storeOp: "store" }],
     });
     output.setPipeline(composite);
-    output.setBindGroup(0, this.compositeBindGroup ?? null);
+    output.setBindGroup(0, this.compositePass.bindGroup ?? null);
     output.draw(FULLSCREEN_TRIANGLE_VERTICES);
     output.end();
   }
 
   dispose(): void {
     this.destroyTargets();
-    for (const pass of [this.prefilter, this.downsample, this.fineHorizontal, this.fineVertical, this.wideHorizontal, this.wideVertical]) {
+    for (const pass of [this.prefilter, this.downsample, this.fineHorizontal, this.fineVertical, this.wideHorizontal, this.wideVertical, this.compositePass]) {
       pass.params.destroy();
     }
+    this.placeholder.destroy();
   }
 
-  private createPass(label: string, initial: readonly number[]): SampledPass {
-    const params = this.device.createBuffer({ label, size: PARAMS_BYTES, usage: BufferUsage.UNIFORM | BufferUsage.COPY_DST });
-    return { params, values: new Float32Array(initial) };
+  private createPass(label: string, mode: number, directionX: number, directionY: number, threshold: number): SampledPass {
+    const values = new Float32Array(POST_PARAMS_FLOATS);
+    values[DIRECTION_OFFSET] = directionX;
+    values[DIRECTION_OFFSET + 1] = directionY;
+    values[THRESHOLD_OFFSET] = threshold;
+    values[MODE_OFFSET] = mode;
+    const params = this.device.createBuffer({ label, size: values.byteLength, usage: BufferUsage.UNIFORM | BufferUsage.COPY_DST });
+    return { params, values };
   }
 
-  private bindPass(pass: SampledPass, source: GPUTextureView, texelX: number, texelY: number): void {
+  private bindPass(pass: SampledPass, source: GPUTextureView, texelX: number, texelY: number, fine: GPUTextureView, wide: GPUTextureView): void {
     pass.values[0] = texelX;
     pass.values[1] = texelY;
     this.device.queue.writeBuffer(pass.params, 0, pass.values);
     pass.bindGroup = this.device.createBindGroup({
-      layout: this.pipelines.passLayout,
+      label: pass.params.label,
+      layout: this.pipelines.postLayout,
       entries: [
         { binding: 0, resource: this.sampler },
         { binding: 1, resource: source },
-        { binding: 2, resource: { buffer: pass.params } },
+        { binding: 2, resource: fine },
+        { binding: 3, resource: wide },
+        { binding: 4, resource: { buffer: pass.params } },
       ],
     });
   }

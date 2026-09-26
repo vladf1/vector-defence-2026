@@ -8,7 +8,7 @@ Play online: [https://vladf1.github.io/vector-defence-2026/](https://vladf1.gith
 
 ## WebGPU board
 
-The board is a 2.5D scene drawn with raw WebGPU: no rendering library, a fixed set of 13 WGSL pipelines created asynchronously at startup, instanced procedural geometry, and a small HDR bloom chain. Browsers without WebGPU see a "WebGPU required" notice instead of the board.
+The board is a 2.5D scene drawn with raw WebGPU: no rendering library, a fixed set of 8 WGSL pipelines created asynchronously at startup (kept small because Safari compiles them one at a time), instanced procedural geometry, and a small HDR bloom chain. Browsers without WebGPU see a "WebGPU required" notice instead of the board.
 
 - `?timings` shows how long each startup phase took (useful when profiling a phone).
 - `?shaderSalt=N` (dev server only) perturbs every shader so GPU shader caches miss, for first-visit compile measurements.

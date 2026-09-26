@@ -1,6 +1,7 @@
 import { toNeonMesh, type NeonMesh } from "./geometry-kit";
 import type { ScenePipelines } from "./gpu-pipelines";
 import { createGeometryBuffer, InstancedBatch, type BatchGeometry } from "./instanced-batch";
+import { EffectMode, SpriteMode } from "./shaders";
 import {
   createBerserkerBody,
   createBerserkerSpikes,
@@ -152,12 +153,12 @@ export class RenderBatches {
       return this.trackGeometry(createGeometryBuffer(device, name, mesh.vertices, mesh.vertexCount));
     };
     const neon = (name: string, capacity: number): InstancedBatch => {
-      const batch = this.addInstanced(new InstancedBatch(device, name, geometry(name), "neon", capacity));
+      const batch = this.addInstanced(new InstancedBatch(device, name, geometry(name), "neon", 0, capacity));
       this.opaque.push(batch);
       return batch;
     };
-    const flat = (name: string, geometry: BatchGeometry, pipeline: keyof ScenePipelines, capacity: number): InstancedBatch => (
-      this.addInstanced(new InstancedBatch(device, name, geometry, pipeline, capacity))
+    const flat = (name: string, geometry: BatchGeometry, pipeline: keyof ScenePipelines, mode: number, capacity: number): InstancedBatch => (
+      this.addInstanced(new InstancedBatch(device, name, geometry, pipeline, mode, capacity))
     );
 
     this.towerBase = neon("tower-base", ENTITY_CAPACITY);
@@ -192,13 +193,13 @@ export class RenderBatches {
 
     const flatQuad = geometry("flat-quad");
     const rangeQuad = geometry("range-quad");
-    this.decal = flat("decal", flatQuad, "decal", DECAL_CAPACITY);
-    this.range = flat("range", rangeQuad, "range", 4);
-    this.groundGlow = flat("ground-glow", rangeQuad, "groundGlow", ENTITY_CAPACITY);
-    this.ribbon = flat("ribbon", geometry("ribbon-quad"), "ribbon", capacities.ribbons);
-    this.healthBar = flat("health-bar", flatQuad, "healthBar", ENTITY_CAPACITY * 2);
-    this.smoke = this.addSprite(new SpriteBatch(device, "smoke", capacities.smokeSprites, "smokeSprite"));
-    this.glow = this.addSprite(new SpriteBatch(device, "glow", capacities.glowSprites, "glowSprite"));
+    this.decal = flat("decal", flatQuad, "effect", EffectMode.Decal, DECAL_CAPACITY);
+    this.range = flat("range", rangeQuad, "effect", EffectMode.Range, 4);
+    this.groundGlow = flat("ground-glow", rangeQuad, "effect", EffectMode.GroundGlow, ENTITY_CAPACITY);
+    this.ribbon = flat("ribbon", geometry("ribbon-quad"), "effect", EffectMode.Ribbon, capacities.ribbons);
+    this.healthBar = flat("health-bar", flatQuad, "healthBar", EffectMode.HealthBar, ENTITY_CAPACITY * 2);
+    this.smoke = this.addSprite(new SpriteBatch(device, "smoke", capacities.smokeSprites, "sprite", SpriteMode.Smoke));
+    this.glow = this.addSprite(new SpriteBatch(device, "glow", capacities.glowSprites, "sprite", SpriteMode.Glow));
     this.transparent = [this.ribbon, this.smoke, this.glow, this.decal, this.range, this.groundGlow];
   }
 

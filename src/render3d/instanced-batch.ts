@@ -31,7 +31,18 @@ export class InstancedBatch {
   private count = 0;
   private uploaded = 0;
 
-  constructor(private readonly device: GPUDevice, readonly name: string, private readonly geometry: BatchGeometry, readonly pipeline: keyof ScenePipelines, capacity: number) {
+  /**
+   * `shaderMode` is written to every instance's tint w: the effect module's look selector
+   * (see `EffectMode`); neon parts ignore it.
+   */
+  constructor(
+    private readonly device: GPUDevice,
+    readonly name: string,
+    private readonly geometry: BatchGeometry,
+    readonly pipeline: keyof ScenePipelines,
+    private readonly shaderMode: number,
+    capacity: number,
+  ) {
     this.capacity = capacity;
     this.data = new Float32Array(capacity * INSTANCE_STRIDE);
     this.instances = device.createBuffer({
@@ -229,7 +240,7 @@ export class InstancedBatch {
     m[offset + TINT_OFFSET] = red;
     m[offset + TINT_OFFSET + 1] = green;
     m[offset + TINT_OFFSET + 2] = blue;
-    m[offset + TINT_OFFSET + 3] = 0;
+    m[offset + TINT_OFFSET + 3] = this.shaderMode;
     m[offset + EXTRA_OFFSET] = 0;
     m[offset + EXTRA_OFFSET + 1] = 0;
     m[offset + EXTRA_OFFSET + 2] = 0;

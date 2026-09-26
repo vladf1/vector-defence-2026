@@ -13,14 +13,14 @@ import { createPipelines, type GpuPipelines } from "./gpu-pipelines";
 import { vec3 } from "./math";
 import { MonsterView } from "./monster-view";
 import { OverlayView } from "./overlay-view";
-import { linearColor, type LinearColor } from "./palette";
+import { linearColor } from "./palette";
 import { PlacementView } from "./placement-view";
 import { PostProcessing } from "./post-processing";
-import { createPuffAtlasTexture, drawPuffAtlasLevels } from "./procedural-textures";
+import { createPuffBlobs } from "./puff-blobs";
 import { ProjectileView } from "./projectile-view";
 import { buildBatchMeshes, RenderBatches, type BatchMeshes } from "./render-batches";
 import { ResolutionGovernor, selectRenderQuality, type RenderQuality } from "./render-quality";
-import { FrameLayout, MAX_POINT_LIGHTS } from "./shaders";
+import { createShaderSources, FrameLayout, MAX_POINT_LIGHTS, type SceneConstants } from "./shaders";
 import { TowerView } from "./tower-view";
 import { BufferUsage } from "./gpu-flags";
 
@@ -37,7 +37,6 @@ const RIM_OFFSET = vec3(400, 260, 520);
 /** Startup work that needs no GPU objects, so it can fill the wait for the device. */
 interface CpuResources {
   readonly meshes: BatchMeshes;
-  readonly puffLevels: Uint8Array[];
 }
 
 /** True when `promise` has already settled (checked after one microtask turn). */
@@ -52,7 +51,7 @@ async function isSettled(promise: Promise<unknown>): Promise<boolean> {
 export interface StartupTimings {
   /** Until the GPU device is usable; includes geometryMs when that filled the wait. */
   deviceMs: number;
-  /** Procedural meshes and the puff atlas (CPU only). */
+  /** Procedural meshes (CPU only). */
   geometryMs: number;
   setupMs: number;
   pipelineMs: number;
@@ -62,19 +61,30 @@ export interface StartupTimings {
   pipelines: number;
 }
 
-function writeColor(target: Float32Array, offset: number, color: LinearColor, intensity: number): void {
-  target[offset] = color.r * intensity;
-  target[offset + 1] = color.g * intensity;
-  target[offset + 2] = color.b * intensity;
-  target[offset + 3] = 0;
+function scaledColor(css: string, intensity: number): [number, number, number] {
+  const color = linearColor(css);
+  return [color.r * intensity, color.g * intensity, color.b * intensity];
 }
 
-function writeDirection(target: Float32Array, offset: number, x: number, y: number, z: number): void {
+function direction(x: number, y: number, z: number): [number, number, number] {
   const length = Math.hypot(x, y, z) || 1;
-  target[offset] = x / length;
-  target[offset + 1] = y / length;
-  target[offset + 2] = z / length;
-  target[offset + 3] = 0;
+  return [x / length, y / length, z / length];
+}
+
+/** Lights, field size, and smoke-puff blobs never change after startup; shaders bake them in. */
+function createSceneConstants(fieldWidth: number, fieldHeight: number, roadWidth: number): SceneConstants {
+  return {
+    fieldWidth,
+    fieldHeight,
+    roadHalfWidth: (roadWidth + ROAD_BORDER_TOTAL) / 2,
+    hemiSky: scaledColor("#4fb39a", HEMISPHERE_INTENSITY),
+    hemiGround: scaledColor("#020504", HEMISPHERE_INTENSITY),
+    keyColor: scaledColor("#e4fff4", SUN_INTENSITY),
+    rimColor: scaledColor("#39d8ff", RIM_INTENSITY),
+    keyDirection: direction(SUN_OFFSET.x, SUN_OFFSET.y, SUN_OFFSET.z),
+    rimDirection: direction(RIM_OFFSET.x, RIM_OFFSET.y, RIM_OFFSET.z),
+    puffBlobs: createPuffBlobs(),
+  };
 }
 
 /**
@@ -94,7 +104,6 @@ class WebGpuBoardRenderer implements BoardRenderer {
   private pipelines!: GpuPipelines;
   private frameBuffer!: GPUBuffer;
   private frameBindGroup!: GPUBindGroup;
-  private puffTexture?: GPUTexture;
   private batches!: RenderBatches;
   private board!: BoardScene;
   private fx!: FxSystem;
@@ -136,7 +145,7 @@ class WebGpuBoardRenderer implements BoardRenderer {
     let geometryMs = 0;
     const buildCpuResources = (): CpuResources => {
       const start = performance.now();
-      const resources = { meshes: buildBatchMeshes(profile.roadWidth), puffLevels: drawPuffAtlasLevels() };
+      const resources = { meshes: buildBatchMeshes(profile.roadWidth) };
       geometryMs = performance.now() - start;
       return resources;
     };
@@ -161,11 +170,11 @@ class WebGpuBoardRenderer implements BoardRenderer {
     const deviceReadyAt = performance.now();
 
     // Pipelines compile in the GPU process while the CPU builds geometry below.
-    const pipelinesReady = createPipelines(device, canvasFormat, this.quality.msaaSamples, this.shaderSalt);
+    const sources = createShaderSources(createSceneConstants(profile.fieldWidth, profile.fieldHeight, profile.roadWidth));
+    const pipelinesReady = createPipelines(device, canvasFormat, this.quality.msaaSamples, this.shaderSalt, sources);
 
     cpuResources ??= buildCpuResources();
     this.frameBuffer = device.createBuffer({ label: "frame", size: this.frameData.byteLength, usage: BufferUsage.UNIFORM | BufferUsage.COPY_DST });
-    this.puffTexture = createPuffAtlasTexture(device, cpuResources.puffLevels);
     this.batches = new RenderBatches(device, cpuResources.meshes, {
       glowSprites: this.quality.glowSprites,
       smokeSprites: this.quality.smokeSprites,
@@ -178,7 +187,6 @@ class WebGpuBoardRenderer implements BoardRenderer {
     this.projectiles = new ProjectileView(this.monsters);
     this.effects = new EffectView(this.fx, this.monsters, this.projectiles);
     this.placement = new PlacementView(this.game, this.towers);
-    this.writeStaticFrameData();
     const setupDoneAt = performance.now();
 
     this.pipelines = await pipelinesReady;
@@ -189,14 +197,7 @@ class WebGpuBoardRenderer implements BoardRenderer {
     this.frameBindGroup = device.createBindGroup({
       label: "frame",
       layout: this.pipelines.frameLayout,
-      entries: [
-        { binding: 0, resource: { buffer: this.frameBuffer } },
-        {
-          binding: 1,
-          resource: device.createSampler({ label: "puff", magFilter: "linear", minFilter: "linear", mipmapFilter: "linear" }),
-        },
-        { binding: 2, resource: this.puffTexture.createView() },
-      ],
+      entries: [{ binding: 0, resource: { buffer: this.frameBuffer } }],
     });
     this.post = new PostProcessing(device, this.pipelines, context, this.quality.msaaSamples, this.quality.bloomResolution);
     this.resize();
@@ -314,7 +315,6 @@ class WebGpuBoardRenderer implements BoardRenderer {
     this.board?.dispose();
     this.post?.dispose();
     this.frameBuffer?.destroy();
-    this.puffTexture?.destroy();
     this.context?.unconfigure();
     this.device?.destroy();
   }
@@ -335,21 +335,6 @@ class WebGpuBoardRenderer implements BoardRenderer {
     this.effects.reset();
     this.fx.clear();
     this.board.setRoute(runtime.routePath);
-  }
-
-  /** Lights and field constants that never change after startup. */
-  private writeStaticFrameData(): void {
-    const data = this.frameData;
-    const { fieldWidth, fieldHeight, roadWidth } = this.game.profile;
-    data[FrameLayout.field] = fieldWidth;
-    data[FrameLayout.field + 1] = fieldHeight;
-    data[FrameLayout.field + 2] = (roadWidth + ROAD_BORDER_TOTAL) / 2;
-    writeColor(data, FrameLayout.hemiSky, linearColor("#4fb39a"), HEMISPHERE_INTENSITY);
-    writeColor(data, FrameLayout.hemiGround, linearColor("#020504"), HEMISPHERE_INTENSITY);
-    writeDirection(data, FrameLayout.keyDirection, SUN_OFFSET.x, SUN_OFFSET.y, SUN_OFFSET.z);
-    writeColor(data, FrameLayout.keyColor, linearColor("#e4fff4"), SUN_INTENSITY);
-    writeDirection(data, FrameLayout.rimDirection, RIM_OFFSET.x, RIM_OFFSET.y, RIM_OFFSET.z);
-    writeColor(data, FrameLayout.rimColor, linearColor("#39d8ff"), RIM_INTENSITY);
   }
 
   private renderFrame(): void {

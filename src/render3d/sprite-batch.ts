@@ -15,7 +15,14 @@ export class SpriteBatch {
   private count = 0;
   private uploaded = 0;
 
-  constructor(private readonly device: GPUDevice, readonly name: string, capacity: number, readonly pipeline: keyof ScenePipelines) {
+  /** `shaderMode` is written to every sprite's shape w: the sprite module's look selector (see `SpriteMode`). */
+  constructor(
+    private readonly device: GPUDevice,
+    readonly name: string,
+    capacity: number,
+    readonly pipeline: keyof ScenePipelines,
+    private readonly shaderMode: number,
+  ) {
     this.capacity = capacity;
     this.data = new Float32Array(capacity * SPRITE_FLOATS);
     this.instances = device.createBuffer({
@@ -60,7 +67,7 @@ export class SpriteBatch {
     d[o + 4] = width;
     d[o + 5] = height;
     d[o + 6] = shape;
-    d[o + 7] = 0;
+    d[o + 7] = this.shaderMode;
     d[o + 8] = red;
     d[o + 9] = green;
     d[o + 10] = blue;
