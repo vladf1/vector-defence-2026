@@ -22,6 +22,11 @@ export default defineConfig({
       },
       output: {
         manualChunks(id) {
+          // three.js is only reached through the dynamically imported 3D renderer; keep it
+          // out of the shared vendor chunk so the 2D board never downloads it.
+          if (id.includes("node_modules/three/")) {
+            return "three";
+          }
           if (id.includes("node_modules")) {
             return "vendor";
           }

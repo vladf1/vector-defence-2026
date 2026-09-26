@@ -45,7 +45,9 @@ const checks = await runBrowserPage({
   const context = { deltaSeconds: 1 / 60, fieldWidth: 1200, fieldHeight: 600, fieldBounds: { minX: 0, minY: 0, maxX: 1200, maxY: 600 }, activeMonsters: [target], activeDrones: [], droneAssignments: new Map(), monsterCollisionIndex: index };
   function makeGame(profile) {
     const canvas = document.createElement("canvas"), background = document.createElement("canvas");
-    return new Game(createLevels(profile.mode), background, background.getContext("2d"), canvas, canvas.getContext("2d"), { play() {} }, profile, new CampaignProgressStore(undefined));
+    const game = new Game(createLevels(profile.mode), { play() {} }, profile, new CampaignProgressStore(undefined));
+    game.setRenderer(new GameRenderer(background, canvas, game));
+    return game;
   }
 
   function countShots(entity, seconds, hz) {
@@ -270,7 +272,7 @@ const checks = await runBrowserPage({
     check(progress.highestUnlockedLevelIndex === 4 && !progress.campaignCleared && store.loadLevelStars(10)[2] === 3, `Progress survives ${failedMethod} failure using memory`);
   }
 
-  const session = createGameSession(DESKTOP_GAME_PROFILE);
+  const session = createGameSession(DESKTOP_GAME_PROFILE, "2d");
   const originalDraw = GameRenderer.prototype.draw, originalUnlock = GameAudio.prototype.unlock, originalPlay = GameAudio.prototype.play;
   let draws = 0, paintedPlacement;
   GameRenderer.prototype.draw = function () {
@@ -282,7 +284,7 @@ const checks = await runBrowserPage({
   try {
     const background = document.createElement("canvas"), canvas = document.createElement("canvas");
     document.body.append(background, canvas);
-    session.mount(background, canvas);
+    session.mount({ mode: "2d", background, canvas });
     session.selectLevel(0);
     session.toggleTowerPlacement("gun");
     await new Promise(requestAnimationFrame);

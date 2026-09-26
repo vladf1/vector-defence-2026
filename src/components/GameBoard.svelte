@@ -1,21 +1,19 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getGameSessionContext } from "../game-context";
+  import { ViewMode } from "../view-mode";
+  import ClassicBoardSurface from "./ClassicBoardSurface.svelte";
+  import DepthBoardSurface from "./DepthBoardSurface.svelte";
   import GameModal from "./GameModal.svelte";
 
   const session = getGameSessionContext();
   const profile = session.profile;
   const hud = session.hud;
   const modal = session.modal;
-  let backgroundCanvas: HTMLCanvasElement;
-  let gameCanvas: HTMLCanvasElement;
+  const viewMode = session.viewMode;
 
-  onMount(() => {
-    session.mount(backgroundCanvas, gameCanvas);
-
-    return () => {
-      session.destroy();
-    };
+  onMount(() => () => {
+    session.destroy();
   });
 
   function handleSkipBreak(event: MouseEvent): void {
@@ -33,23 +31,11 @@
       inert={$modal !== null}
       style={`--field-aspect-ratio: ${profile.fieldAspectRatio}; --field-aspect-scale: ${profile.fieldAspectScale};`}
     >
-      <canvas
-        bind:this={backgroundCanvas}
-        class="board-canvas board-background"
-        width={profile.fieldWidth}
-        height={profile.fieldHeight}
-        aria-hidden="true"
-      ></canvas>
-      <canvas
-        bind:this={gameCanvas}
-        class="board-canvas board-game"
-        id="game"
-        width={profile.fieldWidth}
-        height={profile.fieldHeight}
-        onpointermove={session.handleCanvasMove}
-        onpointerleave={session.handleCanvasLeave}
-        onpointerdown={session.handleCanvasDown}
-      ></canvas>
+      {#if $viewMode === ViewMode.Depth}
+        <DepthBoardSurface />
+      {:else}
+        <ClassicBoardSurface />
+      {/if}
       {#if $hud.banner}
         {#if $hud.canSkipBreak}
           <button

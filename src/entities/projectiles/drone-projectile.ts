@@ -8,7 +8,7 @@ const DRONE_PROJECTILE_DAMAGE_PER_LEVEL = 1.056;
 const DRONE_PROJECTILE_RADIUS_BASE = 1.25;
 const DRONE_PROJECTILE_RADIUS_PER_LEVEL = 0.04;
 export class DroneProjectile extends Projectile {
-  private readonly accentColor: string;
+  readonly accentColor: string;
   private readonly visualLength: number;
   private readonly visualHalfWidth: number;
 

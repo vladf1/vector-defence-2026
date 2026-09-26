@@ -6,7 +6,7 @@ import { LightningLinkEffect } from "../effects/lightning-link-effect";
 import type { Monster } from "../monsters/monster";
 import { Tower } from "./tower";
 
-const LIGHTNING_COLORS = [
+export const LIGHTNING_COLORS = [
   "#8ff7ff",
   "#7fe5ff",
   "#71d0ff",

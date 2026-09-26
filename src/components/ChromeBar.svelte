@@ -6,9 +6,10 @@
   import controlSoundOnIcon from "../assets/ui/control-sound-on.png";
   import { getGameSessionContext } from "../game-context";
   import { formatMoney } from "../utils";
+  import { ViewMode } from "../view-mode";
 
   const session = getGameSessionContext();
-  const { hud, modal, soundEnabled } = session;
+  const { hud, modal, soundEnabled, viewMode } = session;
   const profile = session.profile;
 
   function formatLevel(levelNumber: number | undefined): string {
@@ -47,6 +48,16 @@
     </section>
   {/if}
   <div class="actions">
+    <button
+      class="chrome-button view-button"
+      type="button"
+      aria-label={$viewMode === ViewMode.Depth ? "Switch to 2D view" : "Switch to 3D view"}
+      aria-pressed={$viewMode === ViewMode.Depth}
+      title={$viewMode === ViewMode.Depth ? "Switch to 2D view" : "Switch to 3D view"}
+      onclick={session.toggleViewMode}
+    >
+      <span class="view-button-label" aria-hidden="true">{$viewMode === ViewMode.Depth ? "3D" : "2D"}</span>
+    </button>
     <button
       class="chrome-button sound-button"
       type="button"

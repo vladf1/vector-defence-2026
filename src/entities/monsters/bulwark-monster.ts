@@ -49,6 +49,10 @@ const SHARD_SPLITTER = createPolygonShardSplitter({
 export class BulwarkMonster extends Monster {
   private shieldPulse = 0;
 
+  get currentShieldPulse(): number {
+    return this.shieldPulse;
+  }
+
   constructor(path: PathEntry[], speedScale: number) {
     super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }

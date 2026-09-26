@@ -6,10 +6,10 @@ import { angleBetween, calculateIntercept, randomRange, turnAngleTowards } from 
 import { GUN_PROJECTILE_SPEED_PER_SECOND, GunProjectile } from "../projectiles/gun-projectile";
 import { Tower } from "./tower";
 
-const MUZZLE_FLASH_DURATION_SECONDS = 0.055;
+export const MUZZLE_FLASH_DURATION_SECONDS = 0.055;
 const BARREL_FRONT_X_BASE = 16;
 const BARREL_FRONT_X_PER_LEVEL = 0.9;
-const PROJECTILE_SOURCE_OFFSET = BARREL_FRONT_X_BASE;
+export const GUN_PROJECTILE_SOURCE_OFFSET = BARREL_FRONT_X_BASE;
 const POWERBANK_END_X_BASE = 3.9;
 const POWERBANK_END_X_PER_LEVEL = 0.605;
 
@@ -129,8 +129,8 @@ export class GunTower extends Tower {
 
   private getProjectileSource(): Point {
     return {
-      x: this.x + (Math.cos(this.angle) * PROJECTILE_SOURCE_OFFSET),
-      y: this.y + (Math.sin(this.angle) * PROJECTILE_SOURCE_OFFSET),
+      x: this.x + (Math.cos(this.angle) * GUN_PROJECTILE_SOURCE_OFFSET),
+      y: this.y + (Math.sin(this.angle) * GUN_PROJECTILE_SOURCE_OFFSET),
     };
   }
 

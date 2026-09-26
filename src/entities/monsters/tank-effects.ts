@@ -12,7 +12,7 @@ const DRIFT_VELOCITY_DECAY = new CalibratedExponentialDecay(0.34, 60);
 
 export class TankTrackPrintParticle extends Particle {
   override drawsUnderEntities = true;
-  private readonly angle: number;
+  readonly angle: number;
   private readonly length: number;
   private readonly width: number;
 

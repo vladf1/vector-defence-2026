@@ -42,7 +42,7 @@ export class Drone {
   angle = -Math.PI / 2;
   removed = false;
   private readonly home: Point;
-  private readonly level: number;
+  readonly level: number;
   private readonly lifetimeSeconds: number;
   private readonly movementSpeedPerSecond: number;
   private readonly visualScale: number;
@@ -143,6 +143,10 @@ export class Drone {
     });
 
     context.restore();
+  }
+
+  get isExiting(): boolean {
+    return this.exiting;
   }
 
   getAssignedTarget(): Monster | undefined {

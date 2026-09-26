@@ -56,6 +56,10 @@ export class BerserkerMonster extends Monster {
     super(path, BASE_COLOR, BASE_SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
+  get currentRageStage(): number {
+    return this.rageStage;
+  }
+
   protected override updateSpecial(context: UpdateContext): void {
     const nextStage = this.hitPoints <= this.maxHitPoints * 0.2
       ? 2
@@ -146,7 +150,7 @@ export class BerserkerMonster extends Monster {
     return BASE_SPEED_PER_SECOND * this.speedScale;
   }
 
-  private getRageMotion(): RageMotion {
+  getRageMotion(): RageMotion {
     const stageIntensity = this.rageStage === 2 ? 1 : (this.rageStage === 1 ? 0.68 : 0.36);
     const cycle = this.rageAnimationElapsedSeconds / RAGE_ANIMATION_DURATION_SECONDS;
     const surge = (1 - Math.cos(cycle * Math.PI * 2)) / 2;
@@ -193,7 +197,7 @@ export class BerserkerMonster extends Monster {
 
 }
 
-interface RageMotion {
+export interface RageMotion {
   scaleX: number;
   scaleY: number;
   emberAlpha: number;

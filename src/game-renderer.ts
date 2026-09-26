@@ -1,7 +1,8 @@
+import type { BoardRenderer } from "./board-renderer";
 import { LaserTower } from "./entities/towers/laser-tower";
 import { getTowerClass } from "./entities/towers/tower-registry";
 import type { Game } from "./game-engine";
-import type { FieldBounds } from "./types";
+import type { FieldBounds, Point } from "./types";
 
 const ROAD_COLOR = "rgba(8, 40, 36, 0.96)";
 const ROAD_BORDER_COLOR = "rgb(18, 61, 54)";
@@ -82,7 +83,15 @@ function getCanvasDisplayScale(rect: DOMRect, viewport: CenteredFieldViewport): 
   return Math.min(rect.width / viewport.width, rect.height / viewport.height);
 }
 
-export class GameRenderer {
+function getCanvasContext(canvas: HTMLCanvasElement, label: string): CanvasRenderingContext2D {
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error(`${label} canvas context unavailable.`);
+  }
+  return context;
+}
+
+export class GameRenderer implements BoardRenderer {
   backgroundCanvas: HTMLCanvasElement;
   backgroundCtx: CanvasRenderingContext2D;
   canvas: HTMLCanvasElement;
@@ -97,15 +106,28 @@ export class GameRenderer {
 
   constructor(
     backgroundCanvas: HTMLCanvasElement,
-    backgroundCtx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
-    ctx: CanvasRenderingContext2D,
     private readonly game: Game,
   ) {
     this.backgroundCanvas = backgroundCanvas;
-    this.backgroundCtx = backgroundCtx;
+    this.backgroundCtx = getCanvasContext(backgroundCanvas, "Background");
     this.canvas = canvas;
-    this.ctx = ctx;
+    this.ctx = getCanvasContext(canvas, "Game");
+  }
+
+  clientToField(clientX: number, clientY: number, surfaceRect: DOMRect): Point | null {
+    if (surfaceRect.width === 0 || surfaceRect.height === 0) {
+      return null;
+    }
+
+    const viewport = getCenteredFieldViewport(surfaceRect.width, surfaceRect.height, this.fieldWidth, this.fieldHeight);
+    return {
+      x: (((clientX - surfaceRect.left) / surfaceRect.width) * viewport.width) - viewport.fieldOffsetX,
+      y: (((clientY - surfaceRect.top) / surfaceRect.height) * viewport.height) - viewport.fieldOffsetY,
+    };
+  }
+
+  dispose(): void {
   }
 
   private get fieldWidth(): number {

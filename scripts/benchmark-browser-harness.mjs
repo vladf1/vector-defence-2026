@@ -34,7 +34,7 @@ export async function runBrowserPage(options, runPage) {
   try {
     await server.listen(0);
     const url = server.resolvedUrls.local[0];
-    browser = await launchChromium();
+    browser = await launchChromium(options.launchArgs ?? []);
     const page = await browser.newPage({
       viewport: options.viewport ?? { width: 960, height: 540 },
       deviceScaleFactor: options.deviceScaleFactor ?? 1,
@@ -50,6 +50,7 @@ export async function runBrowserPage(options, runPage) {
       page.once("pageerror", reject);
     });
     const pageWork = (async () => {
+      await options.beforeNavigate?.(page);
       await page.goto(targetUrl.href, { waitUntil: options.waitUntil ?? "domcontentloaded" });
       return runPage(page);
     })();
@@ -81,13 +82,17 @@ export async function writeDataUrlPngMap(outputDir, dataUrls) {
   ));
 }
 
-async function launchChromium() {
+/** Chromium flags that expose WebGPU to headless pages (falls back to WebGL2 where unsupported). */
+export const WEBGPU_LAUNCH_ARGS = ["--enable-unsafe-webgpu", "--enable-gpu", "--ignore-gpu-blocklist"];
+
+async function launchChromium(args) {
+  const headlessChannel = args.length > 0 ? { channel: "chromium" } : {};
   try {
-    return await chromium.launch();
+    return await chromium.launch({ ...headlessChannel, args });
   } catch (error) {
     if (!String(error).includes("Executable doesn't exist")) {
       throw error;
     }
-    return chromium.launch({ channel: "chrome" });
+    return chromium.launch({ channel: "chrome", args });
   }
 }
