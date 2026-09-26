@@ -116,9 +116,8 @@ export class TowerView {
     if (!fired) {
       return;
     }
-    if (tower instanceof SlowTower) {
-      this.fx.slowPulse(tower.x, tower.y, tower.range);
-    } else if (tower instanceof LightningTower) {
+    // Slow pulses show only through their links to the slowed monsters.
+    if (tower instanceof LightningTower) {
       this.fx.zap(tower.x, TESLA_TOP_Y, tower.y);
     }
   }
