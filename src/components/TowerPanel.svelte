@@ -1,12 +1,10 @@
 <script lang="ts">
-  import type { Action } from "svelte/action";
-  import { TOWER_TOOLBAR_PREVIEWS } from "../entities/towers/tower-registry";
+  import { TOWER_CLASSES } from "../entities/towers/tower-registry";
   import { getGameSessionContext } from "../game-context";
   import type { TowerKind } from "../types";
-  import type { Tower } from "../entities/towers/tower";
   import { formatMoney } from "../utils";
+  import { TOWER_ICON_SVG } from "./tower-icons";
 
-  const ICON_SIZE = 60;
   const session = getGameSessionContext();
   const profile = session.profile;
   const hud = session.hud;
@@ -15,29 +13,6 @@
   function formatShortcuts(shortcuts: readonly string[]): string {
     return shortcuts.map((shortcut) => shortcut.toUpperCase()).join("/");
   }
-
-  function drawTowerPreview(canvas: HTMLCanvasElement, tower: Tower): void {
-    const context = canvas.getContext("2d");
-    if (!context) {
-      return;
-    }
-
-    const dpr = window.devicePixelRatio || 1;
-    const scaledSize = Math.round(ICON_SIZE * dpr);
-    if (canvas.width !== scaledSize || canvas.height !== scaledSize) {
-      canvas.width = scaledSize;
-      canvas.height = scaledSize;
-    }
-
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    context.clearRect(0, 0, ICON_SIZE, ICON_SIZE);
-
-    tower.draw(context, false);
-  }
-
-  const towerIcon: Action<HTMLCanvasElement, Tower> = (canvas, tower) => {
-    drawTowerPreview(canvas, tower);
-  };
 
   function handleTowerButtonClick(event: MouseEvent & { currentTarget: EventTarget & HTMLButtonElement }): void {
     session.toggleTowerPlacement(event.currentTarget.value as TowerKind);
@@ -53,15 +28,14 @@
 <section class:selected-tower-controls={profile.mode === "mobile" && $hud.hasSelectedTower} class="controls-grid" inert={$modal !== null}>
   <div class="tower-strip-card">
     <div class="tower-strip">
-      {#each TOWER_TOOLBAR_PREVIEWS as tower (tower.kind)}
-        {#if $hud.availableTowers.includes(tower.kind)}
-          {@const towerClass = tower.towerClass}
+      {#each TOWER_CLASSES as towerClass (towerClass.kind)}
+        {#if $hud.availableTowers.includes(towerClass.kind)}
           {@const shortcutText = formatShortcuts(towerClass.shortcuts)}
-          {@const canAffordTower = $hud.affordableTowers[tower.kind]}
+          {@const canAffordTower = $hud.affordableTowers[towerClass.kind]}
           <button
-            class={`tower-button${$hud.placingTower === tower.kind ? " active" : ""}${canAffordTower ? "" : " unaffordable"}`}
+            class={`tower-button${$hud.placingTower === towerClass.kind ? " active" : ""}${canAffordTower ? "" : " unaffordable"}`}
             type="button"
-            value={tower.kind}
+            value={towerClass.kind}
             title={`${towerClass.label} tower: ${canAffordTower ? towerClass.summary : `need ${formatMoney(towerClass.baseCost)}`}`}
             aria-label={`${towerClass.label} tower for ${formatMoney(towerClass.baseCost)}. ${canAffordTower ? towerClass.summary : "Not enough money yet."} Shortcuts ${shortcutText}.`}
             disabled={$hud.towerButtonsDisabled}
@@ -74,7 +48,7 @@
                 <span class="shortcut-chip">{shortcutText}</span>
               {/if}
             </div>
-            <canvas use:towerIcon={tower} class="tower-icon" aria-hidden="true"></canvas>
+            <span class="tower-icon" aria-hidden="true">{@html TOWER_ICON_SVG[towerClass.kind]}</span>
           </button>
         {/if}
       {/each}

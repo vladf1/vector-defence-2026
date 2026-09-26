@@ -31,23 +31,6 @@ export class SquareMonster extends Monster {
     this.sizePulseElapsedSeconds = (this.sizePulseElapsedSeconds + context.deltaSeconds) % SIZE_PULSE_DURATION_SECONDS;
   }
 
-  protected drawBody(context: CanvasRenderingContext2D): void {
-    const visualRadius = this.getVisualRadius();
-    context.rotate(this.rotation);
-    context.fillRect(
-      -visualRadius,
-      -visualRadius,
-      visualRadius * 2,
-      visualRadius * 2,
-    );
-    context.strokeRect(
-      -visualRadius,
-      -visualRadius,
-      visualRadius * 2,
-      visualRadius * 2,
-    );
-  }
-
   override addDeathEffect(result: UpdateResult): void {
     const visualRadius = this.getVisualRadius();
     createPolygonShardParticles(
@@ -64,7 +47,7 @@ export class SquareMonster extends Monster {
     result.playSound(AudioCue.MonsterShatter, this.x);
   }
 
-  private getVisualRadius(): number {
+  getVisualRadius(): number {
     const progress = this.sizePulseElapsedSeconds / SIZE_PULSE_DURATION_SECONDS;
     const mirroredProgress = progress <= 0.5 ? progress * 2 : (1 - progress) * 2;
     const easedProgress = easeInOutSine(mirroredProgress);

@@ -25,6 +25,7 @@ const html = String.raw`
       let seededRandom;
       Math.random = () => seededRandom ? seededRandom() : nativeRandom();
       const { Game, createLevels } = await import("/src/game-engine.ts");
+      const { DetachedBoardRenderer } = await import("/src/board-renderer.ts");
       const {
         ActiveCircleSweepCollisionIndex,
         LinearActiveCircleSweepCollisionIndex,
@@ -264,23 +265,20 @@ const html = String.raw`
       }
 
       function createBenchmarkGame() {
-        const gameCanvas = document.createElement("canvas");
-        const backgroundCanvas = document.createElement("canvas");
-        gameCanvas.width = DESKTOP_GAME_PROFILE.fieldWidth;
-        gameCanvas.height = DESKTOP_GAME_PROFILE.fieldHeight;
-        backgroundCanvas.width = DESKTOP_GAME_PROFILE.fieldWidth;
-        backgroundCanvas.height = DESKTOP_GAME_PROFILE.fieldHeight;
         const audio = { play() {} };
         const game = new Game(
           createLevels("desktop"),
-          backgroundCanvas,
-          backgroundCanvas.getContext("2d"),
-          gameCanvas,
-          gameCanvas.getContext("2d"),
           audio,
           DESKTOP_GAME_PROFILE,
           new CampaignProgressStore(undefined),
         );
+        // Simulation-only fixture: visible bounds are exactly the field.
+        game.setRenderer(new DetachedBoardRenderer({
+          minX: 0,
+          minY: 0,
+          maxX: DESKTOP_GAME_PROFILE.fieldWidth,
+          maxY: DESKTOP_GAME_PROFILE.fieldHeight,
+        }));
         game.benchmarkMonsterCollisionIndex = new ActiveCircleSweepCollisionIndex(64);
         game.startLevel(game.levels[9]);
         game.runtime.spawnDelay = 999;

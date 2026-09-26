@@ -1,9 +1,6 @@
 import {
   MAX_TOWER_LEVEL,
-  TOWER_RADIUS,
   TOWER_RANGE_UPGRADE_STEP,
-  TOWER_UPGRADE_RING_GROWTH,
-  TOWER_UPGRADE_RING_OFFSET,
   UPGRADE_COST,
   TIMER_EPSILON_SECONDS,
 } from "../../constants";
@@ -149,39 +146,7 @@ export abstract class Tower {
     return Math.abs(normalizeAngle(targetAngle - currentAngle)) <= tolerance;
   }
 
-  protected drawSelection(context: CanvasRenderingContext2D): void {
-    context.save();
-    context.strokeStyle = "rgba(92, 255, 158, 0.18)";
-    context.fillStyle = "rgba(92, 255, 158, 0.035)";
-    context.beginPath();
-    context.arc(0, 0, this.range, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
-    context.restore();
-  }
-
-  protected drawBase(context: CanvasRenderingContext2D, fillStyle: string | CanvasGradient | CanvasPattern, strokeStyle: string, upgradeRingStyle: string): void {
-    context.fillStyle = fillStyle;
-    context.strokeStyle = strokeStyle;
-    context.lineWidth = 1.5;
-    context.beginPath();
-    context.arc(0, 0, TOWER_RADIUS, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
-
-    if (this.level === 0) {
-      return;
-    }
-
-    context.strokeStyle = upgradeRingStyle;
-    context.lineWidth = 0.9 + (this.level * 0.08);
-    context.beginPath();
-    context.arc(0, 0, TOWER_RADIUS + TOWER_UPGRADE_RING_OFFSET + (this.level * TOWER_UPGRADE_RING_GROWTH), 0, Math.PI * 2);
-    context.stroke();
-  }
-
   protected abstract updateTower(context: UpdateContext, result: UpdateResult): void;
   protected onUpgrade(): void {
   }
-  abstract draw(context: CanvasRenderingContext2D, active: boolean): void;
 }

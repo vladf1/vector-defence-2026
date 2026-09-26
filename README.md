@@ -2,9 +2,16 @@
 
 Vector Defence is a browser-based tower defense game built with Svelte 5, TypeScript, and Vite. This repository's active implementation is the browser app at the repo root, with the current runtime living in `src/`.
 
-The game features a fixed 10-level campaign, canvas-based combat, six tower types, and waves generated from handcrafted routes.
+The game features a fixed 10-level campaign, a 2.5D WebGPU battlefield, six tower types, and waves generated from handcrafted routes.
 
 Play online: [https://vladf1.github.io/vector-defence-2026/](https://vladf1.github.io/vector-defence-2026/)
+
+## WebGPU board
+
+The board is a 2.5D scene drawn with raw WebGPU: no rendering library, a fixed set of 8 WGSL pipelines created asynchronously at startup (kept small because Safari compiles them one at a time), instanced procedural geometry, and a small HDR bloom chain. Browsers without WebGPU see a "WebGPU required" notice instead of the board.
+
+- `?timings` shows how long each startup phase took (useful when profiling a phone).
+- `?shaderSalt=N` (dev server only) perturbs every shader so GPU shader caches miss, for first-visit compile measurements.
 
 ## Requirements
 
@@ -54,6 +61,9 @@ npm run build
 npm run build:pages
 npm run check:runtime
 npm run dev
+npm run render:3d
+npm run benchmark:3d
+npm run benchmark:3d:startup
 ```
 
 ## Deploy To GitHub Pages
@@ -95,5 +105,5 @@ The published site is available at [https://vladf1.github.io/vector-defence-2026
 - Shared session bridge: `src/game-session.ts`
 - Simulation engine: `src/game-engine.ts`
 - Campaign builder: `src/campaign.ts`
-- Renderer: `src/game-renderer.ts`
+- WebGPU board renderer: `src/render3d/` (entry `src/render3d/webgpu-board-renderer.ts`, shaders in `src/render3d/shaders.ts`)
 - Browser level data: `game-levels.json`

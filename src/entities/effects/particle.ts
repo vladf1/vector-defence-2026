@@ -1,5 +1,5 @@
 import type { UpdateContext } from "../../game-engine/update-context";
-import { CalibratedExponentialDecay, hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
+import { CalibratedExponentialDecay, isOutsideBounds, randomRange } from "../../utils";
 
 const VELOCITY_DECAY = new CalibratedExponentialDecay(2.4, 60);
 
@@ -18,7 +18,6 @@ export class Particle {
   color: string;
   alpha = 1;
   alphaFadePerSecond: number;
-  drawsUnderEntities = false;
   removed = false;
 
   constructor(
@@ -47,10 +46,5 @@ export class Particle {
     if (this.alpha <= 0 || isOutsideBounds(this, context.fieldBounds, 20)) {
       this.removed = true;
     }
-  }
-
-  draw(context: CanvasRenderingContext2D): void {
-    context.fillStyle = hexWithAlpha(this.color, this.alpha);
-    context.fillRect(this.x - (this.size / 2), this.y - (this.size / 2), this.size, this.size);
   }
 }

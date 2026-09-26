@@ -2,13 +2,12 @@ import { GlassShardParticle } from "../effects/glass-shard-particle";
 import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
-import { drawPath, hexWithAlpha, randomRange } from "../../utils";
+import { randomRange } from "../../utils";
 import { createDeathEffectOrigin, createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster } from "./monster";
 import { createPolygonShardSplitter } from "./polygon-shard-splitter";
 
 const COLOR = "#78d7ff";
-const ARMOR_GLOW_COLOR = "#dff7ff";
 const SPEED_PER_SECOND = 49;
 const HIT_POINTS = 409;
 const BOUNTY = 4;
@@ -26,14 +25,6 @@ const SHELL_OUTLINE = [
   { x: -RADIUS * 0.2, y: RADIUS * 0.98 },
   { x: RADIUS * 0.82, y: SHELL_HALF_HEIGHT },
 ];
-const CORE_OUTLINE = [
-  { x: RADIUS * 0.98, y: 0 },
-  { x: RADIUS * 0.42, y: -RADIUS * 0.46 },
-  { x: -RADIUS * 0.3, y: -RADIUS * 0.46 },
-  { x: -RADIUS * 0.72, y: 0 },
-  { x: -RADIUS * 0.3, y: RADIUS * 0.46 },
-  { x: RADIUS * 0.42, y: RADIUS * 0.46 },
-];
 const FRONT_PLATE_OUTLINE = [
   { x: RADIUS * 1.08, y: 0 },
   { x: RADIUS * 0.76, y: -RADIUS * 0.28 },
@@ -48,6 +39,10 @@ const SHARD_SPLITTER = createPolygonShardSplitter({
 
 export class BulwarkMonster extends Monster {
   private shieldPulse = 0;
+
+  get currentShieldPulse(): number {
+    return this.shieldPulse;
+  }
 
   constructor(path: PathEntry[], speedScale: number) {
     super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
@@ -66,43 +61,6 @@ export class BulwarkMonster extends Monster {
 
   protected override updateSpecial(context: UpdateContext): void {
     this.shieldPulse += 2.8 * context.deltaSeconds;
-  }
-
-  protected drawBody(context: CanvasRenderingContext2D): void {
-    context.rotate(this.angle);
-
-    const glow = 0.3 + (Math.sin(this.shieldPulse) * 0.12);
-
-    drawPath(context, SHELL_OUTLINE, true);
-
-    context.save();
-    context.strokeStyle = hexWithAlpha(ARMOR_GLOW_COLOR, glow);
-    context.lineWidth = 1.2;
-    drawPath(context, CORE_OUTLINE, false);
-
-    context.beginPath();
-    context.moveTo(-this.radius * 0.22, -this.radius * 0.82);
-    context.lineTo(this.radius * 0.48, -this.radius * 0.22);
-    context.moveTo(-this.radius * 0.22, this.radius * 0.82);
-    context.lineTo(this.radius * 0.48, this.radius * 0.22);
-    context.stroke();
-    context.restore();
-
-    context.beginPath();
-    context.moveTo(this.radius * 1.08, 0);
-    context.lineTo(this.radius * 0.76, -this.radius * 0.28);
-    context.lineTo(this.radius * 0.16, -this.radius * 0.28);
-    context.lineTo(this.radius * 0.16, this.radius * 0.28);
-    context.lineTo(this.radius * 0.76, this.radius * 0.28);
-    context.closePath();
-    context.stroke();
-
-    context.beginPath();
-    context.moveTo(-this.radius * 0.68, -this.radius * 0.52);
-    context.lineTo(-this.radius * 0.98, -this.radius * 0.2);
-    context.lineTo(-this.radius * 0.98, this.radius * 0.2);
-    context.lineTo(-this.radius * 0.68, this.radius * 0.52);
-    context.stroke();
   }
 
   override addDeathEffect(result: UpdateResult): void {

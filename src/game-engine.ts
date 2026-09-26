@@ -8,7 +8,7 @@ import { createEscapeBurstParticles, ESCAPE_BURST_CONFIG } from "./game-engine/c
 import { ActiveCircleSweepCollisionIndex } from "./game-engine/collision-detection";
 import { createMonster, createSplitterChildren } from "./game-engine/monster-factory";
 import { UpdateResult, type UpdateContext } from "./game-engine/update-context";
-import { GameRenderer } from "./game-renderer";
+import { DetachedBoardRenderer, type BoardRenderer } from "./board-renderer";
 import { MAX_LINKS, MAX_PARTICLES, TIMER_EPSILON_SECONDS } from "./constants";
 import type { Monster } from "./entities/monsters/monster";
 import type { Drone } from "./entities/projectiles/drone";
@@ -131,7 +131,7 @@ function refreshDroneAssignments(drones: readonly Drone[], assignments: Map<Mons
 
 export class Game {
   levels: LevelData[];
-  renderer: GameRenderer;
+  renderer: BoardRenderer;
   audio: GameAudio;
   currentLevelIndex = -1;
   highestUnlockedLevelIndex = 0;
@@ -146,6 +146,8 @@ export class Game {
   bannerTimer = 0;
   hudDirty = true;
   modalDirty = true;
+  /** Accumulated simulated seconds; renderers use it as a presentation clock that freezes with the game. */
+  simulationSeconds = 0;
   private breachResolutionDelaySeconds = 0;
   private readonly activeMonsters: Monster[] = [];
   private readonly monsterCollisionIndex = new ActiveCircleSweepCollisionIndex<Monster>(MONSTER_COLLISION_CELL_SIZE);
@@ -156,10 +158,6 @@ export class Game {
 
   constructor(
     levelList: LevelData[],
-    backgroundCanvas: HTMLCanvasElement,
-    backgroundCtx: CanvasRenderingContext2D,
-    canvas: HTMLCanvasElement,
-    ctx: CanvasRenderingContext2D,
     audio: GameAudio,
     profile: GameProfile,
     private readonly progressStore: CampaignProgressStore,
@@ -177,7 +175,7 @@ export class Game {
       activeDrones: this.runtime.drones,
       droneAssignments: this.droneAssignments,
     };
-    this.renderer = new GameRenderer(backgroundCanvas, backgroundCtx, canvas, ctx, this);
+    this.renderer = new DetachedBoardRenderer(profile.placement.bounds);
     this.loadCampaignProgress();
     this.loadLevelStars();
   }
@@ -771,6 +769,22 @@ export class Game {
     }
   }
 
+  /** Swaps the board renderer, disposing the previous one. */
+  setRenderer(renderer: BoardRenderer): void {
+    if (renderer === this.renderer) {
+      return;
+    }
+
+    this.renderer.dispose();
+    this.renderer = renderer;
+    this.resize();
+    this.requestHudSync();
+  }
+
+  detachRenderer(): void {
+    this.setRenderer(new DetachedBoardRenderer(this.profile.placement.bounds));
+  }
+
   resize(): void {
     this.renderer.resize();
     this.updateContext.fieldBounds = this.renderer.getVisibleFieldBounds();
@@ -781,6 +795,7 @@ export class Game {
   }
 
   updateSimulation(deltaSeconds: number): void {
+    this.simulationSeconds += deltaSeconds;
     const previousPreWaveSecond = this.state === GameState.Playing && this.activeWave && this.runtime.spawnDelay > 0
       ? Math.ceil(this.runtime.spawnDelay)
       : -1;

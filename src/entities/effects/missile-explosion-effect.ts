@@ -1,5 +1,5 @@
 import type { UpdateContext } from "../../game-engine/update-context";
-import { hexWithAlpha, randomRange } from "../../utils";
+import { randomRange } from "../../utils";
 import { Particle } from "./particle";
 
 const MISSILE_EXPLOSION_SCALE_BASE = 0.8;
@@ -31,21 +31,9 @@ export class SmokeParticle extends Particle {
     super.update(context);
     this.size = Math.min(this.maxSize, this.size + (this.growthPerSecond * context.deltaSeconds));
   }
-
-  override draw(context: CanvasRenderingContext2D): void {
-    const gradient = context.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
-    gradient.addColorStop(0, hexWithAlpha(this.color, this.alpha * 0.5));
-    gradient.addColorStop(1, hexWithAlpha(this.color, 0));
-    context.fillStyle = gradient;
-    context.beginPath();
-    context.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    context.fill();
-  }
 }
 
 export class EmberStreakParticle extends Particle {
-  private readonly angle: number;
-
   constructor(x: number, y: number, blastAngle: number, level: number) {
     const scale = getMissileExplosionScale(level);
     const angle = blastAngle + Math.PI + randomRange(-1.8, 1.8);
@@ -54,20 +42,5 @@ export class EmberStreakParticle extends Particle {
       offset: randomRange(2, 6) * scale,
       angle,
     });
-    this.angle = angle;
-  }
-
-  override draw(context: CanvasRenderingContext2D): void {
-    const tailLength = 4.5 + (this.size * 2.35);
-    context.save();
-    context.globalCompositeOperation = "lighter";
-    context.strokeStyle = hexWithAlpha(this.color, this.alpha);
-    context.lineWidth = this.size * 0.72;
-    context.lineCap = "round";
-    context.beginPath();
-    context.moveTo(this.x, this.y);
-    context.lineTo(this.x - (Math.cos(this.angle) * tailLength), this.y - (Math.sin(this.angle) * tailLength));
-    context.stroke();
-    context.restore();
   }
 }

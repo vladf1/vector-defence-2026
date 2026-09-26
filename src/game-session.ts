@@ -3,8 +3,9 @@ import { findTowerShortcut } from "./entities/towers/tower-registry";
 import { createBrowserCampaignProgressStore } from "./campaign-progress";
 import { type GameProfile } from "./game-profile";
 import { GameAudio } from "./game-audio";
-import { getCenteredFieldViewport, type CenteredFieldViewport } from "./game-renderer";
+import type { BoardRenderer } from "./board-renderer";
 import { runBoundedSimulationSubsteps } from "./simulation-timing";
+import { RendererStatus } from "./renderer-status";
 import {
   Game,
   createLevels,
@@ -27,7 +28,11 @@ const KEYBOARD_ACTIVATION_SELECTOR = "a[href], button, summary, [role='button'],
 
 interface CanvasGeometry {
   rect: DOMRect;
-  viewport: CenteredFieldViewport;
+}
+
+export interface BoardSurface {
+  canvas: HTMLCanvasElement;
+  overlay: HTMLCanvasElement;
 }
 
 function eventPathMatches(event: KeyboardEvent, selector: string): boolean {
@@ -62,10 +67,15 @@ export function createGameSession(profile: GameProfile) {
   const hudStore = writable(INITIAL_HUD_SNAPSHOT);
   const modalStore = writable<ModalView | null>(null);
   const soundEnabledStore = writable(true);
+  const rendererStatusStore = writable<RendererStatus>(RendererStatus.Loading);
+  const startupTimingsStore = writable<Record<string, number> | null>(null);
   const audio = new GameAudio(profile.fieldWidth);
   const progressStore = createBrowserCampaignProgressStore(window);
   let canvas: HTMLCanvasElement | null = null;
   let game: Game | null = null;
+  let mountToken = 0;
+  let boardReady = false;
+  let windowListenersAttached = false;
   let soundEnabled = true;
   let frameId = 0;
   let previousFrameTime = 0;
@@ -154,32 +164,16 @@ export function createGameSession(profile: GameProfile) {
       return;
     }
 
-    const rect = canvas.getBoundingClientRect();
-    canvasGeometry = {
-      rect,
-      viewport: getCenteredFieldViewport(rect.width, rect.height, profile.fieldWidth, profile.fieldHeight),
-    };
+    canvasGeometry = { rect: canvas.getBoundingClientRect() };
   };
 
   const toCanvasPoint = (event: PointerEvent): Point | null => {
     const geometry = canvasGeometry;
-    if (!geometry) {
+    if (!geometry || !game) {
       return null;
     }
 
-    const { rect, viewport } = geometry;
-    if (rect.width === 0 || rect.height === 0) {
-      return null;
-    }
-
-    const viewportPoint = {
-      x: ((event.clientX - rect.left) / rect.width) * viewport.width,
-      y: ((event.clientY - rect.top) / rect.height) * viewport.height,
-    };
-    return {
-      x: viewportPoint.x - viewport.fieldOffsetX,
-      y: viewportPoint.y - viewport.fieldOffsetY,
-    };
+    return game.renderer.clientToField(event.clientX, event.clientY, geometry.rect);
   };
 
   const isPointerInsideCanvas = (event: PointerEvent): boolean => {
@@ -205,7 +199,9 @@ export function createGameSession(profile: GameProfile) {
   function frame(timestamp: number): void {
     frameId = 0;
     const activeGame = game;
-    if (!activeGame?.needsAnimationFrame()) {
+    // Hold the simulation while no board is visible (async 3D load) so play never runs unseen;
+    // attaching the renderer restarts the loop.
+    if (!activeGame?.needsAnimationFrame() || !boardReady) {
       resetFrameClock();
       return;
     }
@@ -266,36 +262,110 @@ export function createGameSession(profile: GameProfile) {
     }
   }
 
-  const mount = (nextBackgroundCanvas: HTMLCanvasElement, nextCanvas: HTMLCanvasElement): void => {
-    if (canvas === nextCanvas && game) {
+  const ensureGame = (): Game => {
+    if (game) {
+      return game;
+    }
+
+    game = new Game(createLevels(profile.mode), audio, profile, progressStore);
+    if (import.meta.env.DEV) {
+      // Dev-only handle for render/benchmark scripts: mutate the game, then call sync().
+      (window as unknown as { __vectorDefence?: unknown }).__vectorDefence = {
+        game,
+        sync: () => withGame(() => {}, true),
+      };
+    }
+    runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
+    resetNerdStatsSamples();
+    publish(true, true);
+    return game;
+  };
+
+  const attachWindowListeners = (): void => {
+    if (windowListenersAttached) {
       return;
     }
 
-    destroy();
+    windowListenersAttached = true;
+    window.addEventListener("resize", refreshCanvasGeometry);
+    window.addEventListener("scroll", refreshCanvasGeometry, true);
+    window.visualViewport?.addEventListener("resize", refreshCanvasGeometry);
+    window.visualViewport?.addEventListener("scroll", refreshCanvasGeometry);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+  };
 
-    canvas = nextCanvas;
-    const backgroundCtx = nextBackgroundCanvas.getContext("2d");
-    if (!backgroundCtx) {
-      throw new Error("Background canvas context unavailable.");
-    }
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      throw new Error("Canvas context unavailable.");
+  const detachWindowListeners = (): void => {
+    if (!windowListenersAttached) {
+      return;
     }
 
-    game = new Game(
-      createLevels(profile.mode),
-      nextBackgroundCanvas,
-      backgroundCtx,
-      canvas,
-      ctx,
-      audio,
-      profile,
-      progressStore,
-    );
-    game.resize();
+    windowListenersAttached = false;
+    window.removeEventListener("resize", refreshCanvasGeometry);
+    window.removeEventListener("scroll", refreshCanvasGeometry, true);
+    window.visualViewport?.removeEventListener("resize", refreshCanvasGeometry);
+    window.visualViewport?.removeEventListener("scroll", refreshCanvasGeometry);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+  };
+
+  const attachRenderer = (activeGame: Game, renderer: BoardRenderer): void => {
+    activeGame.setRenderer(renderer);
+    boardReady = true;
     refreshCanvasGeometry();
-    game.draw();
+    activeGame.draw();
+    rendererStatusStore.set(RendererStatus.Ready);
+    publish(true, false);
+    resetFrameClock();
+    requestGameFrame();
+  };
+
+  const reportRendererFailure = (error: unknown): void => {
+    console.error("WebGPU board renderer unavailable.", error);
+    rendererStatusStore.set(RendererStatus.Failed);
+  };
+
+  const mountBoardRenderer = (activeGame: Game, surface: BoardSurface, token: number): void => {
+    rendererStatusStore.set(RendererStatus.Loading);
+    const importStartedAt = performance.now();
+    let importMs = 0;
+    void import("./render3d/webgpu-board-renderer")
+      .then(({ createWebGpuBoardRenderer }) => {
+        importMs = performance.now() - importStartedAt;
+        return createWebGpuBoardRenderer(surface.canvas, surface.overlay, activeGame, () => {
+          if (token === mountToken) {
+            // A lost device (driver reset, GPU process crash) gets a fresh renderer.
+            boardReady = false;
+            activeGame.detachRenderer();
+            mountBoardRenderer(activeGame, surface, token);
+          }
+        });
+      })
+      .then(({ renderer, startupTimings }) => {
+        if (token !== mountToken || game !== activeGame) {
+          renderer.dispose();
+          return;
+        }
+        const timings = { importMs, ...startupTimings, pageReadyMs: performance.now() };
+        startupTimingsStore.set(timings);
+        if (import.meta.env.DEV) {
+          console.info("3D board startup (ms)", timings);
+          (window as unknown as { __vectorDefenceStartup?: unknown }).__vectorDefenceStartup = timings;
+        }
+        attachRenderer(activeGame, renderer);
+      })
+      .catch((error: unknown) => {
+        if (token === mountToken) {
+          reportRendererFailure(error);
+        }
+      });
+  };
+
+  const mount = (surface: BoardSurface): void => {
+    unmount();
+
+    const activeGame = ensureGame();
+    const token = mountToken;
+    canvas = surface.overlay;
+    refreshCanvasGeometry();
     canvasResizeObserver = new ResizeObserver(() => {
       if (!game) {
         return;
@@ -306,39 +376,38 @@ export function createGameSession(profile: GameProfile) {
       game.draw();
     });
     canvasResizeObserver.observe(canvas);
-    window.addEventListener("resize", refreshCanvasGeometry);
-    window.addEventListener("scroll", refreshCanvasGeometry, true);
-    window.visualViewport?.addEventListener("resize", refreshCanvasGeometry);
-    window.visualViewport?.addEventListener("scroll", refreshCanvasGeometry);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
-    resetNerdStatsSamples();
-    publish(true, true);
+    attachWindowListeners();
+
+    mountBoardRenderer(activeGame, surface, token);
+
     resetFrameClock();
     requestGameFrame();
   };
 
-  const destroy = (): void => {
+  const unmount = (): void => {
+    mountToken += 1;
+    boardReady = false;
     endTowerDrag();
+    canvasResizeObserver?.disconnect();
+    canvasResizeObserver = null;
+    game?.setPointer();
+    game?.detachRenderer();
+    canvasGeometry = null;
+    canvas = null;
+  };
+
+  const destroy = (): void => {
+    unmount();
 
     if (frameId !== 0) {
       window.cancelAnimationFrame(frameId);
       frameId = 0;
     }
 
-    canvasResizeObserver?.disconnect();
-    canvasResizeObserver = null;
-    window.removeEventListener("resize", refreshCanvasGeometry);
-    window.removeEventListener("scroll", refreshCanvasGeometry, true);
-    window.visualViewport?.removeEventListener("resize", refreshCanvasGeometry);
-    window.visualViewport?.removeEventListener("scroll", refreshCanvasGeometry);
-    document.removeEventListener("visibilitychange", handleVisibilityChange);
-
+    detachWindowListeners();
     resetFrameClock();
     runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
     resetNerdStatsSamples();
-    canvasGeometry = null;
-    canvas = null;
     game = null;
   };
 
@@ -653,9 +722,12 @@ export function createGameSession(profile: GameProfile) {
     hud: readonly(hudStore),
     modal: readonly(modalStore),
     soundEnabled: readonly(soundEnabledStore),
+    rendererStatus: readonly(rendererStatusStore),
+    startupTimings: readonly(startupTimingsStore),
     toggleSound,
     setNerdStatsEnabled,
     mount,
+    unmount,
     destroy,
     handleKeyDown,
     handleCanvasMove,

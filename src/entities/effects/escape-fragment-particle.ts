@@ -1,9 +1,8 @@
 import type { UpdateContext } from "../../game-engine/update-context";
 import type { Point } from "../../types";
-import { CalibratedExponentialDecay, drawPath, hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
+import { CalibratedExponentialDecay, isOutsideBounds, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
-const FRAGMENT_FILL = "#050908";
 const DRIFT_VELOCITY_DECAY = new CalibratedExponentialDecay(0.58, 60);
 
 export class EscapeFragmentParticle extends Particle {
@@ -41,25 +40,6 @@ export class EscapeFragmentParticle extends Particle {
     if (this.alpha <= 0 || isOutsideBounds(this, context.fieldBounds, 34)) {
       this.removed = true;
     }
-  }
-
-  override draw(context: CanvasRenderingContext2D): void {
-    context.save();
-    context.translate(this.x, this.y);
-    context.rotate(this.rotation);
-    context.fillStyle = hexWithAlpha(FRAGMENT_FILL, this.alpha * 0.92);
-    context.strokeStyle = hexWithAlpha(this.color, Math.min(1, this.alpha + 0.08));
-    context.lineWidth = 1.35;
-    drawPath(context, this.vertices, true);
-
-    context.globalCompositeOperation = "lighter";
-    context.strokeStyle = hexWithAlpha(this.color, this.alpha * 0.42);
-    context.lineWidth = 0.8;
-    context.beginPath();
-    context.moveTo(this.vertices[0].x * 0.68, this.vertices[0].y * 0.44);
-    context.lineTo(this.vertices[Math.floor(this.vertices.length / 2)].x * 0.68, 0);
-    context.stroke();
-    context.restore();
   }
 }
 

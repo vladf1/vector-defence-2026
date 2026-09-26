@@ -1,7 +1,6 @@
 import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
-import { drawPath } from "../../utils";
 import { createDeathEffectOrigin, createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster } from "./monster";
 import { createPolygonShardSplitter } from "./polygon-shard-splitter";
@@ -31,16 +30,6 @@ export class SplitterMonster extends Monster {
 
   protected override updateSpecial(context: UpdateContext): void {
     this.rotation += 2.7 * context.deltaSeconds;
-  }
-
-  protected drawBody(context: CanvasRenderingContext2D): void {
-    context.rotate(this.rotation);
-    drawPath(context, OUTLINE, true);
-    context.beginPath();
-    context.moveTo(-this.radius * 0.55, -this.radius * 0.15);
-    context.lineTo(0, this.radius * 0.2);
-    context.lineTo(this.radius * 0.58, -this.radius * 0.18);
-    context.stroke();
   }
 
   override addDeathEffect(result: UpdateResult): void {

@@ -111,8 +111,31 @@
 
       td canvas {
         display: block;
-        width: 112px;
-        height: 112px;
+        width: 128px;
+        height: 128px;
+      }
+
+      .sheet-status {
+        margin: 0 0 16px;
+        overflow: hidden;
+        color: rgba(232, 255, 248, 0.7);
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* The WebGPU board renderer draws each cell here; captures are copied into the table. */
+      .render-surface {
+        position: fixed;
+        left: -10000px;
+        top: 0;
+        pointer-events: none;
+      }
+
+      .render-surface canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
       }
 
       .preview-dialog {
@@ -135,6 +158,12 @@
         display: block;
         width: 100%;
         height: 100%;
+        cursor: grab;
+        touch-action: none;
+      }
+
+      .preview-dialog canvas:active {
+        cursor: grabbing;
       }
 
       .preview-dialog-label,
@@ -166,10 +195,11 @@
   </head>
   <body>
     <header>
-      <h1>Tower + Projectile Sheet</h1>
+      <h1>Tower + Projectile Sheet (3D)</h1>
       <a href="./index.html">Debug tools</a>
     </header>
     <main>
+      <p id="tower-sheet-status" class="sheet-status" role="status">Rendering with the WebGPU board renderer…</p>
       <div class="table-scroll">
         <table id="tower-testing" aria-label="Tower and projectile render table"></table>
       </div>
@@ -179,6 +209,10 @@
       <button id="tower-preview-close" class="preview-dialog-close" type="button" aria-label="Close preview">×</button>
       <canvas id="tower-preview-canvas"></canvas>
     </dialog>
+    <div id="tower-render-surface" class="render-surface" aria-hidden="true">
+      <canvas id="tower-render-canvas"></canvas>
+      <canvas id="tower-render-overlay"></canvas>
+    </div>
     <script type="module" src="/src/tower-testing.ts"></script>
   </body>
 </html>

@@ -2,7 +2,6 @@ import type { UpdateContext, UpdateResult } from "../../game-engine/update-conte
 import { getPathHeadingAngle, type PathEntry } from "../../route-path";
 import { angleBetween, clamp, randomRange } from "../../utils";
 
-const MONSTER_STROKE_WIDTH = 1.5;
 const HIT_SHAKE_DURATION_SECONDS = 0.16;
 const HIT_SHAKE_DISTANCE = 2;
 const HIT_SHAKE_HORIZONTAL_FREQUENCY_PER_SECOND = 92;
@@ -125,30 +124,10 @@ export abstract class Monster {
     this.updateHitShakeOffset();
   }
 
-  draw(context: CanvasRenderingContext2D): void {
-    context.save();
-    context.translate(this.visualX, this.visualY);
-    this.drawCoreBody(context);
-    context.restore();
-
-    this.drawHealthBar(context);
-  }
-
   protected updateSpecial(_context: UpdateContext): void {
   }
 
-  protected abstract drawBody(context: CanvasRenderingContext2D): void;
-
   abstract addDeathEffect(result: UpdateResult): void;
-
-  private drawCoreBody(context: CanvasRenderingContext2D): void {
-    context.save();
-    context.strokeStyle = this.color;
-    context.fillStyle = "#050908";
-    context.lineWidth = MONSTER_STROKE_WIDTH;
-    this.drawBody(context);
-    context.restore();
-  }
 
   private moveAlongPath(deltaSeconds: number, result: UpdateResult): void {
     this.distanceAlongPath += this.speedPerSecond * deltaSeconds;
@@ -209,26 +188,6 @@ export abstract class Monster {
     const distance = this.hitShakeDistance * fade;
     this.hitShakeOffsetX = Math.sin(this.hitShakePhase + (elapsedSeconds * HIT_SHAKE_HORIZONTAL_FREQUENCY_PER_SECOND)) * distance;
     this.hitShakeOffsetY = Math.cos((this.hitShakePhase * HIT_SHAKE_VERTICAL_PHASE_SCALE) + (elapsedSeconds * HIT_SHAKE_VERTICAL_FREQUENCY_PER_SECOND)) * distance;
-  }
-
-  private drawHealthBar(context: CanvasRenderingContext2D): void {
-    const barWidth = Math.max(16, this.radius * 2);
-    const healthRatio = this.hitPoints / this.maxHitPoints;
-    const fillWidth = barWidth * healthRatio;
-    context.fillStyle = "rgba(5, 10, 8, 0.85)";
-    context.fillRect(this.visualX - (barWidth / 2), this.visualY - this.radius - 7, barWidth, 3);
-    context.fillStyle = this.getHealthBarColor(healthRatio);
-    context.fillRect(this.visualX - (barWidth / 2), this.visualY - this.radius - 7, fillWidth, 3);
-  }
-
-  private getHealthBarColor(healthRatio: number): string {
-    if (healthRatio > 0.5) {
-      const danger = (1 - healthRatio) * 2;
-      return `rgb(${Math.round(76 + (179 * danger))}, 255, ${Math.round(144 * (1 - danger))})`;
-    }
-
-    const danger = 1 - (healthRatio * 2);
-    return `rgb(255, ${Math.round(227 * (1 - danger))}, 79)`;
   }
 }
 

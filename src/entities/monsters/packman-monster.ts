@@ -37,6 +37,14 @@ export class PackManMonster extends Monster {
     super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
+  get currentMouthAngle(): number {
+    return this.mouthAngle;
+  }
+
+  get currentBodyRotation(): number {
+    return this.bodyRotation;
+  }
+
   protected override updateSpecial(context: UpdateContext): void {
     if (this.mouthAnimationElapsedSeconds > 0) {
       this.advanceMouthAnimation(context.deltaSeconds);
@@ -52,11 +60,6 @@ export class PackManMonster extends Monster {
     if (this.secondsUntilIdleAnimation <= 0) {
       this.startIdleAnimation(context.deltaSeconds);
     }
-  }
-
-  protected drawBody(context: CanvasRenderingContext2D): void {
-    context.rotate(this.angle + this.bodyRotation);
-    drawPackManBody(context, this.radius, this.mouthAngle);
   }
 
   createOutline(arcVertexCount: number): Point[] {
@@ -123,33 +126,6 @@ function getPackManMouthAngle(animationProgress: number): number {
   const mirroredProgress = snapProgress <= 0.5 ? snapProgress * 2 : (1 - snapProgress) * 2;
   const closeThenOpen = easeInOutSine(mirroredProgress);
   return MOUTH_OPEN_ANGLE - ((MOUTH_OPEN_ANGLE - MOUTH_CLOSED_ANGLE) * closeThenOpen);
-}
-
-function drawPackManBody(context: CanvasRenderingContext2D, radius: number, mouthAngle: number): void {
-  const mouthTopX = Math.cos(mouthAngle) * radius;
-  const mouthTopY = Math.sin(mouthAngle) * radius;
-
-  context.beginPath();
-  context.moveTo(0, 0);
-  context.lineTo(mouthTopX, mouthTopY);
-  context.arc(0, 0, radius, mouthAngle, (Math.PI * 2) - mouthAngle);
-  context.closePath();
-  context.fill();
-
-  context.save();
-  context.lineCap = "round";
-  context.lineJoin = "round";
-  context.beginPath();
-  context.moveTo(0, 0);
-  context.lineTo(mouthTopX, mouthTopY);
-  context.arc(0, 0, radius, mouthAngle, (Math.PI * 2) - mouthAngle);
-  context.lineTo(0, 0);
-  context.stroke();
-  context.restore();
-
-  context.beginPath();
-  context.arc(radius * 0.12, -radius * 0.5, radius * 0.16, 0, Math.PI * 2);
-  context.fill();
 }
 
 function createPackManOutline(radius: number, mouthAngle: number, arcVertexCount: number): Point[] {

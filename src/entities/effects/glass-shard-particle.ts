@@ -1,10 +1,8 @@
 import type { UpdateContext } from "../../game-engine/update-context";
 import type { Point } from "../../types";
-import { CalibratedExponentialDecay, drawPath, hexWithAlpha, isOutsideBounds, randomRange } from "../../utils";
+import { CalibratedExponentialDecay, isOutsideBounds, randomRange } from "../../utils";
 import { Particle } from "./particle";
 
-const SHARD_FILL_COLOR = "#050908";
-const SHARD_STROKE_WIDTH = 1;
 const ANGULAR_VELOCITY_MAX_PER_SECOND = 9.9;
 const DRIFT_VELOCITY_DECAY = new CalibratedExponentialDecay(0.42, 60);
 
@@ -48,17 +46,6 @@ export class GlassShardParticle extends Particle {
     if (this.alpha <= 0 || isOutsideBounds(this, context.fieldBounds, 28)) {
       this.removed = true;
     }
-  }
-
-  draw(context: CanvasRenderingContext2D): void {
-    context.save();
-    context.translate(this.x, this.y);
-    context.rotate(this.rotation);
-    context.fillStyle = hexWithAlpha(SHARD_FILL_COLOR, this.alpha);
-    context.strokeStyle = hexWithAlpha(this.color, Math.min(1, this.alpha + 0.1));
-    context.lineWidth = SHARD_STROKE_WIDTH;
-    drawPath(context, this.vertices, true);
-    context.restore();
   }
 }
 
