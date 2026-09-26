@@ -25,7 +25,6 @@ const SMOKE_COLOR = linearColor("#2a2f2c");
 const EXPLOSION_LIGHT = linearColor("#ffae5c");
 const ESCAPE_COLOR = linearColor("#b0ffe1");
 const ESCAPE_ACCENT = linearColor("#ffe36f");
-const FROST_COLOR = linearColor("#b7ff6a");
 const ZAP_COLOR = linearColor("#9fe8ff");
 
 /** Struct-of-arrays particle pool; dead particles are swapped out so updates stay dense. */
@@ -548,10 +547,6 @@ export class FxSystem {
 
   ember(x: number, y: number, z: number, vx: number, vz: number, css: string): void {
     this.particles.spawn(FxKind.Ember, x, y, z, vx, randomRange(10, 40), vz, randomRange(0.25, 0.45), randomRange(2.4, 3.6), 0, linearColor(css), 60, 2);
-  }
-
-  slowPulse(x: number, z: number, radius: number): void {
-    this.particles.spawn(FxKind.Ring, x, 1, z, 0, 0, 0, 0.55, 14, radius * 2, FROST_COLOR, 0, 0);
   }
 
   zap(x: number, y: number, z: number): void {

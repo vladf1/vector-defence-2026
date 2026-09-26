@@ -108,15 +108,16 @@ const report = await runBrowserPage({
   });
   // Moves only the render camera (same pitch, closer) over a field point, draws, and restores.
   const closeUp = async (name, fieldX, fieldY, visibleHeight) => {
-    await page.evaluate(([x, y, height]) => {
+    await page.evaluate(async ([x, y, height]) => {
       const { game } = window.__vectorDefence;
-      game.renderer.rig.inspect({ x, y, visibleHeight: height });
+      const { BOARD_TILT_RADIANS } = await import("/src/render3d/camera-rig.ts");
+      game.renderer.inspect({ x, y, visibleHeight: height, yaw: 0, tilt: BOARD_TILT_RADIANS });
       game.draw();
     }, [fieldX, fieldY, visibleHeight]);
     await capture(name, centerClip(Math.min(board.width, 560), Math.min(board.height, 420)));
     await page.evaluate(() => {
       const { game } = window.__vectorDefence;
-      game.renderer.rig.inspect(null);
+      game.renderer.inspect(null);
       game.draw();
     });
   };

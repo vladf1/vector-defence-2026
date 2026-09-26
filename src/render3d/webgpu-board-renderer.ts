@@ -5,7 +5,7 @@ import type { LevelRuntime } from "../level-runtime";
 import { createRouteMotionPath } from "../route-path";
 import type { FieldBounds, Point } from "../types";
 import { BoardScene } from "./board-scene";
-import { createBoardCameraRig, type CameraRig } from "./camera-rig";
+import { createBoardCameraRig, type CameraRig, type InspectView } from "./camera-rig";
 import { EffectView } from "./effect-view";
 import type { FrameContext } from "./frame-math";
 import { FxSystem } from "./fx-system";
@@ -87,12 +87,18 @@ function createSceneConstants(fieldWidth: number, fieldHeight: number, roadWidth
   };
 }
 
+/** The board renderer plus the close-up framing used by debug pages and render scripts. */
+export interface InspectableBoardRenderer extends BoardRenderer {
+  /** Frames the render camera over a field point (no shake); null restores the board view. */
+  inspect(view: InspectView | null): void;
+}
+
 /**
  * Raw WebGPU board renderer. It never mutates the simulation: every frame it reads
  * `Game.runtime`, refills instanced batches, and records one command buffer (scene pass,
  * bloom chain, composite). All pipelines are created up front, asynchronously and in parallel.
  */
-class WebGpuBoardRenderer implements BoardRenderer {
+class WebGpuBoardRenderer implements InspectableBoardRenderer {
   private readonly rig: CameraRig;
   private readonly quality: RenderQuality;
   private readonly governor: ResolutionGovernor;
@@ -289,6 +295,10 @@ class WebGpuBoardRenderer implements BoardRenderer {
     this.overlay.draw();
   }
 
+  inspect(view: InspectView | null): void {
+    this.rig.inspect(view);
+  }
+
   getVisibleFieldBounds(): FieldBounds {
     return this.rig.fieldBounds;
   }
@@ -372,7 +382,7 @@ export async function createWebGpuBoardRenderer(
   overlayCanvas: HTMLCanvasElement,
   game: Game,
   onDeviceLost: () => void,
-): Promise<{ renderer: BoardRenderer; startupTimings: StartupTimings | null }> {
+): Promise<{ renderer: InspectableBoardRenderer; startupTimings: StartupTimings | null }> {
   const renderer = new WebGpuBoardRenderer(canvas, overlayCanvas, game, onDeviceLost);
   try {
     await renderer.initialize();

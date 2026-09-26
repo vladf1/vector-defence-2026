@@ -22,6 +22,9 @@ export interface CameraRigOptions {
 
 const NEAR = 60;
 const FAR = 4000;
+// Close-ups scale the near plane with distance, so zooming in never clips the subject.
+const INSPECT_NEAR_RATIO = 0.1;
+const INSPECT_MIN_NEAR = 0.5;
 const FIT_ITERATIONS = 24;
 const SHAKE_DECAY_PER_SECOND = 1.9;
 const MAX_SHAKE_OFFSET = 9;
@@ -40,15 +43,16 @@ export class CameraState {
   /** Normalized world-space forward vector. */
   readonly forward = vec3(0, -1, 0);
 
-  setPerspective(verticalFovRadians: number, aspect: number): void {
-    mat4Perspective(this.projection, verticalFovRadians, aspect, NEAR, FAR);
+  /** Takes effect with the next `lookAt` or `copyOrientation`. */
+  setPerspective(verticalFovRadians: number, aspect: number, near: number, far: number): void {
+    mat4Perspective(this.projection, verticalFovRadians, aspect, near, far);
   }
 
-  lookAt(eyeX: number, eyeY: number, eyeZ: number, target: Vec3): void {
+  lookAt(eyeX: number, eyeY: number, eyeZ: number, target: Vec3, up: Vec3): void {
     this.position.x = eyeX;
     this.position.y = eyeY;
     this.position.z = eyeZ;
-    mat4LookAtWorld(this.world, this.position, target, CAMERA_UP);
+    mat4LookAtWorld(this.world, this.position, target, up);
     this.update();
   }
 
@@ -74,8 +78,21 @@ export class CameraState {
   }
 }
 
+/**
+ * A close-up orbit framing: the field point to center, how many field units fit vertically,
+ * the heading around it (0 looks from the bottom of the field, as the board does), and the
+ * tilt from straight down (the board uses `BOARD_TILT_RADIANS`).
+ */
+export interface InspectView {
+  readonly x: number;
+  readonly y: number;
+  readonly visibleHeight: number;
+  readonly yaw: number;
+  readonly tilt: number;
+}
+
 const BOARD_FOV_DEGREES = 24;
-const BOARD_PITCH_RADIANS = 0.25;
+export const BOARD_TILT_RADIANS = 0.25;
 const BOARD_MARGIN = 0.006;
 
 /** The board's camera framing; also used by headless checks for real visible bounds. */
@@ -84,7 +101,7 @@ export function createBoardCameraRig(fieldWidth: number, fieldHeight: number): C
     fieldWidth,
     fieldHeight,
     verticalFovDegrees: BOARD_FOV_DEGREES,
-    pitchRadians: BOARD_PITCH_RADIANS,
+    pitchRadians: BOARD_TILT_RADIANS,
     margin: BOARD_MARGIN,
   });
 }
@@ -107,7 +124,7 @@ export class CameraRig {
   private viewportHeight = 1;
   private readonly visibleBounds: FieldBounds = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
   private readonly scratch = vec3(0, 0, 0);
-  private inspection: { x: number; y: number; visibleHeight: number } | null = null;
+  private inspection: InspectView | null = null;
 
   constructor(private readonly options: CameraRigOptions) {
     this.verticalFov = (options.verticalFovDegrees * Math.PI) / 180;
@@ -124,18 +141,19 @@ export class CameraRig {
     this.viewportWidth = Math.max(1, width);
     this.viewportHeight = Math.max(1, height);
     this.aspect = this.viewportWidth / this.viewportHeight;
-    this.logicalCamera.setPerspective(this.verticalFov, this.aspect);
-    this.renderCamera.setPerspective(this.verticalFov, this.aspect);
+    this.logicalCamera.setPerspective(this.verticalFov, this.aspect, NEAR, FAR);
+    this.renderCamera.setPerspective(this.verticalFov, this.aspect, NEAR, FAR);
     this.fitField();
     this.updateVisibleBounds();
     this.syncRenderCamera(0, 0);
   }
 
   /**
-   * Dev/render-script aid: frames the render camera tightly over a field point at the
-   * same pitch. Picking keeps using the logical camera. Pass null to restore.
+   * Debug/render-script aid: frames the render camera tightly over a field point at the
+   * same pitch, without screen shake. Picking keeps using the logical camera. Pass null to
+   * restore.
    */
-  inspect(view: { x: number; y: number; visibleHeight: number } | null): void {
+  inspect(view: InspectView | null): void {
     this.inspection = view;
     this.syncRenderCamera(0, 0);
   }
@@ -204,6 +222,7 @@ export class CameraRig {
       target.y + (offsetDirection.y * distance),
       target.z + (offsetDirection.z * distance),
       target,
+      CAMERA_UP,
     );
   }
 
@@ -269,14 +288,21 @@ export class CameraRig {
     const inspection = this.inspection;
     if (inspection) {
       const distance = (inspection.visibleHeight / 2) / Math.tan(this.verticalFov / 2);
-      const target = vec3(inspection.x, 0, inspection.y);
+      const sinTilt = Math.sin(inspection.tilt);
+      const cosTilt = Math.cos(inspection.tilt);
+      const sinYaw = Math.sin(inspection.yaw);
+      const cosYaw = Math.cos(inspection.yaw);
+      render.setPerspective(this.verticalFov, this.aspect, Math.min(NEAR, Math.max(INSPECT_MIN_NEAR, distance * INSPECT_NEAR_RATIO)), FAR);
+      // The up vector is the orbit direction's tilt derivative, so it never degenerates.
       render.lookAt(
-        target.x + (this.offsetDirection.x * distance) + offsetX,
-        target.y + (this.offsetDirection.y * distance),
-        target.z + (this.offsetDirection.z * distance) + offsetZ,
-        vec3(target.x + offsetX, 0, target.z + offsetZ),
+        inspection.x + (sinYaw * sinTilt * distance),
+        cosTilt * distance,
+        inspection.y + (cosYaw * sinTilt * distance),
+        vec3(inspection.x, 0, inspection.y),
+        vec3(-sinYaw * cosTilt, sinTilt, -cosYaw * cosTilt),
       );
     } else {
+      render.setPerspective(this.verticalFov, this.aspect, NEAR, FAR);
       const logical = this.logicalCamera.position;
       render.copyOrientation(this.logicalCamera, logical.x + offsetX, logical.y, logical.z + offsetZ);
     }

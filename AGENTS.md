@@ -45,6 +45,8 @@ Key paths:
 - Level render sheet script: `scripts/render-levels.mjs`
 - Browser render/benchmark harness: `scripts/benchmark-browser-harness.mjs`
 - Debug tools hub: `debug/index.html`
+- 3D tower/projectile sheet page: `debug/towers.html`
+- 3D tower/projectile sheet script: `src/tower-testing.ts`
 - Audio soundboard: `debug/soundboard.html`
 
 Repository notes:
@@ -83,12 +85,12 @@ Current code structure:
   - `gpu-pipelines.ts` creates the 8 pipelines (neon, ground, road, effect, health bar, sprite, bloom, composite) with `createRenderPipelineAsync` in one parallel batch, with explicit bind group layouts. Nothing compiles after startup. Effects and sprites use premultiplied-alpha blending, so one pipeline serves additive layers (shader alpha 0) and normally blended ones. `?shaderSalt=N` (dev only) perturbs every fragment shader so driver caches miss. `gpu-flags.ts` holds the WebGPU usage bit constants (the TypeScript DOM lib lacks them).
   - `post-processing.ts` owns the HDR targets (rgba16float scene color with optional MSAA resolve, depth24plus, two bloom levels plus scratch) and records the prefilter/downsample, separable blur, and composite passes (vignette, ACES, sRGB) onto the canvas: all seven passes use the one `post` module and a shared bind group layout, with a 1x1 placeholder in unused texture slots.
   - Draw order matches the previous three.js renderer: opaque neon batches, ground, road, health bars (no depth test), then blended layers in fixed order (ribbon, smoke, glow, decal, range, ground glow). Blending is `src-alpha`-based additive or normal alpha.
-  - `camera-rig.ts` (plain matrices from `math.ts`) fits the tilted perspective camera to the field, ray-casts pointer picking onto the ground, projects field points for the overlay, and applies screen shake to a separate render camera (picking never shakes). `createBoardCameraRig(...)` is the board framing (also used by `check:runtime` for real visible bounds); `inspect(...)` frames a close-up for render scripts.
+  - `camera-rig.ts` (plain matrices from `math.ts`) fits the tilted perspective camera to the field, ray-casts pointer picking onto the ground, projects field points for the overlay, and applies screen shake to a separate render camera (picking never shakes). `createBoardCameraRig(...)` is the board framing (also used by `check:runtime` for real visible bounds). `inspect(...)` (exposed as `InspectableBoardRenderer.inspect`) frames a shake-free orbit close-up (`InspectView`: field point, visible height, yaw, tilt; `BOARD_TILT_RADIANS` matches the board) with a distance-scaled near plane, for render scripts and the tower sheet.
   - `render-batches.ts` is the complete, fixed list of instanced batches, each naming its pipeline by key. `instanced-batch.ts` (24 floats per instance: column-major transform, tint, extras) and `sprite-batch.ts` (12 floats: position/rotation, size/shape, color) refill typed arrays every frame and upload the used range with one `writeBuffer`.
   - Lighting is Lambert (the neon look comes from emissive trims, rims, an analytic key-light highlight, and bloom). Shadows are soft blob decals pushed through `RenderBatches.pushBlobShadow(...)`, offset along the key light by each object's height; there are no shadow maps.
   - `models.ts` / `geometry-kit.ts` build all procedural low-poly models as non-indexed triangle soups (monsters at unit radius, towers in field units); neon parts become interleaved `position(3) normal(3) glow(1)` vertices, and flat effect quads are `position(3) uv(2)`. `extrudeOutline(...)` reproduces three.js `ExtrudeGeometry` bevels, including the sqrt(2) miter cap.
   - `puff-blobs.ts` generates the seeded blob parameters of the former 2x2 smoke-puff canvas atlas; `puffCoverage(...)` in the effect and sprite shaders evaluates them per pixel (smoke sprites, and the noisy scorch-decal mask), matching the old atlas within ~2/255 without any texture.
-  - `monster-view.ts`, `tower-view.ts`, `projectile-view.ts`, `effect-view.ts`, `placement-view.ts`, and `board-scene.ts` compose entities into batches; `fx-system.ts` owns renderer-only spectacle (pooled 3D sparks, fireballs, smoke, ground rings, a fixed flash-light pool written into the frame uniforms, scorch decals, camera trauma); `overlay-view.ts` draws the screen-space tower actions and escape counter on a 2D canvas above the WebGPU canvas.
+  - `monster-view.ts`, `tower-view.ts`, `projectile-view.ts`, `effect-view.ts`, `placement-view.ts`, and `board-scene.ts` compose entities into batches; `fx-system.ts` owns renderer-only spectacle (pooled 3D sparks, fireballs, smoke, ground rings, a fixed flash-light pool written into the frame uniforms, scorch decals, camera trauma; slow-tower pulses deliberately show only their links, with no ring); `overlay-view.ts` draws the screen-space tower actions and escape counter on a 2D canvas above the WebGPU canvas.
   - `render-quality.ts` holds the desktop/mobile budgets and the dynamic-resolution governor.
 - `src/entities/monsters/monster.ts` owns shared monster movement, damage, slow recovery, and lifecycle outcome reporting.
 - Concrete monster classes live under `src/entities/monsters/` and own monster-specific base stats, outlines, animation state, death effects, and special behavior (`berserker` ramps speed as it loses health; `bulwark` mitigates incoming damage).
@@ -188,6 +190,7 @@ Other render and benchmark tooling:
 Debug pages:
 
 - `debug/index.html` is the index for standalone development tools; `debug/soundboard.html` plays every audio cue. The production build emits the pages under `debug/` as separate Rollup entries; keep debug-only code out of the main game imports.
+- `debug/towers.html` / `src/tower-testing.ts` render every tower (levels 1-7), gun and drone shot, missile, and missile blast through the real WebGPU board renderer: each cell stages one subject in a fresh level runtime far outside the field, settles the views (advancing shots and blast particles with the real entity updates), frames it with `inspect(...)`, and copies the WebGPU canvas into a 2D cell canvas. The zoom dialog keeps the staged scene and orbits the camera (drag, wheel/pinch, double-click to reset). When changing tower or projectile visuals, check every level there.
 
 Audio assets:
 
@@ -204,6 +207,6 @@ Maintenance preferences:
 - Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in Svelte components.
 - Keep gameplay rates time-based and compatible with variable substep sizes. Reuse `CalibratedExponentialDecay` for calibrated particle damping instead of introducing `1 - k * deltaSeconds` velocity damping.
 - Avoid default parameter values in new code; make call sites pass behavior-affecting values explicitly.
-- When changing models, shaders, or views, run `npm run render:3d`, inspect the close-ups, and run `npm run build` before calling the visuals done.
+- When changing models, shaders, or views, run `npm run render:3d`, inspect the close-ups (and `debug/towers.html` for towers/projectiles), and run `npm run build` before calling the visuals done.
 - When adding monsters, add a `MonsterKind` value, a concrete monster class, a `createBaseMonster(...)` branch in `src/game-engine/monster-factory.ts`, and campaign usage as needed.
 - When adding towers, add a `TowerKind` value and concrete tower class, add it to `TOWER_CLASSES` in `tower-registry.ts`, and add its toolbar SVG to `TOWER_ICON_SVG`. `Game.createTower(...)` already resolves classes through the registry; do not add a kind switch there.

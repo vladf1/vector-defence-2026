@@ -59,7 +59,7 @@
 
       .tools {
         display: grid;
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 14px;
       }
 
@@ -111,6 +111,10 @@
         <a class="game-link" href="../index.html">Back to game</a>
       </header>
       <nav class="tools" aria-label="Debug pages">
+        <a class="tool" href="./towers.html">
+          <strong>Tower Sheet</strong>
+          <span>Every tower, projectile, and missile blast across levels 1–7, rendered by the real WebGPU board renderer.</span>
+        </a>
         <a class="tool" href="./soundboard.html">
           <strong>Soundboard</strong>
           <span>Play every production game-audio cue from one page.</span>

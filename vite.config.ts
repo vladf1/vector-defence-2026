@@ -26,7 +26,8 @@ function preloadBoardRenderer(): Plugin {
         if (!bundle || context.path !== "/index.html") {
           return html;
         }
-        const renderer = Object.values(bundle).find((output) => output.type === "chunk" && output.facadeModuleId?.endsWith(BOARD_RENDERER_MODULE));
+        // The renderer may share a chunk with debug pages, so match any chunk containing it.
+        const renderer = Object.values(bundle).find((output) => output.type === "chunk" && output.moduleIds.some((id) => id.endsWith(BOARD_RENDERER_MODULE)));
         if (!renderer || renderer.type !== "chunk") {
           throw new Error(`preload-board-renderer: no chunk for ${BOARD_RENDERER_MODULE}`);
         }
@@ -62,6 +63,7 @@ export default defineConfig({
       input: {
         main: resolve(rootDir, "index.html"),
         debug: resolve(rootDir, "debug/index.html"),
+        debugTowers: resolve(rootDir, "debug/towers.html"),
         debugSoundboard: resolve(rootDir, "debug/soundboard.html"),
       },
       output: {

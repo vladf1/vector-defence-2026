@@ -53,10 +53,7 @@ interface TowerVisual {
   previousCooldown: number;
 }
 
-/**
- * Tower 3D presentation. Tower classes keep their 2D drawing for the toolbar icons;
- * this view reads their public state and composes instanced neon parts.
- */
+/** Tower 3D presentation: reads each tower's public state and composes instanced neon parts. */
 export class TowerView {
   private readonly visuals = new Map<Tower, TowerVisual>();
 
@@ -116,9 +113,8 @@ export class TowerView {
     if (!fired) {
       return;
     }
-    if (tower instanceof SlowTower) {
-      this.fx.slowPulse(tower.x, tower.y, tower.range);
-    } else if (tower instanceof LightningTower) {
+    // Slow pulses show only through their links to the slowed monsters.
+    if (tower instanceof LightningTower) {
       this.fx.zap(tower.x, TESLA_TOP_Y, tower.y);
     }
   }
