@@ -1,10 +1,9 @@
-// Profiles the 3D board's startup phases (code download, device, JS setup, post chain,
-// scene shader compile, warm-up frame, GPU drain) with optional CPU throttling to
-// approximate phones. Usage: node scripts/benchmark-3d-startup.mjs [--mobile] [--webgl2] [--cpu=4] [--runs=3] [--cold]
+// Profiles the board's startup phases (renderer import, device, CPU setup, pipeline
+// compiles, warm-up frame, GPU drain) with optional CPU throttling to approximate phones.
+// Usage: node scripts/benchmark-3d-startup.mjs [--mobile] [--cpu=4] [--runs=3] [--cold]
 import { WEBGPU_LAUNCH_ARGS, runBrowserPage } from "./benchmark-browser-harness.mjs";
 
 const mobile = process.argv.includes("--mobile");
-const webgl2 = process.argv.includes("--webgl2");
 const numberArgument = (name, fallback) => {
   const match = process.argv.find((argument) => argument.startsWith(`--${name}=`));
   return match ? Number(match.split("=")[1]) : fallback;
@@ -19,7 +18,7 @@ const samples = [];
 for (let run = 0; run < runs; run += 1) {
   samples.push(await runBrowserPage({
     path: "/",
-    query: `${webgl2 ? "view=3d&backend=webgl2" : "view=3d"}${cold ? `&shaderSalt=${1 + Math.floor(Math.random() * 999_999)}` : ""}`,
+    query: cold ? `shaderSalt=${1 + Math.floor(Math.random() * 999_999)}` : "",
     viewport,
     deviceScaleFactor: mobile ? 3 : 2,
     launchArgs: WEBGPU_LAUNCH_ARGS,
@@ -35,7 +34,7 @@ for (let run = 0; run < runs; run += 1) {
   }));
 }
 
-console.log(`3D startup (${mobile ? "mobile" : "desktop"}, ${webgl2 ? "webgl2" : "webgpu"}, cpu x${cpuThrottle}, ${cold ? "cold" : "warm"} shader cache, ${runs} runs, median)`);
+console.log(`Board startup (${mobile ? "mobile" : "desktop"}, cpu x${cpuThrottle}, ${cold ? "cold" : "warm"} shader cache, ${runs} runs, median)`);
 for (const key of Object.keys(samples[0])) {
   const values = samples.map((sample) => sample[key]).sort((a, b) => a - b);
   const median = values[Math.floor(values.length / 2)];

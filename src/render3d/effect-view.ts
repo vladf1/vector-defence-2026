@@ -1,4 +1,3 @@
-import { Vector3 } from "three/webgpu";
 import { EscapeFragmentParticle } from "../entities/effects/escape-fragment-particle";
 import { GlassShardParticle } from "../entities/effects/glass-shard-particle";
 import { HitRingEffect } from "../entities/effects/hit-ring-effect";
@@ -14,6 +13,7 @@ import type { LevelRuntime, RuntimeLinkEffect } from "../level-runtime";
 import { randomRange } from "../utils";
 import type { FxSystem } from "./fx-system";
 import { Quat, type FrameContext } from "./frame-math";
+import { vec3, type Vec3 } from "./math";
 import { SLOW_CORE_Y, TESLA_TOP_Y } from "./models";
 import type { MonsterView } from "./monster-view";
 import { linearColor } from "./palette";
@@ -62,9 +62,9 @@ const rotation = new Quat();
 const tumble = new Quat();
 const segmentStart: Endpoint = { x: 0, y: 0, z: 0 };
 const segmentEnd: Endpoint = { x: 0, y: 0, z: 0 };
-const ribbonDirection = new Vector3();
-const ribbonSide = new Vector3();
-const ribbonNormal = new Vector3();
+const ribbonDirection = vec3(0, 0, 0);
+const ribbonSide = vec3(0, 0, 0);
+const ribbonNormal = vec3(0, 0, 0);
 
 function shardRadius(vertices: readonly { x: number; y: number }[]): number {
   let radius = 0;
@@ -375,22 +375,34 @@ export class EffectView {
     green: number,
     blue: number,
   ): void {
-    ribbonDirection.set(bx - ax, by - ay, bz - az);
-    const length = ribbonDirection.length();
+    const length = Math.hypot(bx - ax, by - ay, bz - az);
     if (length < 0.01) {
       return;
     }
-    ribbonDirection.divideScalar(length);
-    ribbonSide.crossVectors(ribbonDirection, frame.viewDirection);
-    if (ribbonSide.lengthSq() < 1e-6) {
-      ribbonSide.set(0, 0, 1);
+    const view = frame.viewDirection;
+    ribbonDirection.x = (bx - ax) / length;
+    ribbonDirection.y = (by - ay) / length;
+    ribbonDirection.z = (bz - az) / length;
+    cross(ribbonSide, ribbonDirection, view);
+    let sideLength = Math.hypot(ribbonSide.x, ribbonSide.y, ribbonSide.z);
+    if (sideLength * sideLength < 1e-6) {
+      ribbonSide.x = 0;
+      ribbonSide.y = 0;
+      ribbonSide.z = 1;
+      sideLength = 1;
     }
-    ribbonSide.normalize();
-    ribbonNormal.crossVectors(ribbonSide, ribbonDirection);
+    ribbonSide.x /= sideLength;
+    ribbonSide.y /= sideLength;
+    ribbonSide.z /= sideLength;
+    cross(ribbonNormal, ribbonSide, ribbonDirection);
     // Keep the (single-sided) front face toward the camera; flipping the width axis flips the face.
-    if (ribbonNormal.dot(frame.viewDirection) > 0) {
-      ribbonSide.negate();
-      ribbonNormal.negate();
+    if ((ribbonNormal.x * view.x) + (ribbonNormal.y * view.y) + (ribbonNormal.z * view.z) > 0) {
+      ribbonSide.x = -ribbonSide.x;
+      ribbonSide.y = -ribbonSide.y;
+      ribbonSide.z = -ribbonSide.z;
+      ribbonNormal.x = -ribbonNormal.x;
+      ribbonNormal.y = -ribbonNormal.y;
+      ribbonNormal.z = -ribbonNormal.z;
     }
     const slot = batches.ribbon.pushBasis(
       ax,
@@ -411,4 +423,13 @@ export class EffectView {
     );
     batches.ribbon.setExtra(slot, 0, 0);
   }
+}
+
+function cross(out: Vec3, a: Vec3, b: Vec3): void {
+  const x = (a.y * b.z) - (a.z * b.y);
+  const y = (a.z * b.x) - (a.x * b.z);
+  const z = (a.x * b.y) - (a.y * b.x);
+  out.x = x;
+  out.y = y;
+  out.z = z;
 }

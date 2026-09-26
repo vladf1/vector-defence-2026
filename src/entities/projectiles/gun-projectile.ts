@@ -20,10 +20,4 @@ export class GunProjectile extends Projectile {
     );
     this.visualLevel = level;
   }
-
-  draw(context: CanvasRenderingContext2D): void {
-    const length = (9.8 + (this.visualLevel * 1.45)) * 0.6;
-    const halfWidth = (1.8 + (this.visualLevel * 0.22)) * 0.66;
-    this.drawDart(context, length, halfWidth, "#d9fff3", false);
-  }
 }

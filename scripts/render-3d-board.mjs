@@ -1,28 +1,33 @@
 // Renders staged 3D battle frames (overview, close-ups, and an explosion sequence) with
 // the real game session and WebGPU renderer, writing PNGs under artifacts/3d-board/.
-// Usage: node scripts/render-3d-board.mjs [--mobile] [--webgl2] [--level=N]
+// The session's animation loop is frozen and Math.random seeded, so runs are repeatable.
+// Usage: node scripts/render-3d-board.mjs [--mobile] [--level=N] [--out=DIR]
 import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { WEBGPU_LAUNCH_ARGS, repoRoot, runBrowserPage } from "./benchmark-browser-harness.mjs";
 
 const mobile = process.argv.includes("--mobile");
-const webgl2 = process.argv.includes("--webgl2");
 const levelArgument = process.argv.find((argument) => argument.startsWith("--level="));
 const levelIndex = levelArgument ? Math.max(0, Number(levelArgument.split("=")[1]) - 1) : 6;
-const outputDir = path.join(repoRoot, "artifacts", "3d-board");
+const outArgument = process.argv.find((argument) => argument.startsWith("--out="));
+const outputDir = outArgument ? path.resolve(outArgument.slice("--out=".length)) : path.join(repoRoot, "artifacts", "3d-board");
 const viewport = mobile ? { width: 390, height: 844 } : { width: 1400, height: 900 };
 
 await mkdir(outputDir, { recursive: true });
 
 const report = await runBrowserPage({
   path: "/",
-  query: webgl2 ? "view=3d&backend=webgl2" : "view=3d",
   viewport,
   deviceScaleFactor: 2,
   launchArgs: WEBGPU_LAUNCH_ARGS,
   forwardConsole: true,
 }, async (page) => {
   await page.waitForFunction(() => window.__vectorDefence && !document.querySelector(".board-loading"), undefined, { timeout: 60_000 });
+  // Freeze the session's frame loop: every simulation step and draw below is scripted.
+  await page.evaluate(async () => {
+    window.requestAnimationFrame = () => 0;
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  });
 
   const stage = await page.evaluate(async (level) => {
     const { game, sync } = window.__vectorDefence;
@@ -192,7 +197,7 @@ const report = await runBrowserPage({
     await step(seconds);
     await closeUp(`breach-${index}`, exit.x, exit.y, 230);
   }
-  return { shots: shots.length, backend: await page.evaluate(() => window.__vectorDefence.game.renderer.renderer.backend.isWebGPUBackend ? "webgpu" : "webgl2") };
+  return { shots: shots.length };
 });
 
-console.log(`Rendered ${report.shots} images to ${path.relative(repoRoot, outputDir)} (${report.backend})`);
+console.log(`Rendered ${report.shots} images to ${path.relative(repoRoot, outputDir)}`);

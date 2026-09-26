@@ -1,18 +1,16 @@
-// Measures the 3D board renderer: time until precompiled and ready, shader/pipeline
-// counts, whether gameplay triggers any new pipeline compiles, and per-frame CPU cost
-// under a crowded late-campaign fight driven by the real session loop.
-// Usage: node scripts/benchmark-3d-renderer.mjs [--mobile] [--webgl2] [--seconds=N]
+// Measures the 3D board renderer: time until precompiled and ready, pipeline count, and
+// per-frame CPU cost under a crowded late-campaign fight driven by the real session loop.
+// All pipelines are created at startup, so gameplay can never compile new ones.
+// Usage: node scripts/benchmark-3d-renderer.mjs [--mobile] [--seconds=N]
 import { WEBGPU_LAUNCH_ARGS, runBrowserPage } from "./benchmark-browser-harness.mjs";
 
 const mobile = process.argv.includes("--mobile");
-const webgl2 = process.argv.includes("--webgl2");
 const secondsArgument = process.argv.find((argument) => argument.startsWith("--seconds="));
 const seconds = secondsArgument ? Number(secondsArgument.split("=")[1]) : 8;
 const viewport = mobile ? { width: 390, height: 844 } : { width: 1400, height: 900 };
 
 const report = await runBrowserPage({
   path: "/",
-  query: webgl2 ? "view=3d&backend=webgl2" : "view=3d",
   viewport,
   deviceScaleFactor: 2,
   launchArgs: WEBGPU_LAUNCH_ARGS,
@@ -24,14 +22,7 @@ const report = await runBrowserPage({
   return page.evaluate(async (durationSeconds) => {
     const { game, sync } = window.__vectorDefence;
     const renderer = game.renderer;
-    const three = renderer.renderer;
-    const countPipelines = () => ({
-      nodeBuilds: three._nodes.nodeBuilderCache.size,
-      pipelines: three._pipelines.caches.size,
-      vertexModules: three._pipelines.programs.vertex.size,
-      fragmentModules: three._pipelines.programs.fragment.size,
-    });
-    const afterWarmup = countPipelines();
+    const pipelines = renderer.startupTimings.pipelines;
 
     const { createMonster } = await import("/src/game-engine/monster-factory.ts");
     const { createPathEntriesFromDistance } = await import("/src/route-path.ts");
@@ -98,7 +89,7 @@ const report = await runBrowserPage({
       counts.particles += game.runtime.particles.length;
       counts.links += game.runtime.links.length;
       counts.instances += renderer.batches.drawnInstances;
-      counts.calls += three.info.render.drawCalls;
+      counts.calls += renderer.frameDrawCalls;
       counts.frames += 1;
       refill();
     };
@@ -111,9 +102,7 @@ const report = await runBrowserPage({
     const percentile = (p) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] ?? 0;
     const average = (values) => values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
     return {
-      backend: three.backend.isWebGPUBackend ? "webgpu" : "webgl2",
-      afterWarmup,
-      afterGameplay: countPipelines(),
+      pipelines,
       towers: game.runtime.towers.length,
       frames: counts.frames,
       averageDrawMs: average(drawSamples),
@@ -123,18 +112,13 @@ const report = await runBrowserPage({
       averageLinks: counts.links / Math.max(1, counts.frames),
       averageInstances: counts.instances / Math.max(1, counts.frames),
       averageDrawCalls: counts.calls / Math.max(1, counts.frames),
-      pixelRatio: three.getPixelRatio(),
+      pixelRatio: renderer.pixelRatio,
     };
   }, seconds).then((result) => ({ readyMs, ...result }));
 });
 
 const format = (value) => (typeof value === "number" ? value.toFixed(value % 1 === 0 ? 0 : 2) : JSON.stringify(value));
-console.log(`3D renderer benchmark (${mobile ? "mobile" : "desktop"} profile, ${report.backend})`);
+console.log(`3D renderer benchmark (${mobile ? "mobile" : "desktop"} profile)`);
 for (const [key, value] of Object.entries(report)) {
-  if (key !== "backend") {
-    console.log(`  ${key}: ${format(value)}`);
-  }
-}
-if (report.afterGameplay.pipelines !== report.afterWarmup.pipelines || report.afterGameplay.nodeBuilds !== report.afterWarmup.nodeBuilds) {
-  console.log("  WARNING: gameplay compiled pipelines that the warm-up missed.");
+  console.log(`  ${key}: ${format(value)}`);
 }

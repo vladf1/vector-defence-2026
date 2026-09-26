@@ -82,7 +82,7 @@ export async function writeDataUrlPngMap(outputDir, dataUrls) {
   ));
 }
 
-/** Chromium flags that expose WebGPU to headless pages (falls back to WebGL2 where unsupported). */
+/** Chromium flags that expose WebGPU to headless pages. */
 export const WEBGPU_LAUNCH_ARGS = ["--enable-unsafe-webgpu", "--enable-gpu", "--ignore-gpu-blocklist"];
 
 async function launchChromium(args) {

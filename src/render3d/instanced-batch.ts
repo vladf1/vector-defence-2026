@@ -1,67 +1,44 @@
-import {
-  DynamicDrawUsage,
-  InstancedBufferGeometry,
-  InstancedInterleavedBuffer,
-  InterleavedBufferAttribute,
-  Mesh,
-  type BufferGeometry,
-  type Material,
-} from "three/webgpu";
+import { INSTANCE_FLOATS, type ScenePipelines } from "./gpu-pipelines";
+import { BufferUsage } from "./gpu-flags";
 
-/**
- * Per-instance layout shared by every batch: a column-major transform (16 floats), a
- * linear RGB tint (3), padding (1), and four material-specific extras (4).
- */
-export const INSTANCE_STRIDE = 24;
+/** Per-instance layout: column-major transform (16), linear RGB tint + pad (4), extras (4). */
+export const INSTANCE_STRIDE = INSTANCE_FLOATS;
 const TINT_OFFSET = 16;
 const EXTRA_OFFSET = 20;
+const FLOAT_BYTES = 4;
 
-export interface BatchOptions {
-  renderOrder: number;
+/** Static vertex data a batch draws per instance. */
+export interface BatchGeometry {
+  readonly buffer: GPUBuffer;
+  readonly vertexCount: number;
+}
+
+export function createGeometryBuffer(device: GPUDevice, label: string, vertices: Float32Array, vertexCount: number): BatchGeometry {
+  const buffer = device.createBuffer({ label, size: vertices.byteLength, usage: BufferUsage.VERTEX | BufferUsage.COPY_DST });
+  device.queue.writeBuffer(buffer, 0, vertices);
+  return { buffer, vertexCount };
 }
 
 /**
- * A fixed-capacity instanced draw refilled every frame, written straight into one
- * interleaved typed array so steady-state drawing allocates nothing.
- *
- * Batches are plain meshes over an InstancedBufferGeometry rather than InstancedMesh:
- * three.js keys InstancedMesh shader builds by object, so each would rebuild the same
- * shader. With instance data as ordinary named geometry attributes (applied by the
- * material), every batch sharing a material shares one shader build per render pass.
+ * A fixed-capacity instanced draw refilled every frame. Instances are written straight
+ * into one typed array and uploaded with a single write of the used range, so
+ * steady-state drawing allocates nothing.
  */
 export class InstancedBatch {
-  readonly mesh: Mesh;
   readonly capacity: number;
-  private readonly geometry: InstancedBufferGeometry;
-  private readonly buffer: InstancedInterleavedBuffer;
   private readonly data: Float32Array;
+  private readonly instances: GPUBuffer;
   private count = 0;
+  private uploaded = 0;
 
-  constructor(name: string, source: BufferGeometry, material: Material, capacity: number, options: BatchOptions) {
+  constructor(private readonly device: GPUDevice, readonly name: string, private readonly geometry: BatchGeometry, readonly pipeline: keyof ScenePipelines, capacity: number) {
     this.capacity = capacity;
     this.data = new Float32Array(capacity * INSTANCE_STRIDE);
-    this.buffer = new InstancedInterleavedBuffer(this.data, INSTANCE_STRIDE, 1);
-    this.buffer.setUsage(DynamicDrawUsage);
-
-    const geometry = new InstancedBufferGeometry();
-    geometry.index = source.index;
-    for (const [attributeName, attribute] of Object.entries(source.attributes)) {
-      geometry.setAttribute(attributeName, attribute);
-    }
-    for (let column = 0; column < 4; column += 1) {
-      geometry.setAttribute(`instanceMatrix${column}`, new InterleavedBufferAttribute(this.buffer, 4, column * 4));
-    }
-    geometry.setAttribute("instanceTint", new InterleavedBufferAttribute(this.buffer, 3, TINT_OFFSET));
-    geometry.setAttribute("instanceExtra", new InterleavedBufferAttribute(this.buffer, 4, EXTRA_OFFSET));
-    geometry.instanceCount = 0;
-    this.geometry = geometry;
-
-    const mesh = new Mesh(geometry, material);
-    mesh.name = name;
-    mesh.frustumCulled = false;
-    mesh.renderOrder = options.renderOrder;
-    mesh.visible = false;
-    this.mesh = mesh;
+    this.instances = device.createBuffer({
+      label: name,
+      size: this.data.byteLength,
+      usage: BufferUsage.VERTEX | BufferUsage.COPY_DST,
+    });
   }
 
   get size(): number {
@@ -227,27 +204,24 @@ export class InstancedBatch {
   }
 
   finish(): void {
-    const { mesh, count } = this;
-    this.geometry.instanceCount = count;
-    mesh.visible = count > 0;
-    if (count === 0) {
-      return;
+    this.uploaded = this.count;
+    if (this.count > 0) {
+      this.device.queue.writeBuffer(this.instances, 0, this.data.buffer, 0, this.count * INSTANCE_STRIDE * FLOAT_BYTES);
     }
-
-    this.buffer.clearUpdateRanges();
-    this.buffer.addUpdateRange(0, count * INSTANCE_STRIDE);
-    this.buffer.needsUpdate = true;
   }
 
-  /** Makes the batch drawable with one degenerate instance so its pipeline can be precompiled. */
-  prepareForCompile(): void {
-    this.begin();
-    this.pushYaw(0, -1000, 0, 0, 0, 0, 0, 0, 0, 0);
-    this.finish();
+  /** Records the draw; the caller has already bound this batch's pipeline. */
+  draw(pass: GPURenderPassEncoder): void {
+    if (this.uploaded === 0) {
+      return;
+    }
+    pass.setVertexBuffer(0, this.geometry.buffer);
+    pass.setVertexBuffer(1, this.instances, 0, this.uploaded * INSTANCE_STRIDE * FLOAT_BYTES);
+    pass.draw(this.geometry.vertexCount, this.uploaded);
   }
 
   dispose(): void {
-    this.geometry.dispose();
+    this.instances.destroy();
   }
 
   private finishInstance(offset: number, red: number, green: number, blue: number): void {

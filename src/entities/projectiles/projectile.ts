@@ -59,38 +59,4 @@ export abstract class Projectile {
       this.removed = true;
     }
   }
-
-  protected drawDart(
-    context: CanvasRenderingContext2D,
-    length: number,
-    halfWidth: number,
-    fillStyle: string,
-    drawHighlight: boolean,
-  ): void {
-    const tailX = -(length * 0.55);
-    const noseX = length * 0.55;
-
-    context.save();
-    context.translate(this.x, this.y);
-    context.rotate(this.angle);
-    context.globalCompositeOperation = "lighter";
-
-    context.fillStyle = fillStyle;
-    context.beginPath();
-    context.moveTo(noseX, 0);
-    context.lineTo(noseX - (length * 0.28), -halfWidth);
-    context.lineTo(tailX, -halfWidth);
-    context.lineTo(tailX, halfWidth);
-    context.lineTo(noseX - (length * 0.28), halfWidth);
-    context.closePath();
-    context.fill();
-
-    if (drawHighlight) {
-      context.fillStyle = "#effff7";
-      context.fillRect(tailX + 0.8, -0.36, length * 0.42, 0.72);
-    }
-    context.restore();
-  }
-
-  abstract draw(context: CanvasRenderingContext2D): void;
 }

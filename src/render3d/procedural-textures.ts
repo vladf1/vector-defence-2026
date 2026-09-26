@@ -1,4 +1,5 @@
-import { CanvasTexture, LinearFilter, LinearMipmapLinearFilter, NoColorSpace } from "three/webgpu";
+import { PUFF_FORMAT } from "./gpu-pipelines";
+import { TextureUsage } from "./gpu-flags";
 
 const PUFF_ATLAS_SIZE = 256;
 const PUFF_CELL_SIZE = PUFF_ATLAS_SIZE / 2;
@@ -12,11 +13,8 @@ function createSeededRandom(seed: number): () => number {
   };
 }
 
-/**
- * A 2x2 atlas of soft, lumpy puffs generated at startup (no download). Smoke uses the
- * cells directly; scorch decals reuse them as a noisy mask.
- */
-export function createPuffAtlasTexture(): CanvasTexture {
+/** Coverage per texel, bottom row first (the previous three.js texture used flipY). */
+function drawPuffAtlas(): Uint8Array {
   const canvas = document.createElement("canvas");
   canvas.width = PUFF_ATLAS_SIZE;
   canvas.height = PUFF_ATLAS_SIZE;
@@ -61,11 +59,53 @@ export function createPuffAtlasTexture(): CanvasTexture {
     context.restore();
   }
 
-  const texture = new CanvasTexture(canvas);
-  texture.colorSpace = NoColorSpace;
-  texture.minFilter = LinearMipmapLinearFilter;
-  texture.magFilter = LinearFilter;
-  texture.generateMipmaps = true;
-  texture.name = "puff-atlas";
+  const pixels = context.getImageData(0, 0, PUFF_ATLAS_SIZE, PUFF_ATLAS_SIZE).data;
+  const coverage = new Uint8Array(PUFF_ATLAS_SIZE * PUFF_ATLAS_SIZE);
+  for (let row = 0; row < PUFF_ATLAS_SIZE; row += 1) {
+    const sourceRow = PUFF_ATLAS_SIZE - 1 - row;
+    for (let column = 0; column < PUFF_ATLAS_SIZE; column += 1) {
+      coverage[(row * PUFF_ATLAS_SIZE) + column] = pixels[(((sourceRow * PUFF_ATLAS_SIZE) + column) * 4) + 3];
+    }
+  }
+  return coverage;
+}
+
+function downsample(source: Uint8Array, size: number): Uint8Array {
+  const half = size / 2;
+  const target = new Uint8Array(half * half);
+  for (let row = 0; row < half; row += 1) {
+    for (let column = 0; column < half; column += 1) {
+      const top = (row * 2 * size) + (column * 2);
+      const bottom = top + size;
+      target[(row * half) + column] = (source[top] + source[top + 1] + source[bottom] + source[bottom + 1] + 2) >> 2;
+    }
+  }
+  return target;
+}
+
+/**
+ * A 2x2 atlas of soft, lumpy puffs generated at startup (no download), as a full mip chain
+ * (largest first). Smoke uses the cells directly; scorch decals reuse them as a noisy mask.
+ */
+export function drawPuffAtlasLevels(): Uint8Array[] {
+  const levels = [drawPuffAtlas()];
+  for (let size = PUFF_ATLAS_SIZE; size > 1; size /= 2) {
+    levels.push(downsample(levels[levels.length - 1], size));
+  }
+  return levels;
+}
+
+export function createPuffAtlasTexture(device: GPUDevice, levels: readonly Uint8Array[]): GPUTexture {
+  const texture = device.createTexture({
+    label: "puff-atlas",
+    size: [PUFF_ATLAS_SIZE, PUFF_ATLAS_SIZE],
+    format: PUFF_FORMAT,
+    mipLevelCount: levels.length,
+    usage: TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST,
+  });
+  levels.forEach((level, mipLevel) => {
+    const size = PUFF_ATLAS_SIZE >> mipLevel;
+    device.queue.writeTexture({ texture, mipLevel }, level, { bytesPerRow: size }, [size, size]);
+  });
   return texture;
 }

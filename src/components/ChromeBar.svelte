@@ -1,15 +1,10 @@
 <script lang="ts">
-  import controlHomeIcon from "../assets/ui/control-home.png";
-  import controlPauseIcon from "../assets/ui/control-pause.png";
-  import controlPlayIcon from "../assets/ui/control-play.png";
-  import controlSoundMutedIcon from "../assets/ui/control-sound-muted.png";
-  import controlSoundOnIcon from "../assets/ui/control-sound-on.png";
+  import ControlIcon from "./ControlIcon.svelte";
   import { getGameSessionContext } from "../game-context";
   import { formatMoney } from "../utils";
-  import { ViewMode } from "../view-mode";
 
   const session = getGameSessionContext();
-  const { hud, modal, soundEnabled, viewMode } = session;
+  const { hud, modal, soundEnabled } = session;
   const profile = session.profile;
 
   function formatLevel(levelNumber: number | undefined): string {
@@ -49,16 +44,6 @@
   {/if}
   <div class="actions">
     <button
-      class="chrome-button view-button"
-      type="button"
-      aria-label={$viewMode === ViewMode.Depth ? "Switch to 2D view" : "Switch to 3D view"}
-      aria-pressed={$viewMode === ViewMode.Depth}
-      title={$viewMode === ViewMode.Depth ? "Switch to 2D view" : "Switch to 3D view"}
-      onclick={session.toggleViewMode}
-    >
-      <span class="view-button-label" aria-hidden="true">{$viewMode === ViewMode.Depth ? "3D" : "2D"}</span>
-    </button>
-    <button
       class="chrome-button sound-button"
       type="button"
       aria-label={$soundEnabled ? "Mute sound" : "Unmute sound"}
@@ -66,7 +51,7 @@
       title={$soundEnabled ? "Mute sound" : "Unmute sound"}
       onclick={session.toggleSound}
     >
-      <img class="control-icon" src={$soundEnabled ? controlSoundOnIcon : controlSoundMutedIcon} alt="" aria-hidden="true" />
+      <ControlIcon kind={$soundEnabled ? "sound-on" : "sound-muted"} />
     </button>
     <button
       class="chrome-button pause-button"
@@ -76,7 +61,7 @@
       disabled={!$hud.canTogglePause}
       onclick={session.togglePause}
     >
-      <img class="control-icon" src={$hud.paused ? controlPlayIcon : controlPauseIcon} alt="" aria-hidden="true" />
+      <ControlIcon kind={$hud.paused ? "play" : "pause"} />
     </button>
     <button
       class="chrome-button campaign-button"
@@ -85,7 +70,7 @@
       title="Campaign"
       onclick={session.openMenu}
     >
-      <img class="control-icon" src={controlHomeIcon} alt="" aria-hidden="true" />
+      <ControlIcon kind="home" />
     </button>
   </div>
 </header>

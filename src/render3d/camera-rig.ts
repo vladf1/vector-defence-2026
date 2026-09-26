@@ -1,5 +1,14 @@
-import { PerspectiveCamera, Vector3 } from "three/webgpu";
 import type { FieldBounds, Point } from "../types";
+import {
+  mat4Identity,
+  mat4Invert,
+  mat4LookAtWorld,
+  mat4Multiply,
+  mat4Perspective,
+  transformPointProjective,
+  vec3,
+  type Vec3,
+} from "./math";
 
 export interface CameraRigOptions {
   fieldWidth: number;
@@ -11,36 +20,98 @@ export interface CameraRigOptions {
   margin: number;
 }
 
+const NEAR = 60;
+const FAR = 4000;
 const FIT_ITERATIONS = 24;
 const SHAKE_DECAY_PER_SECOND = 1.9;
 const MAX_SHAKE_OFFSET = 9;
 const SHAKE_FREQUENCY = 31;
+// Screen-up is world -Z (field y grows down the screen).
+const CAMERA_UP = vec3(0, 0, -1);
+
+/** A perspective camera as plain matrices (column-major, WebGPU clip depth 0..1). */
+export class CameraState {
+  readonly position = vec3(0, 0, 0);
+  readonly world = mat4Identity();
+  readonly view = mat4Identity();
+  readonly projection = mat4Identity();
+  readonly viewProjection = mat4Identity();
+  readonly inverseViewProjection = mat4Identity();
+  /** Normalized world-space forward vector. */
+  readonly forward = vec3(0, -1, 0);
+
+  setPerspective(verticalFovRadians: number, aspect: number): void {
+    mat4Perspective(this.projection, verticalFovRadians, aspect, NEAR, FAR);
+  }
+
+  lookAt(eyeX: number, eyeY: number, eyeZ: number, target: Vec3): void {
+    this.position.x = eyeX;
+    this.position.y = eyeY;
+    this.position.z = eyeZ;
+    mat4LookAtWorld(this.world, this.position, target, CAMERA_UP);
+    this.update();
+  }
+
+  /** Keeps the orientation of `source` from another position. */
+  copyOrientation(source: CameraState, eyeX: number, eyeY: number, eyeZ: number): void {
+    this.world.set(source.world);
+    this.position.x = eyeX;
+    this.position.y = eyeY;
+    this.position.z = eyeZ;
+    this.world[12] = eyeX;
+    this.world[13] = eyeY;
+    this.world[14] = eyeZ;
+    this.update();
+  }
+
+  private update(): void {
+    mat4Invert(this.view, this.world);
+    mat4Multiply(this.viewProjection, this.projection, this.view);
+    mat4Invert(this.inverseViewProjection, this.viewProjection);
+    this.forward.x = -this.world[8];
+    this.forward.y = -this.world[9];
+    this.forward.z = -this.world[10];
+  }
+}
+
+const BOARD_FOV_DEGREES = 24;
+const BOARD_PITCH_RADIANS = 0.25;
+const BOARD_MARGIN = 0.006;
+
+/** The board's camera framing; also used by headless checks for real visible bounds. */
+export function createBoardCameraRig(fieldWidth: number, fieldHeight: number): CameraRig {
+  return new CameraRig({
+    fieldWidth,
+    fieldHeight,
+    verticalFovDegrees: BOARD_FOV_DEGREES,
+    pitchRadians: BOARD_PITCH_RADIANS,
+    margin: BOARD_MARGIN,
+  });
+}
 
 /**
  * Owns the logical camera used for picking and projection, plus a render camera that
  * adds screen shake. Field (x, y) maps to world (x, 0, y); screen-up is world -Z.
  */
 export class CameraRig {
-  readonly logicalCamera: PerspectiveCamera;
-  readonly renderCamera: PerspectiveCamera;
-  private readonly target = new Vector3();
-  private readonly offsetDirection = new Vector3();
+  readonly logicalCamera = new CameraState();
+  readonly renderCamera = new CameraState();
+  private readonly verticalFov: number;
+  private readonly target = vec3(0, 0, 0);
+  private readonly offsetDirection: Vec3;
+  private aspect = 1;
   private distance = 1000;
   private trauma = 0;
   private shakeTime = 0;
   private viewportWidth = 1;
   private viewportHeight = 1;
   private readonly visibleBounds: FieldBounds = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
-  private readonly scratch = new Vector3();
-  private readonly rayOrigin = new Vector3();
-  private readonly rayDirection = new Vector3();
+  private readonly scratch = vec3(0, 0, 0);
   private inspection: { x: number; y: number; visibleHeight: number } | null = null;
 
   constructor(private readonly options: CameraRigOptions) {
-    this.logicalCamera = new PerspectiveCamera(options.verticalFovDegrees, 1, 60, 4000);
-    this.logicalCamera.up.set(0, 0, -1);
-    this.renderCamera = this.logicalCamera.clone();
-    this.offsetDirection.set(0, Math.cos(options.pitchRadians), Math.sin(options.pitchRadians));
+    this.verticalFov = (options.verticalFovDegrees * Math.PI) / 180;
+    this.offsetDirection = vec3(0, Math.cos(options.pitchRadians), Math.sin(options.pitchRadians));
     this.visibleBounds.maxX = options.fieldWidth;
     this.visibleBounds.maxY = options.fieldHeight;
   }
@@ -52,9 +123,9 @@ export class CameraRig {
   resize(width: number, height: number): void {
     this.viewportWidth = Math.max(1, width);
     this.viewportHeight = Math.max(1, height);
-    const camera = this.logicalCamera;
-    camera.aspect = this.viewportWidth / this.viewportHeight;
-    camera.updateProjectionMatrix();
+    this.aspect = this.viewportWidth / this.viewportHeight;
+    this.logicalCamera.setPerspective(this.verticalFov, this.aspect);
+    this.renderCamera.setPerspective(this.verticalFov, this.aspect);
     this.fitField();
     this.updateVisibleBounds();
     this.syncRenderCamera(0, 0);
@@ -101,31 +172,39 @@ export class CameraRig {
 
   /** Projects a world point into CSS pixels relative to the canvas. */
   projectToViewport(x: number, y: number, z: number, out: Point): Point {
-    this.scratch.set(x, y, z).project(this.logicalCamera);
-    out.x = (this.scratch.x + 1) * 0.5 * this.viewportWidth;
-    out.y = (1 - this.scratch.y) * 0.5 * this.viewportHeight;
+    const projected = transformPointProjective(this.logicalCamera.viewProjection, x, y, z, this.scratch);
+    out.x = (projected.x + 1) * 0.5 * this.viewportWidth;
+    out.y = (1 - projected.y) * 0.5 * this.viewportHeight;
     return out;
   }
 
   private ndcToGround(ndcX: number, ndcY: number): Point | null {
     const camera = this.logicalCamera;
-    this.rayOrigin.copy(camera.position);
-    this.rayDirection.set(ndcX, ndcY, 0.5).unproject(camera).sub(this.rayOrigin).normalize();
-    if (this.rayDirection.y >= -1e-6) {
+    const origin = camera.position;
+    const point = transformPointProjective(camera.inverseViewProjection, ndcX, ndcY, 0.5, this.scratch);
+    const dx = point.x - origin.x;
+    const dy = point.y - origin.y;
+    const dz = point.z - origin.z;
+    const length = Math.hypot(dx, dy, dz) || 1;
+    const directionY = dy / length;
+    if (directionY >= -1e-6) {
       return null;
     }
-    const distance = -this.rayOrigin.y / this.rayDirection.y;
+    const distance = -origin.y / directionY;
     return {
-      x: this.rayOrigin.x + (this.rayDirection.x * distance),
-      y: this.rayOrigin.z + (this.rayDirection.z * distance),
+      x: origin.x + ((dx / length) * distance),
+      y: origin.z + ((dz / length) * distance),
     };
   }
 
   private placeCamera(): void {
-    const camera = this.logicalCamera;
-    camera.position.copy(this.target).addScaledVector(this.offsetDirection, this.distance);
-    camera.lookAt(this.target);
-    camera.updateMatrixWorld(true);
+    const { target, offsetDirection, distance } = this;
+    this.logicalCamera.lookAt(
+      target.x + (offsetDirection.x * distance),
+      target.y + (offsetDirection.y * distance),
+      target.z + (offsetDirection.z * distance),
+      target,
+    );
   }
 
   /**
@@ -135,9 +214,11 @@ export class CameraRig {
   private fitField(): void {
     const { fieldWidth, fieldHeight, margin } = this.options;
     const limit = 1 - margin;
-    this.target.set(fieldWidth / 2, 0, fieldHeight / 2);
-    const halfFov = (this.logicalCamera.fov * Math.PI) / 360;
-    this.distance = (Math.max(fieldHeight, fieldWidth / this.logicalCamera.aspect) / 2) / Math.tan(halfFov);
+    this.target.x = fieldWidth / 2;
+    this.target.y = 0;
+    this.target.z = fieldHeight / 2;
+    const halfFov = this.verticalFov / 2;
+    this.distance = (Math.max(fieldHeight, fieldWidth / this.aspect) / 2) / Math.tan(halfFov);
 
     const corners = [
       [0, 0],
@@ -152,11 +233,11 @@ export class CameraRig {
       let minY = Infinity;
       let maxY = -Infinity;
       for (const [x, z] of corners) {
-        this.scratch.set(x, 0, z).project(this.logicalCamera);
-        minX = Math.min(minX, this.scratch.x);
-        maxX = Math.max(maxX, this.scratch.x);
-        minY = Math.min(minY, this.scratch.y);
-        maxY = Math.max(maxY, this.scratch.y);
+        const projected = transformPointProjective(this.logicalCamera.viewProjection, x, 0, z, this.scratch);
+        minX = Math.min(minX, projected.x);
+        maxX = Math.max(maxX, projected.x);
+        minY = Math.min(minY, projected.y);
+        maxY = Math.max(maxY, projected.y);
       }
       const extent = Math.max((maxX - minX) / 2, (maxY - minY) / 2);
       const centerY = (maxY + minY) / 2;
@@ -185,22 +266,20 @@ export class CameraRig {
 
   private syncRenderCamera(offsetX: number, offsetZ: number): void {
     const render = this.renderCamera;
-    render.fov = this.logicalCamera.fov;
-    render.aspect = this.logicalCamera.aspect;
-    render.near = this.logicalCamera.near;
-    render.far = this.logicalCamera.far;
     const inspection = this.inspection;
     if (inspection) {
-      const distance = (inspection.visibleHeight / 2) / Math.tan((render.fov * Math.PI) / 360);
-      render.position.set(inspection.x, 0, inspection.y).addScaledVector(this.offsetDirection, distance);
-      render.lookAt(inspection.x, 0, inspection.y);
+      const distance = (inspection.visibleHeight / 2) / Math.tan(this.verticalFov / 2);
+      const target = vec3(inspection.x, 0, inspection.y);
+      render.lookAt(
+        target.x + (this.offsetDirection.x * distance) + offsetX,
+        target.y + (this.offsetDirection.y * distance),
+        target.z + (this.offsetDirection.z * distance) + offsetZ,
+        vec3(target.x + offsetX, 0, target.z + offsetZ),
+      );
     } else {
-      render.position.copy(this.logicalCamera.position);
-      render.quaternion.copy(this.logicalCamera.quaternion);
+      const logical = this.logicalCamera.position;
+      render.copyOrientation(this.logicalCamera, logical.x + offsetX, logical.y, logical.z + offsetZ);
     }
-    render.position.x += offsetX;
-    render.position.z += offsetZ;
-    render.updateProjectionMatrix();
-    render.updateMatrixWorld(true);
   }
 }
+

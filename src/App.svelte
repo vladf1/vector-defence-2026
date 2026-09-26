@@ -7,10 +7,9 @@
   import { setGameSessionContext } from "./game-context";
   import type { GameProfile } from "./game-profile";
   import { createGameSession } from "./game-session";
-  import type { ViewMode } from "./view-mode";
 
-  const { profile, viewMode }: { profile: GameProfile; viewMode: ViewMode } = $props();
-  const session = untrack(() => createGameSession(profile, viewMode));
+  const { profile }: { profile: GameProfile } = $props();
+  const session = untrack(() => createGameSession(profile));
   const modal = session.modal;
   let showNerdStats = $state(false);
 

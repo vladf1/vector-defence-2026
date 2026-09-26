@@ -4,9 +4,8 @@ import { createBrowserCampaignProgressStore } from "./campaign-progress";
 import { type GameProfile } from "./game-profile";
 import { GameAudio } from "./game-audio";
 import type { BoardRenderer } from "./board-renderer";
-import { GameRenderer } from "./game-renderer";
 import { runBoundedSimulationSubsteps } from "./simulation-timing";
-import { RendererStatus, ViewMode, storeViewModePreference } from "./view-mode";
+import { RendererStatus } from "./renderer-status";
 import {
   Game,
   createLevels,
@@ -31,9 +30,10 @@ interface CanvasGeometry {
   rect: DOMRect;
 }
 
-export type BoardSurface =
-  | { mode: typeof ViewMode.Classic; background: HTMLCanvasElement; canvas: HTMLCanvasElement }
-  | { mode: typeof ViewMode.Depth; canvas: HTMLCanvasElement; overlay: HTMLCanvasElement };
+export interface BoardSurface {
+  canvas: HTMLCanvasElement;
+  overlay: HTMLCanvasElement;
+}
 
 function eventPathMatches(event: KeyboardEvent, selector: string): boolean {
   return event.composedPath().some((target) => target instanceof HTMLElement && target.matches(selector));
@@ -63,16 +63,14 @@ function shouldIgnoreGameShortcut(event: KeyboardEvent): boolean {
   return isNativeActivationKey && eventPathMatches(event, KEYBOARD_ACTIVATION_SELECTOR);
 }
 
-export function createGameSession(profile: GameProfile, initialViewMode: ViewMode) {
+export function createGameSession(profile: GameProfile) {
   const hudStore = writable(INITIAL_HUD_SNAPSHOT);
   const modalStore = writable<ModalView | null>(null);
   const soundEnabledStore = writable(true);
-  const viewModeStore = writable<ViewMode>(initialViewMode);
   const rendererStatusStore = writable<RendererStatus>(RendererStatus.Loading);
   const startupTimingsStore = writable<Record<string, number> | null>(null);
   const audio = new GameAudio(profile.fieldWidth);
   const progressStore = createBrowserCampaignProgressStore(window);
-  let viewMode = initialViewMode;
   let canvas: HTMLCanvasElement | null = null;
   let game: Game | null = null;
   let mountToken = 0;
@@ -320,23 +318,24 @@ export function createGameSession(profile: GameProfile, initialViewMode: ViewMod
     requestGameFrame();
   };
 
-  const fallBackToClassicView = (error: unknown): void => {
-    console.error("3D renderer unavailable; falling back to the 2D board.", error);
+  const reportRendererFailure = (error: unknown): void => {
+    console.error("WebGPU board renderer unavailable.", error);
     rendererStatusStore.set(RendererStatus.Failed);
-    game?.setBanner("3D unavailable · using 2D", 2.8);
-    setViewMode(ViewMode.Classic, false);
   };
 
-  const mountDepthRenderer = (activeGame: Game, surface: Extract<BoardSurface, { mode: typeof ViewMode.Depth }>, token: number): void => {
+  const mountBoardRenderer = (activeGame: Game, surface: BoardSurface, token: number): void => {
     rendererStatusStore.set(RendererStatus.Loading);
     const importStartedAt = performance.now();
     let importMs = 0;
-    void import("./render3d/three-board-renderer")
-      .then(({ createThreeBoardRenderer }) => {
+    void import("./render3d/webgpu-board-renderer")
+      .then(({ createWebGpuBoardRenderer }) => {
         importMs = performance.now() - importStartedAt;
-        return createThreeBoardRenderer(surface.canvas, surface.overlay, activeGame, () => {
+        return createWebGpuBoardRenderer(surface.canvas, surface.overlay, activeGame, () => {
           if (token === mountToken) {
-            fallBackToClassicView(new Error("GPU device lost"));
+            // A lost device (driver reset, GPU process crash) gets a fresh renderer.
+            boardReady = false;
+            activeGame.detachRenderer();
+            mountBoardRenderer(activeGame, surface, token);
           }
         });
       })
@@ -355,7 +354,7 @@ export function createGameSession(profile: GameProfile, initialViewMode: ViewMod
       })
       .catch((error: unknown) => {
         if (token === mountToken) {
-          fallBackToClassicView(error);
+          reportRendererFailure(error);
         }
       });
   };
@@ -365,7 +364,7 @@ export function createGameSession(profile: GameProfile, initialViewMode: ViewMod
 
     const activeGame = ensureGame();
     const token = mountToken;
-    canvas = surface.mode === ViewMode.Classic ? surface.canvas : surface.overlay;
+    canvas = surface.overlay;
     refreshCanvasGeometry();
     canvasResizeObserver = new ResizeObserver(() => {
       if (!game) {
@@ -379,11 +378,7 @@ export function createGameSession(profile: GameProfile, initialViewMode: ViewMod
     canvasResizeObserver.observe(canvas);
     attachWindowListeners();
 
-    if (surface.mode === ViewMode.Classic) {
-      attachRenderer(activeGame, new GameRenderer(surface.background, surface.canvas, activeGame));
-    } else {
-      mountDepthRenderer(activeGame, surface, token);
-    }
+    mountBoardRenderer(activeGame, surface, token);
 
     resetFrameClock();
     requestGameFrame();
@@ -414,24 +409,6 @@ export function createGameSession(profile: GameProfile, initialViewMode: ViewMod
     runtimeStats = { ...INITIAL_RUNTIME_HUD_STATS };
     resetNerdStatsSamples();
     game = null;
-  };
-
-  function setViewMode(mode: ViewMode, persist: boolean): void {
-    if (mode === viewMode) {
-      return;
-    }
-
-    viewMode = mode;
-    if (persist) {
-      storeViewModePreference(window, mode);
-    }
-    viewModeStore.set(mode);
-  }
-
-  const toggleViewMode = (): void => {
-    audio.unlock();
-    audio.play(AudioCue.UiClick);
-    setViewMode(viewMode === ViewMode.Depth ? ViewMode.Classic : ViewMode.Depth, true);
   };
 
   const setNerdStatsEnabled = (enabled: boolean): void => {
@@ -745,11 +722,9 @@ export function createGameSession(profile: GameProfile, initialViewMode: ViewMod
     hud: readonly(hudStore),
     modal: readonly(modalStore),
     soundEnabled: readonly(soundEnabledStore),
-    viewMode: readonly(viewModeStore),
     rendererStatus: readonly(rendererStatusStore),
     startupTimings: readonly(startupTimingsStore),
     toggleSound,
-    toggleViewMode,
     setNerdStatsEnabled,
     mount,
     unmount,

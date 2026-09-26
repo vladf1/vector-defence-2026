@@ -2,7 +2,7 @@ import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
 import type { Point } from "../../types";
-import { drawPath, easeInOutSine, hexWithAlpha, randomRange } from "../../utils";
+import { easeInOutSine, randomRange } from "../../utils";
 import { createDeathEffectOrigin, createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster } from "./monster";
 import { createPolygonShardSplitter } from "./polygon-shard-splitter";
@@ -12,11 +12,6 @@ const SPEED_PER_SECOND = 132;
 const HIT_POINTS = 100;
 const BOUNTY = 2;
 const RADIUS = 5.5;
-const TRAIL_TICK_SPACING = RADIUS * 0.72;
-const TRAIL_TICK_LENGTH = RADIUS * 0.74;
-const TRAIL_TICK_STEP = RADIUS * 0.42;
-const TRAIL_TICK_COUNT = 2;
-const TRAIL_CRAWL_DISTANCE_SCALE = 0.82;
 const DASH_PULSE_INTERVAL_MIN_SECONDS = 1.5;
 const DASH_PULSE_INTERVAL_MAX_SECONDS = 5;
 const DASH_PULSE_DURATION_SECONDS = 1;
@@ -58,13 +53,6 @@ export class RunnerMonster extends Monster {
     if (this.secondsUntilDashPulse <= 0) {
       this.advanceDashPulse(context.deltaSeconds);
     }
-  }
-
-  protected drawBody(context: CanvasRenderingContext2D): void {
-    const dashPulse = this.getDashPulse();
-    context.rotate(this.angle);
-    drawRunnerSpeedTrail(context, this.color, this.distanceAlongPath, dashPulse);
-    drawPath(context, createRunnerOutline(dashPulse), true);
   }
 
   override addDeathEffect(result: UpdateResult): void {
@@ -130,35 +118,6 @@ export class RunnerMonster extends Monster {
     this.velocityXPerSecond = Math.cos(this.angle) * this.speedPerSecond;
     this.velocityYPerSecond = Math.sin(this.angle) * this.speedPerSecond;
   }
-}
-
-function drawRunnerSpeedTrail(
-  context: CanvasRenderingContext2D,
-  color: string,
-  distanceAlongPath: number,
-  dashPulse: number,
-): void {
-  const offset = (distanceAlongPath * TRAIL_CRAWL_DISTANCE_SCALE) % TRAIL_TICK_SPACING;
-  const tickCount = TRAIL_TICK_COUNT + (dashPulse > 0 ? 1 : 0);
-  context.save();
-  context.lineCap = "round";
-  context.lineWidth = 1.1 + (dashPulse * 1.1);
-
-  for (let index = 0; index < tickCount; index += 1) {
-    const tickX = -RADIUS * 1.25 - offset - (index * TRAIL_TICK_SPACING);
-    const tickAlpha = (0.44 + (dashPulse * 0.58)) - (index * 0.12);
-    context.strokeStyle = hexWithAlpha(color, tickAlpha);
-    const tickLength = TRAIL_TICK_LENGTH * (1 + (dashPulse * 1.45));
-
-    context.beginPath();
-    context.moveTo(tickX - tickLength, -TRAIL_TICK_STEP);
-    context.lineTo(tickX, -TRAIL_TICK_STEP);
-    context.moveTo(tickX - tickLength, TRAIL_TICK_STEP);
-    context.lineTo(tickX, TRAIL_TICK_STEP);
-    context.stroke();
-  }
-
-  context.restore();
 }
 
 function createRunnerOutline(dashPulse: number): Point[] {

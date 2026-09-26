@@ -1,6 +1,6 @@
-import { Group, type BufferGeometry } from "three/webgpu";
-import { InstancedBatch } from "./instanced-batch";
-import type { MaterialSet } from "./materials";
+import { toNeonMesh, type NeonMesh } from "./geometry-kit";
+import type { ScenePipelines } from "./gpu-pipelines";
+import { createGeometryBuffer, InstancedBatch, type BatchGeometry } from "./instanced-batch";
 import {
   createBerserkerBody,
   createBerserkerSpikes,
@@ -34,6 +34,7 @@ import {
   createTeslaCoil,
   createTowerBase,
   createTriangleBody,
+  type FlatMesh,
 } from "./models";
 import { SpriteBatch } from "./sprite-batch";
 
@@ -52,16 +53,54 @@ const SHADOW_OFFSET_X = 0.39;
 const SHADOW_OFFSET_Z = 0.52;
 const BLOB_SHADOW_Y = 0.6;
 const SHADOW_HEIGHT_SPREAD = 70;
-const OPAQUE_RENDER_ORDER = 0;
-const DECAL_RENDER_ORDER = 1;
-const HEALTH_BAR_RENDER_ORDER = 20;
+
+/** Vertex data for every batch, keyed by batch name. */
+export type BatchMeshes = ReadonlyMap<string, NeonMesh | FlatMesh>;
+
+/** Builds all procedural geometry on the CPU (no GPU objects), so it can run before the device exists. */
+export function buildBatchMeshes(roadWidth: number): BatchMeshes {
+  return new Map<string, NeonMesh | FlatMesh>([
+    ["tower-base", toNeonMesh(createTowerBase())],
+    ["level-pip", toNeonMesh(createLevelPip())],
+    ["gun-head", toNeonMesh(createGunHead())],
+    ["gun-barrel", toNeonMesh(createGunBarrel())],
+    ["gun-muzzle", toNeonMesh(createGunMuzzle())],
+    ["rail", toNeonMesh(createRail())],
+    ["laser-crystal", toNeonMesh(createLaserCrystal())],
+    ["laser-cradle", toNeonMesh(createLaserCradle())],
+    ["missile-launcher", toNeonMesh(createMissileLauncher())],
+    ["missile", toNeonMesh(createMissile())],
+    ["slow-core", toNeonMesh(createSlowCore())],
+    ["orb-node", toNeonMesh(createOrbNode())],
+    ["drone-pad", toNeonMesh(createDronePad())],
+    ["tesla-coil", toNeonMesh(createTeslaCoil())],
+    ["drone-body", toNeonMesh(createDroneBody())],
+    ["packman-jaw", toNeonMesh(createPackManJaw())],
+    ["square-body", toNeonMesh(createSquareBody())],
+    ["triangle-body", toNeonMesh(createTriangleBody())],
+    ["tank-hull", toNeonMesh(createTankHull())],
+    ["tank-turret", toNeonMesh(createTankTurret())],
+    ["runner-body", toNeonMesh(createRunnerBody())],
+    ["splitter-body", toNeonMesh(createSplitterBody())],
+    ["berserker-body", toNeonMesh(createBerserkerBody())],
+    ["berserker-spikes", toNeonMesh(createBerserkerSpikes())],
+    ["bulwark-shell", toNeonMesh(createBulwarkShell())],
+    ["bulwark-core", toNeonMesh(createBulwarkCore())],
+    ["shard", toNeonMesh(createShard())],
+    ["portal", toNeonMesh(createPortal())],
+    ["spawn-gate", toNeonMesh(createSpawnGate(roadWidth))],
+    ["flat-quad", createFlatQuad()],
+    ["range-quad", createRangeQuad()],
+    ["ribbon-quad", createRibbonQuad()],
+  ]);
+}
 
 /**
- * Every drawable in the 3D board. Neon batches all share one material, so this list is
- * a draw-call budget rather than a shader budget.
+ * Every drawable in the 3D board. Neon batches all share one pipeline, so this list is
+ * a draw-call budget rather than a shader budget. Draw order follows the previous
+ * three.js renderer: opaque parts, health bars (no depth test), then blended effects.
  */
 export class RenderBatches {
-  readonly group = new Group();
   readonly towerBase: InstancedBatch;
   readonly pip: InstancedBatch;
   readonly gunHead: InstancedBatch;
@@ -100,61 +139,67 @@ export class RenderBatches {
   readonly smoke: SpriteBatch;
   private readonly instanced: InstancedBatch[] = [];
   private readonly sprites: SpriteBatch[] = [];
+  private readonly opaque: InstancedBatch[] = [];
+  private readonly transparent: (InstancedBatch | SpriteBatch)[];
+  private readonly geometries: BatchGeometry[] = [];
 
-  constructor(materials: MaterialSet, roadWidth: number, capacities: BatchCapacities) {
-    const neon = (name: string, geometry: BufferGeometry, capacity: number): InstancedBatch => this.addInstanced(
-      new InstancedBatch(name, geometry, materials.neon, capacity, {
-        renderOrder: OPAQUE_RENDER_ORDER
-      }),
+  constructor(device: GPUDevice, meshes: BatchMeshes, capacities: BatchCapacities) {
+    const geometry = (name: string): BatchGeometry => {
+      const mesh = meshes.get(name);
+      if (!mesh) {
+        throw new Error(`Missing batch mesh: ${name}`);
+      }
+      return this.trackGeometry(createGeometryBuffer(device, name, mesh.vertices, mesh.vertexCount));
+    };
+    const neon = (name: string, capacity: number): InstancedBatch => {
+      const batch = this.addInstanced(new InstancedBatch(device, name, geometry(name), "neon", capacity));
+      this.opaque.push(batch);
+      return batch;
+    };
+    const flat = (name: string, geometry: BatchGeometry, pipeline: keyof ScenePipelines, capacity: number): InstancedBatch => (
+      this.addInstanced(new InstancedBatch(device, name, geometry, pipeline, capacity))
     );
 
-    this.towerBase = neon("tower-base", createTowerBase(), ENTITY_CAPACITY);
-    this.pip = neon("level-pip", createLevelPip(), PIP_CAPACITY);
-    this.gunHead = neon("gun-head", createGunHead(), ENTITY_CAPACITY);
-    this.gunBarrel = neon("gun-barrel", createGunBarrel(), ENTITY_CAPACITY);
-    this.gunMuzzle = neon("gun-muzzle", createGunMuzzle(), ENTITY_CAPACITY);
-    this.rail = neon("rail", createRail(), ENTITY_CAPACITY);
-    this.laserCrystal = neon("laser-crystal", createLaserCrystal(), ENTITY_CAPACITY);
-    this.laserCradle = neon("laser-cradle", createLaserCradle(), ENTITY_CAPACITY);
-    this.missileLauncher = neon("missile-launcher", createMissileLauncher(), ENTITY_CAPACITY);
-    this.missile = neon("missile", createMissile(), ENTITY_CAPACITY);
-    this.slowCore = neon("slow-core", createSlowCore(), ENTITY_CAPACITY);
-    this.orbNode = neon("orb-node", createOrbNode(), ENTITY_CAPACITY);
-    this.dronePad = neon("drone-pad", createDronePad(), ENTITY_CAPACITY);
-    this.teslaCoil = neon("tesla-coil", createTeslaCoil(), ENTITY_CAPACITY);
-    this.droneBody = neon("drone-body", createDroneBody(), ENTITY_CAPACITY);
-    this.packmanJaw = neon("packman-jaw", createPackManJaw(), ENTITY_CAPACITY);
-    this.squareBody = neon("square-body", createSquareBody(), ENTITY_CAPACITY);
-    this.triangleBody = neon("triangle-body", createTriangleBody(), ENTITY_CAPACITY);
-    this.tankHull = neon("tank-hull", createTankHull(), ENTITY_CAPACITY);
-    this.tankTurret = neon("tank-turret", createTankTurret(), ENTITY_CAPACITY);
-    this.runnerBody = neon("runner-body", createRunnerBody(), ENTITY_CAPACITY);
-    this.splitterBody = neon("splitter-body", createSplitterBody(), ENTITY_CAPACITY);
-    this.berserkerBody = neon("berserker-body", createBerserkerBody(), ENTITY_CAPACITY);
-    this.berserkerSpikes = neon("berserker-spikes", createBerserkerSpikes(), ENTITY_CAPACITY);
-    this.bulwarkShell = neon("bulwark-shell", createBulwarkShell(), ENTITY_CAPACITY);
-    this.bulwarkCore = neon("bulwark-core", createBulwarkCore(), ENTITY_CAPACITY);
-    this.shard = neon("shard", createShard(), SHARD_CAPACITY);
-    this.portal = neon("portal", createPortal(), ENTITY_CAPACITY);
-    this.spawnGate = neon("spawn-gate", createSpawnGate(roadWidth), ENTITY_CAPACITY);
+    this.towerBase = neon("tower-base", ENTITY_CAPACITY);
+    this.pip = neon("level-pip", PIP_CAPACITY);
+    this.gunHead = neon("gun-head", ENTITY_CAPACITY);
+    this.gunBarrel = neon("gun-barrel", ENTITY_CAPACITY);
+    this.gunMuzzle = neon("gun-muzzle", ENTITY_CAPACITY);
+    this.rail = neon("rail", ENTITY_CAPACITY);
+    this.laserCrystal = neon("laser-crystal", ENTITY_CAPACITY);
+    this.laserCradle = neon("laser-cradle", ENTITY_CAPACITY);
+    this.missileLauncher = neon("missile-launcher", ENTITY_CAPACITY);
+    this.missile = neon("missile", ENTITY_CAPACITY);
+    this.slowCore = neon("slow-core", ENTITY_CAPACITY);
+    this.orbNode = neon("orb-node", ENTITY_CAPACITY);
+    this.dronePad = neon("drone-pad", ENTITY_CAPACITY);
+    this.teslaCoil = neon("tesla-coil", ENTITY_CAPACITY);
+    this.droneBody = neon("drone-body", ENTITY_CAPACITY);
+    this.packmanJaw = neon("packman-jaw", ENTITY_CAPACITY);
+    this.squareBody = neon("square-body", ENTITY_CAPACITY);
+    this.triangleBody = neon("triangle-body", ENTITY_CAPACITY);
+    this.tankHull = neon("tank-hull", ENTITY_CAPACITY);
+    this.tankTurret = neon("tank-turret", ENTITY_CAPACITY);
+    this.runnerBody = neon("runner-body", ENTITY_CAPACITY);
+    this.splitterBody = neon("splitter-body", ENTITY_CAPACITY);
+    this.berserkerBody = neon("berserker-body", ENTITY_CAPACITY);
+    this.berserkerSpikes = neon("berserker-spikes", ENTITY_CAPACITY);
+    this.bulwarkShell = neon("bulwark-shell", ENTITY_CAPACITY);
+    this.bulwarkCore = neon("bulwark-core", ENTITY_CAPACITY);
+    this.shard = neon("shard", SHARD_CAPACITY);
+    this.portal = neon("portal", ENTITY_CAPACITY);
+    this.spawnGate = neon("spawn-gate", ENTITY_CAPACITY);
 
-    this.decal = this.addInstanced(new InstancedBatch("decal", createFlatQuad(), materials.decal, DECAL_CAPACITY, {
-      renderOrder: DECAL_RENDER_ORDER
-    }));
-    this.range = this.addInstanced(new InstancedBatch("range", createRangeQuad(), materials.range, 4, {
-      renderOrder: DECAL_RENDER_ORDER
-    }));
-    this.groundGlow = this.addInstanced(new InstancedBatch("ground-glow", createRangeQuad(), materials.groundGlow, ENTITY_CAPACITY, {
-      renderOrder: DECAL_RENDER_ORDER
-    }));
-    this.ribbon = this.addInstanced(new InstancedBatch("ribbon", createRibbonQuad(), materials.ribbon, capacities.ribbons, {
-      renderOrder: OPAQUE_RENDER_ORDER
-    }));
-    this.healthBar = this.addInstanced(new InstancedBatch("health-bar", createFlatQuad(), materials.healthBar, ENTITY_CAPACITY * 2, {
-      renderOrder: HEALTH_BAR_RENDER_ORDER
-    }));
-    this.smoke = this.addSprite(new SpriteBatch("smoke", capacities.smokeSprites, materials.createSmokeSprite));
-    this.glow = this.addSprite(new SpriteBatch("glow", capacities.glowSprites, materials.createGlowSprite));
+    const flatQuad = geometry("flat-quad");
+    const rangeQuad = geometry("range-quad");
+    this.decal = flat("decal", flatQuad, "decal", DECAL_CAPACITY);
+    this.range = flat("range", rangeQuad, "range", 4);
+    this.groundGlow = flat("ground-glow", rangeQuad, "groundGlow", ENTITY_CAPACITY);
+    this.ribbon = flat("ribbon", geometry("ribbon-quad"), "ribbon", capacities.ribbons);
+    this.healthBar = flat("health-bar", flatQuad, "healthBar", ENTITY_CAPACITY * 2);
+    this.smoke = this.addSprite(new SpriteBatch(device, "smoke", capacities.smokeSprites, "smokeSprite"));
+    this.glow = this.addSprite(new SpriteBatch(device, "glow", capacities.glowSprites, "glowSprite"));
+    this.transparent = [this.ribbon, this.smoke, this.glow, this.decal, this.range, this.groundGlow];
   }
 
   begin(): void {
@@ -175,12 +220,28 @@ export class RenderBatches {
     }
   }
 
-  prepareForCompile(): void {
+  /** Opaque neon parts; the board's ground and road draw between these and the rest. */
+  drawOpaque(pass: GPURenderPassEncoder, pipelines: ScenePipelines): void {
+    drawInOrder(pass, pipelines, this.opaque);
+  }
+
+  /** Health bars ignore depth, then the blended effect layers draw back to front by kind. */
+  drawOverlays(pass: GPURenderPassEncoder, pipelines: ScenePipelines): void {
+    drawInOrder(pass, pipelines, [this.healthBar]);
+    drawInOrder(pass, pipelines, this.transparent);
+  }
+
+  /** Gives every batch one invisible instance so a warm-up frame touches every pipeline. */
+  prepareWarmup(): void {
     for (const batch of this.instanced) {
-      batch.prepareForCompile();
+      batch.begin();
+      batch.pushYaw(0, -1000, 0, 0, 0, 0, 0, 0, 0, 0);
+      batch.finish();
     }
     for (const batch of this.sprites) {
-      batch.prepareForCompile();
+      batch.begin();
+      batch.push(0, -1000, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      batch.finish();
     }
   }
 
@@ -214,6 +275,18 @@ export class RenderBatches {
     this.groundGlow.setExtra(slot, 1, shape);
   }
 
+  /** Instanced draw calls the next scene pass will issue. */
+  get drawCalls(): number {
+    let total = 0;
+    for (const batch of this.instanced) {
+      total += batch.size > 0 ? 1 : 0;
+    }
+    for (const batch of this.sprites) {
+      total += batch.size > 0 ? 1 : 0;
+    }
+    return total;
+  }
+
   get drawnInstances(): number {
     let total = 0;
     for (const batch of this.instanced) {
@@ -230,19 +303,39 @@ export class RenderBatches {
       batch.dispose();
     }
     for (const batch of this.sprites) {
-      batch.sprite.material.dispose();
+      batch.dispose();
     }
+    for (const geometry of this.geometries) {
+      geometry.buffer.destroy();
+    }
+  }
+
+  private trackGeometry(geometry: BatchGeometry): BatchGeometry {
+    this.geometries.push(geometry);
+    return geometry;
   }
 
   private addInstanced(batch: InstancedBatch): InstancedBatch {
     this.instanced.push(batch);
-    this.group.add(batch.mesh);
     return batch;
   }
 
   private addSprite(batch: SpriteBatch): SpriteBatch {
     this.sprites.push(batch);
-    this.group.add(batch.sprite);
     return batch;
+  }
+}
+
+function drawInOrder(pass: GPURenderPassEncoder, pipelines: ScenePipelines, batches: readonly (InstancedBatch | SpriteBatch)[]): void {
+  let bound: keyof ScenePipelines | undefined;
+  for (const batch of batches) {
+    if (batch.size === 0) {
+      continue;
+    }
+    if (batch.pipeline !== bound) {
+      pass.setPipeline(pipelines[batch.pipeline]);
+      bound = batch.pipeline;
+    }
+    batch.draw(pass);
   }
 }

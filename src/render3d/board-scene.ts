@@ -1,17 +1,10 @@
-import {
-  BufferAttribute,
-  BufferGeometry,
-  Group,
-  Mesh,
-  PlaneGeometry,
-  type Material,
-} from "three/webgpu";
 import type { RouteMotionPath } from "../route-path";
+import type { ScenePipelines } from "./gpu-pipelines";
 import { hash01, type FrameContext } from "./frame-math";
 import { linearColor } from "./palette";
 import type { RenderBatches } from "./render-batches";
+import { BufferUsage } from "./gpu-flags";
 
-const GROUND_SIZE = 6000;
 const ROAD_BORDER = 1.5;
 const ROAD_BASE_Y = 0.22;
 // Later road samples sit microscopically higher so self-crossing routes never z-fight.
@@ -27,39 +20,37 @@ const MOTE_COUNT = 70;
 // Longest authored route samples to ~1k entries; headroom keeps one buffer for all levels.
 const ROAD_CAPACITY_ENTRIES = 4096;
 
+const ROAD_VERTEX_FLOATS = 5;
+const GROUND_VERTICES = 6;
+
 /**
  * One persistent road ribbon (uv.x = distance, uv.y = -1..1 across) rewritten in place per
- * level. Replacing the mesh would release its cached shader state and recompile mid-game.
+ * level: interleaved `position(3) uv(2)` pairs joined by a fixed index buffer.
  */
 class RoadRibbon {
-  readonly geometry = new BufferGeometry();
-  private readonly positions: Float32Array;
-  private readonly uvs: Float32Array;
+  private readonly vertices: Float32Array;
+  private readonly vertexBuffer: GPUBuffer;
+  private readonly indexBuffer: GPUBuffer;
+  private indexCount = 0;
 
-  constructor() {
+  constructor(private readonly device: GPUDevice) {
     const vertexCapacity = (ROAD_CAPACITY_ENTRIES + 1) * 2;
-    this.positions = new Float32Array(vertexCapacity * 3);
-    this.uvs = new Float32Array(vertexCapacity * 2);
-    const normals = new Float32Array(vertexCapacity * 3);
-    for (let index = 0; index < vertexCapacity; index += 1) {
-      normals[(index * 3) + 1] = 1;
-    }
+    this.vertices = new Float32Array(vertexCapacity * ROAD_VERTEX_FLOATS);
+    this.vertexBuffer = device.createBuffer({ label: "road", size: this.vertices.byteLength, usage: BufferUsage.VERTEX | BufferUsage.COPY_DST });
     const indices = new Uint32Array(ROAD_CAPACITY_ENTRIES * 6);
     for (let slot = 0; slot < ROAD_CAPACITY_ENTRIES; slot += 1) {
       const a = slot * 2;
       indices.set([a, a + 2, a + 1, a + 1, a + 2, a + 3], slot * 6);
     }
-    this.geometry.setAttribute("position", new BufferAttribute(this.positions, 3));
-    this.geometry.setAttribute("normal", new BufferAttribute(normals, 3));
-    this.geometry.setAttribute("uv", new BufferAttribute(this.uvs, 2));
-    this.geometry.setIndex(new BufferAttribute(indices, 1));
-    this.geometry.setDrawRange(0, 0);
+    this.indexBuffer = device.createBuffer({ label: "road-indices", size: indices.byteLength, usage: BufferUsage.INDEX | BufferUsage.COPY_DST });
+    device.queue.writeBuffer(this.indexBuffer, 0, indices);
   }
 
   write(route: RouteMotionPath, width: number): void {
     const entries = route.entries;
     const count = Math.min(entries.length, ROAD_CAPACITY_ENTRIES);
     const halfWidth = width / 2;
+    const v = this.vertices;
     const tangentAt = (index: number): { x: number; y: number } => {
       const previous = entries[Math.max(0, index - 1)];
       const next = entries[Math.min(count - 1, index + 1)];
@@ -70,14 +61,17 @@ class RoadRibbon {
     };
     const writePair = (slot: number, x: number, y: number, tangentX: number, tangentY: number, distance: number): void => {
       const height = ROAD_BASE_Y + (slot * ROAD_LAYER_STEP);
-      const offset = slot * 6;
-      this.positions[offset] = x - (tangentY * halfWidth);
-      this.positions[offset + 1] = height;
-      this.positions[offset + 2] = y + (tangentX * halfWidth);
-      this.positions[offset + 3] = x + (tangentY * halfWidth);
-      this.positions[offset + 4] = height;
-      this.positions[offset + 5] = y - (tangentX * halfWidth);
-      this.uvs.set([distance, 1, distance, -1], slot * 4);
+      const offset = slot * ROAD_VERTEX_FLOATS * 2;
+      v[offset] = x - (tangentY * halfWidth);
+      v[offset + 1] = height;
+      v[offset + 2] = y + (tangentX * halfWidth);
+      v[offset + 3] = distance;
+      v[offset + 4] = 1;
+      v[offset + 5] = x + (tangentY * halfWidth);
+      v[offset + 6] = height;
+      v[offset + 7] = y - (tangentX * halfWidth);
+      v[offset + 8] = distance;
+      v[offset + 9] = -1;
     };
 
     const startTangent = tangentAt(0);
@@ -86,18 +80,32 @@ class RoadRibbon {
       const tangent = tangentAt(index);
       writePair(index + 1, entries[index].x, entries[index].y, tangent.x, tangent.y, entries[index].totalDistance);
     }
-    this.geometry.setDrawRange(0, Math.max(0, count) * 6);
-    this.geometry.getAttribute("position").needsUpdate = true;
-    this.geometry.getAttribute("uv").needsUpdate = true;
+    this.device.queue.writeBuffer(this.vertexBuffer, 0, v.buffer, 0, (count + 1) * 2 * ROAD_VERTEX_FLOATS * 4);
+    this.indexCount = Math.max(0, count) * 6;
+  }
+
+  clear(): void {
+    this.indexCount = 0;
+  }
+
+  draw(pass: GPURenderPassEncoder): void {
+    if (this.indexCount === 0) {
+      return;
+    }
+    pass.setVertexBuffer(0, this.vertexBuffer);
+    pass.setIndexBuffer(this.indexBuffer, "uint32");
+    pass.drawIndexed(this.indexCount);
+  }
+
+  dispose(): void {
+    this.vertexBuffer.destroy();
+    this.indexBuffer.destroy();
   }
 }
 
 /** Static battlefield: ground, the route's road, the exit portal, and the spawn gate. */
 export class BoardScene {
-  readonly group = new Group();
-  private readonly ground: Mesh;
-  private readonly roadRibbon = new RoadRibbon();
-  private readonly road: Mesh;
+  private readonly roadRibbon: RoadRibbon;
   private route: RouteMotionPath | undefined;
   private exitAlert = 0;
   private lastEscapesLeft = -1;
@@ -106,20 +114,9 @@ export class BoardScene {
     private readonly fieldWidth: number,
     private readonly fieldHeight: number,
     private readonly roadWidth: number,
-    groundMaterial: Material,
-    roadMaterial: Material,
+    device: GPUDevice,
   ) {
-    const plane = new PlaneGeometry(GROUND_SIZE, GROUND_SIZE);
-    plane.rotateX(-Math.PI / 2);
-    this.ground = new Mesh(plane, groundMaterial);
-    this.ground.position.set(fieldWidth / 2, 0, fieldHeight / 2);
-    this.ground.name = "ground";
-    this.group.add(this.ground);
-    this.road = new Mesh(this.roadRibbon.geometry, roadMaterial);
-    this.road.name = "road";
-    this.road.frustumCulled = false;
-    this.road.visible = false;
-    this.group.add(this.road);
+    this.roadRibbon = new RoadRibbon(device);
   }
 
   get routePath(): RouteMotionPath | undefined {
@@ -132,10 +129,10 @@ export class BoardScene {
     }
     this.route = route;
     this.lastEscapesLeft = -1;
-    const drawable = route !== undefined && route.entries.length >= 2;
-    this.road.visible = drawable;
-    if (drawable) {
+    if (route !== undefined && route.entries.length >= 2) {
       this.roadRibbon.write(route, this.roadWidth + (ROAD_BORDER * 2));
+    } else {
+      this.roadRibbon.clear();
     }
   }
 
@@ -190,8 +187,19 @@ export class BoardScene {
     batches.spawnGate.pushYaw(start.x, 0, start.y, -angle, 1, 1, 1, GATE_COLOR.r * gateGlow, GATE_COLOR.g * gateGlow, GATE_COLOR.b * gateGlow);
   }
 
+  get drawCalls(): number {
+    return this.route && this.route.entries.length >= 2 ? 2 : 1;
+  }
+
+  /** The ground is a shader-generated quad around the field (no vertex buffers). */
+  draw(pass: GPURenderPassEncoder, pipelines: ScenePipelines): void {
+    pass.setPipeline(pipelines.ground);
+    pass.draw(GROUND_VERTICES);
+    pass.setPipeline(pipelines.road);
+    this.roadRibbon.draw(pass);
+  }
+
   dispose(): void {
-    this.ground.geometry.dispose();
-    this.roadRibbon.geometry.dispose();
+    this.roadRibbon.dispose();
   }
 }

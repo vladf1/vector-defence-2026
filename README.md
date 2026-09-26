@@ -2,18 +2,16 @@
 
 Vector Defence is a browser-based tower defense game built with Svelte 5, TypeScript, and Vite. This repository's active implementation is the browser app at the repo root, with the current runtime living in `src/`.
 
-The game features a fixed 10-level campaign, canvas-based combat, six tower types, and waves generated from handcrafted routes.
+The game features a fixed 10-level campaign, a 2.5D WebGPU battlefield, six tower types, and waves generated from handcrafted routes.
 
 Play online: [https://vladf1.github.io/vector-defence-2026/](https://vladf1.github.io/vector-defence-2026/)
 
-## 2D and 3D boards
+## WebGPU board
 
-The board renders either as the classic 2D canvas or as a 2.5D WebGPU scene (three.js, with an automatic WebGL2 fallback). Use the **2D/3D** button in the top bar to switch at any time, even mid-level; the choice is remembered. The 3D renderer and three.js are loaded on demand, so the 2D board stays as light as before.
+The board is a 2.5D scene drawn with raw WebGPU: no rendering library, a fixed set of 13 WGSL pipelines created asynchronously at startup, instanced procedural geometry, and a small HDR bloom chain. Browsers without WebGPU see a "WebGPU required" notice instead of the board.
 
-- `?view=2d` or `?view=3d` overrides the saved choice.
-- `?backend=webgl2` forces the 3D renderer's WebGL2 backend (for testing).
-- `?timings` shows how long each 3D startup phase took (useful when profiling a phone).
-- 3D defaults on where WebGPU is available, and falls back to 2D automatically if the 3D renderer cannot start.
+- `?timings` shows how long each startup phase took (useful when profiling a phone).
+- `?shaderSalt=N` (dev server only) perturbs every shader so GPU shader caches miss, for first-visit compile measurements.
 
 ## Requirements
 
@@ -65,6 +63,7 @@ npm run check:runtime
 npm run dev
 npm run render:3d
 npm run benchmark:3d
+npm run benchmark:3d:startup
 ```
 
 ## Deploy To GitHub Pages
@@ -106,6 +105,5 @@ The published site is available at [https://vladf1.github.io/vector-defence-2026
 - Shared session bridge: `src/game-session.ts`
 - Simulation engine: `src/game-engine.ts`
 - Campaign builder: `src/campaign.ts`
-- 2D renderer: `src/game-renderer.ts`
-- 3D renderer: `src/render3d/`
+- WebGPU board renderer: `src/render3d/` (entry `src/render3d/webgpu-board-renderer.ts`, shaders in `src/render3d/shaders.ts`)
 - Browser level data: `game-levels.json`

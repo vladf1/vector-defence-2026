@@ -5,13 +5,7 @@ import type { Point } from "../../types";
 import { angleBetween, calculateDistance, clamp, isOutsideBounds, randomRange, turnAngleTowards } from "../../utils";
 import { Particle } from "../effects/particle";
 import type { Monster } from "../monsters/monster";
-import {
-  drawMissileBody,
-  drawMissileExhaust,
-  getMissileHalfLength,
-  getMissileScale,
-  type MissileVisual,
-} from "./missile-visuals";
+import { getMissileHalfLength, getMissileScale, type MissileVisual } from "./missile-visuals";
 
 const MISSILE_DAMAGE_BASE = 50;
 const MISSILE_DAMAGE_PER_LEVEL = 4;
@@ -42,7 +36,6 @@ export class Missile {
   effectRadius: number;
   scale: number;
   level: number;
-  visual: MissileVisual;
   trackedMonster?: Monster;
   removed = false;
   trailTimer = 0;
@@ -55,7 +48,6 @@ export class Missile {
     this.previousY = source.y;
     this.trackedMonster = trackedMonster;
     this.level = level;
-    this.visual = visual;
     this.damage = MISSILE_DAMAGE_BASE + (MISSILE_DAMAGE_PER_LEVEL * level);
     this.effectRadius = MISSILE_EFFECT_RADIUS_BASE + (MISSILE_EFFECT_RADIUS_PER_LEVEL * level);
     this.speedPerSecond = MISSILE_SPEED_BASE_PER_SECOND + (MISSILE_SPEED_PER_LEVEL_PER_SECOND * level);
@@ -148,15 +140,5 @@ export class Missile {
       nearby.takeDamage(this.damage * ratio);
     }
     result.playSound(AudioCue.MissileExplosion, this.x, 1.1);
-  }
-
-  draw(context: CanvasRenderingContext2D): void {
-    context.save();
-    context.translate(this.x, this.y);
-    context.rotate(this.angle);
-    context.scale(this.scale, this.scale);
-    drawMissileExhaust(context, this.visual, this.launchBloomSeconds / MISSILE_LAUNCH_BLOOM_SECONDS);
-    drawMissileBody(context, this.visual);
-    context.restore();
   }
 }

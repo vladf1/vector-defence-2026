@@ -1,7 +1,7 @@
 import { AudioCue } from "../../audio-manifest";
 import type { UpdateContext, UpdateResult } from "../../game-engine/update-context";
 import type { PathEntry } from "../../route-path";
-import { drawPath, easeInOutSine, randomRange } from "../../utils";
+import { easeInOutSine, randomRange } from "../../utils";
 import { createDeathEffectOrigin, createPolygonShardParticles } from "./death-effect-helpers";
 import { Monster } from "./monster";
 import { createPolygonShardSplitter } from "./polygon-shard-splitter";
@@ -53,11 +53,6 @@ export class TriangleMonster extends Monster {
       this.noseWobbleDirection = randomRange(0, 1) < 0.5 ? -1 : 1;
       this.advanceNoseWobble(context.deltaSeconds);
     }
-  }
-
-  protected drawBody(context: CanvasRenderingContext2D): void {
-    context.rotate(this.angle + this.noseWobbleAngle);
-    drawPath(context, OUTLINE, true);
   }
 
   override addDeathEffect(result: UpdateResult): void {

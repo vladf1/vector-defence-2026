@@ -1,4 +1,4 @@
-import type { Vector3 } from "three/webgpu";
+import type { Vec3 } from "./math";
 
 /** Per-frame values shared by every 3D view. */
 export interface FrameContext {
@@ -8,7 +8,7 @@ export interface FrameContext {
   readonly time: number;
   readonly frame: number;
   /** Normalized world-space camera forward vector, for camera-facing ribbons. */
-  readonly viewDirection: Vector3;
+  readonly viewDirection: Vec3;
 }
 
 /** Minimal mutable quaternion used to compose instance rotations without allocations. */

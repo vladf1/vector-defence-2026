@@ -6,7 +6,7 @@ import { easeInOutCubic, randomRange } from "../../utils";
 import { createDeathEffectOrigin, createPolygonShardParticles, rotatePoint } from "./death-effect-helpers";
 import { Monster } from "./monster";
 import { createPolygonShardSplitter } from "./polygon-shard-splitter";
-import { drawTankTurret, getTankTurretCenterOffsetX, TankTrackPrintParticle, TankTurretParticle } from "./tank-effects";
+import { getTankTurretCenterOffsetX, TankTrackPrintParticle, TankTurretParticle } from "./tank-effects";
 
 const COLOR = "#9fb6ff";
 const SPEED_PER_SECOND = 41;
@@ -35,8 +35,6 @@ const TURRET_SPIN_DURATION_SECONDS = 2.2;
 const FULL_ROTATION = Math.PI * 2;
 const TRACK_PRINT_INTERVAL = RADIUS * 0.44;
 const TRACK_PRINT_SIDE_OFFSET = RADIUS * 0.62;
-const TRACK_PRINT_LENGTH = RADIUS * 0.24;
-const TRACK_PRINT_WIDTH = RADIUS * 0.14;
 
 export class TankMonster extends Monster {
   private turretRotation = 0;
@@ -72,14 +70,6 @@ export class TankMonster extends Monster {
       this.turretSpinDirection = randomRange(0, 1) < 0.5 ? -1 : 1;
       this.advanceTurretSpin(context.deltaSeconds);
     }
-  }
-
-  protected drawBody(context: CanvasRenderingContext2D): void {
-    context.rotate(this.angle);
-    context.fillRect(HULL_RECT.x, HULL_RECT.y, HULL_RECT.width, HULL_RECT.height);
-    context.strokeRect(HULL_RECT.x, HULL_RECT.y, HULL_RECT.width, HULL_RECT.height);
-    context.translate(getTankTurretCenterOffsetX(this.radius), 0);
-    drawTankTurret(context, this.radius, 0.42, 1.52, this.turretRotation);
   }
 
   override addDeathEffect(result: UpdateResult): void {
@@ -147,7 +137,7 @@ export class TankMonster extends Monster {
 
   private addTrackPrint(result: UpdateResult, x: number, y: number): void {
     if (result.remainingParticleCapacity > 0) {
-      result.addParticle(new TankTrackPrintParticle(x, y, this.angle, TRACK_PRINT_LENGTH, TRACK_PRINT_WIDTH));
+      result.addParticle(new TankTrackPrintParticle(x, y, this.angle));
     }
   }
 }

@@ -1,16 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getGameSessionContext } from "../game-context";
-  import { ViewMode } from "../view-mode";
-  import ClassicBoardSurface from "./ClassicBoardSurface.svelte";
-  import DepthBoardSurface from "./DepthBoardSurface.svelte";
+  import BoardSurface from "./BoardSurface.svelte";
   import GameModal from "./GameModal.svelte";
 
   const session = getGameSessionContext();
   const profile = session.profile;
   const hud = session.hud;
   const modal = session.modal;
-  const viewMode = session.viewMode;
 
   onMount(() => () => {
     session.destroy();
@@ -31,11 +28,7 @@
       inert={$modal !== null}
       style={`--field-aspect-ratio: ${profile.fieldAspectRatio}; --field-aspect-scale: ${profile.fieldAspectScale};`}
     >
-      {#if $viewMode === ViewMode.Depth}
-        <DepthBoardSurface />
-      {:else}
-        <ClassicBoardSurface />
-      {/if}
+      <BoardSurface />
       {#if $hud.banner}
         {#if $hud.canSkipBreak}
           <button

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getGameSessionContext } from "../game-context";
-  import { RendererStatus, ViewMode, shouldShowStartupTimings } from "../view-mode";
+  import { RendererStatus, shouldShowStartupTimings } from "../renderer-status";
 
   const session = getGameSessionContext();
   const rendererStatus = session.rendererStatus;
@@ -11,7 +11,7 @@
   let overlayCanvas: HTMLCanvasElement;
 
   onMount(() => {
-    session.mount({ mode: ViewMode.Depth, canvas: sceneCanvas, overlay: overlayCanvas });
+    session.mount({ canvas: sceneCanvas, overlay: overlayCanvas });
 
     return () => {
       session.unmount();
@@ -40,5 +40,10 @@
   <div class="board-loading" role="status" aria-live="polite">
     <span class="board-loading-spinner" aria-hidden="true"></span>
     <span>Building 3D battlefield</span>
+  </div>
+{:else if $rendererStatus === RendererStatus.Failed}
+  <div class="board-loading board-unsupported" role="alert">
+    <strong>WebGPU required</strong>
+    <span>Vector Defence renders with WebGPU. Try a current Chrome, Edge, or Safari 26.</span>
   </div>
 {/if}

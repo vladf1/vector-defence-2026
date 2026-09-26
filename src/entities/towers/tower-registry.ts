@@ -5,35 +5,17 @@ import { LaserTower } from "./laser-tower";
 import { LightningTower } from "./lightning-tower";
 import { MissileTower } from "./missile-tower";
 import { SlowTower } from "./slow-tower";
-import type { Tower, TowerClass } from "./tower";
+import type { TowerClass } from "./tower";
 
-const PREVIEW_CENTER = 30;
-
-interface TowerRegistration {
-  towerClass: TowerClass;
-  preview: Tower;
-}
-
-function registerTower<T extends Tower>(
-  towerClass: TowerClass<T>,
-  configurePreview?: (preview: T) => void,
-): TowerRegistration {
-  const preview = new towerClass(PREVIEW_CENTER, PREVIEW_CENTER);
-  configurePreview?.(preview);
-  return { towerClass, preview };
-}
-
-const TOWER_REGISTRATIONS = [
-  registerTower(GunTower, (preview) => { preview.angle = -Math.PI / 4; }),
-  registerTower(LaserTower, (preview) => { preview.angle = -Math.PI / 4; }),
-  registerTower(MissileTower, (preview) => { preview.angle = -Math.PI / 4; }),
-  registerTower(SlowTower, (preview) => { preview.pulse = Math.PI / 2; }),
-  registerTower(DroneTower),
-  registerTower(LightningTower),
-] as const satisfies readonly TowerRegistration[];
-
-export const TOWER_CLASSES = TOWER_REGISTRATIONS.map(({ towerClass }) => towerClass);
-export const TOWER_TOOLBAR_PREVIEWS = TOWER_REGISTRATIONS.map(({ preview }) => preview);
+/** Registration order is the toolbar order. */
+export const TOWER_CLASSES: readonly TowerClass[] = [
+  GunTower,
+  LaserTower,
+  MissileTower,
+  SlowTower,
+  DroneTower,
+  LightningTower,
+];
 
 const TOWER_CLASS_BY_KIND = TOWER_CLASSES.reduce<Record<TowerKind, TowerClass>>((classes, towerClass) => {
   classes[towerClass.kind] = towerClass;

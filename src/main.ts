@@ -2,7 +2,7 @@ import "./style.css";
 import { mount } from "svelte";
 import App from "./App.svelte";
 import { selectStartupGameProfile } from "./game-profile";
-import { ViewMode, selectStartupViewMode } from "./view-mode";
+import { prefetchGpuDevice } from "./gpu-device";
 
 const target = document.querySelector<HTMLDivElement>("#app");
 
@@ -20,17 +20,14 @@ window.addEventListener("resize", updateAppViewportHeight);
 window.visualViewport?.addEventListener("resize", updateAppViewportHeight);
 window.visualViewport?.addEventListener("scroll", updateAppViewportHeight);
 
-const viewMode = selectStartupViewMode(window);
-if (viewMode === ViewMode.Depth) {
-  // Start downloading the 3D renderer while Svelte mounts; the session's import reuses it
-  // and reports any failure.
-  import("./render3d/three-board-renderer").catch(() => undefined);
-}
+// Start acquiring the GPU and downloading the renderer while Svelte mounts; the session's
+// import reuses both and reports any failure.
+prefetchGpuDevice();
+import("./render3d/webgpu-board-renderer").catch(() => undefined);
 
 mount(App, {
   target,
   props: {
     profile: selectStartupGameProfile(window),
-    viewMode,
   },
 });

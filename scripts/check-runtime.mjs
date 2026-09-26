@@ -1,9 +1,10 @@
-import { runBrowserPage } from "./benchmark-browser-harness.mjs";
+import { WEBGPU_LAUNCH_ARGS, runBrowserPage } from "./benchmark-browser-harness.mjs";
 
 const checks = await runBrowserPage({
   path: "/__runtime-checks",
   html: "<!doctype html><body></body>",
   pluginName: "runtime-checks",
+  launchArgs: WEBGPU_LAUNCH_ARGS,
 }, (page) => page.evaluate(async () => {
   let seed = 42;
   Math.random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
@@ -22,7 +23,7 @@ const checks = await runBrowserPage({
   const { calculateIntercept, isWithinDistanceToSegment } = await import("/src/utils.ts");
   const { createHudSnapshot, createModalView } = await import("/src/game-view.ts");
   const { createGameSession } = await import("/src/game-session.ts");
-  const { GameRenderer } = await import("/src/game-renderer.ts");
+  const { createBoardCameraRig } = await import("/src/render3d/camera-rig.ts");
   const { GameAudio } = await import("/src/game-audio.ts");
   const { default: authoredLevels } = await import("/game-levels.json?import");
   const { runBoundedSimulationSubsteps } = await import("/src/simulation-timing.ts");
@@ -43,10 +44,27 @@ const checks = await runBrowserPage({
   const index = new ActiveCircleSweepCollisionIndex(64);
   index.rebuild([target]);
   const context = { deltaSeconds: 1 / 60, fieldWidth: 1200, fieldHeight: 600, fieldBounds: { minX: 0, minY: 0, maxX: 1200, maxY: 600 }, activeMonsters: [target], activeDrones: [], droneAssignments: new Map(), monsterCollisionIndex: index };
+  // Headless stand-in for the WebGPU board: the real camera rig supplies visible bounds and picking.
+  class CameraBoundsRenderer {
+    constructor(profile) {
+      this.canvas = document.createElement("canvas");
+      this.rig = createBoardCameraRig(profile.fieldWidth, profile.fieldHeight);
+    }
+    resize() {
+      const rect = this.canvas.getBoundingClientRect();
+      this.rig.resize(Math.max(1, rect.width), Math.max(1, rect.height));
+    }
+    renderBackgroundLayer() {}
+    draw() {}
+    getVisibleFieldBounds() { return this.rig.fieldBounds; }
+    isPointInUpgradeButton() { return false; }
+    isPointInLaserLockButton() { return false; }
+    clientToField(clientX, clientY, rect) { return this.rig.clientToField(clientX, clientY, rect); }
+    dispose() {}
+  }
   function makeGame(profile) {
-    const canvas = document.createElement("canvas"), background = document.createElement("canvas");
     const game = new Game(createLevels(profile.mode), { play() {} }, profile, new CampaignProgressStore(undefined));
-    game.setRenderer(new GameRenderer(background, canvas, game));
+    game.setRenderer(new CameraBoundsRenderer(profile));
     return game;
   }
 
@@ -196,7 +214,7 @@ const checks = await runBrowserPage({
 
   for (const [profile, width, height, source, destination] of [
     [MOBILE_GAME_PROFILE, 390, 800, { x: 195, y: 600 }, { x: 195, y: 540 }],
-    [DESKTOP_GAME_PROFILE, 1000, 450, { x: -80, y: 225 }, { x: 40, y: 225 }],
+    [DESKTOP_GAME_PROFILE, 1000, 450, { x: -40, y: 225 }, { x: 40, y: 225 }],
   ]) {
     const game = makeGame(profile), canvas = game.renderer.canvas;
     canvas.style.cssText = `width:${width}px;height:${height}px`;
@@ -272,19 +290,25 @@ const checks = await runBrowserPage({
     check(progress.highestUnlockedLevelIndex === 4 && !progress.campaignCleared && store.loadLevelStars(10)[2] === 3, `Progress survives ${failedMethod} failure using memory`);
   }
 
-  const session = createGameSession(DESKTOP_GAME_PROFILE, "2d");
-  const originalDraw = GameRenderer.prototype.draw, originalUnlock = GameAudio.prototype.unlock, originalPlay = GameAudio.prototype.play;
+  const session = createGameSession(DESKTOP_GAME_PROFILE);
+  const originalDraw = Game.prototype.draw, originalUnlock = GameAudio.prototype.unlock, originalPlay = GameAudio.prototype.play;
   let draws = 0, paintedPlacement;
-  GameRenderer.prototype.draw = function () {
+  Game.prototype.draw = function () {
     draws++;
-    paintedPlacement = this.game.runtime.placingTower;
+    paintedPlacement = this.runtime.placingTower;
     originalDraw.call(this);
   };
   GameAudio.prototype.unlock = GameAudio.prototype.play = () => {};
   try {
-    const background = document.createElement("canvas"), canvas = document.createElement("canvas");
-    document.body.append(background, canvas);
-    session.mount({ mode: "2d", background, canvas });
+    const canvas = document.createElement("canvas"), overlay = document.createElement("canvas");
+    for (const element of [canvas, overlay]) element.style.cssText = "width:960px;height:480px";
+    document.body.append(canvas, overlay);
+    session.mount({ canvas, overlay });
+    let rendererStatus;
+    const unsubscribe = session.rendererStatus.subscribe(value => { rendererStatus = value; });
+    for (let waited = 0; rendererStatus === "loading" && waited < 30_000; waited += 50) await new Promise(resolve => setTimeout(resolve, 50));
+    unsubscribe();
+    check(rendererStatus === "ready", "WebGPU board renderer initializes and attaches");
     session.selectLevel(0);
     session.toggleTowerPlacement("gun");
     await new Promise(requestAnimationFrame);
@@ -294,7 +318,7 @@ const checks = await runBrowserPage({
     check(draws === beforePause + 1 && paintedPlacement === undefined, "Pausing immediately paints the cleared placement");
   } finally {
     session.destroy();
-    GameRenderer.prototype.draw = originalDraw;
+    Game.prototype.draw = originalDraw;
     GameAudio.prototype.unlock = originalUnlock;
     GameAudio.prototype.play = originalPlay;
   }

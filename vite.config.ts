@@ -1,12 +1,59 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 
 const rootDir = fileURLToPath(new URL(".", import.meta.url));
+const BOARD_RENDERER_MODULE = "/src/render3d/webgpu-board-renderer.ts";
+
+/**
+ * The board renderer is a dynamic import (so Svelte mounts first), which hides it from the
+ * page: the browser would only discover it after main.js downloads and runs. Preloading it
+ * (and any chunks it imports) from index.html lets everything download in parallel.
+ */
+function preloadBoardRenderer(): Plugin {
+  let base = "/";
+  return {
+    name: "preload-board-renderer",
+    apply: "build",
+    configResolved(config) {
+      base = config.base;
+    },
+    transformIndexHtml: {
+      order: "post",
+      handler(html, context) {
+        const bundle = context.bundle;
+        if (!bundle || context.path !== "/index.html") {
+          return html;
+        }
+        const renderer = Object.values(bundle).find((output) => output.type === "chunk" && output.facadeModuleId?.endsWith(BOARD_RENDERER_MODULE));
+        if (!renderer || renderer.type !== "chunk") {
+          throw new Error(`preload-board-renderer: no chunk for ${BOARD_RENDERER_MODULE}`);
+        }
+        const files = new Set<string>();
+        const visit = (fileName: string): void => {
+          const chunk = bundle[fileName];
+          if (files.has(fileName) || chunk?.type !== "chunk") {
+            return;
+          }
+          files.add(fileName);
+          chunk.imports.forEach(visit);
+        };
+        visit(renderer.fileName);
+        return [...files]
+          .filter((fileName) => !html.includes(fileName))
+          .map((fileName) => ({
+            tag: "link",
+            attrs: { rel: "modulepreload", crossorigin: true, href: `${base}${fileName}` },
+            injectTo: "head" as const,
+          }));
+      },
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [svelte(), preloadBoardRenderer()],
   server: {
     allowedHosts: [".trycloudflare.com"],
   },
@@ -15,18 +62,10 @@ export default defineConfig({
       input: {
         main: resolve(rootDir, "index.html"),
         debug: resolve(rootDir, "debug/index.html"),
-        debugTowers: resolve(rootDir, "debug/towers.html"),
         debugSoundboard: resolve(rootDir, "debug/soundboard.html"),
-        debugExplosions: resolve(rootDir, "debug/explosions.html"),
-        debugEscapeExplosion: resolve(rootDir, "debug/escape-explosion.html"),
       },
       output: {
         manualChunks(id) {
-          // three.js is only reached through the dynamically imported 3D renderer; keep it
-          // out of the shared vendor chunk so the 2D board never downloads it.
-          if (id.includes("node_modules/three/")) {
-            return "three";
-          }
           if (id.includes("node_modules")) {
             return "vendor";
           }

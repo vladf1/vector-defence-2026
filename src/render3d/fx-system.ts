@@ -1,4 +1,3 @@
-import { PointLight, type Object3D } from "three/webgpu";
 import { randomRange } from "../utils";
 import type { CameraRig } from "./camera-rig";
 import { linearColor, type LinearColor } from "./palette";
@@ -228,27 +227,40 @@ function mix3(hot: number, warm: number, cool: number, warmMix: number, coolMix:
   return first + ((cool - first) * coolMix);
 }
 
+const FLASH_LIGHT_DISTANCE = 190;
+const FLASH_LIGHT_DECAY = 1.6;
+
 interface PooledLight {
-  light: PointLight;
+  x: number;
+  y: number;
+  z: number;
+  red: number;
+  green: number;
+  blue: number;
+  intensity: number;
   peak: number;
   age: number;
   duration: number;
 }
 
+/** Point-light slot layout the shaders read: position + cutoff, color x intensity + decay. */
+export interface LightSink {
+  readonly data: Float32Array;
+  readonly positionOffset: number;
+  readonly colorOffset: number;
+  readonly slots: number;
+}
+
 /**
- * A fixed set of point lights reused for explosion flashes. Lights are part of three's
- * shader key, so the count never changes after startup; idle lights just sit at zero.
+ * A fixed set of point lights reused for explosion flashes. The shaders always loop over
+ * the same slot count; idle lights just sit at zero intensity.
  */
 class FlashLightPool {
   private readonly lights: PooledLight[] = [];
 
-  constructor(parent: Object3D, count: number) {
+  constructor(count: number) {
     for (let index = 0; index < count; index += 1) {
-      const light = new PointLight("#ffffff", 0, 190, 1.6);
-      light.position.set(0, -500, 0);
-      light.castShadow = false;
-      parent.add(light);
-      this.lights.push({ light, peak: 0, age: 0, duration: 1 });
+      this.lights.push({ x: 0, y: -500, z: 0, red: 1, green: 1, blue: 1, intensity: 0, peak: 0, age: 0, duration: 1 });
     }
   }
 
@@ -256,37 +268,58 @@ class FlashLightPool {
     let chosen: PooledLight | undefined;
     let weakest = Infinity;
     for (const pooled of this.lights) {
-      const current = pooled.light.intensity;
-      if (current < weakest) {
-        weakest = current;
+      if (pooled.intensity < weakest) {
+        weakest = pooled.intensity;
         chosen = pooled;
       }
     }
     if (!chosen || weakest > peak) {
       return;
     }
-    chosen.light.position.set(x, y, z);
-    chosen.light.color.setRGB(color.r, color.g, color.b);
+    chosen.x = x;
+    chosen.y = y;
+    chosen.z = z;
+    chosen.red = color.r;
+    chosen.green = color.g;
+    chosen.blue = color.b;
     chosen.peak = peak;
     chosen.age = 0;
     chosen.duration = duration;
-    chosen.light.intensity = peak;
+    chosen.intensity = peak;
   }
 
   update(deltaSeconds: number): void {
     for (const pooled of this.lights) {
-      if (pooled.light.intensity <= 0) {
+      if (pooled.intensity <= 0) {
         continue;
       }
       pooled.age += deltaSeconds;
       const t = pooled.age / pooled.duration;
-      pooled.light.intensity = t >= 1 ? 0 : pooled.peak * (1 - t) * (1 - t);
+      pooled.intensity = t >= 1 ? 0 : pooled.peak * (1 - t) * (1 - t);
+    }
+  }
+
+  write(sink: LightSink): void {
+    const { data, positionOffset, colorOffset } = sink;
+    for (let slot = 0; slot < sink.slots; slot += 1) {
+      const light = this.lights[slot];
+      const p = positionOffset + (slot * 4);
+      const c = colorOffset + (slot * 4);
+      const intensity = light?.intensity ?? 0;
+      data[p] = light?.x ?? 0;
+      data[p + 1] = light?.y ?? -500;
+      data[p + 2] = light?.z ?? 0;
+      data[p + 3] = FLASH_LIGHT_DISTANCE;
+      data[c] = (light?.red ?? 0) * intensity;
+      data[c + 1] = (light?.green ?? 0) * intensity;
+      data[c + 2] = (light?.blue ?? 0) * intensity;
+      data[c + 3] = FLASH_LIGHT_DECAY;
     }
   }
 
   clear(): void {
     for (const pooled of this.lights) {
-      pooled.light.intensity = 0;
+      pooled.intensity = 0;
     }
   }
 }
@@ -347,9 +380,9 @@ export class FxSystem {
   private readonly lights: FlashLightPool;
   private readonly scorch = new ScorchMarks();
 
-  constructor(lightParent: Object3D, private readonly rig: CameraRig, budget: FxBudget) {
+  constructor(private readonly rig: CameraRig, budget: FxBudget) {
     this.particles = new FxParticlePool(budget.particles);
-    this.lights = new FlashLightPool(lightParent, budget.lights);
+    this.lights = new FlashLightPool(budget.lights);
   }
 
   get activeParticles(): number {
@@ -371,6 +404,10 @@ export class FxSystem {
   write(batches: RenderBatches): void {
     this.scorch.write(batches);
     this.particles.write(batches);
+  }
+
+  writeLights(sink: LightSink): void {
+    this.lights.write(sink);
   }
 
   /** Missile blast: fireball, smoke column, sparks, scorch, light flash, and shake. */
