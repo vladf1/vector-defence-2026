@@ -5,7 +5,7 @@ import { type Point, TowerKind } from "../../types";
 import { angleBetween, clamp, isWithinDistanceToSegment, randomRange, turnAngleTowards, withinDistance } from "../../utils";
 import { Tower } from "./tower";
 
-const LASER_COLORS = [
+export const LASER_COLORS = [
   { body: "#5bf4ff", accent: "#9dffd7", ring: "110, 255, 152", beam: "110, 255, 152" },
   { body: "#6dff9c", accent: "#d8ff4f", ring: "185, 255, 105", beam: "185, 255, 105" },
   { body: "#ffe36f", accent: "#ff9d5c", ring: "255, 227, 111", beam: "255, 227, 111" },
@@ -118,7 +118,7 @@ export class LaserTower extends Tower {
     return LASER_COLORS[Math.min(this.level, LASER_COLORS.length - 1)];
   }
 
-  private getMuzzleOffset(): number {
+  getMuzzleOffset(): number {
     return 8.5 + (this.level * 0.78);
   }
 

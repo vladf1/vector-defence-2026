@@ -97,7 +97,7 @@ export class RunnerMonster extends Monster {
     }
   }
 
-  private getDashPulse(): number {
+  getDashPulse(): number {
     if (this.dashPulseElapsedSeconds <= 0) {
       return 0;
     }

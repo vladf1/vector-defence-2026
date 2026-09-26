@@ -30,10 +30,15 @@ export class DroneTower extends Tower {
     result.playSound(AudioCue.GunFire, this.x, 0.22 + (this.level * 0.025));
   }
 
+  /** 0 right after launch, 1 when a drone is docked and ready. */
+  getLaunchReadiness(): number {
+    return this.ready() ? 1 : 1 - Math.min(1, this.cooldownSeconds / DRONE_COOLDOWN_SECONDS);
+  }
+
   draw(context: CanvasRenderingContext2D, active: boolean): void {
     const accent = this.getAccentColor();
     const ready = this.ready();
-    const cooldownProgress = 1 - Math.min(1, this.cooldownSeconds / DRONE_COOLDOWN_SECONDS);
+    const cooldownProgress = this.getLaunchReadiness();
 
     context.save();
     context.translate(this.x, this.y);

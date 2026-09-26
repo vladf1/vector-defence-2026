@@ -19,6 +19,12 @@ Key paths:
 - Browser route geometry/motion samples: `src/route-path.ts`
 - Browser placement geometry/tower hit-testing: `src/placement-rules.ts`
 - Browser renderer/canvas orchestration: `src/game-renderer.ts`
+- Board renderer interface: `src/board-renderer.ts`
+- 2D/3D view-mode preference: `src/view-mode.ts`
+- 3D (WebGPU) board renderer: `src/render3d/`
+- 3D board render sheet script: `scripts/render-3d-board.mjs`
+- 3D renderer benchmark: `scripts/benchmark-3d-renderer.mjs`
+- 3D startup profiler: `scripts/benchmark-3d-startup.mjs`
 - Browser gameplay entities: `src/entities/`
 - Browser gameplay engine helpers: `src/game-engine/`
 - Browser audio orchestration: `src/game-audio.ts`
@@ -56,7 +62,7 @@ Current code structure:
 - `src/App.svelte` wires the main shell and creates the shared game session context.
 - `src/components/ChromeBar.svelte`, `src/components/GameBoard.svelte`, `src/components/GameModal.svelte`, `src/components/TowerPanel.svelte`, and `src/components/NerdStatsPanel.svelte` own the declarative UI around the canvas.
 - `src/game-context.ts` owns the Svelte context helpers for the shared `GameSession`.
-- `src/game-session.ts` bridges Svelte stores/events to the imperative game runtime, handles keyboard/pointer input, owns the animation-frame loop and bounded simulation backlog, and publishes HUD/modal snapshots.
+- `src/game-session.ts` bridges Svelte stores/events to the imperative game runtime, handles keyboard/pointer input, owns the animation-frame loop and bounded simulation backlog, and publishes HUD/modal snapshots. It mounts a `BoardSurface` (2D canvases or the 3D canvas + overlay), lazily imports the 3D renderer, holds the simulation while an async renderer loads, and falls back to 2D if 3D init fails or the GPU device is lost. In dev builds it exposes `window.__vectorDefence = { game, sync }` for render/benchmark scripts.
 - `src/simulation-timing.ts` owns the bounded substep policy: native high-refresh deltas are preserved, slow frames are split into steps of at most 1/60 second, catch-up work is capped, and drawing still happens once per rendered frame.
 - `src/game-profile.ts` owns desktop/mobile logical dimensions, movement/range scales, placement geometry, UI flags, and startup profile selection.
 - `src/game-engine.ts` owns gameplay state, campaign progression, lifecycle resolution, and `updateSimulation(...)`; rendering is a separate once-per-frame `draw()` call.
@@ -68,10 +74,21 @@ Current code structure:
 - `src/game-engine/combat-effects.ts` owns shared hit, laser, missile, and escape particle construction. Monster polygon breakup lives in `src/entities/monsters/death-effect-helpers.ts` and `src/entities/monsters/polygon-shard-splitter.ts`.
 - `src/placement-rules.ts` owns tower placement geometry and board hit-testing through explicit route/tower inputs; it should not import `Game`.
 - `src/route-path.ts` owns route drawing commands plus the sampled motion path entries used by monster movement.
-- `src/game-renderer.ts` owns canvas sizing, background caching, board rendering, placement previews, and orchestration of entity drawing.
+- `src/board-renderer.ts` defines the `BoardRenderer` boundary `Game` talks to (resize, draw, visible bounds, canvas action hit tests, client-to-field picking, dispose) plus the `DetachedBoardRenderer` used while no board is mounted. `Game` owns no canvases; the session attaches a renderer with `game.setRenderer(...)`.
+- `src/game-renderer.ts` is the classic 2D `BoardRenderer`: canvas sizing, background caching, board rendering, placement previews, and orchestration of entity drawing.
+- `src/view-mode.ts` owns the `2d`/`3d` preference (`?view=` URL override, then `localStorage`, then 3D wherever `navigator.gpu` exists) and the renderer loading status.
 - `src/game-view.ts` owns HUD/modal view-model generation for Svelte.
 - `src/visibility-animation-loop.ts` owns the visibility-aware request-animation-frame lifecycle shared by the two standalone effect labs; lab-specific update and drawing policy stays in each lab module.
 - `src/entities/` owns active gameplay entities split by concern: towers, monsters, projectiles, and effects.
+- `src/render3d/` is the 3D board renderer (three.js `three/webgpu`, automatic WebGL2 fallback, `?backend=webgl2` forces it). It is only reached through a dynamic import, and `vite.config.ts` keeps three.js in its own chunk, so the 2D board never downloads it. It reads `Game.runtime` every frame and never mutates simulation state:
+  - `three-board-renderer.ts` owns the WebGPU renderer, scene, lights, precompilation (with per-phase `StartupTimings`), resize, and per-frame orchestration.
+  - `post-processing.ts` is a lean custom HDR bloom (prefilter/downsample, separable blur at two resolutions, composite with ACES tone mapping, sRGB encode, and vignette onto the canvas): three distinct shaders, all precompiled asynchronously. The renderer's own tone mapping/output color space stay neutral so three never adds a hidden output pass. Passes are plain meshes over three's full-screen triangle, not `QuadMesh` (its `render()` swaps in a private vertex shader, so precompiled pipelines would never match).
+  - `camera-rig.ts` fits the tilted perspective camera to the field, ray-casts pointer picking onto the ground, projects field points for the overlay, and applies screen shake to a separate render camera (picking never shakes). `inspect(...)` frames a close-up for render scripts.
+  - `materials.ts` is the complete, fixed material set; `render-batches.ts` is the complete, fixed list of instanced batches. `instanced-batch.ts` and `sprite-batch.ts` are refill-every-frame instance buffers written straight into typed arrays. Instanced batches are plain meshes over an `InstancedBufferGeometry` with one interleaved per-instance buffer (`instanceMatrix0..3`, `instanceTint`, `instanceExtra`) that the materials apply themselves; three keys `InstancedMesh` shader builds per object, so this is what lets every batch sharing a material share one build.
+  - Lit materials are Lambert (the neon look comes from emissive trims, rims, an analytic key-light highlight, and bloom; full PBR compiled markedly slower on first launch). Shadows are soft blob decals pushed through `RenderBatches.pushBlobShadow(...)`, offset along the key light by each object's height; there are no shadow maps.
+  - `models.ts` / `geometry-kit.ts` build all procedural low-poly models (monsters at unit radius, towers in field units). Every neon part geometry carries exactly `position`, `normal`, and a per-vertex `glow` mask, non-indexed.
+  - `monster-view.ts`, `tower-view.ts`, `projectile-view.ts`, `effect-view.ts`, `placement-view.ts`, and `board-scene.ts` compose entities into batches; `fx-system.ts` owns renderer-only spectacle (pooled 3D sparks, fireballs, smoke, ground rings, a fixed point-light pool, scorch decals, camera trauma); `overlay-view.ts` draws the screen-space tower actions and escape counter on a 2D canvas above the 3D canvas.
+  - `render-quality.ts` holds the desktop/mobile budgets and the dynamic-resolution governor.
 - `src/entities/monsters/monster.ts` owns shared monster movement, damage, slow recovery, lifecycle outcome reporting, and health-bar rendering.
 - Concrete monster classes live under `src/entities/monsters/` and own monster-specific base stats, body rendering, and special behavior (`berserker` ramps speed as it loses health; `bulwark` mitigates incoming damage).
 - Projectile classes live under `src/entities/projectiles/`; import the exact base or concrete file (`projectile.ts`, `gun-projectile.ts`, `drone-projectile.ts`, `missile.ts`, or `drone.ts`) rather than adding a barrel.
@@ -121,6 +138,10 @@ Gameplay / UI notes:
 - The main frame loop preserves native high-refresh updates, uses bounded substeps to recover slow-frame time, draws once, and freezes background-tab time by resetting the frame clock on visibility changes.
 - Bulwark flat armor applies only to discrete `takeDamage(...)` hits. Continuous effects use `takeContinuousDamage(...)`; laser beam damage is analytically integrated over its fade so results do not depend on refresh rate.
 - Monster classes should own their own body rendering. Shared monster rendering concerns belong in `Monster`.
+- The 3D renderer is the exception: 3D bodies live in `src/render3d/` (so three.js stays out of the entity modules and the 2D bundle) and read small public presentation getters on entities (for example `currentMouthAngle`, `getDashPulse()`, `getReloadProgress()`). When adding a monster or tower, add its 3D model in `models.ts`, a batch in `render-batches.ts`, and an `instanceof` branch in the matching view; expose read-only presentation state rather than moving rendering into the entity.
+- 3D shader budget rules: all entity parts share the one `neon` material and instance tint carries identity, so new visuals should add geometry/batches, not materials. Never change anything that is part of three's shader key at runtime (light count, MSAA samples, material features); resolution is the only runtime quality knob. Keep persistent meshes persistent (the road ribbon is rewritten in place; replacing meshes releases cached shader state and recompiles mid-game). Avoid transparent `DoubleSide` materials (three draws them in two passes with two pipelines; ribbons are single-sided and always faced toward the camera).
+- 3D startup rules: first-visit cost is dominated by GPU driver shader compiles, which run serially for pipelines created synchronously. Everything must compile through the parallel async batch in `compileScene()` (one object per distinct material concurrently, plus the post chain) before the warm-up frame; the warm-up frame should add no new shader programs. `npm run benchmark:3d` warns if gameplay compiles a pipeline the warm-up missed, and `npm run benchmark:3d:startup -- --cold` measures first-visit startup by salting every shader (`?shaderSalt=N`, dev only) so driver caches miss. `?timings` shows the startup phase breakdown on the board in any build.
+- 3D effects are driven from simulation state: the effect view maps each simulation particle/link class to a 3D treatment (shards and turret debris get height, gravity, tumble, and bounce), monster disappearances are classified into kill/escape by hit points and path progress, and `ShockwaveEffect` instances trigger missile blasts. Presentation time comes from `Game.simulationSeconds`, so 3D effects freeze with the game.
 - Monster-specific visual animations, such as tank turret spins or packman mouth/body flourishes, should live on the concrete monster class and run through `updateSpecial(...)`; if an animation changes visible body geometry or orientation, keep that current shape reflected in the monster's `addDeathEffect(...)` outline/rotation so shards match the death frame.
 - Use shared easing helpers from `src/utils.ts` for monster animation progress, and keep mutually exclusive monster flourishes in one local state machine when they should not overlap.
 - Tower classes should own their own drawing and attack behavior. Shared tower rendering/selection concerns belong in `Tower`.
@@ -144,6 +165,9 @@ Useful validation commands:
 - `npm run benchmark:draw`
 - `npm run benchmark:draw:towers`
 - `npm run render:levels`
+- `npm run render:3d` (staged 3D overview, per-monster/tower close-ups, explosion, tank-death, and breach sequences under `artifacts/3d-board/`; `--mobile`, `--webgl2`, `--level=N`)
+- `npm run benchmark:3d` (time to ready, shader/pipeline counts before and after a crowded fight, per-frame CPU draw cost, draw calls; `--mobile`, `--webgl2`)
+- `npm run benchmark:3d:startup` (median per-phase 3D startup timings; `--mobile`, `--webgl2`, `--cpu=4` CPU throttling, `--cold` for first-visit shader compiles, `--runs=N`)
 
 The supported runtime ranges are declared in `package.json`; `.nvmrc` pins the local/CI Node release. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
 

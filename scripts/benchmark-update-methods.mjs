@@ -25,6 +25,7 @@ const html = String.raw`
       let seededRandom;
       Math.random = () => seededRandom ? seededRandom() : nativeRandom();
       const { Game, createLevels } = await import("/src/game-engine.ts");
+      const { GameRenderer } = await import("/src/game-renderer.ts");
       const {
         ActiveCircleSweepCollisionIndex,
         LinearActiveCircleSweepCollisionIndex,
@@ -273,14 +274,11 @@ const html = String.raw`
         const audio = { play() {} };
         const game = new Game(
           createLevels("desktop"),
-          backgroundCanvas,
-          backgroundCanvas.getContext("2d"),
-          gameCanvas,
-          gameCanvas.getContext("2d"),
           audio,
           DESKTOP_GAME_PROFILE,
           new CampaignProgressStore(undefined),
         );
+        game.setRenderer(new GameRenderer(backgroundCanvas, gameCanvas, game));
         game.benchmarkMonsterCollisionIndex = new ActiveCircleSweepCollisionIndex(64);
         game.startLevel(game.levels[9]);
         game.runtime.spawnDelay = 999;

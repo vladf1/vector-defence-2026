@@ -7,7 +7,7 @@ const PROJECTILE_SIZE_PER_LEVEL = 0.5;
 export const GUN_PROJECTILE_SPEED_PER_SECOND = 420;
 
 export class GunProjectile extends Projectile {
-  private readonly visualLevel: number;
+  readonly visualLevel: number;
 
   constructor(source: Point, target: Point, level: number) {
     super(

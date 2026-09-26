@@ -19,7 +19,7 @@ const MISSILE_CLIP_FRONT_X = LOADING_PORT_X + 24;
 const RELOAD_START_OFFSET_X = -22;
 const LAUNCHER_BASE_HALF_HEIGHT = 3;
 const LAUNCHER_FRONT_INSET = 0.8;
-const MISSILE_POWERBANK_COLORS = [
+export const MISSILE_POWERBANK_COLORS = [
   "#9dffd7",
   "#d8ff4f",
   "#ff9d5c",
@@ -91,6 +91,13 @@ export class MissileTower extends Tower {
     return 2 - (0.2 * this.level);
   }
 
+  /** 0 right after launch, 1 once the next missile is seated. */
+  getReloadProgress(): number {
+    return this.ready()
+      ? 1
+      : 1 - clamp(this.cooldownSeconds / this.getCooldownDurationSeconds(), 0, 1);
+  }
+
   private drawLauncher(context: CanvasRenderingContext2D, loadingPortX: number): void {
     const launcherHalfHeight = this.getLauncherHalfHeight();
     const launcherFrontX = Math.sqrt(
@@ -141,9 +148,7 @@ export class MissileTower extends Tower {
 
   private drawLoadedMissile(context: CanvasRenderingContext2D, loadingPortX: number): void {
     const launcherHalfHeight = this.getLauncherHalfHeight();
-    const reloadProgress = this.ready()
-      ? 1
-      : 1 - clamp(this.cooldownSeconds / this.getCooldownDurationSeconds(), 0, 1);
+    const reloadProgress = this.getReloadProgress();
     const easedReloadProgress = easeOutCubic(reloadProgress);
     const missileOffsetX = RELOAD_START_OFFSET_X * (1 - easedReloadProgress);
 

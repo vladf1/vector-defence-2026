@@ -64,7 +64,7 @@ export class SquareMonster extends Monster {
     result.playSound(AudioCue.MonsterShatter, this.x);
   }
 
-  private getVisualRadius(): number {
+  getVisualRadius(): number {
     const progress = this.sizePulseElapsedSeconds / SIZE_PULSE_DURATION_SECONDS;
     const mirroredProgress = progress <= 0.5 ? progress * 2 : (1 - progress) * 2;
     const easedProgress = easeInOutSine(mirroredProgress);

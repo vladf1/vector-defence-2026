@@ -5,7 +5,7 @@ import { Particle } from "./particle";
 export class HitRingEffect extends Particle {
   private ageSeconds = 0;
 
-  constructor(x: number, y: number, private readonly ringColor: string, private readonly maxRadius: number) {
+  constructor(x: number, y: number, readonly ringColor: string, readonly maxRadius: number) {
     super(x, y, 0, ringColor, 1, { speedPerSecond: 0, offset: 0, angle: 0 });
     this.alpha = 0.85;
   }

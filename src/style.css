@@ -185,6 +185,7 @@ textarea,
   padding: 7px 10px;
 }
 
+.view-button,
 .sound-button,
 .campaign-button,
 .pause-button {
@@ -193,6 +194,15 @@ textarea,
   padding-inline: 0;
   display: inline-grid;
   place-items: center;
+}
+
+.view-button-label {
+  display: block;
+  font: 700 13px/1 "Avenir Next", "Segoe UI", sans-serif;
+  letter-spacing: 0.5px;
+  color: #b0ffe1;
+  text-shadow: 0 0 6px rgba(49, 255, 235, 0.55);
+  pointer-events: none;
 }
 
 .control-icon {
@@ -253,6 +263,66 @@ textarea,
 .board-game {
   cursor: crosshair;
   touch-action: none;
+}
+
+.board-depth {
+  background: #020605;
+}
+
+.board-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font: 400 13px/1 "Avenir Next", "Segoe UI", sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(176, 255, 225, 0.86);
+  background: radial-gradient(circle at center, rgba(12, 34, 28, 0.9), rgba(2, 6, 5, 0.96) 70%);
+  pointer-events: none;
+}
+
+.board-timings {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 1px 10px;
+  margin: 0;
+  padding: 6px 9px;
+  font: 11px/1.3 ui-monospace, "SF Mono", Menlo, monospace;
+  color: rgba(176, 255, 225, 0.9);
+  background: rgba(2, 8, 6, 0.8);
+  border: 1px solid rgba(176, 255, 225, 0.2);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.board-timings dt,
+.board-timings dd {
+  margin: 0;
+}
+
+.board-timings dd {
+  text-align: right;
+}
+
+.board-loading-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(176, 255, 225, 0.22);
+  border-top-color: #b0ffe1;
+  animation: board-loading-spin 0.8s linear infinite;
+}
+
+@keyframes board-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .board-banner {
@@ -859,6 +929,7 @@ textarea,
   line-height: 0;
 }
 
+.mobile-shell .view-button,
 .mobile-shell .sound-button,
 .mobile-shell .campaign-button,
 .mobile-shell .pause-button {

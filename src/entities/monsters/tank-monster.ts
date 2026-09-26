@@ -50,6 +50,10 @@ export class TankMonster extends Monster {
     super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
+  get currentTurretRotation(): number {
+    return this.turretRotation;
+  }
+
   override update(context: UpdateContext, result: UpdateResult): void {
     super.update(context, result);
     if (!this.removed) {

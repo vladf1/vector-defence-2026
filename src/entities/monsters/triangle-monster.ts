@@ -38,6 +38,10 @@ export class TriangleMonster extends Monster {
     super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
+  get currentNoseWobbleAngle(): number {
+    return this.noseWobbleAngle;
+  }
+
   protected override updateSpecial(context: UpdateContext): void {
     if (this.noseWobbleElapsedSeconds > 0) {
       this.advanceNoseWobble(context.deltaSeconds);

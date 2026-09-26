@@ -40,7 +40,7 @@ export class ShockwaveEffect extends Particle {
   private readonly breakValues: number[];
   private readonly streakSamples: StreakSample[];
 
-  constructor(x: number, y: number, private readonly scale: number) {
+  constructor(x: number, y: number, readonly scale: number) {
     super(x, y, 0, "#fff0a8", 1, { speedPerSecond: 0, offset: 0, angle: 0 });
     this.alpha = 1;
     this.rotation = (x * 0.013) + (y * 0.019) + (scale * 0.7);

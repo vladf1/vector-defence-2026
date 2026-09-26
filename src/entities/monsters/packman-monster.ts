@@ -37,6 +37,14 @@ export class PackManMonster extends Monster {
     super(path, COLOR, SPEED_PER_SECOND * speedScale, HIT_POINTS, BOUNTY, RADIUS);
   }
 
+  get currentMouthAngle(): number {
+    return this.mouthAngle;
+  }
+
+  get currentBodyRotation(): number {
+    return this.bodyRotation;
+  }
+
   protected override updateSpecial(context: UpdateContext): void {
     if (this.mouthAnimationElapsedSeconds > 0) {
       this.advanceMouthAnimation(context.deltaSeconds);
