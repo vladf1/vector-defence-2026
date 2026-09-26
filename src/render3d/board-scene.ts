@@ -109,6 +109,7 @@ export class BoardScene {
   private route: RouteMotionPath | undefined;
   private exitAlert = 0;
   private lastEscapesLeft = -1;
+  private sceneryVisible = true;
 
   constructor(
     private readonly fieldWidth: number,
@@ -159,7 +160,15 @@ export class BoardScene {
     }
   }
 
+  /** Hides the road, exit portal, spawn gate, and ambient motes (the ground stays). */
+  setSceneryVisible(visible: boolean): void {
+    this.sceneryVisible = visible;
+  }
+
   write(batches: RenderBatches, frame: FrameContext): void {
+    if (!this.sceneryVisible) {
+      return;
+    }
     this.writeMotes(batches, frame);
     const route = this.route;
     if (!route || route.entries.length < 2) {
@@ -188,13 +197,16 @@ export class BoardScene {
   }
 
   get drawCalls(): number {
-    return this.route && this.route.entries.length >= 2 ? 2 : 1;
+    return this.sceneryVisible && this.route && this.route.entries.length >= 2 ? 2 : 1;
   }
 
   /** The ground is a shader-generated quad around the field (no vertex buffers). */
   draw(pass: GPURenderPassEncoder, pipelines: ScenePipelines): void {
     pass.setPipeline(pipelines.ground);
     pass.draw(GROUND_VERTICES);
+    if (!this.sceneryVisible) {
+      return;
+    }
     pass.setPipeline(pipelines.road);
     this.roadRibbon.draw(pass);
   }

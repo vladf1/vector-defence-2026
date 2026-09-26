@@ -24,7 +24,7 @@ import { GameState, type Point } from "./types";
 
 /**
  * 3D tower and projectile sheet: every cell stages one subject alone in a fresh level
- * runtime, lets the real 3D views settle, frames it with the board camera's close-up
+ * runtime (with the level's scenery hidden), lets the real 3D views settle, frames it with the board camera's close-up
  * `inspect(...)`, and copies the WebGPU frame into the table. The zoom dialog keeps the staged
  * scene and orbits the close-up camera: drag to rotate, scroll or pinch to zoom, double-click
  * to reset.
@@ -44,8 +44,8 @@ interface SheetRow {
 
 const CELL_SIZE = 128;
 const STEP_SECONDS = 1 / 60;
-// Well outside the field, so no route, portal, or ambient motes enter a close-up.
-const STAGE: Point = { x: 400, y: -700 };
+// The field center, where the ground grid is lit as in play; the level's scenery is hidden.
+const STAGE: Point = { x: DESKTOP_GAME_PROFILE.fieldWidth / 2, y: DESKTOP_GAME_PROFILE.fieldHeight / 2 };
 // Shots fly along -22.5 degrees toward a far target, so they are mid-flight when captured.
 const SHOT_TARGET: Point = { x: STAGE.x + 400, y: STAGE.y - (400 * Math.tan(Math.PI / 8)) };
 const TOWER_VISIBLE_HEIGHT = 58;
@@ -175,6 +175,8 @@ async function main(): Promise<void> {
     return;
   }
   game.setRenderer(renderer);
+  // Cells stage subjects in a real level runtime; only the subject and the ground should show.
+  renderer.setSceneryVisible(false);
 
   const cells = buildTable(tableTarget, (row, level) => openZoom(game, renderer, row, level));
   const started = performance.now();

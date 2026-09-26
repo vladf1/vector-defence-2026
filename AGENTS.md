@@ -190,7 +190,7 @@ Other render and benchmark tooling:
 Debug pages:
 
 - `debug/index.html` is the index for standalone development tools; `debug/soundboard.html` plays every audio cue. The production build emits the pages under `debug/` as separate Rollup entries; keep debug-only code out of the main game imports.
-- `debug/towers.html` / `src/tower-testing.ts` render every tower (levels 1-7), gun and drone shot, missile, and missile blast through the real WebGPU board renderer: each cell stages one subject in a fresh level runtime far outside the field, settles the views (advancing shots and blast particles with the real entity updates), frames it with `inspect(...)`, and copies the WebGPU canvas into a 2D cell canvas. The zoom dialog keeps the staged scene and orbits the camera (drag, wheel/pinch, double-click to reset). When changing tower or projectile visuals, check every level there.
+- `debug/towers.html` / `src/tower-testing.ts` render every tower (levels 1-7), gun and drone shot, missile, and missile blast through the real WebGPU board renderer: each cell stages one subject at the field center of a fresh level runtime with the level scenery hidden (`setSceneryVisible(false)`: no road, portal, spawn gate, or motes; the ground grid stays), settles the views (advancing shots and blast particles with the real entity updates), frames it with `inspect(...)`, and copies the WebGPU canvas into a 2D cell canvas. The zoom dialog keeps the staged scene and orbits the camera (drag, wheel/pinch, double-click to reset). When changing tower or projectile visuals, check every level there.
 
 Audio assets:
 

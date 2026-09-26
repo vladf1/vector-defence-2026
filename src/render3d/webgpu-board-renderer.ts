@@ -91,6 +91,8 @@ function createSceneConstants(fieldWidth: number, fieldHeight: number, roadWidth
 export interface InspectableBoardRenderer extends BoardRenderer {
   /** Frames the render camera over a field point (no shake); null restores the board view. */
   inspect(view: InspectView | null): void;
+  /** Shows or hides the level's road, portal, spawn gate, and motes (the ground stays). */
+  setSceneryVisible(visible: boolean): void;
 }
 
 /**
@@ -297,6 +299,10 @@ class WebGpuBoardRenderer implements InspectableBoardRenderer {
 
   inspect(view: InspectView | null): void {
     this.rig.inspect(view);
+  }
+
+  setSceneryVisible(visible: boolean): void {
+    this.board.setSceneryVisible(visible);
   }
 
   getVisibleFieldBounds(): FieldBounds {
