@@ -242,11 +242,23 @@ class WebGpuBoardRenderer implements InspectableBoardRenderer {
     this.governor.updateViewport(this.width, this.height, devicePixelRatio);
     this.applyPixelRatio();
     this.rig.resize(this.width, this.height);
+    this.syncViewDirection();
+    this.overlay.resize(this.width, this.height, devicePixelRatio);
+  }
+
+  tiltBy(deltaRadians: number): boolean {
+    if (!this.rig.tiltBy(deltaRadians)) {
+      return false;
+    }
+    this.syncViewDirection();
+    return true;
+  }
+
+  private syncViewDirection(): void {
     const forward = this.rig.logicalCamera.forward;
     this.viewDirection.x = forward.x;
     this.viewDirection.y = forward.y;
     this.viewDirection.z = forward.z;
-    this.overlay.resize(this.width, this.height, devicePixelRatio);
   }
 
   renderBackgroundLayer(): void {

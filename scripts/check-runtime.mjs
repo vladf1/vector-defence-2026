@@ -57,6 +57,7 @@ const checks = await runBrowserPage({
     renderBackgroundLayer() {}
     draw() {}
     getVisibleFieldBounds() { return this.rig.fieldBounds; }
+    tiltBy(deltaRadians) { return this.rig.tiltBy(deltaRadians); }
     isPointInUpgradeButton() { return false; }
     isPointInLaserLockButton() { return false; }
     clientToField(clientX, clientY, rect) { return this.rig.clientToField(clientX, clientY, rect); }
@@ -233,6 +234,33 @@ const checks = await runBrowserPage({
     game.togglePause(); game.openMenu(); game.openMenu(); game.resumeBattle();
     check(game.state === "paused", `${profile.mode}: repeated map opening preserves paused state`);
     canvas.remove();
+  }
+
+  {
+    const { fieldWidth, fieldHeight } = DESKTOP_GAME_PROFILE;
+    const rig = createBoardCameraRig(fieldWidth, fieldHeight);
+    rig.resize(800, 450);
+    const rect = new DOMRect(0, 0, 800, 450);
+    const initialBounds = { ...rig.fieldBounds };
+    const initialTilt = rig.tilt;
+    const corners = [[0, 0], [fieldWidth, 0], [0, fieldHeight], [fieldWidth, fieldHeight]];
+    const framesField = () => corners.every(([x, y]) => {
+      const screen = rig.projectToViewport(x, 0, y, { x: 0, y: 0 });
+      return screen.x >= 0 && screen.x <= 800 && screen.y >= 0 && screen.y <= 450;
+    });
+    const picksBack = () => {
+      const screen = rig.projectToViewport(600, 0, 120, { x: 0, y: 0 });
+      const picked = rig.clientToField(screen.x, screen.y, rect);
+      return picked !== null && Math.hypot(picked.x - 600, picked.y - 120) < 1e-3;
+    };
+    const sameBounds = () => ["minX", "minY", "maxX", "maxY"].every((key) => rig.fieldBounds[key] === initialBounds[key]);
+    for (const [delta, direction] of [[-1, "straight down"], [2, "toward the horizon"]]) {
+      const moved = rig.tiltBy(delta);
+      check(moved && !rig.tiltBy(delta) && rig.tilt !== initialTilt, `Board tilt clamps ${direction}`);
+      check(framesField() && picksBack() && sameBounds(), `Board tilt ${direction} keeps the field framed, picking exact, and gameplay bounds fixed`);
+      rig.resize(800, 450);
+      check(sameBounds() && framesField(), `Board tilt ${direction} survives a resize`);
+    }
   }
 
   const droneGame = makeGame(DESKTOP_GAME_PROFILE);

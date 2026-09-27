@@ -93,6 +93,9 @@ export interface InspectView {
 
 const BOARD_FOV_DEGREES = 24;
 export const BOARD_TILT_RADIANS = 0.25;
+// The range players can tilt the board camera through (desktop); the field always stays framed.
+const MIN_BOARD_TILT_RADIANS = 0.08;
+const MAX_BOARD_TILT_RADIANS = 0.6;
 const BOARD_MARGIN = 0.006;
 
 /** The board's camera framing; also used by headless checks for real visible bounds. */
@@ -115,7 +118,8 @@ export class CameraRig {
   readonly renderCamera = new CameraState();
   private readonly verticalFov: number;
   private readonly target = vec3(0, 0, 0);
-  private readonly offsetDirection: Vec3;
+  private readonly offsetDirection = vec3(0, 1, 0);
+  private pitch: number;
   private aspect = 1;
   private distance = 1000;
   private trauma = 0;
@@ -128,7 +132,7 @@ export class CameraRig {
 
   constructor(private readonly options: CameraRigOptions) {
     this.verticalFov = (options.verticalFovDegrees * Math.PI) / 180;
-    this.offsetDirection = vec3(0, Math.cos(options.pitchRadians), Math.sin(options.pitchRadians));
+    this.pitch = options.pitchRadians;
     this.visibleBounds.maxX = options.fieldWidth;
     this.visibleBounds.maxY = options.fieldHeight;
   }
@@ -137,14 +141,39 @@ export class CameraRig {
     return this.visibleBounds;
   }
 
+  get tilt(): number {
+    return this.pitch;
+  }
+
+  /**
+   * Tilts the board camera by `deltaRadians` within the player range and re-frames the
+   * whole field; picking and projection follow, `fieldBounds` does not. Returns whether the
+   * tilt changed.
+   */
+  tiltBy(deltaRadians: number): boolean {
+    const pitch = Math.min(MAX_BOARD_TILT_RADIANS, Math.max(MIN_BOARD_TILT_RADIANS, this.pitch + deltaRadians));
+    if (pitch === this.pitch) {
+      return false;
+    }
+    this.pitch = pitch;
+    this.fitField(pitch);
+    this.syncRenderCamera(0, 0);
+    return true;
+  }
+
   resize(width: number, height: number): void {
     this.viewportWidth = Math.max(1, width);
     this.viewportHeight = Math.max(1, height);
     this.aspect = this.viewportWidth / this.viewportHeight;
     this.logicalCamera.setPerspective(this.verticalFov, this.aspect, NEAR, FAR);
     this.renderCamera.setPerspective(this.verticalFov, this.aspect, NEAR, FAR);
-    this.fitField();
+    // Gameplay bounds (placement, culling) always come from the default framing, so a
+    // player's tilt changes only what the camera shows, never the rules.
+    this.fitField(this.options.pitchRadians);
     this.updateVisibleBounds();
+    if (this.pitch !== this.options.pitchRadians) {
+      this.fitField(this.pitch);
+    }
     this.syncRenderCamera(0, 0);
   }
 
@@ -227,11 +256,14 @@ export class CameraRig {
   }
 
   /**
-   * Finds the camera distance and look-at target that frame the whole field with the
-   * requested margin, re-centering the (trapezoidal) projection vertically.
+   * Places the logical camera at `pitch`, finding the distance and look-at target that frame
+   * the whole field with the requested margin, re-centering the (trapezoidal) projection
+   * vertically.
    */
-  private fitField(): void {
+  private fitField(pitch: number): void {
     const { fieldWidth, fieldHeight, margin } = this.options;
+    this.offsetDirection.y = Math.cos(pitch);
+    this.offsetDirection.z = Math.sin(pitch);
     const limit = 1 - margin;
     this.target.x = fieldWidth / 2;
     this.target.y = 0;

@@ -19,12 +19,17 @@ import {
   type RuntimeHudStats,
 } from "./game-view";
 import { type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
-import { readonly, writable } from "svelte/store";
+import { get, readonly, writable } from "svelte/store";
 
 const NERD_STATS_SAMPLE_MS = 500;
 const TOWER_DRAG_THRESHOLD_PX = 6;
 const KEYBOARD_INPUT_SELECTOR = "input, select, textarea";
 const KEYBOARD_ACTIVATION_SELECTOR = "a[href], button, summary, [role='button'], [role='link']";
+// Wheel up and the up arrow tilt the board camera toward the horizon; down tilts it back.
+const TILT_RADIANS_PER_WHEEL_PIXEL = 0.0006;
+const TILT_RADIANS_PER_KEY_PRESS = 0.04;
+const WHEEL_LINE_PIXELS = 16;
+const TILT_KEY_DIRECTIONS: Readonly<Record<string, number>> = { ArrowUp: 1, ArrowDown: -1 };
 
 interface CanvasGeometry {
   rect: DOMRect;
@@ -39,10 +44,10 @@ function eventPathMatches(event: KeyboardEvent, selector: string): boolean {
   return event.composedPath().some((target) => target instanceof HTMLElement && target.matches(selector));
 }
 
-function shouldIgnoreGameShortcut(event: KeyboardEvent): boolean {
+function shouldIgnoreGameShortcut(event: KeyboardEvent, allowRepeat: boolean): boolean {
   if (
     event.defaultPrevented
-    || event.repeat
+    || (event.repeat && !allowRepeat)
     || event.isComposing
     || event.altKey
     || event.ctrlKey
@@ -89,6 +94,7 @@ export function createGameSession(profile: GameProfile) {
   let nerdStatsEnabled = false;
   let canvasResizeObserver: ResizeObserver | null = null;
   let canvasGeometry: CanvasGeometry | null = null;
+  let lastPointerClient: { x: number; y: number } | null = null;
   let towerDrag:
     | {
       kind: TowerKind;
@@ -376,6 +382,9 @@ export function createGameSession(profile: GameProfile) {
       game.draw();
     });
     canvasResizeObserver.observe(canvas);
+    if (profile.ui.allowViewTilt) {
+      canvas.addEventListener("wheel", handleBoardWheel, { passive: false });
+    }
     attachWindowListeners();
 
     mountBoardRenderer(activeGame, surface, token);
@@ -390,6 +399,8 @@ export function createGameSession(profile: GameProfile) {
     endTowerDrag();
     canvasResizeObserver?.disconnect();
     canvasResizeObserver = null;
+    canvas?.removeEventListener("wheel", handleBoardWheel);
+    lastPointerClient = null;
     game?.setPointer();
     game?.detachRenderer();
     canvasGeometry = null;
@@ -508,6 +519,7 @@ export function createGameSession(profile: GameProfile) {
   };
 
   const handleCanvasMove = (event: PointerEvent): void => {
+    lastPointerClient = { x: event.clientX, y: event.clientY };
     const point = toCanvasPoint(event);
     if (!game || !point) {
       return;
@@ -535,6 +547,7 @@ export function createGameSession(profile: GameProfile) {
   };
 
   const handleCanvasLeave = (): void => {
+    lastPointerClient = null;
     if (game) {
       game.setPointer();
     }
@@ -655,8 +668,46 @@ export function createGameSession(profile: GameProfile) {
     window.addEventListener("pointercancel", handleTowerDragCancel);
   };
 
+  /** Tilts the board camera, keeps the build pointer under the cursor, and redraws if idle. */
+  const tiltView = (deltaRadians: number): void => {
+    if (!game || !boardReady || !game.tiltView(deltaRadians)) {
+      return;
+    }
+
+    if (lastPointerClient && canvasGeometry) {
+      const point = game.renderer.clientToField(lastPointerClient.x, lastPointerClient.y, canvasGeometry.rect);
+      game.setPointer(point ?? undefined);
+    }
+    if (frameId === 0) {
+      game.draw();
+    }
+  };
+
+  function handleBoardWheel(event: WheelEvent): void {
+    if (event.ctrlKey || event.metaKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
+      return;
+    }
+
+    event.preventDefault();
+    const scale = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+      ? WHEEL_LINE_PIXELS
+      : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+        ? (canvasGeometry?.rect.height ?? 0)
+        : 1;
+    tiltView(-event.deltaY * scale * TILT_RADIANS_PER_WHEEL_PIXEL);
+  }
+
   const handleKeyDown = (event: KeyboardEvent): void => {
-    if (shouldIgnoreGameShortcut(event)) {
+    // Arrow keys stay with the page (and modal scrolling) while a modal covers the board.
+    const tiltDirection = profile.ui.allowViewTilt && get(modalStore) === null ? (TILT_KEY_DIRECTIONS[event.key] ?? 0) : 0;
+    // Held arrow keys keep tilting, so repeats pass for them.
+    if (shouldIgnoreGameShortcut(event, tiltDirection !== 0)) {
+      return;
+    }
+
+    if (tiltDirection !== 0) {
+      event.preventDefault();
+      tiltView(tiltDirection * TILT_RADIANS_PER_KEY_PRESS);
       return;
     }
 

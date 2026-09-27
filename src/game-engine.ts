@@ -790,6 +790,11 @@ export class Game {
     this.updateContext.fieldBounds = this.renderer.getVisibleFieldBounds();
   }
 
+  /** Tilts the board camera (presentation only); returns whether the view changed. */
+  tiltView(deltaRadians: number): boolean {
+    return this.renderer.tiltBy(deltaRadians);
+  }
+
   renderBackgroundLayer(): void {
     this.renderer.renderBackgroundLayer();
   }

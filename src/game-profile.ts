@@ -39,6 +39,8 @@ export interface GameProfile {
     showTitle: boolean;
     showFootnote: boolean;
     portraitOnly: boolean;
+    /** Mouse wheel over the board and the up/down arrow keys tilt the board camera. */
+    allowViewTilt: boolean;
   };
 }
 
@@ -104,6 +106,7 @@ export const DESKTOP_GAME_PROFILE = createProfile({
     showTitle: true,
     showFootnote: true,
     portraitOnly: false,
+    allowViewTilt: true,
   },
 });
 
@@ -125,6 +128,7 @@ export const MOBILE_GAME_PROFILE = createProfile({
     showTitle: false,
     showFootnote: false,
     portraitOnly: true,
+    allowViewTilt: false,
   },
 });
 

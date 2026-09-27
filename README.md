@@ -97,6 +97,7 @@ The published site is available at [https://vladf1.github.io/vector-defence-2026
 - `U`: Upgrade selected tower
 - `Esc`: Cancel build mode
 - `Space`: Pause or resume
+- `↑` / `↓` or mouse wheel over the board: Tilt the view (desktop)
 
 ## Project Notes
 

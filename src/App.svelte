@@ -37,7 +37,7 @@
 
   {#if profile.ui.showFootnote}
     <p class="footnote" inert={$modal !== null}>
-      Tip: press the tower keys shown on available buttons, <strong>U</strong> to upgrade, <strong>Esc</strong> to cancel build mode, and <strong>Space</strong> to pause or resume.
+      Tip: press the tower keys shown on available buttons, <strong>U</strong> to upgrade, <strong>Esc</strong> to cancel build mode, <strong>Space</strong> to pause or resume, and <strong>↑</strong>/<strong>↓</strong> or the mouse wheel to tilt the view.
       <button class="footnote-link" type="button" onclick={toggleNerdStats}>
         {showNerdStats ? "Hide" : "Show"} stats for nerds
       </button>
