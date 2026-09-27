@@ -93,8 +93,9 @@ export interface InspectView {
 
 const BOARD_FOV_DEGREES = 24;
 export const BOARD_TILT_RADIANS = 0.25;
-// The range players can tilt the board camera through (desktop); the field always stays framed.
-const MIN_BOARD_TILT_RADIANS = 0.08;
+// The range players can tilt the board camera through (desktop), from straight down; the
+// field always stays framed.
+const MIN_BOARD_TILT_RADIANS = 0;
 const MAX_BOARD_TILT_RADIANS = 0.6;
 const BOARD_MARGIN = 0.006;
 
