@@ -9,6 +9,8 @@ import type { TowerView } from "./tower-view";
 
 const RANGE_Y = 0.7;
 const SELECTED_RANGE = linearColor("#5cff9e");
+// The range layer is additive, so this scale is its opacity.
+const SELECTED_RANGE_INTENSITY = 0.385;
 const CROSSHAIR_WIDTH = 0.9;
 const HOLOGRAM_FLICKER_HZ = 7;
 
@@ -22,7 +24,15 @@ export class PlacementView {
     const runtime = this.game.runtime;
     const selected = runtime.selectedTower;
     if (selected && !runtime.placingTower) {
-      this.pushRange(batches, selected.x, selected.y, selected.range, SELECTED_RANGE.r * 0.55, SELECTED_RANGE.g * 0.55, SELECTED_RANGE.b * 0.55);
+      this.pushRange(
+        batches,
+        selected.x,
+        selected.y,
+        selected.range,
+        SELECTED_RANGE.r * SELECTED_RANGE_INTENSITY,
+        SELECTED_RANGE.g * SELECTED_RANGE_INTENSITY,
+        SELECTED_RANGE.b * SELECTED_RANGE_INTENSITY,
+      );
     }
 
     const pointer = runtime.pointer;
