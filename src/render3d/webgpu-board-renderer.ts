@@ -254,6 +254,22 @@ class WebGpuBoardRenderer implements InspectableBoardRenderer {
     return true;
   }
 
+  zoomAt(factor: number, clientX: number, clientY: number, surfaceRect: DOMRect): boolean {
+    return this.rig.zoomAt(factor, clientX, clientY, surfaceRect);
+  }
+
+  panBetween(fromClientX: number, fromClientY: number, toClientX: number, toClientY: number, surfaceRect: DOMRect): boolean {
+    return this.rig.panBetween(fromClientX, fromClientY, toClientX, toClientY, surfaceRect);
+  }
+
+  resetView(): boolean {
+    if (!this.rig.resetView()) {
+      return false;
+    }
+    this.syncViewDirection();
+    return true;
+  }
+
   private syncViewDirection(): void {
     const forward = this.rig.logicalCamera.forward;
     this.viewDirection.x = forward.x;

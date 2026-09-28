@@ -39,8 +39,8 @@ export interface GameProfile {
     showTitle: boolean;
     showFootnote: boolean;
     portraitOnly: boolean;
-    /** Mouse wheel over the board and the up/down arrow keys tilt the board camera. */
-    allowViewTilt: boolean;
+    /** Board camera controls: drag to pan, wheel/pinch to zoom, Shift+wheel or up/down to tilt. */
+    allowViewControls: boolean;
   };
 }
 
@@ -106,7 +106,7 @@ export const DESKTOP_GAME_PROFILE = createProfile({
     showTitle: true,
     showFootnote: true,
     portraitOnly: false,
-    allowViewTilt: true,
+    allowViewControls: true,
   },
 });
 
@@ -128,7 +128,7 @@ export const MOBILE_GAME_PROFILE = createProfile({
     showTitle: false,
     showFootnote: false,
     portraitOnly: true,
-    allowViewTilt: false,
+    allowViewControls: false,
   },
 });
 

@@ -97,6 +97,10 @@ export const BOARD_TILT_RADIANS = 0.25;
 // field always stays framed.
 const MIN_BOARD_TILT_RADIANS = 0;
 const MAX_BOARD_TILT_RADIANS = 0.6;
+// Player zoom over the fitted framing (1 = the whole field); panning is limited so the view
+// never drifts past the field's edges.
+const MIN_BOARD_ZOOM = 1;
+const MAX_BOARD_ZOOM = 4;
 const BOARD_MARGIN = 0.006;
 
 /** The board's camera framing; also used by headless checks for real visible bounds. */
@@ -121,6 +125,11 @@ export class CameraRig {
   private readonly target = vec3(0, 0, 0);
   private readonly offsetDirection = vec3(0, 1, 0);
   private pitch: number;
+  private zoom = MIN_BOARD_ZOOM;
+  private panX = 0;
+  private panZ = 0;
+  private readonly fitTarget = vec3(0, 0, 0);
+  private fitDistance = 1000;
   private aspect = 1;
   private distance = 1000;
   private trauma = 0;
@@ -146,11 +155,17 @@ export class CameraRig {
     return this.pitch;
   }
 
-  /**
-   * Tilts the board camera by `deltaRadians` within the player range and re-frames the
-   * whole field; picking and projection follow, `fieldBounds` does not. Returns whether the
-   * tilt changed.
+  get zoomFactor(): number {
+    return this.zoom;
+  }
+
+  /*
+   * Player view controls (desktop). Picking and projection follow them; `fieldBounds` never
+   * does, so they change only what the camera shows, not the rules. Each returns whether
+   * the view changed.
    */
+
+  /** Tilts the camera by `deltaRadians` within the player range, re-framing the field. */
   tiltBy(deltaRadians: number): boolean {
     const pitch = Math.min(MAX_BOARD_TILT_RADIANS, Math.max(MIN_BOARD_TILT_RADIANS, this.pitch + deltaRadians));
     if (pitch === this.pitch) {
@@ -158,8 +173,70 @@ export class CameraRig {
     }
     this.pitch = pitch;
     this.fitField(pitch);
-    this.syncRenderCamera(0, 0);
+    this.applyPlayerView();
     return true;
+  }
+
+  /** Zooms by `factor`, keeping the ground point under the client point in place. */
+  zoomAt(factor: number, clientX: number, clientY: number, rect: DOMRect): boolean {
+    const zoom = Math.min(MAX_BOARD_ZOOM, Math.max(MIN_BOARD_ZOOM, this.zoom * factor));
+    if (zoom === this.zoom) {
+      return false;
+    }
+    const before = this.clientToField(clientX, clientY, rect);
+    this.zoom = zoom;
+    this.applyPlayerView();
+    const after = this.clientToField(clientX, clientY, rect);
+    if (before && after) {
+      this.panBy(before.x - after.x, before.y - after.y);
+    }
+    return true;
+  }
+
+  /** Pans so the ground point under `from` moves under `to` (grab-the-ground dragging). */
+  panBetween(fromClientX: number, fromClientY: number, toClientX: number, toClientY: number, rect: DOMRect): boolean {
+    const from = this.clientToField(fromClientX, fromClientY, rect);
+    const to = this.clientToField(toClientX, toClientY, rect);
+    return from !== null && to !== null && this.panBy(from.x - to.x, from.y - to.y);
+  }
+
+  /** Restores the default tilt, zoom, and pan. */
+  resetView(): boolean {
+    if (this.pitch === this.options.pitchRadians && this.zoom === MIN_BOARD_ZOOM && this.panX === 0 && this.panZ === 0) {
+      return false;
+    }
+    this.pitch = this.options.pitchRadians;
+    this.zoom = MIN_BOARD_ZOOM;
+    this.panX = 0;
+    this.panZ = 0;
+    this.fitField(this.pitch);
+    this.applyPlayerView();
+    return true;
+  }
+
+  private panBy(deltaX: number, deltaZ: number): boolean {
+    const panX = this.panX;
+    const panZ = this.panZ;
+    this.panX += deltaX;
+    this.panZ += deltaZ;
+    this.applyPlayerView();
+    return this.panX !== panX || this.panZ !== panZ;
+  }
+
+  /** Places the logical camera: the fitted framing, zoomed and panned (pan clamped). */
+  private applyPlayerView(): void {
+    const { fieldWidth, fieldHeight } = this.options;
+    const slack = 1 - (1 / this.zoom);
+    const maxPanX = (fieldWidth / 2) * slack;
+    const maxPanZ = (fieldHeight / 2) * slack;
+    this.panX = Math.min(maxPanX, Math.max(-maxPanX, this.panX));
+    this.panZ = Math.min(maxPanZ, Math.max(-maxPanZ, this.panZ));
+    this.target.x = this.fitTarget.x + this.panX;
+    this.target.y = this.fitTarget.y;
+    this.target.z = this.fitTarget.z + this.panZ;
+    this.distance = this.fitDistance / this.zoom;
+    this.placeCamera();
+    this.syncRenderCamera(0, 0);
   }
 
   resize(width: number, height: number): void {
@@ -168,14 +245,14 @@ export class CameraRig {
     this.aspect = this.viewportWidth / this.viewportHeight;
     this.logicalCamera.setPerspective(this.verticalFov, this.aspect, NEAR, FAR);
     this.renderCamera.setPerspective(this.verticalFov, this.aspect, NEAR, FAR);
-    // Gameplay bounds (placement, culling) always come from the default framing, so a
-    // player's tilt changes only what the camera shows, never the rules.
+    // Gameplay bounds (placement, culling) always come from the default framing, so the
+    // player's view changes only what the camera shows, never the rules.
     this.fitField(this.options.pitchRadians);
     this.updateVisibleBounds();
     if (this.pitch !== this.options.pitchRadians) {
       this.fitField(this.pitch);
     }
-    this.syncRenderCamera(0, 0);
+    this.applyPlayerView();
   }
 
   /**
@@ -200,7 +277,8 @@ export class CameraRig {
 
     this.shakeTime += deltaSeconds;
     this.trauma = Math.max(0, this.trauma - (SHAKE_DECAY_PER_SECOND * deltaSeconds));
-    const strength = this.trauma * this.trauma * MAX_SHAKE_OFFSET;
+    // Shake is in world units, so zoomed-in views scale it back to the same on-screen jolt.
+    const strength = (this.trauma * this.trauma * MAX_SHAKE_OFFSET) / this.zoom;
     const t = this.shakeTime * SHAKE_FREQUENCY;
     const offsetX = (Math.sin(t * 1.13) + (Math.sin(t * 2.71) * 0.5)) * strength * 0.66;
     const offsetZ = (Math.cos(t * 0.97) + (Math.sin(t * 3.17) * 0.5)) * strength * 0.66;
@@ -257,9 +335,9 @@ export class CameraRig {
   }
 
   /**
-   * Places the logical camera at `pitch`, finding the distance and look-at target that frame
-   * the whole field with the requested margin, re-centering the (trapezoidal) projection
-   * vertically.
+   * Fits the logical camera at `pitch`: finds the distance and look-at target that frame the
+   * whole field with the requested margin, re-centering the (trapezoidal) projection
+   * vertically, and records them as the base the player's zoom and pan apply to.
    */
   private fitField(pitch: number): void {
     const { fieldWidth, fieldHeight, margin } = this.options;
@@ -299,6 +377,10 @@ export class CameraRig {
       this.distance *= 1 + ((extent / limit) - 1) * 0.9;
     }
     this.placeCamera();
+    this.fitTarget.x = this.target.x;
+    this.fitTarget.y = this.target.y;
+    this.fitTarget.z = this.target.z;
+    this.fitDistance = this.distance;
   }
 
   private updateVisibleBounds(): void {

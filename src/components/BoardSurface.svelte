@@ -27,6 +27,9 @@
   onpointermove={session.handleCanvasMove}
   onpointerleave={session.handleCanvasLeave}
   onpointerdown={session.handleCanvasDown}
+  onpointerup={session.handleCanvasUp}
+  onpointercancel={session.handleCanvasUp}
+  oncontextmenu={session.handleCanvasContextMenu}
 ></canvas>
 {#if showTimings && $startupTimings}
   <dl class="board-timings">

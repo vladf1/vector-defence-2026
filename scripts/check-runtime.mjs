@@ -58,6 +58,9 @@ const checks = await runBrowserPage({
     draw() {}
     getVisibleFieldBounds() { return this.rig.fieldBounds; }
     tiltBy(deltaRadians) { return this.rig.tiltBy(deltaRadians); }
+    zoomAt(factor, clientX, clientY, rect) { return this.rig.zoomAt(factor, clientX, clientY, rect); }
+    panBetween(fromX, fromY, toX, toY, rect) { return this.rig.panBetween(fromX, fromY, toX, toY, rect); }
+    resetView() { return this.rig.resetView(); }
     isPointInUpgradeButton() { return false; }
     isPointInLaserLockButton() { return false; }
     clientToField(clientX, clientY, rect) { return this.rig.clientToField(clientX, clientY, rect); }
@@ -261,6 +264,24 @@ const checks = await runBrowserPage({
       rig.resize(800, 450);
       check(sameBounds() && framesField(), `Board tilt ${direction} survives a resize`);
     }
+
+    const fieldAt = (x, y) => rig.clientToField(x, y, rect);
+    const nearPoint = (a, b) => a !== null && b !== null && Math.hypot(a.x - b.x, a.y - b.y) < 1e-3;
+    check(rig.resetView() && !rig.resetView() && rig.tilt === initialTilt && framesField(), "Board view reset restores the default framing");
+    check(!rig.panBetween(400, 225, 300, 200, rect), "Board pan is locked while the whole field is framed");
+    const cursorGround = fieldAt(620, 140);
+    check(rig.zoomAt(2, 620, 140, rect) && nearPoint(fieldAt(620, 140), cursorGround), "Board zoom keeps the ground under the cursor in place");
+    const grabbed = fieldAt(300, 200);
+    check(rig.panBetween(300, 200, 360, 250, rect) && nearPoint(fieldAt(360, 250), grabbed), "Board pan keeps the grabbed ground under the cursor");
+    check(picksBack() && sameBounds(), "Zoomed and panned board keeps picking exact and gameplay bounds fixed");
+    rig.panBetween(400, 225, 400 + 5000, 225 + 5000, rect);
+    const center = fieldAt(400, 225);
+    check(!rig.panBetween(400, 225, 500, 300, rect) && center.x > 0 && center.x < fieldWidth / 2 && center.y > 0 && center.y < fieldHeight / 2, "Board pan stops at the field edge");
+    check(rig.zoomAt(100, 400, 225, rect) && rig.zoomFactor === 4 && !rig.zoomAt(2, 400, 225, rect), "Board zoom clamps at 4x");
+    rig.zoomAt(1e-3, 400, 225, rect);
+    check(rig.zoomFactor === 1 && framesField(), "Zooming fully out re-frames the whole field and drops the pan");
+    rig.resize(800, 450);
+    check(sameBounds() && framesField(), "Board view survives a resize");
   }
 
   const droneGame = makeGame(DESKTOP_GAME_PROFILE);

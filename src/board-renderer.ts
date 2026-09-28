@@ -10,12 +10,18 @@ export interface BoardRenderer {
   renderBackgroundLayer(): void;
   draw(): void;
   getVisibleFieldBounds(): FieldBounds;
-  /**
-   * Tilts the board camera toward the horizon (positive) or straight down (negative) within
-   * the renderer's range, keeping the whole field framed. Picking follows the tilt; visible
-   * field bounds (gameplay) do not. Returns whether the view changed.
+  /*
+   * Player camera controls. Picking follows them; visible field bounds (gameplay) never do.
+   * Each returns whether the view changed.
    */
+  /** Tilts toward the horizon (positive) or straight down (negative), keeping the field framed. */
   tiltBy(deltaRadians: number): boolean;
+  /** Zooms by `factor` (above 1 zooms in), keeping the ground under the client point in place. */
+  zoomAt(factor: number, clientX: number, clientY: number, surfaceRect: DOMRect): boolean;
+  /** Pans so the ground under the `from` client point moves under the `to` client point. */
+  panBetween(fromClientX: number, fromClientY: number, toClientX: number, toClientY: number, surfaceRect: DOMRect): boolean;
+  /** Restores the default tilt, zoom, and pan. */
+  resetView(): boolean;
   isPointInUpgradeButton(point: Point): boolean;
   isPointInLaserLockButton(point: Point): boolean;
   /** Maps a client-space pointer position over the input surface to field coordinates. */
@@ -41,6 +47,18 @@ export class DetachedBoardRenderer implements BoardRenderer {
   }
 
   tiltBy(): boolean {
+    return false;
+  }
+
+  zoomAt(): boolean {
+    return false;
+  }
+
+  panBetween(): boolean {
+    return false;
+  }
+
+  resetView(): boolean {
     return false;
   }
 

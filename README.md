@@ -97,7 +97,10 @@ The published site is available at [https://vladf1.github.io/vector-defence-2026
 - `U`: Upgrade selected tower
 - `Esc`: Cancel build mode
 - `Space`: Pause or resume
-- `↑` / `↓` or mouse wheel over the board: Tilt the view (desktop)
+- Drag the board (any mouse button): Pan the view (desktop)
+- Mouse wheel or trackpad pinch over the board, or `=` / `-`: Zoom the view (desktop)
+- `Shift` + mouse wheel, or `↑` / `↓`: Tilt the view (desktop)
+- `0`: Reset the view (desktop)
 
 ## Project Notes
 

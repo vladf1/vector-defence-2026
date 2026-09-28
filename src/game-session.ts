@@ -25,11 +25,23 @@ const NERD_STATS_SAMPLE_MS = 500;
 const TOWER_DRAG_THRESHOLD_PX = 6;
 const KEYBOARD_INPUT_SELECTOR = "input, select, textarea";
 const KEYBOARD_ACTIVATION_SELECTOR = "a[href], button, summary, [role='button'], [role='link']";
-// Wheel up and the up arrow tilt the board camera toward the horizon; down tilts it back.
+// Board camera controls (desktop): dragging pans, the wheel or a pinch zooms toward the
+// cursor, Shift+wheel and the up/down arrows tilt (up leans toward the horizon), = and -
+// zoom around the center, and 0 resets the view.
+const ZOOM_PER_WHEEL_PIXEL = 0.0015;
+const ZOOM_PER_PINCH_PIXEL = 0.01;
+const ZOOM_PER_KEY_PRESS = 1.25;
 const TILT_RADIANS_PER_WHEEL_PIXEL = 0.0006;
 const TILT_RADIANS_PER_KEY_PRESS = 0.04;
 const WHEEL_LINE_PIXELS = 16;
-const TILT_KEY_DIRECTIONS: Readonly<Record<string, number>> = { ArrowUp: 1, ArrowDown: -1 };
+const BOARD_PAN_THRESHOLD_PX = 6;
+const MIDDLE_BUTTON = 1;
+const RIGHT_BUTTON = 2;
+
+type ViewKeyAction =
+  | { readonly kind: "tilt"; readonly radians: number }
+  | { readonly kind: "zoom"; readonly factor: number }
+  | { readonly kind: "reset" };
 
 interface CanvasGeometry {
   rect: DOMRect;
@@ -44,10 +56,15 @@ function eventPathMatches(event: KeyboardEvent, selector: string): boolean {
   return event.composedPath().some((target) => target instanceof HTMLElement && target.matches(selector));
 }
 
-function shouldIgnoreGameShortcut(event: KeyboardEvent, allowRepeat: boolean): boolean {
+function isTextEntryEvent(event: KeyboardEvent): boolean {
+  return eventPathMatches(event, KEYBOARD_INPUT_SELECTOR)
+    || event.composedPath().some((target) => target instanceof HTMLElement && target.isContentEditable);
+}
+
+function shouldIgnoreGameShortcut(event: KeyboardEvent): boolean {
   if (
     event.defaultPrevented
-    || (event.repeat && !allowRepeat)
+    || event.repeat
     || event.isComposing
     || event.altKey
     || event.ctrlKey
@@ -57,15 +74,41 @@ function shouldIgnoreGameShortcut(event: KeyboardEvent, allowRepeat: boolean): b
     return true;
   }
 
-  const path = event.composedPath();
-  const isTextEntry = eventPathMatches(event, KEYBOARD_INPUT_SELECTOR)
-    || path.some((target) => target instanceof HTMLElement && target.isContentEditable);
-  if (isTextEntry) {
+  if (isTextEntryEvent(event)) {
     return true;
   }
 
   const isNativeActivationKey = event.code === "Space" || event.key === "Enter";
   return isNativeActivationKey && eventPathMatches(event, KEYBOARD_ACTIVATION_SELECTOR);
+}
+
+/** View keys repeat while held and accept Shift (so `+` works). */
+function shouldIgnoreViewKey(event: KeyboardEvent): boolean {
+  return event.defaultPrevented
+    || event.isComposing
+    || event.altKey
+    || event.ctrlKey
+    || event.metaKey
+    || isTextEntryEvent(event);
+}
+
+function getViewKeyAction(key: string): ViewKeyAction | null {
+  switch (key) {
+    case "ArrowUp":
+      return { kind: "tilt", radians: TILT_RADIANS_PER_KEY_PRESS };
+    case "ArrowDown":
+      return { kind: "tilt", radians: -TILT_RADIANS_PER_KEY_PRESS };
+    case "=":
+    case "+":
+      return { kind: "zoom", factor: ZOOM_PER_KEY_PRESS };
+    case "-":
+    case "_":
+      return { kind: "zoom", factor: 1 / ZOOM_PER_KEY_PRESS };
+    case "0":
+      return { kind: "reset" };
+    default:
+      return null;
+  }
 }
 
 export function createGameSession(profile: GameProfile) {
@@ -95,6 +138,17 @@ export function createGameSession(profile: GameProfile) {
   let canvasResizeObserver: ResizeObserver | null = null;
   let canvasGeometry: CanvasGeometry | null = null;
   let lastPointerClient: { x: number; y: number } | null = null;
+  let boardPan:
+    | {
+      pointerId: number;
+      startClientX: number;
+      startClientY: number;
+      lastClientX: number;
+      lastClientY: number;
+      active: boolean;
+    }
+    | null = null;
+  let viewRedrawId = 0;
   let towerDrag:
     | {
       kind: TowerKind;
@@ -382,7 +436,7 @@ export function createGameSession(profile: GameProfile) {
       game.draw();
     });
     canvasResizeObserver.observe(canvas);
-    if (profile.ui.allowViewTilt) {
+    if (profile.ui.allowViewControls) {
       canvas.addEventListener("wheel", handleBoardWheel, { passive: false });
     }
     attachWindowListeners();
@@ -400,6 +454,7 @@ export function createGameSession(profile: GameProfile) {
     canvasResizeObserver?.disconnect();
     canvasResizeObserver = null;
     canvas?.removeEventListener("wheel", handleBoardWheel);
+    endBoardPan();
     lastPointerClient = null;
     game?.setPointer();
     game?.detachRenderer();
@@ -413,6 +468,10 @@ export function createGameSession(profile: GameProfile) {
     if (frameId !== 0) {
       window.cancelAnimationFrame(frameId);
       frameId = 0;
+    }
+    if (viewRedrawId !== 0) {
+      window.cancelAnimationFrame(viewRedrawId);
+      viewRedrawId = 0;
     }
 
     detachWindowListeners();
@@ -518,8 +577,142 @@ export function createGameSession(profile: GameProfile) {
     }, true);
   };
 
+  /** After a camera change: keeps the build pointer under the cursor and redraws if idle. */
+  const handleViewChanged = (): void => {
+    if (!game) {
+      return;
+    }
+
+    if (lastPointerClient && canvasGeometry) {
+      const point = game.renderer.clientToField(lastPointerClient.x, lastPointerClient.y, canvasGeometry.rect);
+      game.setPointer(point ?? undefined);
+    }
+    if (frameId !== 0 || viewRedrawId !== 0) {
+      return;
+    }
+    // One redraw per display frame, however many drag or wheel events arrive.
+    viewRedrawId = window.requestAnimationFrame(() => {
+      viewRedrawId = 0;
+      if (frameId === 0) {
+        game?.draw();
+      }
+    });
+  };
+
+  const changeView = (change: (renderer: BoardRenderer, rect: DOMRect) => boolean): void => {
+    if (!game || !boardReady || !canvasGeometry) {
+      return;
+    }
+
+    if (change(game.renderer, canvasGeometry.rect)) {
+      handleViewChanged();
+    }
+  };
+
+  const performViewKeyAction = (action: ViewKeyAction): void => {
+    switch (action.kind) {
+      case "tilt":
+        changeView((renderer) => renderer.tiltBy(action.radians));
+        break;
+      case "zoom":
+        changeView((renderer, rect) => renderer.zoomAt(action.factor, rect.left + (rect.width / 2), rect.top + (rect.height / 2), rect));
+        break;
+      case "reset":
+        changeView((renderer) => renderer.resetView());
+        break;
+    }
+  };
+
+  function handleBoardWheel(event: WheelEvent): void {
+    if (event.metaKey) {
+      return;
+    }
+
+    // Browsers may turn Shift+wheel into horizontal scrolling, so take whichever axis moved.
+    const delta = event.shiftKey ? (event.deltaY || event.deltaX) : event.deltaY;
+    if (delta === 0 || (!event.shiftKey && Math.abs(event.deltaX) > Math.abs(event.deltaY))) {
+      return;
+    }
+
+    event.preventDefault();
+    refreshCanvasGeometry();
+    const scale = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+      ? WHEEL_LINE_PIXELS
+      : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+        ? (canvasGeometry?.rect.height ?? 0)
+        : 1;
+    const pixels = delta * scale;
+    if (event.shiftKey) {
+      changeView((renderer) => renderer.tiltBy(-pixels * TILT_RADIANS_PER_WHEEL_PIXEL));
+      return;
+    }
+
+    // Trackpad pinches arrive as ctrl+wheel with small deltas.
+    const zoomPerPixel = event.ctrlKey ? ZOOM_PER_PINCH_PIXEL : ZOOM_PER_WHEEL_PIXEL;
+    const { clientX, clientY } = event;
+    changeView((renderer, rect) => renderer.zoomAt(Math.exp(-pixels * zoomPerPixel), clientX, clientY, rect));
+  }
+
+  const activateBoardPan = (pointerId: number): void => {
+    if (!boardPan) {
+      return;
+    }
+
+    boardPan.active = true;
+    canvas?.setPointerCapture(pointerId);
+    canvas?.style.setProperty("cursor", "grabbing");
+  };
+
+  function endBoardPan(): void {
+    if (boardPan?.active) {
+      canvas?.style.removeProperty("cursor");
+    }
+    boardPan = null;
+  }
+
+  /** Pans with a held pointer; returns whether the move belonged to a board pan. */
+  const updateBoardPan = (event: PointerEvent): boolean => {
+    const pan = boardPan;
+    if (!pan || event.pointerId !== pan.pointerId) {
+      return false;
+    }
+    if (event.buttons === 0) {
+      endBoardPan();
+      return false;
+    }
+    if (!pan.active) {
+      if (Math.hypot(event.clientX - pan.startClientX, event.clientY - pan.startClientY) < BOARD_PAN_THRESHOLD_PX) {
+        return false;
+      }
+      activateBoardPan(event.pointerId);
+    }
+
+    // Grab the ground: the point under the cursor at the press stays under the cursor.
+    const fromX = pan.lastClientX;
+    const fromY = pan.lastClientY;
+    pan.lastClientX = event.clientX;
+    pan.lastClientY = event.clientY;
+    changeView((renderer, rect) => renderer.panBetween(fromX, fromY, event.clientX, event.clientY, rect));
+    return true;
+  };
+
+  const startBoardPan = (event: PointerEvent): void => {
+    boardPan = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      lastClientX: event.clientX,
+      lastClientY: event.clientY,
+      active: false,
+    };
+  };
+
   const handleCanvasMove = (event: PointerEvent): void => {
     lastPointerClient = { x: event.clientX, y: event.clientY };
+    if (updateBoardPan(event)) {
+      return;
+    }
+
     const point = toCanvasPoint(event);
     if (!game || !point) {
       return;
@@ -529,6 +722,15 @@ export function createGameSession(profile: GameProfile) {
   };
 
   const handleCanvasDown = (event: PointerEvent): void => {
+    const viewControls = profile.ui.allowViewControls;
+    if (viewControls && (event.button === MIDDLE_BUTTON || event.button === RIGHT_BUTTON)) {
+      event.preventDefault();
+      refreshCanvasGeometry();
+      startBoardPan(event);
+      activateBoardPan(event.pointerId);
+      return;
+    }
+
     if (event.button !== 0 && event.pointerType !== "touch") {
       return;
     }
@@ -540,10 +742,27 @@ export function createGameSession(profile: GameProfile) {
     }
 
     event.preventDefault();
+    // Outside build mode, a left press that keeps moving past the threshold pans the board.
+    if (viewControls && !game?.runtime.placingTower) {
+      startBoardPan(event);
+    }
     game?.setPointer(point);
     withGame((currentGame) => {
       currentGame.handleBoardClick(point);
     });
+  };
+
+  const handleCanvasUp = (event: PointerEvent): void => {
+    if (boardPan && event.pointerId === boardPan.pointerId) {
+      endBoardPan();
+    }
+  };
+
+  const handleCanvasContextMenu = (event: MouseEvent): void => {
+    // Right-drag pans the board, so its release must not open the context menu.
+    if (profile.ui.allowViewControls) {
+      event.preventDefault();
+    }
   };
 
   const handleCanvasLeave = (): void => {
@@ -668,46 +887,18 @@ export function createGameSession(profile: GameProfile) {
     window.addEventListener("pointercancel", handleTowerDragCancel);
   };
 
-  /** Tilts the board camera, keeps the build pointer under the cursor, and redraws if idle. */
-  const tiltView = (deltaRadians: number): void => {
-    if (!game || !boardReady || !game.tiltView(deltaRadians)) {
-      return;
-    }
-
-    if (lastPointerClient && canvasGeometry) {
-      const point = game.renderer.clientToField(lastPointerClient.x, lastPointerClient.y, canvasGeometry.rect);
-      game.setPointer(point ?? undefined);
-    }
-    if (frameId === 0) {
-      game.draw();
-    }
-  };
-
-  function handleBoardWheel(event: WheelEvent): void {
-    if (event.ctrlKey || event.metaKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
-      return;
-    }
-
-    event.preventDefault();
-    const scale = event.deltaMode === WheelEvent.DOM_DELTA_LINE
-      ? WHEEL_LINE_PIXELS
-      : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
-        ? (canvasGeometry?.rect.height ?? 0)
-        : 1;
-    tiltView(-event.deltaY * scale * TILT_RADIANS_PER_WHEEL_PIXEL);
-  }
-
   const handleKeyDown = (event: KeyboardEvent): void => {
-    // Arrow keys stay with the page (and modal scrolling) while a modal covers the board.
-    const tiltDirection = profile.ui.allowViewTilt && get(modalStore) === null ? (TILT_KEY_DIRECTIONS[event.key] ?? 0) : 0;
-    // Held arrow keys keep tilting, so repeats pass for them.
-    if (shouldIgnoreGameShortcut(event, tiltDirection !== 0)) {
+    // View keys stay with the page (and modal scrolling) while a modal covers the board.
+    const viewAction = profile.ui.allowViewControls && get(modalStore) === null ? getViewKeyAction(event.key) : null;
+    if (viewAction) {
+      if (!shouldIgnoreViewKey(event)) {
+        event.preventDefault();
+        performViewKeyAction(viewAction);
+      }
       return;
     }
 
-    if (tiltDirection !== 0) {
-      event.preventDefault();
-      tiltView(tiltDirection * TILT_RADIANS_PER_KEY_PRESS);
+    if (shouldIgnoreGameShortcut(event)) {
       return;
     }
 
@@ -783,6 +974,8 @@ export function createGameSession(profile: GameProfile) {
     handleKeyDown,
     handleCanvasMove,
     handleCanvasDown,
+    handleCanvasUp,
+    handleCanvasContextMenu,
     handleCanvasLeave,
     handleTowerButtonPointerDown,
     togglePause,
