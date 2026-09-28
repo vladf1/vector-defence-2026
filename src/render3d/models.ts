@@ -286,13 +286,22 @@ export function createShard(): Part {
 
 export const TOWER_BASE_TOP = 5;
 
+/** The dark plinth every tower stands on (tinted by the tower's accent). */
 export function createTowerBase(): Part {
   return merge([
     solid(cylinder(11.2, 12.6, 4.2, 28), 0, translate(0, 2.1, 0)),
     solid(cylinder(10.2, 11.2, 0.8, 28), 0, translate(0, 4.6, 0)),
-    solid(torus(11.3, 0.42, 6, 40), 1, place(0, 4.25, 0, QUARTER_TURN, 0, 0, 1, 1, 1)),
-    solid(torus(12.55, 0.3, 4, 40), 0.55, place(0, 0.5, 0, QUARTER_TURN, 0, 0, 1, 1, 1)),
   ]);
+}
+
+/** The glowing rim on the plinth's top edge: the original's white base stroke. */
+export function createTowerRim(): Part {
+  return solid(torus(11.35, 0.68, 6, 48), 1, place(0, 4.25, 0, QUARTER_TURN, 0, 0, 1, 1, 1));
+}
+
+/** Unit-radius ring on the ground; instances scale it to each level's upgrade halo. */
+export function createUpgradeRing(): Part {
+  return solid(torus(1, 0.035, 4, 56), 1, place(0, 0, 0, QUARTER_TURN, 0, 0, 1, 1, 1));
 }
 
 export function createLevelPip(): Part {
@@ -313,7 +322,8 @@ export const GUN_BARREL_Y = TOWER_BASE_TOP + 3.1;
 /** Unit-length barrel along +X; instances scale X by length and Y/Z by radius. */
 export function createGunBarrel(): Part {
   return merge([
-    cylinderAlongX(1, 1, 10, 0, 0, 0),
+    // Glows like the original's thick white barrel stroke.
+    cylinderAlongX(1, 1, 10, 0.6, 0, 0),
     solid(box(1, 0.35, 0.3), 1, translate(0.5, 1.02, 0)),
   ]);
 }

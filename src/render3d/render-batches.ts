@@ -34,6 +34,8 @@ import {
   createTankTurret,
   createTeslaCoil,
   createTowerBase,
+  createTowerRim,
+  createUpgradeRing,
   createTriangleBody,
   type FlatMesh,
 } from "./models";
@@ -62,6 +64,8 @@ export type BatchMeshes = ReadonlyMap<string, NeonMesh | FlatMesh>;
 export function buildBatchMeshes(roadWidth: number): BatchMeshes {
   return new Map<string, NeonMesh | FlatMesh>([
     ["tower-base", toNeonMesh(createTowerBase())],
+    ["tower-rim", toNeonMesh(createTowerRim())],
+    ["upgrade-ring", toNeonMesh(createUpgradeRing())],
     ["level-pip", toNeonMesh(createLevelPip())],
     ["gun-head", toNeonMesh(createGunHead())],
     ["gun-barrel", toNeonMesh(createGunBarrel())],
@@ -103,6 +107,8 @@ export function buildBatchMeshes(roadWidth: number): BatchMeshes {
  */
 export class RenderBatches {
   readonly towerBase: InstancedBatch;
+  readonly towerRim: InstancedBatch;
+  readonly upgradeRing: InstancedBatch;
   readonly pip: InstancedBatch;
   readonly gunHead: InstancedBatch;
   readonly gunBarrel: InstancedBatch;
@@ -162,6 +168,8 @@ export class RenderBatches {
     );
 
     this.towerBase = neon("tower-base", ENTITY_CAPACITY, NeonMode.Metal);
+    this.towerRim = neon("tower-rim", ENTITY_CAPACITY, NeonMode.Metal);
+    this.upgradeRing = neon("upgrade-ring", ENTITY_CAPACITY, NeonMode.Metal);
     this.pip = neon("level-pip", PIP_CAPACITY, NeonMode.Metal);
     this.gunHead = neon("gun-head", ENTITY_CAPACITY, NeonMode.Metal);
     this.gunBarrel = neon("gun-barrel", ENTITY_CAPACITY, NeonMode.Metal);

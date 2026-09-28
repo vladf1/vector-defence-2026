@@ -253,7 +253,7 @@ const KEY_LIGHT = vec3f(-0.33, 0.85, -0.44);
   let albedo = in.tint * mix(0.032, 1.0, in.glow);
   // Creatures take their sheen in their own color, so bodies read as the monster's color
   // rather than grey metal.
-  let sheen = mix(vec3f(0.3), in.tint * 0.22, in.creature);
+  let sheen = mix(vec3f(0.06), in.tint * 0.22, in.creature);
   let emissive = in.tint * (in.glow * 1.25 + rim * mix(0.6, 0.9, in.creature)) + sheen * highlight;
   return vec4f(lambert(albedo, n, in.world, PointLights(frame.pointPosition, frame.pointColor)) + emissive, 1.0);
 }

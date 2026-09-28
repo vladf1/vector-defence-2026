@@ -1,4 +1,4 @@
-import { TIMER_EPSILON_SECONDS } from "../constants";
+import { TIMER_EPSILON_SECONDS, TOWER_RADIUS, TOWER_UPGRADE_RING_GROWTH, TOWER_UPGRADE_RING_OFFSET } from "../constants";
 import { DRONE_ACCENT_COLORS } from "../entities/drone-visuals";
 import { getMissileScale } from "../entities/projectiles/missile-visuals";
 import { DroneTower } from "../entities/towers/drone-tower";
@@ -42,6 +42,20 @@ const MISSILE_RELOAD_TRAVEL = 22;
 const DRONE_DOCK_SCALE = 0.7;
 const MAX_LIGHTNING_COOLDOWN_SECONDS = 1.12;
 const SELECTED_BOOST = 1.7;
+// The original's base strokes: white for most towers, softer for the missile and drone pads.
+const PLINTH = linearColor("#3a4a44");
+const RIM_WHITE = linearColor("#ffffff");
+const MISSILE_RIM = linearColor("#d7e2ea");
+const DRONE_RIM = linearColor("#effff7");
+const RIM_INTENSITY = 0.9;
+// Upgrade halos: the original's outer ring, in each tower's ring color, widening and
+// brightening with each level.
+const GOLD_HALO = linearColor("#ffe27a");
+const SLOW_HALO = linearColor("#d8ff4f");
+const DRONE_HALO = linearColor("#9dffd7");
+const HALO_Y = 0.6;
+const HALO_BASE_INTENSITY = 0.32;
+const HALO_INTENSITY_PER_LEVEL = 0.08;
 
 /** Replaces every part color while drawing a placement hologram. */
 export interface TowerTint {
@@ -85,11 +99,21 @@ export class TowerView {
   writeTower(tower: Tower, selected: boolean, tint: TowerTint | null, batches: RenderBatches, frame: FrameContext): void {
     const accent = getAccentColor(tower);
     const boost = selected ? SELECTED_BOOST : 1;
-    const baseColor = tint?.color ?? accent;
+    // The original's near-black base fill; the rim, halo, and weapon carry the color.
+    const baseColor = tint?.color ?? PLINTH;
     if (!tint) {
       batches.pushBlobShadow(tower.x, tower.y, getShadowHeight(tower), 14.5, 14.5, 0, 0.6);
     }
     batches.towerBase.pushYaw(tower.x, 0, tower.y, 0, 1, 1, 1, baseColor.r * boost, baseColor.g * boost, baseColor.b * boost);
+    const rim = tint?.color ?? getRimColor(tower);
+    const rimIntensity = tint ? 1 : RIM_INTENSITY * boost;
+    batches.towerRim.pushYaw(tower.x, 0, tower.y, 0, 1, 1, 1, rim.r * rimIntensity, rim.g * rimIntensity, rim.b * rimIntensity);
+    if (tower.level > 0) {
+      const halo = tint?.color ?? getHaloColor(tower);
+      const haloRadius = TOWER_RADIUS + TOWER_UPGRADE_RING_OFFSET + (tower.level * TOWER_UPGRADE_RING_GROWTH);
+      const haloIntensity = (HALO_BASE_INTENSITY + (tower.level * HALO_INTENSITY_PER_LEVEL)) * boost;
+      batches.upgradeRing.pushYaw(tower.x, HALO_Y, tower.y, 0, haloRadius, haloRadius, haloRadius, halo.r * haloIntensity, halo.g * haloIntensity, halo.b * haloIntensity);
+    }
     this.writeLevelPips(tower, accent, tint, batches);
 
     if (tower instanceof GunTower) {
@@ -358,6 +382,30 @@ function getShadowHeight(tower: Tower): number {
     return 10;
   }
   return 7;
+}
+
+function getRimColor(tower: Tower): LinearColor {
+  if (tower instanceof MissileTower) {
+    return MISSILE_RIM;
+  }
+  if (tower instanceof DroneTower) {
+    return DRONE_RIM;
+  }
+  return RIM_WHITE;
+}
+
+function getHaloColor(tower: Tower): LinearColor {
+  if (tower instanceof LaserTower) {
+    // The original drew the laser halo in its beam color.
+    return linearColor(`rgb(${LASER_COLORS[Math.min(tower.level, LASER_COLORS.length - 1)].beam})`);
+  }
+  if (tower instanceof SlowTower) {
+    return SLOW_HALO;
+  }
+  if (tower instanceof DroneTower) {
+    return DRONE_HALO;
+  }
+  return GOLD_HALO;
 }
 
 function getAccentColor(tower: Tower): LinearColor {
