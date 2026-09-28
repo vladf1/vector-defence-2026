@@ -24,6 +24,7 @@ const HEALTH_BAR_HEIGHT = 3.2;
 const ESCAPE_PROGRESS_THRESHOLD = 0.995;
 const ICE = linearColor("#9ff4ff");
 const BULWARK_ARMOR_GLOW = linearColor("#dff7ff");
+const BULWARK_CORE_TINT = 0.6;
 const HEALTH_TRACK = { r: 0.004, g: 0.01, b: 0.008 };
 const BERSERKER_EMBER_COLOR = "#ffba4f";
 const TANK_HULL_TOP = 0.82;
@@ -237,6 +238,7 @@ export class MonsterView {
       rotation.setHeadingPitchRoll(monster.angle, 0, visual.bank * 0.3);
       batches.bulwarkShell.pushQuaternion(x, y, z, rotation.x, rotation.y, rotation.z, rotation.w, r, r, r, red, green, blue);
       const pulse = 0.42 + (Math.sin(monster.currentShieldPulse) * 0.18) + (flash * 0.5);
+      // Lean the armor glow toward the bulwark's own blue so it doesn't read as a white core.
       batches.bulwarkCore.pushQuaternion(
         x,
         y,
@@ -248,9 +250,9 @@ export class MonsterView {
         r,
         r,
         r,
-        BULWARK_ARMOR_GLOW.r * pulse,
-        BULWARK_ARMOR_GLOW.g * pulse,
-        BULWARK_ARMOR_GLOW.b * pulse,
+        mixChannel(BULWARK_ARMOR_GLOW.r, red, BULWARK_CORE_TINT) * pulse,
+        mixChannel(BULWARK_ARMOR_GLOW.g, green, BULWARK_CORE_TINT) * pulse,
+        mixChannel(BULWARK_ARMOR_GLOW.b, blue, BULWARK_CORE_TINT) * pulse,
       );
     }
   }

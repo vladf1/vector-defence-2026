@@ -28,6 +28,16 @@ export const FrameLayout = {
 
 export const MAX_POINT_LIGHTS = 4;
 
+/**
+ * Per-instance look selector of the neon module (written to the instance tint's w): metal
+ * parts (towers, scenery) get a white sheen; creature parts (monsters and their debris) take
+ * sheen and rim in their own color, like the original's colored outlines.
+ */
+export const NeonMode = {
+  Metal: 0,
+  Creature: 1,
+} as const;
+
 /** Per-instance look selector of the effect module (written to the instance tint's w). */
 export const EffectMode = {
   Ribbon: 0,
@@ -217,6 +227,7 @@ struct Varying {
   @location(1) normal: vec3f,
   @location(2) tint: vec3f,
   @location(3) glow: f32,
+  @location(4) @interpolate(flat) creature: f32,
 };
 
 const KEY_LIGHT = vec3f(-0.33, 0.85, -0.44);
@@ -229,6 +240,7 @@ const KEY_LIGHT = vec3f(-0.33, 0.85, -0.44);
   out.normal = instanceNormal(instance, vertex.normal);
   out.tint = instance.tint.rgb;
   out.glow = vertex.glow;
+  out.creature = select(0.0, 1.0, instance.tint.w > 0.5);
   return out;
 }
 
@@ -239,7 +251,10 @@ const KEY_LIGHT = vec3f(-0.33, 0.85, -0.44);
   // Cheap Blinn highlight from the key light keeps dark bodies glossy.
   let highlight = pow(saturate(dot(n, normalize(normalize(KEY_LIGHT) + viewDirection))), 36.0) * (1.0 - in.glow);
   let albedo = in.tint * mix(0.032, 1.0, in.glow);
-  let emissive = in.tint * (in.glow * 1.25 + rim * 0.6) + vec3f(highlight * 0.3);
+  // Creatures take their sheen in their own color, so bodies read as the monster's color
+  // rather than grey metal.
+  let sheen = mix(vec3f(0.3), in.tint * 0.22, in.creature);
+  let emissive = in.tint * (in.glow * 1.25 + rim * mix(0.6, 0.9, in.creature)) + sheen * highlight;
   return vec4f(lambert(albedo, n, in.world, PointLights(frame.pointPosition, frame.pointColor)) + emissive, 1.0);
 }
 `;
@@ -495,6 +510,8 @@ const BLOOM_STRENGTH = 0.8;
 const FINE_BLOOM_WEIGHT = 0.9;
 const WIDE_BLOOM_WEIGHT = 1.2;
 const VIGNETTE_STRENGTH = 0.4;
+const VIVID_HOT_START = 2.0;
+const VIVID_HOT_END = 5.0;
 
 @vertex fn vertexMain(@builtin(vertex_index) index: u32) -> Varying {
   var positions = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
@@ -548,6 +565,15 @@ fn acesFilmic(input: vec3f) -> vec3f {
   return saturate(color);
 }
 
+// Per-channel ACES bleaches saturated brights toward white, which washed the neon trims out
+// to pastel. Tone-map the brightest channel instead (keeping hue and saturation), and hand
+// over to ACES only for white-hot values such as explosion cores and hit flashes.
+fn toneMap(color: vec3f) -> vec3f {
+  let peak = max(max(color.r, color.g), color.b);
+  let vivid = color * (acesFilmic(vec3f(peak)).g / max(peak, 1e-4));
+  return mix(vivid, acesFilmic(color), sstep(VIVID_HOT_START, VIVID_HOT_END, peak));
+}
+
 fn srgbEncode(color: vec3f) -> vec3f {
   let curve = pow(color, vec3f(0.41666)) * 1.055 - 0.055;
   return select(curve, color * 12.92, color <= vec3f(0.0031308));
@@ -559,7 +585,7 @@ fn composite(in: Varying) -> vec4f {
     + textureSampleLevel(wideBloom, linearSampler, in.uv, 0.0).rgb * WIDE_BLOOM_WEIGHT;
   let vignette = 1.0 - sstep(0.38, 0.98, length((screen - 0.5) * vec2f(1.12, 1.0))) * VIGNETTE_STRENGTH;
   let color = (sampleSource(in.uv) + bloom * BLOOM_STRENGTH) * vignette;
-  return vec4f(srgbEncode(acesFilmic(color)), 1.0);
+  return vec4f(srgbEncode(toneMap(color)), 1.0);
 }
 
 @fragment fn fragmentMain(in: Varying) -> @location(0) vec4f {

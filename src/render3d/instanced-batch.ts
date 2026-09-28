@@ -32,8 +32,8 @@ export class InstancedBatch {
   private uploaded = 0;
 
   /**
-   * `shaderMode` is written to every instance's tint w: the effect module's look selector
-   * (see `EffectMode`); neon parts ignore it.
+   * `shaderMode` is written to every instance's tint w: the neon or effect module's look
+   * selector (see `NeonMode` and `EffectMode`).
    */
   constructor(
     private readonly device: GPUDevice,

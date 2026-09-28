@@ -1,7 +1,7 @@
 import { toNeonMesh, type NeonMesh } from "./geometry-kit";
 import type { ScenePipelines } from "./gpu-pipelines";
 import { createGeometryBuffer, InstancedBatch, type BatchGeometry } from "./instanced-batch";
-import { EffectMode, SpriteMode } from "./shaders";
+import { EffectMode, NeonMode, SpriteMode } from "./shaders";
 import {
   createBerserkerBody,
   createBerserkerSpikes,
@@ -152,8 +152,8 @@ export class RenderBatches {
       }
       return this.trackGeometry(createGeometryBuffer(device, name, mesh.vertices, mesh.vertexCount));
     };
-    const neon = (name: string, capacity: number): InstancedBatch => {
-      const batch = this.addInstanced(new InstancedBatch(device, name, geometry(name), "neon", 0, capacity));
+    const neon = (name: string, capacity: number, mode: number): InstancedBatch => {
+      const batch = this.addInstanced(new InstancedBatch(device, name, geometry(name), "neon", mode, capacity));
       this.opaque.push(batch);
       return batch;
     };
@@ -161,35 +161,35 @@ export class RenderBatches {
       this.addInstanced(new InstancedBatch(device, name, geometry, pipeline, mode, capacity))
     );
 
-    this.towerBase = neon("tower-base", ENTITY_CAPACITY);
-    this.pip = neon("level-pip", PIP_CAPACITY);
-    this.gunHead = neon("gun-head", ENTITY_CAPACITY);
-    this.gunBarrel = neon("gun-barrel", ENTITY_CAPACITY);
-    this.gunMuzzle = neon("gun-muzzle", ENTITY_CAPACITY);
-    this.rail = neon("rail", ENTITY_CAPACITY);
-    this.laserCrystal = neon("laser-crystal", ENTITY_CAPACITY);
-    this.laserCradle = neon("laser-cradle", ENTITY_CAPACITY);
-    this.missileLauncher = neon("missile-launcher", ENTITY_CAPACITY);
-    this.missile = neon("missile", ENTITY_CAPACITY);
-    this.slowCore = neon("slow-core", ENTITY_CAPACITY);
-    this.orbNode = neon("orb-node", ENTITY_CAPACITY);
-    this.dronePad = neon("drone-pad", ENTITY_CAPACITY);
-    this.teslaCoil = neon("tesla-coil", ENTITY_CAPACITY);
-    this.droneBody = neon("drone-body", ENTITY_CAPACITY);
-    this.packmanJaw = neon("packman-jaw", ENTITY_CAPACITY);
-    this.squareBody = neon("square-body", ENTITY_CAPACITY);
-    this.triangleBody = neon("triangle-body", ENTITY_CAPACITY);
-    this.tankHull = neon("tank-hull", ENTITY_CAPACITY);
-    this.tankTurret = neon("tank-turret", ENTITY_CAPACITY);
-    this.runnerBody = neon("runner-body", ENTITY_CAPACITY);
-    this.splitterBody = neon("splitter-body", ENTITY_CAPACITY);
-    this.berserkerBody = neon("berserker-body", ENTITY_CAPACITY);
-    this.berserkerSpikes = neon("berserker-spikes", ENTITY_CAPACITY);
-    this.bulwarkShell = neon("bulwark-shell", ENTITY_CAPACITY);
-    this.bulwarkCore = neon("bulwark-core", ENTITY_CAPACITY);
-    this.shard = neon("shard", SHARD_CAPACITY);
-    this.portal = neon("portal", ENTITY_CAPACITY);
-    this.spawnGate = neon("spawn-gate", ENTITY_CAPACITY);
+    this.towerBase = neon("tower-base", ENTITY_CAPACITY, NeonMode.Metal);
+    this.pip = neon("level-pip", PIP_CAPACITY, NeonMode.Metal);
+    this.gunHead = neon("gun-head", ENTITY_CAPACITY, NeonMode.Metal);
+    this.gunBarrel = neon("gun-barrel", ENTITY_CAPACITY, NeonMode.Metal);
+    this.gunMuzzle = neon("gun-muzzle", ENTITY_CAPACITY, NeonMode.Metal);
+    this.rail = neon("rail", ENTITY_CAPACITY, NeonMode.Metal);
+    this.laserCrystal = neon("laser-crystal", ENTITY_CAPACITY, NeonMode.Metal);
+    this.laserCradle = neon("laser-cradle", ENTITY_CAPACITY, NeonMode.Metal);
+    this.missileLauncher = neon("missile-launcher", ENTITY_CAPACITY, NeonMode.Metal);
+    this.missile = neon("missile", ENTITY_CAPACITY, NeonMode.Metal);
+    this.slowCore = neon("slow-core", ENTITY_CAPACITY, NeonMode.Metal);
+    this.orbNode = neon("orb-node", ENTITY_CAPACITY, NeonMode.Metal);
+    this.dronePad = neon("drone-pad", ENTITY_CAPACITY, NeonMode.Metal);
+    this.teslaCoil = neon("tesla-coil", ENTITY_CAPACITY, NeonMode.Metal);
+    this.droneBody = neon("drone-body", ENTITY_CAPACITY, NeonMode.Metal);
+    this.packmanJaw = neon("packman-jaw", ENTITY_CAPACITY, NeonMode.Creature);
+    this.squareBody = neon("square-body", ENTITY_CAPACITY, NeonMode.Creature);
+    this.triangleBody = neon("triangle-body", ENTITY_CAPACITY, NeonMode.Creature);
+    this.tankHull = neon("tank-hull", ENTITY_CAPACITY, NeonMode.Creature);
+    this.tankTurret = neon("tank-turret", ENTITY_CAPACITY, NeonMode.Creature);
+    this.runnerBody = neon("runner-body", ENTITY_CAPACITY, NeonMode.Creature);
+    this.splitterBody = neon("splitter-body", ENTITY_CAPACITY, NeonMode.Creature);
+    this.berserkerBody = neon("berserker-body", ENTITY_CAPACITY, NeonMode.Creature);
+    this.berserkerSpikes = neon("berserker-spikes", ENTITY_CAPACITY, NeonMode.Creature);
+    this.bulwarkShell = neon("bulwark-shell", ENTITY_CAPACITY, NeonMode.Creature);
+    this.bulwarkCore = neon("bulwark-core", ENTITY_CAPACITY, NeonMode.Creature);
+    this.shard = neon("shard", SHARD_CAPACITY, NeonMode.Creature);
+    this.portal = neon("portal", ENTITY_CAPACITY, NeonMode.Metal);
+    this.spawnGate = neon("spawn-gate", ENTITY_CAPACITY, NeonMode.Metal);
 
     const flatQuad = geometry("flat-quad");
     const rangeQuad = geometry("range-quad");

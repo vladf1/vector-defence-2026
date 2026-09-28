@@ -59,14 +59,32 @@ function cylinderAlongX(radius: number, length: number, segments: number, glow: 
 
 // ---------------------------------------------------------------- monsters
 
+const PACKMAN_TRIM_SEGMENTS = 16;
+const PACKMAN_TRIM_RADIUS = 1.02;
+const PACKMAN_TRIM_THICKNESS = 0.13;
+
 export function createPackManJaw(): Part {
   // The z <= 0 hemisphere (field "up" side) with its cut face capped; the second jaw is
   // this mesh flipped about X, which hides its eye underneath like the 2D single eye.
-  return merge([
+  const parts = [
     solid(sphere(1, 22, 14, HALF_TURN, HALF_TURN), 0, null),
     solid(circle(1, 22), 0.32, null),
     solid(sphere(0.17, 10, 8, 0, Math.PI * 2), 1, translate(0.18, 0.8, -0.44)),
-  ]);
+  ];
+  // The original's outline from above: the jaw's half of the equator, plus the mouth edge
+  // from the center to the front (the back half would show between the jaws).
+  for (let segment = 0; segment < PACKMAN_TRIM_SEGMENTS; segment += 1) {
+    const start = (segment / PACKMAN_TRIM_SEGMENTS) * Math.PI;
+    const end = ((segment + 1) / PACKMAN_TRIM_SEGMENTS) * Math.PI;
+    const startX = Math.cos(start) * PACKMAN_TRIM_RADIUS;
+    const startZ = -Math.sin(start) * PACKMAN_TRIM_RADIUS;
+    const endX = Math.cos(end) * PACKMAN_TRIM_RADIUS;
+    const endZ = -Math.sin(end) * PACKMAN_TRIM_RADIUS;
+    const length = Math.hypot(endX - startX, endZ - startZ);
+    parts.push(solid(bar((startX + endX) / 2, 0, (startZ + endZ) / 2, Math.atan2(endZ - startZ, endX - startX), length + PACKMAN_TRIM_THICKNESS, PACKMAN_TRIM_THICKNESS, PACKMAN_TRIM_THICKNESS), 1, null));
+  }
+  parts.push(solid(bar(PACKMAN_TRIM_RADIUS / 2, 0, 0, 0, PACKMAN_TRIM_RADIUS + PACKMAN_TRIM_THICKNESS, PACKMAN_TRIM_THICKNESS, PACKMAN_TRIM_THICKNESS), 1, null));
+  return merge(parts);
 }
 
 export function createSquareBody(): Part {
