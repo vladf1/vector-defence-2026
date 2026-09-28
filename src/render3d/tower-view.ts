@@ -17,6 +17,7 @@ import {
   LASER_CRYSTAL_Y,
   MISSILE_RACK_Y,
   SLOW_CORE_Y,
+  TESLA_COIL_SCALE,
   TESLA_TOP_Y,
 } from "./models";
 import { linearColor, type LinearColor } from "./palette";
@@ -367,7 +368,7 @@ export class TowerView {
     batches.teslaCoil.pushYaw(tower.x, 0, tower.y, frame.time * 0.6, 1, 1, 1, coil.r * intensity, coil.g * intensity, coil.b * intensity);
     if (!tint) {
       const crackle = 0.5 + (Math.sin((frame.time * 37) + tower.x) * 0.25) + (Math.sin((frame.time * 53) + tower.y) * 0.25);
-      const size = 13 + (tower.level * 0.8);
+      const size = (13 + (tower.level * 0.8)) * TESLA_COIL_SCALE;
       batches.glow.push(tower.x, TESLA_TOP_Y, tower.y, 0, size, size, 0, coil.r * 1.8, coil.g * 1.8, coil.b * 1.8, (0.25 + (charge * 0.45)) * crackle);
     }
   }
@@ -376,7 +377,7 @@ export class TowerView {
 /** Rough height of each tower's mass, which sets how far its blob shadow falls. */
 function getShadowHeight(tower: Tower): number {
   if (tower instanceof LightningTower) {
-    return 13;
+    return 13 * TESLA_COIL_SCALE;
   }
   if (tower instanceof SlowTower) {
     return 10;

@@ -411,15 +411,21 @@ export function createDronePad(): Part {
   ]);
 }
 
-export const TESLA_TOP_Y = TOWER_BASE_TOP + 17.5;
+/** The coil (not the plinth) is scaled up from its base on the plinth top. */
+export const TESLA_COIL_SCALE = 1.2;
+export const TESLA_TOP_Y = TOWER_BASE_TOP + (17.5 * TESLA_COIL_SCALE);
 
 export function createTeslaCoil(): Part {
+  const s = TESLA_COIL_SCALE;
+  const ring = (radius: number, tube: number, height: number): Part => (
+    solid(torus(radius * s, tube * s, 6, 24), 1, place(0, TOWER_BASE_TOP + (height * s), 0, QUARTER_TURN, 0, 0, 1, 1, 1))
+  );
   return merge([
-    solid(cylinder(1.5, 2.6, 15, 12), 0, translate(0, TOWER_BASE_TOP + 7.5, 0)),
-    solid(torus(4.6, 0.55, 6, 24), 1, place(0, TOWER_BASE_TOP + 3.5, 0, QUARTER_TURN, 0, 0, 1, 1, 1)),
-    solid(torus(3.9, 0.5, 6, 24), 1, place(0, TOWER_BASE_TOP + 7.3, 0, QUARTER_TURN, 0, 0, 1, 1, 1)),
-    solid(torus(3.2, 0.45, 6, 24), 1, place(0, TOWER_BASE_TOP + 11, 0, QUARTER_TURN, 0, 0, 1, 1, 1)),
-    solid(sphere(3.3, 16, 12, 0, Math.PI * 2), 1, translate(0, TESLA_TOP_Y, 0)),
+    solid(cylinder(1.5 * s, 2.6 * s, 15 * s, 12), 0, translate(0, TOWER_BASE_TOP + (7.5 * s), 0)),
+    ring(4.6, 0.55, 3.5),
+    ring(3.9, 0.5, 7.3),
+    ring(3.2, 0.45, 11),
+    solid(sphere(3.3 * s, 16, 12, 0, Math.PI * 2), 1, translate(0, TESLA_TOP_Y, 0)),
   ]);
 }
 
