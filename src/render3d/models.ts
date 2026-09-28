@@ -20,7 +20,7 @@ import {
   recomputeFlatNormals,
   type Part,
 } from "./geometry-kit";
-import { vec3 } from "./math";
+import { vec3, type Vec3 } from "./math";
 
 /*
  * Procedural low-poly models. Monster models are built at unit radius and scaled per
@@ -33,6 +33,20 @@ const QUARTER_TURN = Math.PI / 2;
 
 function glowTrim(outline: readonly Point[], y: number, thickness: number, height: number, glow: number): Part[] {
   return outlineTrim(outline, y, thickness, height).map((primitive) => solid(primitive, glow, null));
+}
+
+/** A glowing bar from `from` to `to`: a lit ridge line along a faceted body's edge. */
+function glowRidge(from: Vec3, to: Vec3, thickness: number, glow: number): Part {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dz = to.z - from.z;
+  const horizontal = Math.hypot(dx, dz);
+  return solid(
+    box(Math.hypot(horizontal, dy) + thickness, thickness, thickness),
+    glow,
+    // Rz lifts the bar's X axis to the ridge's slope, then Ry turns it to the ridge's heading.
+    place(from.x + (dx / 2), from.y + (dy / 2), from.z + (dz / 2), 0, -Math.atan2(dz, dx), Math.atan2(dy, horizontal), 1, 1, 1),
+  );
 }
 
 function cylinderAlongX(radius: number, length: number, segments: number, glow: number, startX: number, y: number): Part {
@@ -70,11 +84,14 @@ export function createSquareBody(): Part {
 }
 
 const TRIANGLE_OUTLINE: Point[] = [{ x: 1, y: 0 }, { x: -1, y: -1 }, { x: -1, y: 1 }];
+const TRIANGLE_TOP_APEX = vec3(-0.3, 0.62, 0);
 
 export function createTriangleBody(): Part {
   return merge([
-    solid(bipyramid(TRIANGLE_OUTLINE, vec3(-0.3, 0.62, 0), vec3(-0.3, -0.34, 0)), 0, null),
+    solid(bipyramid(TRIANGLE_OUTLINE, TRIANGLE_TOP_APEX, vec3(-0.3, -0.34, 0)), 0, null),
     ...glowTrim(TRIANGLE_OUTLINE, 0, 0.11, 0.11, 1),
+    // Glowing ridges from the peak to each corner, so the pyramid reads from straight above.
+    ...TRIANGLE_OUTLINE.map((corner) => glowRidge(TRIANGLE_TOP_APEX, vec3(corner.x, 0, corner.y), 0.07, 1)),
     solid(sphere(0.13, 8, 6, 0, Math.PI * 2), 1, translate(0.25, 0.28, 0)),
   ]);
 }
