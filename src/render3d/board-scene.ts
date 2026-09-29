@@ -1,4 +1,4 @@
-import type { RouteMotionPath } from "../route-path";
+import { getPathHeadingAngle, type PathEntry, type RouteMotionPath } from "../route-path";
 import type { ScenePipelines } from "./gpu-pipelines";
 import { hash01, type FrameContext } from "./frame-math";
 import { linearColor } from "./palette";
@@ -32,6 +32,49 @@ const ROAD_CAPACITY_ENTRIES = 4096;
 
 const ROAD_VERTEX_FLOATS = 5;
 const GROUND_VERTICES = 6;
+
+/**
+ * Samples the road centerline at ascending distances without rescanning: the lead-in before
+ * the first entry extends the first segment backward, as the road ribbon does.
+ */
+class RoadCursor {
+  x = 0;
+  y = 0;
+  /** The road ribbon slot under the sample, which sets its layer height. */
+  slot = 0;
+  /** The entry ending the segment under the sample (a search hint for path lookups). */
+  index = 1;
+  private entries: readonly PathEntry[] = [];
+  private count = 0;
+
+  reset(entries: readonly PathEntry[], count: number): void {
+    this.entries = entries;
+    this.count = count;
+    this.index = 1;
+  }
+
+  seek(distance: number): void {
+    const entries = this.entries;
+    const first = entries[0];
+    if (distance < first.totalDistance) {
+      this.interpolate(first, entries[1], distance);
+      this.slot = 0;
+      return;
+    }
+    while (this.index < this.count - 1 && entries[this.index].totalDistance < distance) {
+      this.index += 1;
+    }
+    this.interpolate(entries[this.index - 1], entries[this.index], Math.min(distance, entries[this.index].totalDistance));
+    this.slot = this.index + 1;
+  }
+
+  private interpolate(start: PathEntry, stop: PathEntry, distance: number): void {
+    const span = stop.totalDistance - start.totalDistance;
+    const ratio = span > 0 ? (distance - start.totalDistance) / span : 0;
+    this.x = start.x + ((stop.x - start.x) * ratio);
+    this.y = start.y + ((stop.y - start.y) * ratio);
+  }
+}
 
 /**
  * One persistent road ribbon (uv.x = distance, uv.y = -1..1 across) rewritten in place per
@@ -120,6 +163,7 @@ export class BoardScene {
   private exitAlert = 0;
   private lastEscapesLeft = -1;
   private sceneryVisible = true;
+  private readonly chevronCursor = new RoadCursor();
 
   constructor(
     private readonly fieldWidth: number,
@@ -155,8 +199,9 @@ export class BoardScene {
   }
 
   /**
-   * Road chevrons as rigid quads turned to the road's heading, so turns cannot bend them.
-   * One pass walks the route alongside the ascending chevron distances.
+   * Road chevrons as rigid quads, so turns cannot bend them. Each is centered on the road and
+   * takes the route's analytic heading at its center, the same smooth heading monsters steer
+   * by, so it turns through a curve instead of snapping between path segments.
    */
   private writeChevrons(route: RouteMotionPath, batches: RenderBatches, frame: FrameContext): void {
     const entries = route.entries;
@@ -167,48 +212,25 @@ export class BoardScene {
     const width = halfWidth * CHEVRON_SPAN * 2;
     // The quad's center sits this far ahead of the chevron's apex (see the effect shader).
     const centerAhead = (length / 2) - back;
-    const first = entries[0];
-    const leadDx = entries[1].x - first.x;
-    const leadDy = entries[1].y - first.y;
-    const leadLength = Math.hypot(leadDx, leadDy) || 1;
     const end = entries[count - 1].totalDistance - CHEVRON_END_MARGIN;
     const offset = (frame.time * CHEVRON_SPEED) % CHEVRON_SPACING;
-    let distance = offset - (Math.floor((offset + ROAD_LEAD_IN) / CHEVRON_SPACING) * CHEVRON_SPACING);
-    let index = 1;
-    for (; distance <= end; distance += CHEVRON_SPACING) {
-      let x: number;
-      let y: number;
-      let dirX: number;
-      let dirY: number;
-      let slot: number;
-      if (distance < first.totalDistance) {
-        dirX = leadDx / leadLength;
-        dirY = leadDy / leadLength;
-        x = first.x + (dirX * (distance - first.totalDistance));
-        y = first.y + (dirY * (distance - first.totalDistance));
-        slot = 0;
-      } else {
-        while (index < count - 1 && entries[index].totalDistance < distance) {
-          index += 1;
-        }
-        const start = entries[index - 1];
-        const stop = entries[index];
-        const span = stop.totalDistance - start.totalDistance;
-        const ratio = span > 0 ? (distance - start.totalDistance) / span : 0;
-        const dx = stop.x - start.x;
-        const dy = stop.y - start.y;
-        const segment = Math.hypot(dx, dy) || 1;
-        dirX = dx / segment;
-        dirY = dy / segment;
-        x = start.x + (dx * ratio);
-        y = start.y + (dy * ratio);
-        slot = index + 1;
-      }
+    const firstDistance = entries[0].totalDistance;
+    const leadHeading = getPathHeadingAngle(entries, firstDistance, 1);
+    const cursor = this.chevronCursor;
+    cursor.reset(entries, count);
+    for (
+      let apex = offset - (Math.floor((offset + ROAD_LEAD_IN) / CHEVRON_SPACING) * CHEVRON_SPACING);
+      apex <= end;
+      apex += CHEVRON_SPACING
+    ) {
+      const center = apex + centerAhead;
+      cursor.seek(center);
+      const heading = center < firstDistance ? leadHeading : getPathHeadingAngle(entries, center, cursor.index);
       batches.roadChevron.pushYaw(
-        x + (dirX * centerAhead),
-        ROAD_BASE_Y + (slot * ROAD_LAYER_STEP) + CHEVRON_LIFT,
-        y + (dirY * centerAhead),
-        -Math.atan2(dirY, dirX),
+        cursor.x,
+        ROAD_BASE_Y + (cursor.slot * ROAD_LAYER_STEP) + CHEVRON_LIFT,
+        cursor.y,
+        -heading,
         length,
         1,
         width,
