@@ -51,6 +51,8 @@ const ENTITY_CAPACITY = 256;
 const PIP_CAPACITY = 1024;
 const SHARD_CAPACITY = 1536;
 const DECAL_CAPACITY = 3072;
+// One chevron per 30 units of road; the longest route needs about a hundred.
+const ROAD_CHEVRON_CAPACITY = 256;
 // Blob shadows fall away from the key light (see the renderer's sun placement): per unit height.
 const SHADOW_OFFSET_X = 0.39;
 const SHADOW_OFFSET_Z = 0.52;
@@ -142,6 +144,7 @@ export class RenderBatches {
   readonly healthBar: InstancedBatch;
   readonly range: InstancedBatch;
   readonly groundGlow: InstancedBatch;
+  readonly roadChevron: InstancedBatch;
   readonly glow: SpriteBatch;
   readonly smoke: SpriteBatch;
   private readonly instanced: InstancedBatch[] = [];
@@ -204,11 +207,13 @@ export class RenderBatches {
     this.decal = flat("decal", flatQuad, "effect", EffectMode.Decal, DECAL_CAPACITY);
     this.range = flat("range", rangeQuad, "effect", EffectMode.Range, 4);
     this.groundGlow = flat("ground-glow", rangeQuad, "effect", EffectMode.GroundGlow, ENTITY_CAPACITY);
+    this.roadChevron = flat("road-chevron", flatQuad, "effect", EffectMode.Chevron, ROAD_CHEVRON_CAPACITY);
     this.ribbon = flat("ribbon", geometry("ribbon-quad"), "effect", EffectMode.Ribbon, capacities.ribbons);
     this.healthBar = flat("health-bar", flatQuad, "healthBar", EffectMode.HealthBar, ENTITY_CAPACITY * 2);
     this.smoke = this.addSprite(new SpriteBatch(device, "smoke", capacities.smokeSprites, "sprite", SpriteMode.Smoke));
     this.glow = this.addSprite(new SpriteBatch(device, "glow", capacities.glowSprites, "sprite", SpriteMode.Glow));
-    this.transparent = [this.ribbon, this.smoke, this.glow, this.decal, this.range, this.groundGlow];
+    // Chevrons first: they are road paint, under every other blended layer.
+    this.transparent = [this.roadChevron, this.ribbon, this.smoke, this.glow, this.decal, this.range, this.groundGlow];
   }
 
   begin(): void {

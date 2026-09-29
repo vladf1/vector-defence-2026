@@ -4,6 +4,7 @@ import { hash01, type FrameContext } from "./frame-math";
 import { linearColor } from "./palette";
 import type { RenderBatches } from "./render-batches";
 import { BufferUsage } from "./gpu-flags";
+import { CHEVRON_ARM_SLOPE, CHEVRON_BAND, CHEVRON_SPAN } from "./shaders";
 
 const ROAD_BORDER = 1.5;
 const ROAD_BASE_Y = 0.22;
@@ -19,6 +20,12 @@ const PORTAL_RISING_RINGS = 2;
 const GATE_COLOR = linearColor("#ff8f6a");
 const MOTE_COLOR = linearColor("#7dffd4");
 const MOTE_COUNT = 70;
+// Road chevrons drift toward the exit; each sits just above the road sample it lies on.
+const CHEVRON_SPACING = 30;
+const CHEVRON_SPEED = 22;
+const CHEVRON_LIFT = 0.03;
+const CHEVRON_END_MARGIN = 6;
+const CHEVRON_COLOR = { r: 0.03 * 0.22, g: 0.2 * 0.22, b: 0.15 * 0.22 };
 
 // Longest authored route samples to ~1k entries; headroom keeps one buffer for all levels.
 const ROAD_CAPACITY_ENTRIES = 4096;
@@ -147,6 +154,71 @@ export class BoardScene {
     this.lastEscapesLeft = escapesLeft;
   }
 
+  /**
+   * Road chevrons as rigid quads turned to the road's heading, so turns cannot bend them.
+   * One pass walks the route alongside the ascending chevron distances.
+   */
+  private writeChevrons(route: RouteMotionPath, batches: RenderBatches, frame: FrameContext): void {
+    const entries = route.entries;
+    const count = Math.min(entries.length, ROAD_CAPACITY_ENTRIES);
+    const halfWidth = (this.roadWidth / 2) + ROAD_BORDER;
+    const back = halfWidth * CHEVRON_SPAN * CHEVRON_ARM_SLOPE;
+    const length = CHEVRON_BAND + back;
+    const width = halfWidth * CHEVRON_SPAN * 2;
+    // The quad's center sits this far ahead of the chevron's apex (see the effect shader).
+    const centerAhead = (length / 2) - back;
+    const first = entries[0];
+    const leadDx = entries[1].x - first.x;
+    const leadDy = entries[1].y - first.y;
+    const leadLength = Math.hypot(leadDx, leadDy) || 1;
+    const end = entries[count - 1].totalDistance - CHEVRON_END_MARGIN;
+    const offset = (frame.time * CHEVRON_SPEED) % CHEVRON_SPACING;
+    let distance = offset - (Math.floor((offset + ROAD_LEAD_IN) / CHEVRON_SPACING) * CHEVRON_SPACING);
+    let index = 1;
+    for (; distance <= end; distance += CHEVRON_SPACING) {
+      let x: number;
+      let y: number;
+      let dirX: number;
+      let dirY: number;
+      let slot: number;
+      if (distance < first.totalDistance) {
+        dirX = leadDx / leadLength;
+        dirY = leadDy / leadLength;
+        x = first.x + (dirX * (distance - first.totalDistance));
+        y = first.y + (dirY * (distance - first.totalDistance));
+        slot = 0;
+      } else {
+        while (index < count - 1 && entries[index].totalDistance < distance) {
+          index += 1;
+        }
+        const start = entries[index - 1];
+        const stop = entries[index];
+        const span = stop.totalDistance - start.totalDistance;
+        const ratio = span > 0 ? (distance - start.totalDistance) / span : 0;
+        const dx = stop.x - start.x;
+        const dy = stop.y - start.y;
+        const segment = Math.hypot(dx, dy) || 1;
+        dirX = dx / segment;
+        dirY = dy / segment;
+        x = start.x + (dx * ratio);
+        y = start.y + (dy * ratio);
+        slot = index + 1;
+      }
+      batches.roadChevron.pushYaw(
+        x + (dirX * centerAhead),
+        ROAD_BASE_Y + (slot * ROAD_LAYER_STEP) + CHEVRON_LIFT,
+        y + (dirY * centerAhead),
+        -Math.atan2(dirY, dirX),
+        length,
+        1,
+        width,
+        CHEVRON_COLOR.r,
+        CHEVRON_COLOR.g,
+        CHEVRON_COLOR.b,
+      );
+    }
+  }
+
   /** Stateless drifting energy motes: positions are pure functions of time and index. */
   private writeMotes(batches: RenderBatches, frame: FrameContext): void {
     const { fieldWidth, fieldHeight } = this;
@@ -177,6 +249,7 @@ export class BoardScene {
     if (!route || route.entries.length < 2) {
       return;
     }
+    this.writeChevrons(route, batches, frame);
     this.exitAlert = Math.max(0, this.exitAlert - (frame.deltaSeconds * 1.6));
     const exit = route.entries[route.entries.length - 1];
     const pulse = (0.92 + (Math.sin(frame.time * 3.1) * 0.08)) * PORTAL_INTENSITY;

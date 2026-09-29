@@ -45,7 +45,17 @@ export const EffectMode = {
   HealthBar: 2,
   Range: 3,
   GroundGlow: 4,
+  Chevron: 5,
 } as const;
+
+/**
+ * Road chevron shape, shared by the effect shader and the board scene's placement: a V band
+ * `CHEVRON_BAND` long whose arms sweep back `CHEVRON_ARM_SLOPE` per unit across, out to
+ * `CHEVRON_SPAN` of the road half width.
+ */
+export const CHEVRON_BAND = 6;
+export const CHEVRON_ARM_SLOPE = 0.85;
+export const CHEVRON_SPAN = 0.66;
 
 /** Per-sprite look selector of the sprite module (written to the sprite shape's w). */
 export const SpriteMode = {
@@ -314,9 +324,6 @@ struct Varying {
 ${LIGHT_VARYINGS}
 };
 
-const CHEVRON_SPACING = 30.0;
-const CHEVRON_SPEED = 22.0;
-
 @vertex fn vertexMain(vertex: VertexIn) -> Varying {
   var out: Varying;
   out.world = vertex.position;
@@ -332,10 +339,8 @@ ${COPY_LIGHTS}
   let across = abs(in.uv.y);
   let edge = sstep(0.8, 0.9, across) * (1.0 - sstep(0.95, 1.0, across));
   let channelShade = mix(1.0, 0.5, sstep(0.25, 0.92, across));
-  let phase = fract((along + across * ROAD_HALF_WIDTH * 0.85) / CHEVRON_SPACING - in.time * (CHEVRON_SPEED / CHEVRON_SPACING));
-  let chevron = sstep(0.0, 0.05, phase) * (1.0 - sstep(0.09, 0.2, phase)) * (1.0 - sstep(0.42, 0.66, across));
   let albedo = vec3f(0.0035, 0.024, 0.02) * channelShade;
-  let emissive = vec3f(0.018, 0.15, 0.115) * edge + vec3f(0.03, 0.2, 0.15) * (chevron * 0.22);
+  let emissive = vec3f(0.018, 0.15, 0.115) * edge;
   return vec4f(lambert(albedo, vec3f(0.0, 1.0, 0.0), in.world, ${VARYING_LIGHTS}) + emissive, 1.0);
 }
 `;
@@ -406,6 +411,18 @@ fn range(in: Varying) -> vec4f {
   return vec4f(in.tint.rgb * (edge * mix(0.4, 1.0, dash) + fill), 0.0);
 }
 
+// Road chevron in its own quad, turned to the road's heading, so turns cannot bend it. The
+// quad runs from the arm tips (uv.x = 0) to just past the nose (uv.x = 1).
+fn chevron(in: Varying) -> vec4f {
+  let back = ROAD_HALF_WIDTH * ${float(CHEVRON_SPAN)} * ${float(CHEVRON_ARM_SLOPE)};
+  let along = in.uv.x * (${float(CHEVRON_BAND)} + back) - back;
+  let across = abs(in.uv.y - 0.5) * 2.0 * ROAD_HALF_WIDTH * ${float(CHEVRON_SPAN)};
+  let band = along + across * ${float(CHEVRON_ARM_SLOPE)};
+  let shape = sstep(0.0, 1.5, band) * (1.0 - sstep(2.7, ${float(CHEVRON_BAND)}, band));
+  let span = 1.0 - sstep(0.42, ${float(CHEVRON_SPAN)}, across / ROAD_HALF_WIDTH);
+  return vec4f(in.tint.rgb * (shape * span), 0.0);
+}
+
 // Flat glow on the ground: extra = (alpha, shape: 0 disc / 1 ring).
 fn groundGlow(in: Varying) -> vec4f {
   let distance = length(in.uv - 0.5) * 2.0;
@@ -421,6 +438,7 @@ fn groundGlow(in: Varying) -> vec4f {
     case ${EffectMode.Decal}u: { color = decal(in); }
     case ${EffectMode.HealthBar}u: { color = vec4f(in.tint.rgb, 1.0); }
     case ${EffectMode.Range}u: { color = range(in); }
+    case ${EffectMode.Chevron}u: { color = chevron(in); }
     default: { color = groundGlow(in); }
   }
   return color;
@@ -607,10 +625,12 @@ export function createShaderSources(constants: SceneConstants): ShaderSources {
     const [x, y, radius, alpha] = constants.puffBlobs.slice(offset, offset + 4);
     blobs.push(`vec4f(${float(x)}, ${float(y)}, ${float(radius)}, ${float(alpha)})`);
   }
+  const roadConstants = /* wgsl */ `
+const ROAD_HALF_WIDTH = ${float(constants.roadHalfWidth)};
+`;
   const sceneConstants = /* wgsl */ `
 const FIELD = vec2f(${float(constants.fieldWidth)}, ${float(constants.fieldHeight)});
-const ROAD_HALF_WIDTH = ${float(constants.roadHalfWidth)};
-const HEMI_SKY = ${vec3(constants.hemiSky)};
+${roadConstants}const HEMI_SKY = ${vec3(constants.hemiSky)};
 const HEMI_GROUND = ${vec3(constants.hemiGround)};
 const KEY_DIRECTION = ${vec3(constants.keyDirection)};
 const KEY_COLOR = ${vec3(constants.keyColor)};
@@ -625,7 +645,7 @@ const PUFF_BLOBS = array<vec4f, ${blobs.length}>(${blobs.join(", ")});
     neon: lit + INSTANCE + NEON,
     ground: lit + GROUND,
     road: lit + ROAD,
-    effect: COMMON + FRAME + INSTANCE + puffBlobs + PUFF + EFFECT,
+    effect: COMMON + roadConstants + FRAME + INSTANCE + puffBlobs + PUFF + EFFECT,
     sprite: COMMON + FRAME + puffBlobs + PUFF + SPRITE,
     post: COMMON + POST,
   };
