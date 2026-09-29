@@ -13,6 +13,9 @@ const ROAD_LEAD_IN = 90;
 const EXIT_PORTAL_RADIUS = 19;
 const PORTAL_COLOR = linearColor("#b0ffe1");
 const PORTAL_ALERT = linearColor("#ff6f62");
+// Kept well below the monsters and towers so the exit reads as a landmark, not a light.
+const PORTAL_INTENSITY = 0.55;
+const PORTAL_RISING_RINGS = 2;
 const GATE_COLOR = linearColor("#ff8f6a");
 const MOTE_COLOR = linearColor("#7dffd4");
 const MOTE_COUNT = 70;
@@ -176,17 +179,17 @@ export class BoardScene {
     }
     this.exitAlert = Math.max(0, this.exitAlert - (frame.deltaSeconds * 1.6));
     const exit = route.entries[route.entries.length - 1];
-    const pulse = 0.85 + (Math.sin(frame.time * 3.1) * 0.15);
+    const pulse = (0.92 + (Math.sin(frame.time * 3.1) * 0.08)) * PORTAL_INTENSITY;
     const alert = this.exitAlert;
     const red = (PORTAL_COLOR.r + ((PORTAL_ALERT.r - PORTAL_COLOR.r) * alert)) * pulse * (1 + alert);
     const green = (PORTAL_COLOR.g + ((PORTAL_ALERT.g - PORTAL_COLOR.g) * alert)) * pulse * (1 + alert);
     const blue = (PORTAL_COLOR.b + ((PORTAL_ALERT.b - PORTAL_COLOR.b) * alert)) * pulse * (1 + alert);
     batches.portal.pushYaw(exit.x, 0.3, exit.y, frame.time * 0.35, EXIT_PORTAL_RADIUS, EXIT_PORTAL_RADIUS, EXIT_PORTAL_RADIUS, red, green, blue);
-    batches.pushGroundGlow(exit.x, 0.9, exit.y, EXIT_PORTAL_RADIUS * 1.7, 0, red * 0.2, green * 0.2, blue * 0.2, 1);
-    for (let index = 0; index < 3; index += 1) {
-      const phase = ((frame.time * 0.45) + (index / 3)) % 1;
-      const radius = EXIT_PORTAL_RADIUS * 1.15 * (1 - phase);
-      batches.glow.push(exit.x, 1 + (phase * 14), exit.y, 0, radius * 1.6, radius * 1.6, 1, red * 0.7, green * 0.7, blue * 0.7, phase * (1 - phase) * 2.2);
+    batches.pushGroundGlow(exit.x, 0.9, exit.y, EXIT_PORTAL_RADIUS * 1.5, 0, red * 0.18, green * 0.18, blue * 0.18, 1);
+    for (let index = 0; index < PORTAL_RISING_RINGS; index += 1) {
+      const phase = ((frame.time * 0.4) + (index / PORTAL_RISING_RINGS)) % 1;
+      const radius = EXIT_PORTAL_RADIUS * (1 - phase);
+      batches.glow.push(exit.x, 1 + (phase * 10), exit.y, 0, radius * 1.4, radius * 1.4, 1, red * 0.5, green * 0.5, blue * 0.5, phase * (1 - phase) * 1.6);
     }
 
     const start = route.entries[0];

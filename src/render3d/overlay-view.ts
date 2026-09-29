@@ -177,8 +177,8 @@ export class OverlayView {
     context.font = `700 ${size}px Inter, system-ui, sans-serif`;
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.shadowColor = "rgba(49, 255, 235, 0.85)";
-    context.shadowBlur = 10;
+    context.shadowColor = "rgba(49, 255, 235, 0.4)";
+    context.shadowBlur = 5;
     context.fillStyle = "rgba(238, 255, 248, 0.95)";
     context.fillText(String(Math.max(0, this.game.runtime.escapesLeft)), screen.x, screen.y + 1);
     context.restore();
