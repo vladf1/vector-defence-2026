@@ -9,20 +9,22 @@ Play online: [https://vladf1.github.io/vector-defence-2026/](https://vladf1.gith
 ## Requirements
 
 - Node.js 20.19+, 22.12+, or 24+
-- npm 10.8.2+
+- pnpm 12.6.0 (pinned in `package.json`)
+
+Install pnpm once with `npm install --global pnpm@12.6.0`.
 
 ## Getting Started
 
 Install dependencies:
 
 ```bash
-npm install
+pnpm install --frozen-lockfile
 ```
 
 Start the local development server:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 Vite will print a local URL in the terminal, typically `http://localhost:5173/`.
@@ -32,28 +34,28 @@ Vite will print a local URL in the terminal, typically `http://localhost:5173/`.
 Create a production build:
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 Create a GitHub Pages build with the repository base path:
 
 ```bash
-npm run build:pages
+pnpm run build:pages
 ```
 
 Preview the production build locally:
 
 ```bash
-npm run preview
+pnpm run preview
 ```
 
 Useful validation commands:
 
 ```bash
-npm run build
-npm run build:pages
-npm run check:runtime
-npm run dev
+pnpm run build
+pnpm run build:pages
+pnpm run check:runtime
+pnpm run dev
 ```
 
 ## Deploy To GitHub Pages

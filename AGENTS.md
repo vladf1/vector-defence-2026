@@ -131,19 +131,19 @@ Gameplay / UI notes:
 
 To run the browser version:
 
-- `npm run dev`
+- `pnpm run dev`
 
 Useful validation commands:
 
-- `npm run build`
-- `npm run check:runtime` (browser regression checks for timing, collisions, effects, and UI state)
-- `npm run build:pages`
-- `npm run dev`
-- `npm run benchmark:update`
-- `npm run benchmark:death-effects`
-- `npm run benchmark:draw`
-- `npm run benchmark:draw:towers`
-- `npm run render:levels`
+- `pnpm run build`
+- `pnpm run check:runtime` (browser regression checks for timing, collisions, effects, and UI state)
+- `pnpm run build:pages`
+- `pnpm run dev`
+- `pnpm run benchmark:update`
+- `pnpm run benchmark:death-effects`
+- `pnpm run benchmark:draw`
+- `pnpm run benchmark:draw:towers`
+- `pnpm run render:levels`
 
 The supported runtime ranges are declared in `package.json`; `.nvmrc` pins the local/CI Node release. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
 
@@ -165,12 +165,12 @@ Monster explosion render sheets:
 
 Other render and benchmark tooling:
 
-- `npm run render:levels` renders desktop and mobile route/placement sheets.
+- `pnpm run render:levels` renders desktop and mobile route/placement sheets.
 - `node scripts/render-polygon-shards.mjs` renders seeded polygon-breakup variants under `artifacts/polygon-shards/`.
 - `node scripts/render-berserker-animation.mjs [output.png]` renders the berserker rage sequence.
-- `npm run benchmark:death-effects` measures synchronous monster death-effect construction with seeded, resettable randomness.
-- `npm run benchmark:update` reports both the reconstructed busy-runtime method timings and separate seeded `Game.updateSimulation(...)` timings with drones and lifecycle effects. Whole-engine samples exclude drawing and fixture maintenance; they are not full browser-frame timings.
-- `npm run benchmark:draw` and `npm run benchmark:draw:towers` report CPU-submission and forced-GPU-flush draw timings separately. Keep benchmark methodology and fixture coverage intact when interpreting changes.
+- `pnpm run benchmark:death-effects` measures synchronous monster death-effect construction with seeded, resettable randomness.
+- `pnpm run benchmark:update` reports both the reconstructed busy-runtime method timings and separate seeded `Game.updateSimulation(...)` timings with drones and lifecycle effects. Whole-engine samples exclude drawing and fixture maintenance; they are not full browser-frame timings.
+- `pnpm run benchmark:draw` and `pnpm run benchmark:draw:towers` report CPU-submission and forced-GPU-flush draw timings separately. Keep benchmark methodology and fixture coverage intact when interpreting changes.
 - `scripts/benchmark-browser-harness.mjs` centralizes temporary Vite pages, Playwright/Chrome launch fallback, page-error handling, cleanup, result waiting, and PNG data-URL writing for browser benchmarks and render scripts.
 
 Monster explosion testing showcase:
@@ -204,6 +204,6 @@ Maintenance preferences:
 - Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in Svelte components.
 - Keep gameplay rates time-based and compatible with variable substep sizes. Reuse `CalibratedExponentialDecay` for calibrated particle damping instead of introducing `1 - k * deltaSeconds` velocity damping.
 - Avoid default parameter values in new code; make call sites pass behavior-affecting values explicitly.
-- When changing tower drawing code, inspect every level in `debug/towers.html` and run `npm run build` before calling the visuals done.
+- When changing tower drawing code, inspect every level in `debug/towers.html` and run `pnpm run build` before calling the visuals done.
 - When adding monsters, add a `MonsterKind` value, a concrete monster class, a `createBaseMonster(...)` branch in `src/game-engine/monster-factory.ts`, and campaign usage as needed.
 - When adding towers, add a `TowerKind` value and concrete tower class, then add one `registerTower(...)` entry with any preview pose configuration. `TOWER_CLASSES` and `TOWER_TOOLBAR_PREVIEWS` are derived from that registration list. `Game.createTower(...)` already resolves classes through the registry; do not add a kind switch there.
