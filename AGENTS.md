@@ -5,10 +5,12 @@ Active browser implementation lives in this repo root.
 Key paths:
 
 - Browser app entry: `src/main.ts`
-- Root Svelte component: `src/App.svelte`
-- Svelte components: `src/components/`
-- Svelte session context: `src/game-context.ts`
-- Svelte/game bridge: `src/game-session.ts`
+- App shell: `src/components/app-shell.ts`
+- UI components (vanilla DOM): `src/components/`
+- DOM helpers: `src/dom.ts`
+- Observable HUD/modal values: `src/value-store.ts`
+- UI/game bridge: `src/game-session.ts`
+- Control button SVG icons: `src/control-icons.ts`
 - Desktop/mobile runtime profiles: `src/game-profile.ts`
 - Frame backlog/substep policy: `src/simulation-timing.ts`
 - Browser HUD/modal view-models: `src/game-view.ts`
@@ -48,15 +50,17 @@ Repository notes:
 
 - The project root is the active browser app repo.
 - The browser app in `src/` is the active implementation.
-- The browser app is a Svelte 5 + Vite app. Avoid reintroducing hand-built DOM/UI glue when a small Svelte component or view model is the cleaner boundary.
+- The browser app is a framework-free TypeScript + Vite app. UI components are small vanilla-DOM modules that build their elements once and update them from `HudSnapshot`/`ModalView` subscriptions; do not reintroduce a UI framework without a clear payoff.
 
 Current code structure:
 
-- `src/main.ts` owns Svelte app bootstrapping, startup profile selection, and visual-viewport height synchronization.
-- `src/App.svelte` wires the main shell and creates the shared game session context.
-- `src/components/ChromeBar.svelte`, `src/components/GameBoard.svelte`, `src/components/GameModal.svelte`, `src/components/TowerPanel.svelte`, and `src/components/NerdStatsPanel.svelte` own the declarative UI around the canvas.
-- `src/game-context.ts` owns the Svelte context helpers for the shared `GameSession`.
-- `src/game-session.ts` bridges Svelte stores/events to the imperative game runtime, handles keyboard/pointer input, owns the animation-frame loop and bounded simulation backlog, and publishes HUD/modal snapshots.
+- `src/main.ts` owns app bootstrapping, startup profile selection, and visual-viewport height synchronization.
+- `src/components/app-shell.ts` (`mountApp`) creates the shared `GameSession`, builds the shell, footnote, and nerd-stats toggle, and starts the game once the board is in the document.
+- `src/components/chrome-bar.ts`, `src/components/game-board.ts`, `src/components/game-modal.ts`, `src/components/tower-panel.ts`, and `src/components/nerd-stats-panel.ts` own the UI around the canvas. Each takes the `GameSession` explicitly, creates its DOM once, and subscribes to `session.hud`/`session.modal`/`session.soundEnabled`.
+- `src/dom.ts` owns the small DOM helpers (`h`, `setText`, `setAttribute`, `setProperty`, `syncChildren`). Updates go through the change-checking setters so per-frame HUD publishes only touch nodes whose values changed, and `syncChildren` keeps persistent nodes attached so focus survives conditional siblings.
+- `src/value-store.ts` owns the minimal observable value used for HUD, modal, and sound state (subscribe runs immediately, then on change).
+- `src/control-icons.ts` owns the inline SVG icons for the sound, pause/play, and campaign buttons.
+- `src/game-session.ts` bridges observable UI values/events to the imperative game runtime, handles keyboard/pointer input, owns the animation-frame loop and bounded simulation backlog, and publishes HUD/modal snapshots.
 - `src/simulation-timing.ts` owns the bounded substep policy: native high-refresh deltas are preserved, slow frames are split into steps of at most 1/60 second, catch-up work is capped, and drawing still happens once per rendered frame.
 - `src/game-profile.ts` owns desktop/mobile logical dimensions, movement/range scales, placement geometry, UI flags, and startup profile selection.
 - `src/game-engine.ts` owns gameplay state, campaign progression, lifecycle resolution, and `updateSimulation(...)`; rendering is a separate once-per-frame `draw()` call.
@@ -69,7 +73,7 @@ Current code structure:
 - `src/placement-rules.ts` owns tower placement geometry and board hit-testing through explicit route/tower inputs; it should not import `Game`.
 - `src/route-path.ts` owns route drawing commands plus the sampled motion path entries used by monster movement.
 - `src/game-renderer.ts` owns canvas sizing, background caching, board rendering, placement previews, and orchestration of entity drawing.
-- `src/game-view.ts` owns HUD/modal view-model generation for Svelte.
+- `src/game-view.ts` owns HUD/modal view-model generation for the UI components.
 - `src/visibility-animation-loop.ts` owns the visibility-aware request-animation-frame lifecycle shared by the two standalone effect labs; lab-specific update and drawing policy stays in each lab module.
 - `src/entities/` owns active gameplay entities split by concern: towers, monsters, projectiles, and effects.
 - `src/entities/monsters/monster.ts` owns shared monster movement, damage, slow recovery, lifecycle outcome reporting, and health-bar rendering.
@@ -78,10 +82,10 @@ Current code structure:
 - General effect classes live under `src/entities/effects/`; import the concrete effect file directly.
 - Shared and entity-specific drawing helpers currently live in `src/entities/drone-visuals.ts` and `src/entities/monsters/tank-effects.ts`; the tank module also owns its track and detached-turret particles. Keep these helpers narrow and colocated with the entities that use them.
 - Tower classes live under `src/entities/towers/`; `Tower` in `tower.ts` owns shared targeting/upgrade/selection behavior.
-- `src/entities/towers/tower-registry.ts` is the source of truth for tower class lookup, keyboard shortcuts, and tower preview instances used by the Svelte toolbar.
+- `src/entities/towers/tower-registry.ts` is the source of truth for tower class lookup, keyboard shortcuts, and tower preview instances used by the tower toolbar.
 - Towers, projectiles, drones, monsters, and presentation effects update through `UpdateContext`; gameplay entities report additions and lifecycle outcomes through `UpdateResult`. Do not give them a `Game` dependency when the context/result boundary is sufficient.
 - `src/campaign.ts` turns the ten authored routes into the campaign.
-- `src/game-view.ts` derives banner, HUD, and modal presentation data; keep text/formatting policy out of Svelte components and the renderer where practical.
+- `src/game-view.ts` derives banner, HUD, and modal presentation data; keep text/formatting policy out of UI components and the renderer where practical.
 - `src/types.ts` is the source of truth for shared browser types such as `TowerKind`, `MonsterKind`, `GameState`, `Point`, `LevelData`, `WaveData`, and `HudSnapshot`.
 - `src/constants.ts` and `src/utils.ts` are shared by the active runtime, so prefer reusing those helpers instead of re-declaring gameplay constants or math utilities.
 - `src/entities.ts`, `src/entities/monsters.ts`, `src/entities/projectiles.ts`, and `src/entities/effects.ts` have been removed; do not recreate monolithic entity files or barrel files unless there is a clear payoff.
@@ -124,7 +128,7 @@ Gameplay / UI notes:
 - Monster-specific visual animations, such as tank turret spins or packman mouth/body flourishes, should live on the concrete monster class and run through `updateSpecial(...)`; if an animation changes visible body geometry or orientation, keep that current shape reflected in the monster's `addDeathEffect(...)` outline/rotation so shards match the death frame.
 - Use shared easing helpers from `src/utils.ts` for monster animation progress, and keep mutually exclusive monster flourishes in one local state machine when they should not overlap.
 - Tower classes should own their own drawing and attack behavior. Shared tower rendering/selection concerns belong in `Tower`.
-- Svelte components should consume `HudSnapshot` and `ModalView` data rather than reaching into the `Game` object directly.
+- UI components should consume `HudSnapshot` and `ModalView` data rather than reaching into the `Game` object directly.
 - The HUD selection card supports upgrade, sell, and cancel-build actions; keep those interactions flowing through `GameSession` and the HUD snapshot rather than binding components directly to `Game`.
 - Mobile layout support starts at a `375 x 812` CSS-pixel viewport. Do not optimize for older/smaller phone viewports such as `320 x 568` or `360 x 667` unless explicitly asked.
 - The campaign modal doubles as the map screen, win/loss screen, and resume flow.
@@ -200,8 +204,8 @@ Audio assets:
 Maintenance preferences:
 
 - Prefer named imports from `src/constants.ts` and `src/types.ts` so call sites show their dependencies clearly.
-- Keep Svelte UI declarative and thin; put formatting and modal/HUD derivation in `src/game-view.ts`.
-- Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in Svelte components.
+- Keep UI components thin; put formatting and modal/HUD derivation in `src/game-view.ts`.
+- Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in UI components.
 - Keep gameplay rates time-based and compatible with variable substep sizes. Reuse `CalibratedExponentialDecay` for calibrated particle damping instead of introducing `1 - k * deltaSeconds` velocity damping.
 - Avoid default parameter values in new code; make call sites pass behavior-affecting values explicitly.
 - When changing tower drawing code, inspect every level in `debug/towers.html` and run `pnpm run build` before calling the visuals done.

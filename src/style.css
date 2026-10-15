@@ -199,7 +199,6 @@ textarea,
   display: block;
   width: 25px;
   height: 25px;
-  object-fit: contain;
   filter: drop-shadow(0 0 4px rgba(49, 255, 235, 0.42));
   pointer-events: none;
 }

@@ -18,7 +18,7 @@ import {
   type RuntimeHudStats,
 } from "./game-view";
 import { type ModalAction, type ModalView, type Point, type TowerKind } from "./types";
-import { readonly, writable } from "svelte/store";
+import { createValue, readonlyValue } from "./value-store";
 
 const NERD_STATS_SAMPLE_MS = 500;
 const TOWER_DRAG_THRESHOLD_PX = 6;
@@ -59,9 +59,9 @@ function shouldIgnoreGameShortcut(event: KeyboardEvent): boolean {
 }
 
 export function createGameSession(profile: GameProfile) {
-  const hudStore = writable(INITIAL_HUD_SNAPSHOT);
-  const modalStore = writable<ModalView | null>(null);
-  const soundEnabledStore = writable(true);
+  const hudStore = createValue(INITIAL_HUD_SNAPSHOT);
+  const modalStore = createValue<ModalView | null>(null);
+  const soundEnabledStore = createValue(true);
   const audio = new GameAudio(profile.fieldWidth);
   const progressStore = createBrowserCampaignProgressStore(window);
   let canvas: HTMLCanvasElement | null = null;
@@ -650,9 +650,9 @@ export function createGameSession(profile: GameProfile) {
 
   return {
     profile,
-    hud: readonly(hudStore),
-    modal: readonly(modalStore),
-    soundEnabled: readonly(soundEnabledStore),
+    hud: readonlyValue(hudStore),
+    modal: readonlyValue(modalStore),
+    soundEnabled: readonlyValue(soundEnabledStore),
     toggleSound,
     setNerdStatsEnabled,
     mount,

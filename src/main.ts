@@ -1,6 +1,5 @@
 import "./style.css";
-import { mount } from "svelte";
-import App from "./App.svelte";
+import { mountApp } from "./components/app-shell";
 import { selectStartupGameProfile } from "./game-profile";
 
 const target = document.querySelector<HTMLDivElement>("#app");
@@ -19,9 +18,4 @@ window.addEventListener("resize", updateAppViewportHeight);
 window.visualViewport?.addEventListener("resize", updateAppViewportHeight);
 window.visualViewport?.addEventListener("scroll", updateAppViewportHeight);
 
-mount(App, {
-  target,
-  props: {
-    profile: selectStartupGameProfile(window),
-  },
-});
+mountApp(target, selectStartupGameProfile(window));
