@@ -149,7 +149,7 @@ Useful validation commands:
 - `pnpm run benchmark:draw:towers`
 - `pnpm run render:levels`
 
-The supported runtime ranges are declared in `package.json`; `.nvmrc` pins the local/CI Node release. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
+The supported runtime ranges are declared in `package.json`; GitHub Actions uses Node 24. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
 
 GitHub Pages branch publishing:
 
