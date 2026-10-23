@@ -8,11 +8,10 @@ Play online: [https://vladf1.github.io/vector-defence-2026/](https://vladf1.gith
 
 ## Requirements
 
-- Node.js 24.22+ (24.x)
 - Bun 1.4.4 (pinned in `package.json`)
 
 Install Bun using the [official installation guide](https://bun.sh/docs/installation).
-Node.js is still used by Vite and the browser tooling scripts.
+Bun runs Vite, TypeScript, and the browser tooling scripts.
 
 ## Getting Started
 

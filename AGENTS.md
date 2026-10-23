@@ -151,7 +151,7 @@ Useful validation commands:
 
 Use Bun 1.4.4 for dependency management and package scripts, with `bun install --frozen-lockfile` and the committed `bun.lock`. `bunfig.toml` keeps dependency installs isolated, disables hoisting, and requires newly resolved package versions to be at least one day old. Dependency lifecycle scripts are restricted to `fsevents` through `trustedDependencies` in `package.json`.
 
-The supported runtime ranges are declared in `package.json`; GitHub Actions uses Node 24 and Bun 1.4.4. Node remains the runtime for Vite and browser tooling scripts. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
+The supported runtime range is declared in `package.json`; GitHub Actions uses Bun 1.4.4. The `[run] bun = true` setting in `bunfig.toml` runs Vite, TypeScript, and other dependency CLIs with Bun as well. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
 
 GitHub Pages branch publishing:
 
@@ -165,15 +165,15 @@ Tower render table:
 
 Monster explosion render sheets:
 
-- `node scripts/render-monster-explosions.mjs` generates large early-stage contact sheets for every monster under `artifacts/monster-explosion-sequence/`.
+- `bun scripts/render-monster-explosions.mjs` generates large early-stage contact sheets for every monster under `artifacts/monster-explosion-sequence/`.
 - The script starts a temporary Vite server, opens it with Playwright, imports the real monster classes, calls each monster's actual `addDeathEffect(...)`, and renders detailed early explosion frames with the intact monster as frame 0.
 - Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
 
 Other render and benchmark tooling:
 
 - `bun run render:levels` renders desktop and mobile route/placement sheets.
-- `node scripts/render-polygon-shards.mjs` renders seeded polygon-breakup variants under `artifacts/polygon-shards/`.
-- `node scripts/render-berserker-animation.mjs [output.png]` renders the berserker rage sequence.
+- `bun scripts/render-polygon-shards.mjs` renders seeded polygon-breakup variants under `artifacts/polygon-shards/`.
+- `bun scripts/render-berserker-animation.mjs [output.png]` renders the berserker rage sequence.
 - `bun run benchmark:death-effects` measures synchronous monster death-effect construction with seeded, resettable randomness.
 - `bun run benchmark:update` reports both the reconstructed busy-runtime method timings and separate seeded `Game.updateSimulation(...)` timings with drones and lifecycle effects. Whole-engine samples exclude drawing and fixture maintenance; they are not full browser-frame timings.
 - `bun run benchmark:draw` and `bun run benchmark:draw:towers` report CPU-submission and forced-GPU-flush draw timings separately. Keep benchmark methodology and fixture coverage intact when interpreting changes.

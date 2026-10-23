@@ -5,18 +5,17 @@
   "type": "module",
   "packageManager": "bun@1.4.4",
   "engines": {
-    "node": "^24.22.0",
     "bun": "^1.4.4"
   },
   "scripts": {
     "dev": "vite",
-    "check:runtime": "node scripts/check-runtime.mjs",
-    "benchmark:draw": "node scripts/benchmark-draw-methods.mjs",
-    "benchmark:draw:towers": "node scripts/benchmark-draw-methods.mjs --tower-profile",
-    "benchmark:death-effects": "node scripts/benchmark-death-effects.mjs",
-    "benchmark:update": "node scripts/benchmark-update-methods.mjs",
-    "render:levels": "node scripts/render-levels.mjs",
-    "render:towers": "node scripts/render-towers.mjs",
+    "check:runtime": "bun scripts/check-runtime.mjs",
+    "benchmark:draw": "bun scripts/benchmark-draw-methods.mjs",
+    "benchmark:draw:towers": "bun scripts/benchmark-draw-methods.mjs --tower-profile",
+    "benchmark:death-effects": "bun scripts/benchmark-death-effects.mjs",
+    "benchmark:update": "bun scripts/benchmark-update-methods.mjs",
+    "render:levels": "bun scripts/render-levels.mjs",
+    "render:towers": "bun scripts/render-towers.mjs",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "build:pages": "tsc --noEmit -p tsconfig.json && vite build --base=/vector-defence-2026/",
     "preview": "vite preview"

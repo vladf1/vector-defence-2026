@@ -3,8 +3,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-if ! command -v node >/dev/null 2>&1 || ! command -v bun >/dev/null 2>&1; then
-  echo "Node.js 24.22+ and Bun 1.4.4 are required. Install them, then run this launcher again."
+if ! command -v bun >/dev/null 2>&1; then
+  echo "Bun 1.4.4 is required. Install it, then run this launcher again."
   read -r -p "Press Return to close this window..."
   exit 1
 fi

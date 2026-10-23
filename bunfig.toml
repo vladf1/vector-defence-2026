@@ -3,3 +3,7 @@ linker = "isolated"
 hoist = false
 # Require newly resolved package versions to be at least one day old.
 minimumReleaseAge = 86400
+
+[run]
+# Run dependency CLIs, including Vite and TypeScript, with Bun.
+bun = true
