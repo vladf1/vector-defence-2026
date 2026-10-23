@@ -135,21 +135,23 @@ Gameplay / UI notes:
 
 To run the browser version:
 
-- `pnpm run dev`
+- `bun run dev`
 
 Useful validation commands:
 
-- `pnpm run build`
-- `pnpm run check:runtime` (browser regression checks for timing, collisions, effects, and UI state)
-- `pnpm run build:pages`
-- `pnpm run dev`
-- `pnpm run benchmark:update`
-- `pnpm run benchmark:death-effects`
-- `pnpm run benchmark:draw`
-- `pnpm run benchmark:draw:towers`
-- `pnpm run render:levels`
+- `bun run build`
+- `bun run check:runtime` (browser regression checks for timing, collisions, effects, and UI state)
+- `bun run build:pages`
+- `bun run dev`
+- `bun run benchmark:update`
+- `bun run benchmark:death-effects`
+- `bun run benchmark:draw`
+- `bun run benchmark:draw:towers`
+- `bun run render:levels`
 
-The supported runtime ranges are declared in `package.json`; GitHub Actions uses Node 24. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
+Use Bun 1.4.4 for dependency management and package scripts, with `bun install --frozen-lockfile` and the committed `bun.lock`. `bunfig.toml` keeps dependency installs isolated, disables hoisting, and requires newly resolved package versions to be at least one day old. Dependency lifecycle scripts are restricted to `fsevents` through `trustedDependencies` in `package.json`.
+
+The supported runtime ranges are declared in `package.json`; GitHub Actions uses Node 24 and Bun 1.4.4. Node remains the runtime for Vite and browser tooling scripts. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
 
 GitHub Pages branch publishing:
 
@@ -169,12 +171,12 @@ Monster explosion render sheets:
 
 Other render and benchmark tooling:
 
-- `pnpm run render:levels` renders desktop and mobile route/placement sheets.
+- `bun run render:levels` renders desktop and mobile route/placement sheets.
 - `node scripts/render-polygon-shards.mjs` renders seeded polygon-breakup variants under `artifacts/polygon-shards/`.
 - `node scripts/render-berserker-animation.mjs [output.png]` renders the berserker rage sequence.
-- `pnpm run benchmark:death-effects` measures synchronous monster death-effect construction with seeded, resettable randomness.
-- `pnpm run benchmark:update` reports both the reconstructed busy-runtime method timings and separate seeded `Game.updateSimulation(...)` timings with drones and lifecycle effects. Whole-engine samples exclude drawing and fixture maintenance; they are not full browser-frame timings.
-- `pnpm run benchmark:draw` and `pnpm run benchmark:draw:towers` report CPU-submission and forced-GPU-flush draw timings separately. Keep benchmark methodology and fixture coverage intact when interpreting changes.
+- `bun run benchmark:death-effects` measures synchronous monster death-effect construction with seeded, resettable randomness.
+- `bun run benchmark:update` reports both the reconstructed busy-runtime method timings and separate seeded `Game.updateSimulation(...)` timings with drones and lifecycle effects. Whole-engine samples exclude drawing and fixture maintenance; they are not full browser-frame timings.
+- `bun run benchmark:draw` and `bun run benchmark:draw:towers` report CPU-submission and forced-GPU-flush draw timings separately. Keep benchmark methodology and fixture coverage intact when interpreting changes.
 - `scripts/benchmark-browser-harness.mjs` centralizes temporary Vite pages, Playwright/Chrome launch fallback, page-error handling, cleanup, result waiting, and PNG data-URL writing for browser benchmarks and render scripts.
 
 Monster explosion testing showcase:
@@ -208,6 +210,6 @@ Maintenance preferences:
 - Keep imperative simulation logic in `src/game-engine.ts` or entity classes, not in UI components.
 - Keep gameplay rates time-based and compatible with variable substep sizes. Reuse `CalibratedExponentialDecay` for calibrated particle damping instead of introducing `1 - k * deltaSeconds` velocity damping.
 - Avoid default parameter values in new code; make call sites pass behavior-affecting values explicitly.
-- When changing tower drawing code, inspect every level in `debug/towers.html` and run `pnpm run build` before calling the visuals done.
+- When changing tower drawing code, inspect every level in `debug/towers.html` and run `bun run build` before calling the visuals done.
 - When adding monsters, add a `MonsterKind` value, a concrete monster class, a `createBaseMonster(...)` branch in `src/game-engine/monster-factory.ts`, and campaign usage as needed.
 - When adding towers, add a `TowerKind` value and concrete tower class, then add one `registerTower(...)` entry with any preview pose configuration. `TOWER_CLASSES` and `TOWER_TOOLBAR_PREVIEWS` are derived from that registration list. `Game.createTower(...)` already resolves classes through the registry; do not add a kind switch there.

@@ -8,23 +8,24 @@ Play online: [https://vladf1.github.io/vector-defence-2026/](https://vladf1.gith
 
 ## Requirements
 
-- Node.js 20.19+, 22.12+, or 24+
-- pnpm 12.6.0 (pinned in `package.json`)
+- Node.js 24.22+ (24.x)
+- Bun 1.4.4 (pinned in `package.json`)
 
-Install pnpm once with `npm install --global pnpm@12.6.0`.
+Install Bun using the [official installation guide](https://bun.sh/docs/installation).
+Node.js is still used by Vite and the browser tooling scripts.
 
 ## Getting Started
 
 Install dependencies:
 
 ```bash
-pnpm install --frozen-lockfile
+bun install --frozen-lockfile
 ```
 
 Start the local development server:
 
 ```bash
-pnpm run dev
+bun run dev
 ```
 
 Vite will print a local URL in the terminal, typically `http://localhost:5173/`.
@@ -34,28 +35,28 @@ Vite will print a local URL in the terminal, typically `http://localhost:5173/`.
 Create a production build:
 
 ```bash
-pnpm run build
+bun run build
 ```
 
 Create a GitHub Pages build with the repository base path:
 
 ```bash
-pnpm run build:pages
+bun run build:pages
 ```
 
 Preview the production build locally:
 
 ```bash
-pnpm run preview
+bun run preview
 ```
 
 Useful validation commands:
 
 ```bash
-pnpm run build
-pnpm run build:pages
-pnpm run check:runtime
-pnpm run dev
+bun run build
+bun run build:pages
+bun run check:runtime
+bun run dev
 ```
 
 ## Deploy To GitHub Pages

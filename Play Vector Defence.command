@@ -3,16 +3,14 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-if ! command -v pnpm >/dev/null 2>&1; then
-  echo "pnpm was not found. Install Node.js and pnpm 12.6.0, then run this launcher again."
+if ! command -v node >/dev/null 2>&1 || ! command -v bun >/dev/null 2>&1; then
+  echo "Node.js 24.22+ and Bun 1.4.4 are required. Install them, then run this launcher again."
   read -r -p "Press Return to close this window..."
   exit 1
 fi
 
-if [ ! -d "node_modules" ]; then
-  echo "Installing dependencies..."
-  pnpm install --frozen-lockfile
-fi
+echo "Checking dependencies..."
+bun install --frozen-lockfile
 
 log_file="$(mktemp -t vector-defence-vite.XXXXXX.log)"
 
@@ -26,7 +24,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "Starting Vector Defence..."
-pnpm run dev --host 127.0.0.1 >"$log_file" 2>&1 &
+bun run dev --host 127.0.0.1 >"$log_file" 2>&1 &
 server_pid=$!
 
 url=""

@@ -12,15 +12,13 @@ command = """
 bash -lc '
 set -euo pipefail
 
-if ! command -v pnpm >/dev/null 2>&1; then
-  echo "pnpm was not found. Install Node.js and pnpm 12.6.0, then run this action again."
+if ! command -v node >/dev/null 2>&1 || ! command -v bun >/dev/null 2>&1; then
+  echo "Node.js 24.22+ and Bun 1.4.4 are required. Install them, then run this action again."
   exit 1
 fi
 
-if [ ! -d node_modules ]; then
-  echo "Installing dependencies..."
-  pnpm install --frozen-lockfile
-fi
+echo "Checking dependencies..."
+bun install --frozen-lockfile
 
 log_file="$(mktemp -t vector-defence-vite.XXXXXX.log)"
 
@@ -34,7 +32,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "Starting Vite dev server..."
-pnpm run dev --host 127.0.0.1 >"$log_file" 2>&1 &
+bun run dev --host 127.0.0.1 >"$log_file" 2>&1 &
 server_pid=$!
 
 url=""
@@ -60,7 +58,9 @@ if [ -z "$url" ]; then
 fi
 
 echo "Opening $url"
-open "$url"
+if [ "${VECTOR_DEFENCE_SKIP_OPEN:-}" != "1" ]; then
+  open "$url"
+fi
 
 echo
 echo "Vector Defence is running at $url"

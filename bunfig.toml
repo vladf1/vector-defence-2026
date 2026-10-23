@@ -1,0 +1,5 @@
+[install]
+linker = "isolated"
+hoist = false
+# Require newly resolved package versions to be at least one day old.
+minimumReleaseAge = 86400
