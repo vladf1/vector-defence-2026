@@ -597,7 +597,6 @@ const value = await runBenchmarkPage({
   html,
   path: "/__draw-benchmark",
   query,
-  pluginName: "draw-benchmark-page",
 });
 
 console.table(value.summary.map((result) => ({

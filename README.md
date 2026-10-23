@@ -1,6 +1,6 @@
 # Vector Defence
 
-Vector Defence is a browser-based tower defense game built with TypeScript, Vite, and plain DOM/canvas (no UI framework). This repository's active implementation is the browser app at the repo root, with the current runtime living in `src/`.
+Vector Defence is a browser-based tower defense game built with TypeScript, Bun, and plain DOM/canvas (no UI framework). This repository's active implementation is the browser app at the repo root, with the current runtime living in `src/`.
 
 The game features a fixed 10-level campaign, canvas-based combat, six tower types, and waves generated from handcrafted routes.
 
@@ -11,7 +11,7 @@ Play online: [https://vladf1.github.io/vector-defence-2026/](https://vladf1.gith
 - Bun 1.4.4 (pinned in `package.json`)
 
 Install Bun using the [official installation guide](https://bun.sh/docs/installation).
-Bun runs Vite, TypeScript, and the browser tooling scripts.
+Bun installs dependencies, serves and bundles the app, and runs TypeScript and the browser tooling scripts.
 
 ## Getting Started
 
@@ -27,7 +27,9 @@ Start the local development server:
 bun run dev
 ```
 
-Vite will print a local URL in the terminal, typically `http://localhost:5173/`.
+Bun prints the local URL, starting at `http://127.0.0.1:5173/` and trying the next port if it is occupied. JavaScript/TypeScript and HTML edits reload the page automatically; CSS edits update in place.
+
+To choose a port, run `bun run dev --port 5180`. Add `--strictPort` to fail if that port is occupied, or `--open` to open the browser.
 
 ## Build
 
@@ -48,6 +50,8 @@ Preview the production build locally:
 ```bash
 bun run preview
 ```
+
+After `build:pages`, use `bun run preview --base /vector-defence-2026/` to preview the same deployment path.
 
 Useful validation commands:
 

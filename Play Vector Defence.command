@@ -12,7 +12,7 @@ fi
 echo "Checking dependencies..."
 bun install --frozen-lockfile
 
-log_file="$(mktemp -t vector-defence-vite.XXXXXX.log)"
+log_file="$(mktemp -t vector-defence-bun.XXXXXX.log)"
 
 cleanup() {
   if [ -n "${server_pid:-}" ] && kill -0 "$server_pid" >/dev/null 2>&1; then

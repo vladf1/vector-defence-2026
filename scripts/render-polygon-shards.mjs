@@ -499,7 +499,6 @@ const html = String.raw`
 `;
 
 const result = await runBrowserPage({
-  pluginName: "polygon-shard-renderer-page",
   path: "/__polygon-shard-renderer",
   html,
   waitUntil: "networkidle",

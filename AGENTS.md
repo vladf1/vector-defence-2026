@@ -50,7 +50,7 @@ Repository notes:
 
 - The project root is the active browser app repo.
 - The browser app in `src/` is the active implementation.
-- The browser app is a framework-free TypeScript + Vite app. UI components are small vanilla-DOM modules that build their elements once and update them from `HudSnapshot`/`ModalView` subscriptions; do not reintroduce a UI framework without a clear payoff.
+- The browser app is a framework-free TypeScript + Bun app. UI components are small vanilla-DOM modules that build their elements once and update them from `HudSnapshot`/`ModalView` subscriptions; do not reintroduce a UI framework without a clear payoff.
 
 Current code structure:
 
@@ -151,7 +151,8 @@ Useful validation commands:
 
 Use Bun 1.4.4 for dependency management and package scripts, with `bun install --frozen-lockfile` and the committed `bun.lock`. `bunfig.toml` keeps dependency installs isolated, disables hoisting, and requires newly resolved package versions to be at least one day old. Dependency lifecycle scripts are restricted to `fsevents` through `trustedDependencies` in `package.json`.
 
-The supported runtime range is declared in `package.json`; GitHub Actions uses Bun 1.4.4. The `[run] bun = true` setting in `bunfig.toml` runs Vite, TypeScript, and other dependency CLIs with Bun as well. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
+The supported runtime range is declared in `package.json`; GitHub Actions uses Bun 1.4.4. The `[run] bun = true` setting in `bunfig.toml` runs TypeScript and other dependency CLIs with Bun as well.
+Bun serves, bundles, and previews the app through `scripts/serve.mjs`, `scripts/build.mjs`, and `scripts/browser-server.mjs`; `scripts/site-config.mjs` shares the six HTML entrypoints. JS/TS and HTML edits reload the page; CSS updates in place. Development shortcuts use `import.meta.hot` and are removed from production builds. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
 
 GitHub Pages branch publishing:
 
@@ -166,7 +167,7 @@ Tower render table:
 Monster explosion render sheets:
 
 - `bun scripts/render-monster-explosions.mjs` generates large early-stage contact sheets for every monster under `artifacts/monster-explosion-sequence/`.
-- The script starts a temporary Vite server, opens it with Playwright, imports the real monster classes, calls each monster's actual `addDeathEffect(...)`, and renders detailed early explosion frames with the intact monster as frame 0.
+- The script starts a temporary Bun server, opens it with Playwright, imports the real monster classes, calls each monster's actual `addDeathEffect(...)`, and renders detailed early explosion frames with the intact monster as frame 0.
 - Generated PNGs under `artifacts/` are ignored by Git and should normally stay uncommitted.
 
 Other render and benchmark tooling:
@@ -177,16 +178,16 @@ Other render and benchmark tooling:
 - `bun run benchmark:death-effects` measures synchronous monster death-effect construction with seeded, resettable randomness.
 - `bun run benchmark:update` reports both the reconstructed busy-runtime method timings and separate seeded `Game.updateSimulation(...)` timings with drones and lifecycle effects. Whole-engine samples exclude drawing and fixture maintenance; they are not full browser-frame timings.
 - `bun run benchmark:draw` and `bun run benchmark:draw:towers` report CPU-submission and forced-GPU-flush draw timings separately. Keep benchmark methodology and fixture coverage intact when interpreting changes.
-- `scripts/benchmark-browser-harness.mjs` centralizes temporary Vite pages, Playwright/Chrome launch fallback, page-error handling, cleanup, result waiting, and PNG data-URL writing for browser benchmarks and render scripts.
+- `scripts/benchmark-browser-harness.mjs` centralizes temporary Bun pages, Playwright/Chrome launch fallback, page-error handling, cleanup, result waiting, and PNG data-URL writing for browser benchmarks and render scripts.
 
 Monster explosion testing showcase:
 
 - `debug/index.html` is the index for standalone development and inspection tools.
 - `debug/towers.html` renders the actual tower and projectile classes across levels 1 through 7.
-- `debug/explosions.html` is a separate desktop-only Vite page for inspecting monsters zoomed way in as they move into center and explode in slow motion.
+- `debug/explosions.html` is a separate desktop-only Bun page for inspecting monsters zoomed way in as they move into center and explode in slow motion.
 - Its behavior lives in `src/explosion-testing.ts`; keep changes isolated there unless deliberately promoting the page into the main game runtime.
 - The page reuses the real monster classes and each monster's actual `addDeathEffect(...)` particles, and intentionally uses normal runtime randomness rather than seeded output.
-- The production build emits the pages under `debug/` as separate Rollup entries; keep `src/explosion-testing.ts` and `src/tower-testing.ts` out of the main game imports so the game does not load testing-only JavaScript.
+- The production build emits the pages under `debug/` as separate Bun HTML entries; keep `src/explosion-testing.ts` and `src/tower-testing.ts` out of the main game imports so the game does not load testing-only JavaScript.
 
 Escape explosion testing showcase:
 

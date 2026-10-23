@@ -167,7 +167,6 @@ const html = String.raw`
 `;
 
 const dataUrl = await runBrowserPage({
-  pluginName: "berserker-animation-renderer-page",
   path: "/__berserker-animation-renderer",
   html,
   waitUntil: "networkidle",

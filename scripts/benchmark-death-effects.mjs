@@ -213,7 +213,6 @@ const html = String.raw`
 const value = await runBenchmarkPage({
   html,
   path: "/__death-effect-benchmark",
-  pluginName: "death-effect-benchmark-page",
   timeoutMs: 120_000,
 });
 
