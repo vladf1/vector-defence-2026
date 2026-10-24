@@ -39,7 +39,7 @@ Check types without building:
 bun run typecheck
 ```
 
-This runs Bun's built-in `bun check` against `tsconfig.json`, covering the TypeScript sources under `src/`. Both production build commands run the same check before bundling; type errors stop the build. Bun handles TypeScript-to-JavaScript compilation and browser bundling. The TypeScript 7 dependency is retained for editor tooling, not the build's type checker or compiler.
+This runs Bun's built-in `bun check` against `tsconfig.json`, covering the TypeScript sources under `src/`. Both production build commands run the same check before bundling; type errors stop the build. Bun handles TypeScript-to-JavaScript compilation and browser bundling. No separate TypeScript compiler installation is required.
 
 Create a production build:
 

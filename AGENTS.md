@@ -152,7 +152,7 @@ Useful validation commands:
 
 Use Bun 1.4.4 for dependency management and package scripts, with `bun install --frozen-lockfile` and the committed `bun.lock`. `bunfig.toml` keeps dependency installs isolated, disables hoisting, and requires newly resolved package versions to be at least one day old. Dependency lifecycle scripts are restricted to `fsevents` through `trustedDependencies` in `package.json`.
 
-The supported runtime range is declared in `package.json`; GitHub Actions uses Bun 1.4.4. Both production builds run `bun run typecheck` before bundling. It uses Bun's built-in `bun check -p tsconfig.json`, not `tsc`; keep the TypeScript 7 dependency for editor tooling. The `[run] bun = true` setting in `bunfig.toml` runs dependency CLIs with Bun as well.
+The supported runtime range is declared in `package.json`; GitHub Actions uses Bun 1.4.4. Both production builds run `bun run typecheck` before bundling. It uses Bun's built-in `bun check -p tsconfig.json`; the project has no separate TypeScript compiler dependency. The `[run] bun = true` setting in `bunfig.toml` runs dependency CLIs with Bun as well.
 Bun serves, bundles, and previews the app through `scripts/serve.mjs`, `scripts/build.mjs`, and `scripts/browser-server.mjs`; `scripts/site-config.mjs` shares the six HTML entrypoints. JS/TS and HTML edits reload the page; CSS updates in place. Development shortcuts use `import.meta.hot` and are removed from production builds. There is currently no general `test`, `lint`, or `format:check` script, so do not claim those checks ran unless they have been added.
 
 GitHub Pages branch publishing:
