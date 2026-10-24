@@ -467,7 +467,6 @@ const html = String.raw`
 const value = await runBenchmarkPage({
   html,
   path: "/__update-benchmark",
-  pluginName: "update-benchmark-page",
   timeoutMs: 120_000,
 });
 

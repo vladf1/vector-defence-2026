@@ -1,10 +1,6 @@
-import { runBrowserPage } from "./benchmark-browser-harness.mjs";
+import { runBrowserPage, waitForPageResult } from "./benchmark-browser-harness.mjs";
 
-const checks = await runBrowserPage({
-  path: "/__runtime-checks",
-  html: "<!doctype html><body></body>",
-  pluginName: "runtime-checks",
-}, (page) => page.evaluate(async () => {
+async function checkRuntime() {
   let seed = 42;
   Math.random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
   const { Game, createLevels } = await import("/src/game-engine.ts");
@@ -297,7 +293,12 @@ const checks = await runBrowserPage({
     GameAudio.prototype.play = originalPlay;
   }
   return passed;
-}));
+}
+
+const checks = await runBrowserPage({
+  path: "/__runtime-checks",
+  html: `<!doctype html><body><script type="module">window.__runtimeChecks = await (${checkRuntime.toString()})();</script></body>`,
+}, page => waitForPageResult(page, "__runtimeChecks", 30_000));
 for (const viewport of [{ width: 1200, height: 900 }, { width: 375, height: 812 }, { width: 390, height: 1000 }]) {
   await runBrowserPage({ path: "/", viewport }, async page => {
     const dialog = page.getByRole("dialog");

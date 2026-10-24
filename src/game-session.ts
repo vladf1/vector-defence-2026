@@ -593,7 +593,7 @@ export function createGameSession(profile: GameProfile) {
 
     const key = event.key.toLowerCase();
 
-    if (import.meta.env.DEV && key === "j") {
+    if (import.meta.hot && key === "j") {
       event.preventDefault();
       withGame((currentGame) => {
         currentGame.finishLevel();
@@ -601,7 +601,7 @@ export function createGameSession(profile: GameProfile) {
       return;
     }
 
-    if (import.meta.env.DEV && key === "k") {
+    if (import.meta.hot && key === "k") {
       event.preventDefault();
       withGame((currentGame) => {
         currentGame.loseLevel();
@@ -609,7 +609,7 @@ export function createGameSession(profile: GameProfile) {
       return;
     }
 
-    if (import.meta.env.DEV && key === "o") {
+    if (import.meta.hot && key === "o") {
       event.preventDefault();
       withGame((currentGame) => {
         currentGame.unlockAllLevelsForDebug();

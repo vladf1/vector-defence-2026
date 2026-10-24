@@ -218,7 +218,6 @@ const html = String.raw`
 `;
 
 const result = await runBrowserPage({
-  pluginName: "monster-explosion-renderer-page",
   path: "/__monster-explosion-renderer",
   html,
   waitUntil: "networkidle",

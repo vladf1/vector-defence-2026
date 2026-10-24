@@ -286,7 +286,6 @@ const html = String.raw`
 `;
 
 const renderedLevels = await runBrowserPage({
-  pluginName: "level-renderer-page",
   path: "/__level-renderer",
   html,
   waitUntil: "networkidle",

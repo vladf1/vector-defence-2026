@@ -1,39 +1,42 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { createServer } from "vite";
+import { startDevServer, startStaticServer } from "./browser-server.mjs";
+import { repoRoot } from "./site-config.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const repoRoot = path.resolve(__dirname, "..");
+export { repoRoot };
 
 export async function runBrowserPage(options, runPage) {
-  const plugins = [];
-  if (options.html !== undefined) {
-    plugins.push({
-      name: options.pluginName,
-      configureServer(viteServer) {
-        viteServer.middlewares.use(options.path, (_request, response) => {
-          response.setHeader("Content-Type", "text/html; charset=utf-8");
-          response.end(options.html);
-        });
-      },
-    });
-  }
-
-  const server = await createServer({
-    root: repoRoot,
-    logLevel: "error",
-    server: {
-      host: "127.0.0.1",
-    },
-    plugins,
-  });
-
+  let temporaryDirectory;
+  let server;
   let browser;
   try {
-    await server.listen(0);
-    const url = server.resolvedUrls.local[0];
+    const serverOptions = { hostname: "127.0.0.1", port: 0 };
+    if (options.html === undefined) {
+      server = await startDevServer(serverOptions);
+    } else {
+      await mkdir(path.join(repoRoot, "artifacts"), { recursive: true });
+      temporaryDirectory = await mkdtemp(path.join(repoRoot, "artifacts/browser-page-"));
+      // Bun bundles external module scripts. Materialize the existing fixtures
+      // without changing their measurements, seeds, or browser-side code.
+      let moduleIndex = 0;
+      const modules = [];
+      const html = options.html.replace(/<script type="module">([\s\S]*?)<\/script>/g, (_tag, source) => {
+        const filename = `fixture-${moduleIndex++}.mjs`;
+        const resolvedSource = source.replace(/(["'])\/(?=src\/|game-levels\.json)/g, `$1${repoRoot}/`)
+          .replaceAll("game-levels.json?import", "game-levels.json");
+        modules.push(writeFile(path.join(temporaryDirectory, filename), resolvedSource));
+        return `<script type="module" src="./${filename}"></script>`;
+      });
+      await Promise.all(modules);
+      const entrypoint = path.join(temporaryDirectory, "index.html");
+      await writeFile(entrypoint, html);
+      const directory = path.join(temporaryDirectory, "dist");
+      const build = await Bun.build({ entrypoints: [entrypoint], outdir: directory, target: "browser", publicPath: "/", splitting: true });
+      if (!build.success) throw new AggregateError(build.logs, "Browser fixture build failed");
+      server = startStaticServer({ ...serverOptions, directory, basePath: "/" });
+    }
+    const url = server.url;
     browser = await launchChromium();
     const page = await browser.newPage({
       viewport: options.viewport ?? { width: 960, height: 540 },
@@ -44,7 +47,7 @@ export async function runBrowserPage(options, runPage) {
         console.log(message.text());
       }
     });
-    const targetUrl = new URL(options.path.replace(/^\//, ""), url);
+    const targetUrl = new URL(options.html === undefined ? options.path : "/", url);
     targetUrl.search = options.query?.replace(/^\?/, "") ?? "";
     const pageError = new Promise((_resolve, reject) => {
       page.once("pageerror", reject);
@@ -56,7 +59,8 @@ export async function runBrowserPage(options, runPage) {
     return await Promise.race([pageWork, pageError]);
   } finally {
     await browser?.close();
-    await server.close();
+    server?.stop(true);
+    if (temporaryDirectory) await rm(temporaryDirectory, { recursive: true, force: true });
   }
 }
 
