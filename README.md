@@ -11,7 +11,7 @@ Play online: [https://vladf1.github.io/vector-defence-2026/](https://vladf1.gith
 - Bun 1.4.4 (pinned in `package.json`)
 
 Install Bun using the [official installation guide](https://bun.sh/docs/installation).
-Bun installs dependencies, serves and bundles the app, and runs TypeScript and the browser tooling scripts.
+Bun installs dependencies, type checks, serves and bundles the app, and runs the browser tooling scripts.
 
 ## Getting Started
 
@@ -32,6 +32,14 @@ Bun prints the local URL, starting at `http://127.0.0.1:5173/` and trying the ne
 To choose a port, run `bun run dev --port 5180`. Add `--strictPort` to fail if that port is occupied, or `--open` to open the browser.
 
 ## Build
+
+Check types without building:
+
+```bash
+bun run typecheck
+```
+
+This runs Bun's built-in `bun check` against `tsconfig.json`, covering the TypeScript sources under `src/`. Both production build commands run the same check before bundling; type errors stop the build. Bun handles TypeScript-to-JavaScript compilation and browser bundling. The TypeScript 7 dependency is retained for editor tooling, not the build's type checker or compiler.
 
 Create a production build:
 
@@ -56,6 +64,7 @@ After `build:pages`, use `bun run preview --base /vector-defence-2026/` to previ
 Useful validation commands:
 
 ```bash
+bun run typecheck
 bun run build
 bun run build:pages
 bun run check:runtime

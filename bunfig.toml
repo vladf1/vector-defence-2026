@@ -5,5 +5,5 @@ hoist = false
 minimumReleaseAge = 86400
 
 [run]
-# Run dependency CLIs, including Vite and TypeScript, with Bun.
+# Run dependency CLIs with Bun.
 bun = true

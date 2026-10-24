@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "bun scripts/serve.mjs",
+    "typecheck": "bun check -p tsconfig.json",
     "check:runtime": "bun scripts/check-runtime.mjs",
     "benchmark:draw": "bun scripts/benchmark-draw-methods.mjs",
     "benchmark:draw:towers": "bun scripts/benchmark-draw-methods.mjs --tower-profile",
@@ -16,8 +17,8 @@
     "benchmark:update": "bun scripts/benchmark-update-methods.mjs",
     "render:levels": "bun scripts/render-levels.mjs",
     "render:towers": "bun scripts/render-towers.mjs",
-    "build": "tsc --noEmit -p tsconfig.json && bun scripts/build.mjs",
-    "build:pages": "tsc --noEmit -p tsconfig.json && bun scripts/build.mjs --pages",
+    "build": "bun run typecheck && bun scripts/build.mjs",
+    "build:pages": "bun run typecheck && bun scripts/build.mjs --pages",
     "preview": "bun scripts/serve.mjs --preview"
   },
   "trustedDependencies": [
